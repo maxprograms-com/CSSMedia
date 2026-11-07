@@ -806,7 +806,7 @@ export class BoxBuilder {
                 // Text of white space alone can be dropped from the box tree, so it does not take the waiting named strings.
                 const strings: Array<NamedString> | undefined = SelectorMatcher.WHITESPACE_ONLY.test(text) ? undefined : this.takeStrings();
                 const node: TextSequence = { kind: "text", text, style: this.anonymousStyle(context.style) };
-                const language: string | undefined = context.element.getLanguage();
+                const language: string | undefined = this.cascade.languageOf(context.element);
                 if (language !== undefined) {
                     node.language = language;
                 }
@@ -984,7 +984,7 @@ export class BoxBuilder {
     private contentState(counters: Array<Counter>, node: number, element: SourceElement, quotes: () => ReadonlyArray<QuotePair>,
         contents?: () => Array<BoxNode>): ContentState {
         const state: ContentState = { counters, node, quotes, references: this.references, targets: this.targets };
-        const language: string | undefined = element.getLanguage();
+        const language: string | undefined = this.cascade.languageOf(element);
         if (language !== undefined) {
             state.language = language;
         }
@@ -1252,8 +1252,8 @@ export class BoxBuilder {
     }
 
     private splitInline(box: ElementBox, children: ReadonlyArray<BoxNode>): Array<BoxNode> {
-        // CSS 2.1 §9.2.1.1: an inline box that contains an in-flow block-level box is broken around it, into parts on each side,
-        // even when a part is empty.
+        // CSS 2.1 §9.2.1.1: the inline box is broken around "any block-level siblings that are consecutive or separated only by
+        // collapsible whitespace and/or out-of-flow elements", into two boxes "even if either side is empty".
         if (!children.some((child: BoxNode) => this.isInFlowBlockLevel(child))) {
             box.children = [...children];
             this.tables.pageValues(box);
@@ -1261,20 +1261,31 @@ export class BoxBuilder {
         }
         const parts: Array<BoxNode> = [];
         let current: Array<BoxNode> = [];
+        let grouped: boolean = false;
         const part: (last: boolean) => ElementBox = (last: boolean): ElementBox => ({
             ...box, hasStartEdge: parts.length === 0, hasEndEdge: last, children: current
         });
         for (const child of children) {
             if (this.isInFlowBlockLevel(child)) {
-                parts.push(part(false));
+                if (grouped) {
+                    parts.push(...current);
+                } else {
+                    parts.push(part(false));
+                }
                 parts.push(child);
                 current = [];
+                grouped = true;
             } else {
                 current.push(child);
+                grouped = grouped && this.separates(child);
             }
         }
         parts.push(part(true));
         return parts;
+    }
+
+    private separates(node: BoxNode): boolean {
+        return node.kind === "box" ? node.placement !== "in-flow" : node.kind === "text" && this.collapsesAway(node);
     }
 
     private usedPage(style: ComputedStyle, inherited: string): string {

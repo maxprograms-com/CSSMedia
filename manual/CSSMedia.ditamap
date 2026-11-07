@@ -67,6 +67,7 @@
         <topicmeta>
             <navtitle>Languages and hyphenation</navtitle>
         </topicmeta>
+        <topicref href="tasks/document-language.dita"/>
         <!-- TODO: placeholder, write this chapter -->
     </chapter>
 

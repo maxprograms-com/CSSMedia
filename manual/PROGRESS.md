@@ -1217,6 +1217,7 @@ The inventory has 784 properties, 40 at-rules, and 104 descriptors.
 
 ### CSSMedia extensions
 
+- [~] -cssmedia-lang
 - [x] -cssmedia-link
 - [ ] -cssmedia-toc-depth
 - [ ] -cssmedia-toc-divider

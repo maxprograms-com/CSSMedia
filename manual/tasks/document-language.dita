@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="document-language">
+    <title>Document language</title>
+    <shortdesc>The language of the text decides how CSSMedia hyphenates words, which quotation marks it uses, how it changes letter case and which elements the <codeph>:lang()</codeph> selector matches. CSSMedia reads the language from the <codeph>xml:lang</codeph> attribute. If your <xref href="../glossaries/XML.dita">XML</xref> names the language in another attribute, use the CSSMedia <codeph>-cssmedia-lang</codeph> property to say which one.</shortdesc>
+    <taskbody>
+        <context>
+            <p>A language tag is a short code that names a language, such as <codeph>en</codeph> for English, <codeph>fr</codeph> for French or <codeph>zh-Hans</codeph> for Chinese in simplified characters. The <codeph>xml:lang</codeph> attribute is defined by the XML specification. It holds a language tag and applies to the element that carries it and to everything inside that element.</p>
+            <p>XML can use any element and attribute names, so CSSMedia cannot know which other attribute holds a language. A vocabulary such as DocBook 4 uses a plain <codeph>lang</codeph> attribute. Names such as <codeph>para</codeph> and <codeph>lang</codeph> below are examples. Replace them with names used in your XML.</p>
+        </context>
+        <steps>
+            <step id="use-xml-lang">
+                <cmd>Mark the language with <codeph>xml:lang</codeph></cmd>
+                <info>
+                    <p>When your XML already has <codeph>xml:lang</codeph> attributes, you do not write anything in the stylesheet. An element has the language of the nearest <codeph>xml:lang</codeph> on itself or on an ancestor.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;article xml:lang="en"&gt;
+    &lt;para&gt;This paragraph is in English.&lt;/para&gt;
+    &lt;para xml:lang="fr"&gt;Ce paragraphe est en français.&lt;/para&gt;
+&lt;/article&gt;
+</pre>
+                </stepxmp>
+            </step>
+            <step id="map-an-attribute-to-the-language">
+                <cmd>Take the language from another attribute</cmd>
+                <info>
+                    <p>The <codeph>-cssmedia-lang</codeph> property is a CSSMedia extension. It is not a standard <xref href="../glossaries/CSS.dita">CSS</xref> property, so its name has the vendor prefix <codeph>-cssmedia-</codeph>. It sets the language of the elements it is applied to.</p>
+                    <table id="document-language__values">
+                        <tgroup cols="2">
+                            <thead>
+                                <row valign="middle">
+                                    <entry align="center">Value</entry>
+                                    <entry align="center">Meaning</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row valign="middle">
+                                    <entry>
+                                        <codeph>none</codeph>
+                                    </entry>
+                                    <entry>The property does not set the language of the element. This is the initial value.</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-values-4/#string-value" scope="external" format="html">
+                                            <codeph>&lt;string&gt;</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>A language tag written between quotation marks, such as <codeph>"fr"</codeph>. An empty string is the same as <codeph>none</codeph>.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <p>The property is not inherited, but the language it sets reaches the content of the element, as <codeph>xml:lang</codeph> does. Use <codeph>attr()</codeph> to read the language from an attribute:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;book lang="en"&gt;
+    &lt;para&gt;This paragraph is in English.&lt;/para&gt;
+    &lt;para lang="de"&gt;Dieser Absatz ist auf Deutsch.&lt;/para&gt;
+&lt;/book&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">* {
+    -cssmedia-lang: attr(lang);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>
+                        <codeph>*</codeph> selects every element. <codeph>attr(lang)</codeph> reads the value of the <codeph>lang</codeph> attribute of each element. The first <codeph>para</codeph> has no <codeph>lang</codeph> attribute, so <codeph>attr()</codeph> supplies an empty string and the paragraph keeps the language of <codeph>book</codeph>. The second <codeph>para</codeph> is in German.</p>
+                    <p>You can also write the language in the stylesheet:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">quote[role="greek"] {
+    -cssmedia-lang: "el";
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="language-order">
+                <cmd>Know which language wins</cmd>
+                <info>
+                    <p>For each element, CSSMedia takes the first of these that exists:</p>
+                    <ol>
+                        <li>The language set by <codeph>-cssmedia-lang</codeph> on the element.</li>
+                        <li>The <codeph>xml:lang</codeph> attribute of the element itself.</li>
+                        <li>The language of its parent element.</li>
+                    </ol>
+                    <p>An element with both a <codeph>lang</codeph> attribute that your rule reads and an <codeph>xml:lang</codeph> attribute takes the language from <codeph>lang</codeph>.</p>
+                    <p>A rule that sets <codeph>-cssmedia-lang</codeph> cannot depend on the language. A selector such as <codeph>:lang(fr)</codeph> or <codeph>:dir(rtl)</codeph> never matches while CSSMedia decides the language, so those selectors have no effect on the <codeph>-cssmedia-lang</codeph> declarations. They work as usual on all other properties, and they see the language that <codeph>-cssmedia-lang</codeph> gave.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

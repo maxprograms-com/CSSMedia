@@ -25,8 +25,10 @@ import { DeclarationReader } from "../css/DeclarationReader.js";
 import type {
     ContainerQuery, CssWideKeyword, Declaration, DeclaredValue, MarginBoxName, MarginRule, PageNth, PageRule, PageSelector, Scope, StyleRule
 } from "../css/Stylesheet.js";
+import { PropertyTable } from "../css/PropertyTable.js";
 import type { CssValue } from "../css/values/CssValue.js";
 import type { SourceElement } from "../parse/SourceElement.js";
+import { LanguageResolver } from "./LanguageResolver.js";
 import { LinkResolver } from "./LinkResolver.js";
 import type { PageContext, PageGroup } from "./PageCanvas.js";
 import { RuleIndex } from "./RuleIndex.js";
@@ -81,7 +83,9 @@ export class Cascade {
             this.attached = attached;
         }
         this.links = new LinkResolver(this, computer, root, documentUri);
-        this.matcher = new SelectorMatcher(root, prefixes, this.links, new TableColumns(this, computer, root), classes);
+        const languages: LanguageResolver | undefined = styleRules.some((rule: StyleRule) =>
+            rule.declarations.some((declaration: Declaration) => declaration.property === PropertyTable.LANGUAGE)) ? new LanguageResolver(this, computer) : undefined;
+        this.matcher = new SelectorMatcher(root, prefixes, this.links, new TableColumns(this, computer, root), languages, classes);
         this.index = new RuleIndex([...userAgentRules, ...styleRules], this.matcher);
         this.userAgentRules = new Set<StyleRule>(userAgentRules);
         for (const rule of [...userAgentRules, ...styleRules]) {
@@ -130,6 +134,22 @@ export class Cascade {
         } finally {
             this.matcher.linksBlind = blind;
             this.matcher.columnsBlind = columnsBlind;
+        }
+    }
+
+    languageDeclarations(element: SourceElement): Map<string, DeclaredValue> {
+        const links: boolean = this.matcher.linksBlind;
+        const columns: boolean = this.matcher.columnsBlind;
+        const language: boolean = this.matcher.languageBlind;
+        this.matcher.linksBlind = true;
+        this.matcher.columnsBlind = true;
+        this.matcher.languageBlind = true;
+        try {
+            return this.collect(element, () => false, undefined, (property: string) => property === PropertyTable.LANGUAGE || property.startsWith("--"));
+        } finally {
+            this.matcher.linksBlind = links;
+            this.matcher.columnsBlind = columns;
+            this.matcher.languageBlind = language;
         }
     }
 

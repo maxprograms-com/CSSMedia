@@ -23,6 +23,7 @@ import type { CssValue } from "../css/values/CssValue.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import { BaseUrls } from "./BaseUrls.js";
 import type { BoxNode, ElementBox } from "./BoxTree.js";
+import type { Cascade } from "./Cascade.js";
 import type { Counter, CounterSet } from "./CounterScopes.js";
 import { GeneratedContent } from "./GeneratedContent.js";
 import { SelectorMatcher } from "./SelectorMatcher.js";
@@ -41,6 +42,7 @@ export class CrossReferences {
     readonly diagnostics: Array<string> = [];
     private readonly documentUri: string;
     private readonly everyId: boolean;
+    private readonly cascade: Cascade;
     private readonly requested: Set<string> = new Set<string>();
     private readonly pageIds: Set<string> = new Set<string>();
     private readonly linkIds: Set<string> = new Set<string>();
@@ -54,9 +56,10 @@ export class CrossReferences {
     private root?: ElementBox;
     private whiteSpace?: WhiteSpaceProcessor;
 
-    constructor(documentUri: string, everyId: boolean) {
+    constructor(documentUri: string, everyId: boolean, cascade: Cascade) {
         this.documentUri = documentUri;
         this.everyId = everyId;
+        this.cascade = cascade;
     }
 
     get showsPages(): boolean {
@@ -303,7 +306,7 @@ export class CrossReferences {
         const after: string = whiteSpace.normalText(this.pseudoText(box, "after"), box.style);
         const whole: string = before + element;
         const start: number = (LEADING_WHITE_SPACE.exec(whole) as RegExpExecArray)[0].length;
-        const letter: readonly [number, number, number] | undefined = GeneratedContent.firstLetter(whole, start, (box.element as SourceElement).getLanguage());
+        const letter: readonly [number, number, number] | undefined = GeneratedContent.firstLetter(whole, start, this.cascade.languageOf(box.element as SourceElement));
         return { content: element, before, after, "first-letter": letter === undefined ? "" : whole.substring(start, letter[2]) };
     }
 

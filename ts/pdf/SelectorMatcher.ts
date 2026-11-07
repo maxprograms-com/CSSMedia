@@ -29,6 +29,7 @@ import type {
 import { SelectorCompiler } from "../css/SelectorCompiler.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import { LanguageRangeMatcher } from "./LanguageRangeMatcher.js";
+import type { LanguageResolver } from "./LanguageResolver.js";
 import type { LinkResolver } from "./LinkResolver.js";
 import type { TableColumns } from "./TableColumns.js";
 import { UnicodeBidi } from "./UnicodeBidi.js";
@@ -54,18 +55,23 @@ export class SelectorMatcher {
     private readonly bidi: UnicodeBidi = new UnicodeBidi();
     private readonly links: LinkResolver;
     private readonly columns: TableColumns;
+    private readonly languages?: LanguageResolver;
     private readonly classes?: (element: SourceElement) => ReadonlyArray<string> | undefined;
     private readonly referrerIndexes: Map<string, Map<string, Array<SourceElement>>> = new Map<string, Map<string, Array<SourceElement>>>();
     private idIndex?: Map<string, Array<SourceElement>>;
     linksBlind: boolean = false;
     columnsBlind: boolean = false;
+    languageBlind: boolean = false;
 
-    constructor(root: SourceElement, prefixes: ReadonlyMap<string, string>, links: LinkResolver, columns: TableColumns,
+    constructor(root: SourceElement, prefixes: ReadonlyMap<string, string>, links: LinkResolver, columns: TableColumns, languages: LanguageResolver | undefined,
         classes?: (element: SourceElement) => ReadonlyArray<string> | undefined) {
         this.root = root;
         this.prefixes = prefixes;
         this.links = links;
         this.columns = columns;
+        if (languages !== undefined) {
+            this.languages = languages;
+        }
         const rootNamespace: string | undefined = root.getAttributeValue("xmlns");
         if (rootNamespace !== undefined) {
             this.rootNamespace = rootNamespace;
@@ -82,7 +88,7 @@ export class SelectorMatcher {
     }
 
     languageOf(element: SourceElement): string | undefined {
-        return element.getLanguage();
+        return this.languages === undefined ? element.getLanguage() : this.languages.languageOf(element);
     }
 
     private namespaceOf(element: SourceElement): string | undefined {
@@ -300,10 +306,10 @@ export class SelectorMatcher {
             || !compound.localLinks.every((levels: number) => this.links.isLocal(element, levels === SelectorCompiler.WHOLE_URL ? undefined : levels)))) {
             return false;
         }
-        if (compound.lang !== undefined && !compound.lang.every((ranges: ReadonlyArray<string>) => this.matchLanguage(element, ranges))) {
+        if (compound.lang !== undefined && (this.languageBlind || !compound.lang.every((ranges: ReadonlyArray<string>) => this.matchLanguage(element, ranges)))) {
             return false;
         }
-        if (compound.dir !== undefined && !compound.dir.every((direction: Direction) => this.directionOf(element) === direction)) {
+        if (compound.dir !== undefined && (this.languageBlind || !compound.dir.every((direction: Direction) => this.directionOf(element) === direction))) {
             return false;
         }
         if (compound.negations !== undefined && compound.negations.some((negation: ReadonlyArray<CompiledSelectorStep>) => this.matchFrom(element, negation, negation.length - 1, scope))) {

@@ -187,7 +187,7 @@ export class GeneratedContent {
             } else {
                 result += this.normalText(line, text);
                 line = "";
-                result += part.kind === "function" && part.name === "content" ? this.firstLetterText(element, generated) : this.alternativeText([part], text, state);
+                result += part.kind === "function" && part.name === "content" ? this.firstLetterText(element, state.language, generated) : this.alternativeText([part], text, state);
             }
         }
         return result + this.normalText(line, text);
@@ -201,12 +201,12 @@ export class GeneratedContent {
         return this.whiteSpace.normalText(line, style);
     }
 
-    private firstLetterText(element: SourceElement, generated?: Readonly<Record<string, ReadonlyArray<BoxNode>>>): string {
+    private firstLetterText(element: SourceElement, language: string | undefined, generated?: Readonly<Record<string, ReadonlyArray<BoxNode>>>): string {
         // CSS Pseudo-Elements 4 §2.2.1: the first letter can come from the content of ::before, and the white space before
         // it is not part of it.
         const text: string = this.boxText(generated?.["before"]) + this.textOf(element);
         const start: number = (LEADING_WHITE_SPACE.exec(text) as RegExpExecArray)[0].length;
-        const found: readonly [number, number, number] | undefined = GeneratedContent.firstLetter(text, start, element.getLanguage());
+        const found: readonly [number, number, number] | undefined = GeneratedContent.firstLetter(text, start, language);
         return found === undefined ? "" : text.substring(start, found[2]);
     }
 

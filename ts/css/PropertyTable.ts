@@ -81,6 +81,7 @@ export class PropertyTable {
     static readonly PREFIX: string = "-cssmedia-";
     static readonly LINK: string = PropertyTable.PREFIX + "link";
     static readonly LINK_COUNTER: string = PropertyTable.PREFIX + "link-counter";
+    static readonly LANGUAGE: string = PropertyTable.PREFIX + "lang";
     static readonly TOC: string = PropertyTable.PREFIX + "toc";
     static readonly TOC_TITLE: string = PropertyTable.PREFIX + "toc-title";
     static readonly TOC_ENTRY: string = PropertyTable.PREFIX + "toc-entry";
@@ -98,6 +99,10 @@ export class PropertyTable {
         {
             name: PropertyTable.LINK, value: "none | [ <string> | <url> ]+", initial: "none", appliesTo: "all elements and pseudo-elements", inherited: "no",
             percentages: "N/A", computedValue: "as specified", spec: "cssmedia"
+        },
+        {
+            name: PropertyTable.LANGUAGE, value: "none | <string>", initial: "none", appliesTo: "all elements", inherited: "no", percentages: "N/A",
+            computedValue: "as specified", spec: "cssmedia"
         },
         {
             name: "zoom", value: "<number [0,∞]> | <percentage [0,∞]>", initial: "1", appliesTo: "all <length> property values of all elements", inherited: "no",

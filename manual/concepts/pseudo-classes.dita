@@ -69,10 +69,10 @@ title:has(+ paragraph) { color: gray; }
             <title>Language and direction</title>
             <p>
                 <xref href="https://www.w3.org/TR/selectors-4/#the-dir-pseudo" scope="external" format="html">“Selectors 4 §7.1, The Directionality Pseudo-class: :dir()”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#the-lang-pseudo" scope="external" format="html">“Selectors 4 §7.2, The Language Pseudo-class: :lang()”</xref>.</p>
-            <p>Use <codeph>:lang()</codeph> to select elements by language. CSSMedia checks the nearest <codeph>xml:lang</codeph> value on the element or its ancestors.</p>
+            <p>Use <codeph>:lang()</codeph> to select elements by language. CSSMedia checks the language of the element, which is the nearest <codeph>xml:lang</codeph> value on the element or its ancestors, or the language that the <codeph>-cssmedia-lang</codeph> property gives. See <xref href="../tasks/document-language.dita#document-language">Document language</xref>.</p>
             <pre outputclass="language-css21">:lang(fr) { font-family: serif; }
 </pre>
-            <p>If no language is set, <codeph>:lang("")</codeph> matches. For <codeph>:dir(ltr)</codeph> and <codeph>:dir(rtl)</codeph>, CSSMedia scans the element’s descendant text for the first strong character using the Unicode Bidirectional Algorithm. If there is none, it checks the nearest inherited, normalized <codeph>xml:lang</codeph> value and uses its bidi classification. If there is no language or it is not classified as bidi, the direction defaults to left-to-right. The <xref href="../glossaries/CSS.dita">CSS</xref> <codeph>direction</codeph> property does not affect <codeph>:dir()</codeph>.</p>
+            <p>If no language is set, <codeph>:lang("")</codeph> matches. For <codeph>:dir(ltr)</codeph> and <codeph>:dir(rtl)</codeph>, CSSMedia scans the element’s descendant text for the first strong character using the Unicode Bidirectional Algorithm. If there is none, it checks the language of the element, normalized, and uses its bidi classification. If there is no language or it is not classified as bidi, the direction defaults to left-to-right. The <xref href="../glossaries/CSS.dita">CSS</xref> <codeph>direction</codeph> property does not affect <codeph>:dir()</codeph>.</p>
         </section>
         <section id="links-and-document-location">
             <title>Links and document location</title>

@@ -155,7 +155,7 @@ export class PdfGenerator {
         images.register(BmpImage.accepts, (): ImageFormat => new BmpImage(images));
         images.register(TiffImage.accepts, (): ImageFormat => new TiffImage(images));
         images.register(WebpImage.accepts, (): ImageFormat => new WebpImage(images));
-        const references: CrossReferences = new CrossReferences(input.documentUri, input.marginTargets);
+        const references: CrossReferences = new CrossReferences(input.documentUri, input.marginTargets, input.cascade);
         let setup: PageSetup | undefined;
         images.register(SvgImage.accepts, (): ImageFormat => new SvgImage(document, images, colors, input, (): PageSetup => setup as PageSetup), SvgImage.NAMESPACES);
         images.register(MathImage.accepts, (): ImageFormat => new MathImage(document, images, input, (): PageSetup => setup as PageSetup), [MathImage.NAMESPACE]);
