@@ -18,8 +18,8 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
-import type { Atrule, CssNode, Declaration as CssTreeDeclaration, MediaQueryList, Rule, Selector, StyleSheet } from "css-tree";
-import { parse, tokenize, tokenTypes } from "css-tree";
+import type { Atrule, Block, CssNode, Declaration as CssTreeDeclaration, ListItem, MediaQueryList, Rule, Selector, SelectorList, StyleSheet } from "css-tree";
+import { clone, generate, List, parse, tokenize, tokenTypes, walk } from "css-tree";
 import type { XMLAttribute, XMLDocument, XMLNode } from "typesxml";
 import { ProcessingInstruction, TextNode, XMLElement } from "typesxml";
 import { AnPlusBParser } from "../css/AnPlusBParser.js";
@@ -27,10 +27,14 @@ import type { AttributeMatcher, CompiledSelector, CompiledSelectorStep, Compound
 import { ConditionEvaluator } from "../css/ConditionEvaluator.js";
 import { DeclarationReader } from "../css/DeclarationReader.js";
 import type { PropertyTable } from "../css/PropertyTable.js";
+import { CssIdentifierEscaping } from "../css/CssIdentifierEscaping.js";
 import { SelectorCompiler } from "../css/SelectorCompiler.js";
+import { SelectorText } from "../css/SelectorText.js";
 import { ShorthandExpander } from "../css/ShorthandExpander.js";
+import type { Token } from "../css/SubstitutionSyntax.js";
+import { SubstitutionSyntax } from "../css/SubstitutionSyntax.js";
 import { SupportsEvaluator } from "../css/SupportsEvaluator.js";
-import type { ContainerQuery, Declaration, DeclaredValue, FontFaceRule, Scope, StyleRule } from "../css/Stylesheet.js";
+import type { ContainerCondition, ContainerQuery, Declaration, DeclaredValue, FontFaceRule, Scope, StyleRule } from "../css/Stylesheet.js";
 import { DEFAULT_PAGE_SIZE, StylesheetReader } from "../css/StylesheetReader.js";
 import { CalcSimplifier } from "../css/values/CalcSimplifier.js";
 import { ColorKeywords } from "../css/values/ColorKeywords.js";
@@ -54,7 +58,22 @@ export interface SvgNode {
     parent?: SvgNode;
 }
 
-type CompiledRule = readonly [ReadonlyArray<CompiledSelector>, ReadonlyArray<Declaration>, string];
+type CompiledRule = readonly [ReadonlyArray<CompiledSelector>, ReadonlyArray<Declaration>, string, Scope | undefined, ReadonlyArray<ContainerQuery>];
+
+interface Reading {
+    baseUrl: string;
+    namespaces: Map<string, string>;
+    layer: string;
+    containers: ReadonlyArray<ContainerQuery>;
+    scope?: Scope;
+    scopeStart?: SelectorList;
+}
+
+interface Branches {
+    open: boolean;
+    satisfied: boolean;
+    negated: Array<ContainerQuery>;
+}
 
 const XML_NAMESPACE: string = "http://www.w3.org/XML/1998/namespace";
 const XLINK_NAMESPACE: string = "http://www.w3.org/1999/xlink";
@@ -103,7 +122,14 @@ const NON_NEGATIVE: ReadonlySet<string> = new Set<string>(["stroke-width", "stro
 const BOX_HINTS: ReadonlySet<string> = new Set<string>(["display", "width", "height", "overflow"]);
 const UNSCOPED: number = Number.NEGATIVE_INFINITY;
 const NO_LAYER: string = "";
-const SHEET_AT_RULES: ReadonlySet<string> = new Set<string>(["import", "namespace", "layer", "media", "supports", "font-face"]);
+const SHEET_AT_RULES: ReadonlySet<string> = new Set<string>([
+    "import", "namespace", "layer", "media", "supports", "supports-condition", "when", "else", "container", "scope", "page", "font-face", "font-feature-values",
+    "font-palette-values", "color-profile", "counter-style", "property", "position-try", "function", "custom-media", "keyframes", "starting-style", "view-transition"
+]);
+const CONDITIONAL_RULES: ReadonlySet<string> = new Set<string>(["media", "supports", "when", "else", "container"]);
+const UNREAD_RULES: ReadonlySet<string> = new Set<string>(["property", "function", "font-feature-values", "font-palette-values", "color-profile"]);
+const CONTAINER_KEYWORDS: ReadonlySet<string> = new Set<string>(["none", "and", "not", "or", "initial", "inherit", "unset", "revert", "revert-layer", "default"]);
+const STYLE_QUERY: RegExp = /(?:^|[^\w-])style\s*\(/i;
 const CSS_WIDE_KEYWORDS: ReadonlySet<string> = new Set<string>(["initial", "inherit", "unset", "revert", "revert-layer"]);
 const NO_SCOPE: ReadonlyArray<readonly [SvgNode | undefined, number]> = [[undefined, Number.POSITIVE_INFINITY]];
 
@@ -155,6 +181,11 @@ export class SvgStyles {
     private anonymousLayers: number = 0;
     private layerRanks?: Map<string, number>;
     private supporter?: SupportsEvaluator;
+    private readonly selectorText: SelectorText = new SelectorText();
+    private readonly substitutionSyntax: SubstitutionSyntax = new SubstitutionSyntax();
+    private readonly escaping: CssIdentifierEscaping = new CssIdentifierEscaping();
+    private owner?: XMLElement;
+    private readonly rootOf: WeakMap<Scope, XMLElement> = new WeakMap<Scope, XMLElement>();
     private rootPlace?: SvgNode;
     private scopeNode?: SvgNode;
 
@@ -380,7 +411,12 @@ export class SvgStyles {
         if ((namespace === SVG_NAMESPACE || namespace === XHTML_NAMESPACE) && name === "style") {
             const type: string = (this.attribute(element, "type") ?? "").trim().toLowerCase();
             if ((type.length === 0 || type === "text/css") && this.mediaHolds(this.attribute(element, "media"))) {
-                this.readSheet(this.text(element), this.url, this.authorRules, NO_LAYER);
+                this.ownedBy(element);
+                try {
+                    this.readSheet(this.text(element), this.url, this.authorRules, NO_LAYER);
+                } finally {
+                    delete this.owner;
+                }
             }
             return;
         }
@@ -388,12 +424,24 @@ export class SvgStyles {
             const relations: Array<string> = (this.attribute(element, "rel") ?? "").toLowerCase().split(WHITE_SPACE);
             const href: string | undefined = this.attribute(element, "href");
             if (relations.includes("stylesheet") && !relations.includes("alternate") && href !== undefined && this.mediaHolds(this.attribute(element, "media"))) {
-                this.importSheet(this.resolve(href), NO_LAYER);
+                this.ownedBy(element);
+                try {
+                    this.importSheet(this.resolve(href), NO_LAYER);
+                } finally {
+                    delete this.owner;
+                }
             }
             return;
         }
         for (const child of element.getChildren()) {
             this.sheets(child);
+        }
+    }
+
+    private ownedBy(element: XMLElement): void {
+        const parent: XMLElement | undefined = this.parents.get(element);
+        if (parent !== undefined) {
+            this.owner = parent;
         }
     }
 
@@ -456,8 +504,10 @@ export class SvgStyles {
         } catch {
             return;
         }
-        const namespaces: Map<string, string> = new Map<string, string>();
+        const context: Reading = { baseUrl, namespaces: new Map<string, string>(), layer, containers: [] };
+        const namespaces: Map<string, string> = context.namespaces;
         const nodes: Array<CssNode> = sheet.children.toArray();
+        this.defineCustomMedia(nodes);
         let index: number = 0;
         let importsAllowed: boolean = true;
         let prefixed: boolean = false;
@@ -467,11 +517,15 @@ export class SvgStyles {
             if (name === "charset") {
                 continue;
             }
-            if (node.type === "Atrule" && name === "layer" && node.block === null) {
+            if (node.type === "Atrule" && ((name === "layer" && node.block === null) || name === "supports-condition")) {
                 if (prefixed) {
                     break;
                 }
-                this.layerStatement(this.preludeOf(node), layer);
+                if (name === "layer") {
+                    this.layerStatement(this.preludeOf(node), layer);
+                } else {
+                    this.readSupportsCondition(node, context);
+                }
             } else if (node.type === "Atrule" && name === "import") {
                 prefixed = true;
                 if (importsAllowed) {
@@ -485,11 +539,64 @@ export class SvgStyles {
                 break;
             }
         }
-        this.readRules(nodes.slice(index), baseUrl, namespaces, rules, layer);
+        this.readRules(nodes.slice(index), context, rules);
     }
 
     private preludeOf(atrule: Atrule): Array<CssNode> {
         return atrule.prelude !== null && atrule.prelude.type === "AtrulePrelude" ? atrule.prelude.children.toArray() : [];
+    }
+
+    private preludeText(atrule: Atrule): string {
+        if (atrule.prelude === null) {
+            return "";
+        }
+        return atrule.prelude.type === "Raw" ? atrule.prelude.value : generate(atrule.prelude);
+    }
+
+    private defineCustomMedia(nodes: ReadonlyArray<CssNode>): void {
+        // Media Queries 5 §10: @custom-media <extension-name> [ <media-query-list> | true | false ]; a query can be used before its rule.
+        for (const node of nodes) {
+            if (node.type !== "Atrule" || node.name.toLowerCase() !== "custom-media") {
+                continue;
+            }
+            const match: RegExpExecArray | null = /^(--\S+)\s+([\s\S]+)$/.exec(this.preludeText(node).trim());
+            if (match === null) {
+                continue;
+            }
+            const value: string = match[2].trim().toLowerCase();
+            this.conditions = this.conditions ?? new ConditionEvaluator(DEFAULT_PAGE_SIZE);
+            if (value === "true" || value === "false") {
+                this.conditions.define(match[1], value === "true");
+                continue;
+            }
+            try {
+                const list: CssNode = parse(match[2], { context: "mediaQueryList" });
+                if (list.type === "MediaQueryList") {
+                    this.conditions.define(match[1], list);
+                }
+            } catch {
+                // do nothing: an invalid media query list defines nothing
+            }
+        }
+    }
+
+    private readSupportsCondition(atrule: Atrule, context: Reading): void {
+        const first: CssNode | undefined = this.preludeOf(atrule)[0];
+        if (first !== undefined && first.type === "Identifier" && first.name.startsWith("--") && atrule.block !== null) {
+            this.supportsEvaluator().define(first.name, atrule.block, context.namespaces);
+        }
+    }
+
+    private compileList(list: SelectorList, namespaces: ReadonlyMap<string, string>): Array<CompiledSelector> | undefined {
+        const compiled: Array<CompiledSelector> = [];
+        for (const selector of list.children) {
+            const result: CompiledSelector | undefined = selector.type === "Selector" ? this.compiler.compile(selector as Selector, namespaces) : undefined;
+            if (result === undefined) {
+                return undefined;
+            }
+            compiled.push(result);
+        }
+        return compiled;
     }
 
     private validRule(node: CssNode, namespaces: ReadonlyMap<string, string>): boolean {
@@ -497,8 +604,12 @@ export class SvgStyles {
         if (node.type === "Atrule") {
             return SHEET_AT_RULES.has(node.name.toLowerCase());
         }
-        return node.type === "Rule" && node.prelude.type === "SelectorList"
-            && node.prelude.children.toArray().every((selector: CssNode) => selector.type === "Selector" && this.compiler.compile(selector as Selector, namespaces) !== undefined);
+        if (node.type !== "Rule") {
+            return false;
+        }
+        const prelude: SelectorList | undefined = node.prelude.type === "SelectorList" ? node.prelude
+            : (node.prelude.type === "Raw" ? this.selectorText.parseList(node.prelude.value) : undefined);
+        return prelude !== undefined && this.compileList(prelude, namespaces) !== undefined;
     }
 
     private readNamespace(prelude: ReadonlyArray<CssNode>, namespaces: Map<string, string>): void {
@@ -638,70 +749,463 @@ export class SvgStyles {
         return this.layerRanks.get(key) as number;
     }
 
-    private readRules(nodes: ReadonlyArray<CssNode>, baseUrl: string, namespaces: Map<string, string>, rules: Array<CompiledRule>, layer: string): void {
+    private readRules(nodes: ReadonlyArray<CssNode>, context: Reading, rules: Array<CompiledRule>): void {
+        const branches: Branches = { open: false, satisfied: false, negated: [] };
         for (const node of nodes) {
-            if (node.type === "Rule") {
-                this.readRule(node, baseUrl, namespaces, rules, layer);
-                continue;
-            }
-            if (node.type !== "Atrule") {
-                continue;
-            }
-            const atrule: Atrule = node;
-            const name: string = atrule.name.toLowerCase();
-            const prelude: Array<CssNode> = this.preludeOf(atrule);
-            if (name === "media") {
-                const list: CssNode | undefined = prelude[0];
-                if (atrule.block !== null && (list === undefined || (list.type === "MediaQueryList" && this.media(list)))) {
-                    this.readRules(atrule.block.children.toArray(), baseUrl, namespaces, rules, layer);
-                }
-            } else if (name === "supports") {
-                const condition: CssNode | undefined = prelude[0];
-                if (atrule.block !== null && condition !== undefined && this.supportsEvaluator().supports(condition, namespaces)) {
-                    this.readRules(atrule.block.children.toArray(), baseUrl, namespaces, rules, layer);
-                }
-            } else if (name === "layer") {
-                if (atrule.block === null) {
-                    this.layerStatement(prelude, layer);
-                } else {
-                    const inner: string | undefined = this.layerBlock(prelude, layer);
-                    if (inner !== undefined) {
-                        this.readRules(atrule.block.children.toArray(), baseUrl, namespaces, rules, inner);
+            if (node.type === "Atrule" && CONDITIONAL_RULES.has(node.name.toLowerCase())) {
+                this.conditional(node, context, branches, (inner: Reading) => {
+                    if (node.block !== null) {
+                        this.readRules(node.block.children.toArray(), inner, rules);
                     }
-                }
-            } else if (name === "font-face") {
-                this.fontReader = this.fontReader ?? new StylesheetReader(this.table);
-                const face: FontFaceRule | undefined = this.fontReader.fontFace(atrule, baseUrl);
-                if (face !== undefined) {
-                    this.fontFaces.push(face);
-                }
+                });
+                continue;
+            }
+            branches.open = false;
+            if (node.type === "Rule") {
+                this.readStyleRule(node, context, rules);
+            } else if (node.type === "Atrule") {
+                this.readAtrule(node, context, rules);
             }
         }
     }
 
-    private readRule(rule: Rule, baseUrl: string, namespaces: ReadonlyMap<string, string>, rules: Array<CompiledRule>, layer: string): void {
-        if (rule.prelude.type !== "SelectorList") {
-            return;
+    private readAtrule(atrule: Atrule, context: Reading, rules: Array<CompiledRule>): void {
+        const name: string = atrule.name.toLowerCase();
+        if (name === "layer") {
+            if (atrule.block === null) {
+                this.layerStatement(this.preludeOf(atrule), context.layer);
+            } else {
+                const inner: string | undefined = this.layerBlock(this.preludeOf(atrule), context.layer);
+                if (inner !== undefined) {
+                    this.readRules(this.blockItems(atrule.block), { ...context, layer: inner }, rules);
+                }
+            }
+        } else if (name === "scope") {
+            this.readScope(atrule, context, rules);
+        } else if (name === "supports-condition") {
+            this.readSupportsCondition(atrule, context);
+        } else if (name === "font-face") {
+            this.fontReader = this.fontReader ?? new StylesheetReader(this.table);
+            const face: FontFaceRule | undefined = this.fontReader.fontFace(atrule, context.baseUrl);
+            if (face !== undefined) {
+                this.fontFaces.push(face);
+            }
+        } else if (UNREAD_RULES.has(name)) {
+            throw new Error("The @" + name + " rule in the style sheet of the SVG image " + this.url + " is not implemented");
         }
-        const selectors: Array<CompiledSelector> = [];
-        for (const selector of rule.prelude.children) {
-            const compiled: CompiledSelector | undefined = selector.type === "Selector" ? this.compiler.compile(selector as Selector, namespaces) : undefined;
-            if (compiled === undefined) {
+    }
+
+    private conditional(atrule: Atrule, context: Reading, branches: Branches, readBlock: (inner: Reading) => void): void {
+        // CSS Conditional 5 §4: in a chain of conditional group rules only the first whose condition holds applies; a condition
+        // that depends on the query container is kept, and the rules after it in the chain require it to be false.
+        const name: string = atrule.name.toLowerCase();
+        let holds: boolean;
+        let query: ContainerQuery | undefined;
+        if (name === "else") {
+            if (!branches.open) {
                 return;
             }
-            if (compiled.pseudoElement === undefined) {
-                selectors.push(compiled);
+            holds = atrule.prelude === null || this.supportsEvaluator().when(this.preludeText(atrule), context.namespaces);
+        } else {
+            branches.open = true;
+            branches.satisfied = false;
+            branches.negated = [];
+            const prelude: Array<CssNode> = this.preludeOf(atrule);
+            if (name === "media") {
+                holds = prelude[0] === undefined || (prelude[0].type === "MediaQueryList" && this.media(prelude[0]));
+            } else if (name === "supports") {
+                holds = prelude[0] !== undefined && this.supportsEvaluator().supports(prelude[0], context.namespaces);
+            } else if (name === "when") {
+                holds = atrule.prelude !== null && this.supportsEvaluator().when(this.preludeText(atrule), context.namespaces);
+            } else {
+                holds = false;
+                query = this.containerQuery(this.preludeText(atrule));
             }
         }
-        const declarations: Array<Declaration> = [];
-        for (const child of rule.block.children) {
-            const read: Array<Declaration> | undefined = child.type === "Declaration" ? this.reader.read(child, baseUrl, namespaces) : undefined;
-            if (read !== undefined) {
-                declarations.push(...read.filter((declaration: Declaration) => this.inRange(declaration)));
+        if (branches.satisfied) {
+            return;
+        }
+        const containers: Array<ContainerQuery> = [...context.containers, ...branches.negated];
+        if (name !== "container") {
+            if (holds) {
+                readBlock({ ...context, containers });
+                branches.satisfied = true;
+            }
+            return;
+        }
+        if (query === undefined) {
+            return;
+        }
+        readBlock({ ...context, containers: [...containers, query] });
+        branches.negated = [...branches.negated, { conditions: query.conditions, negated: true }];
+    }
+
+    private containerQuery(text: string): ContainerQuery | undefined {
+        // CSS Conditional 5 §5.4: <container-condition># where each is [ <container-name>? <container-query>? ]!. A style() query
+        // needs the computed styles of the ancestors of an SVG element, which are not available to the cascade.
+        if (STYLE_QUERY.test(text)) {
+            throw new Error("A container style query in the style sheet of the SVG image " + this.url + " is not implemented");
+        }
+        const conditions: Array<ContainerCondition> = [];
+        for (const part of this.splitTopLevel(text, ",")) {
+            const tokens: Array<Token> = this.substitutionSyntax.trim(this.substitutionSyntax.tokens(part));
+            const first: Token | undefined = tokens[0];
+            const named: boolean = first !== undefined && first.type === tokenTypes.Ident && !CONTAINER_KEYWORDS.has(this.escaping.unescape(first.text).toLowerCase());
+            const query: Array<Token> = named ? this.substitutionSyntax.trim(tokens.slice(1)) : tokens;
+            const start: Token | undefined = query[0];
+            const queryStart: boolean = start !== undefined && (start.type === tokenTypes.LeftParenthesis || start.type === tokenTypes.Function
+                || (start.type === tokenTypes.Ident && start.text.toLowerCase() === "not"));
+            if ((!named && !queryStart) || (query.length > 0 && !queryStart)) {
+                return undefined;
+            }
+            const condition: ContainerCondition = {};
+            if (named) {
+                condition.name = this.escaping.unescape(first.text);
+            }
+            if (query.length > 0) {
+                condition.query = this.substitutionSyntax.serialize(query);
+            }
+            conditions.push(condition);
+        }
+        return conditions.length === 0 ? undefined : { conditions, negated: false };
+    }
+
+    private splitTopLevel(text: string, separator: string): Array<string> {
+        const parts: Array<string> = [];
+        let depth: number = 0;
+        let start: number = 0;
+        tokenize(text, (type: number, tokenStart: number, tokenEnd: number) => {
+            if (type === tokenTypes.LeftParenthesis || type === tokenTypes.LeftSquareBracket || type === tokenTypes.LeftCurlyBracket || type === tokenTypes.Function) {
+                depth++;
+            } else if (type === tokenTypes.RightParenthesis || type === tokenTypes.RightSquareBracket || type === tokenTypes.RightCurlyBracket) {
+                depth--;
+            } else if (depth === 0 && text.substring(tokenStart, tokenEnd) === separator) {
+                parts.push(text.substring(start, tokenStart));
+                start = tokenEnd;
+            }
+        });
+        parts.push(text.substring(start));
+        return parts;
+    }
+
+    private readStyleRule(rule: Rule, context: Reading, rules: Array<CompiledRule>, parent?: SelectorList): void {
+        // CSS Nesting 1 §3: a nested rule's selectors are relative to its parent's; CSS Cascade 6 §2.5.3: a scoped rule's to :scope.
+        const prelude: SelectorList | undefined = rule.prelude.type === "SelectorList" ? rule.prelude
+            : (rule.prelude.type === "Raw" ? this.selectorText.parseList(rule.prelude.value) : undefined);
+        if (prelude === undefined) {
+            return;
+        }
+        let list: SelectorList = prelude;
+        if (parent !== undefined) {
+            list = this.nestedList(prelude, parent);
+        } else if (context.scope !== undefined) {
+            list = this.scopedList(prelude, context.scopeStart);
+        }
+        const compiled: Array<CompiledSelector> | undefined = this.compileList(list, context.namespaces);
+        if (compiled !== undefined) {
+            this.readStyleBlock(rule.block, compiled, context, rules, list);
+        }
+    }
+
+    private readStyleBlock(block: Block, compiled: ReadonlyArray<CompiledSelector>, context: Reading, rules: Array<CompiledRule>, list?: SelectorList): void {
+        // CSS Nesting 1 §3.4 and §5: declarations after a nested rule form a nested declarations rule with the parent's selectors.
+        let pending: Array<Declaration> = [];
+        const flush: () => void = (): void => {
+            const own: Array<CompiledSelector> = compiled.filter((selector: CompiledSelector) => selector.pseudoElement === undefined);
+            if (own.length > 0 && pending.length > 0) {
+                rules.push([own, pending, context.layer, context.scope, context.containers]);
+            }
+            pending = [];
+        };
+        const branches: Branches = { open: false, satisfied: false, negated: [] };
+        for (const child of this.blockItems(block)) {
+            if (child.type === "Declaration") {
+                branches.open = false;
+                const read: Array<Declaration> | undefined = this.reader.read(child, context.baseUrl, context.namespaces);
+                if (read !== undefined) {
+                    pending.push(...read.filter((declaration: Declaration) => this.inRange(declaration)));
+                }
+                continue;
+            }
+            flush();
+            if (child.type === "Atrule" && CONDITIONAL_RULES.has(child.name.toLowerCase())) {
+                this.conditional(child, context, branches, (inner: Reading) => {
+                    if (child.block !== null) {
+                        this.readStyleBlock(child.block, compiled, inner, rules, list);
+                    }
+                });
+                continue;
+            }
+            branches.open = false;
+            if (child.type === "Rule") {
+                this.readStyleRule(child, context, rules, list);
+            } else if (child.type === "Atrule") {
+                this.readNestedAtrule(child, compiled, context, rules, list);
             }
         }
-        if (selectors.length > 0 && declarations.length > 0) {
-            rules.push([selectors, declarations, layer]);
+        flush();
+    }
+
+    private readNestedAtrule(atrule: Atrule, compiled: ReadonlyArray<CompiledSelector>, context: Reading, rules: Array<CompiledRule>, list?: SelectorList): void {
+        // CSS Nesting 1 §3.3: @layer and @scope nest inside style rules; declarations directly inside apply to the parent selectors.
+        const name: string = atrule.name.toLowerCase();
+        if (name === "layer" && atrule.block !== null) {
+            const inner: string | undefined = this.layerBlock(this.preludeOf(atrule), context.layer);
+            if (inner !== undefined) {
+                this.readStyleBlock(atrule.block, compiled, { ...context, layer: inner }, rules, list);
+            }
+        } else if (name === "layer") {
+            this.layerStatement(this.preludeOf(atrule), context.layer);
+        } else if (name === "scope") {
+            this.readScope(atrule, context, rules, list, compiled);
+        }
+    }
+
+    private readScope(atrule: Atrule, context: Reading, rules: Array<CompiledRule>, parent?: SelectorList, parentCompiled?: ReadonlyArray<CompiledSelector>): void {
+        // CSS Cascade 6 §2.5.2: @scope [(<scope-start>)]? [to (<scope-end>)]? { <rule-list> }, pseudo-elements invalid in both lists;
+        // §2.5.4: without <scope-start> the scoping root is the root of the document; §2.5.5: a start is relative to the outer context.
+        if (atrule.block === null) {
+            return;
+        }
+        const bounds: { root: SelectorList | null; limit: SelectorList | null } | undefined = atrule.prelude !== null && atrule.prelude.type === "Raw"
+            ? this.rawScope(atrule.prelude.value) : this.parsedScope(atrule);
+        if (bounds === undefined) {
+            return;
+        }
+        const startList: SelectorList | undefined = bounds.root === null ? undefined : (parent !== undefined ? this.nestedList(bounds.root, parent) : this.withNesting(bounds.root, context.scopeStart));
+        // CSS Cascade 6 §2.5.3: & stands for :is(<scope-start>); CSS Nesting 1 §3.3.1: in a nested @scope it behaves like :where(:scope).
+        const ampersand: SelectorList | undefined = parent !== undefined ? this.selectorList(":where(:scope)") : startList;
+        const start: Array<CompiledSelector> | undefined = startList === undefined ? undefined : this.compileList(startList, context.namespaces);
+        const endList: SelectorList | undefined = bounds.limit === null ? undefined : this.withNesting(bounds.limit, ampersand);
+        const end: Array<CompiledSelector> | undefined = endList === undefined ? undefined : this.compileList(endList, context.namespaces);
+        if ((startList !== undefined && start === undefined) || (endList !== undefined && end === undefined)
+            || start?.some((selector: CompiledSelector) => selector.pseudoElement !== undefined) === true
+            || end?.some((selector: CompiledSelector) => selector.pseudoElement !== undefined) === true) {
+            return;
+        }
+        const scope: Scope = {};
+        if (start !== undefined) {
+            scope.start = start;
+        }
+        if (end !== undefined) {
+            scope.end = end;
+        }
+        if (context.scope !== undefined) {
+            scope.parent = context.scope;
+        }
+        if (start === undefined && this.owner !== undefined) {
+            // Cascade 6 §2.5.4: without <scope-start> the scoping root is the parent element of the owner node of the style sheet.
+            this.rootOf.set(scope, this.owner);
+        }
+        const inner: Reading = { baseUrl: context.baseUrl, namespaces: context.namespaces, layer: context.layer, containers: context.containers, scope };
+        if (ampersand !== undefined) {
+            inner.scopeStart = ampersand;
+        }
+        const nodes: Array<CssNode> = this.blockItems(atrule.block);
+        if (parentCompiled !== undefined) {
+            // CSS Nesting 1 §3.3 and §5: nested in a style rule the block holds <block-contents>, and its declarations form nested
+            // declarations rules that match what the parent style rule matches; its style rules are scoped style rules.
+            this.readStyleBlock({ type: "Block", children: new List<CssNode>().fromArray(nodes) } as Block, parentCompiled, inner, rules);
+        } else {
+            this.readRules(nodes, inner, rules);
+        }
+    }
+
+    private parsedScope(atrule: Atrule): { root: SelectorList | null; limit: SelectorList | null } | undefined {
+        if (atrule.prelude === null) {
+            return { root: null, limit: null };
+        }
+        const prelude: CssNode | null = atrule.prelude.type === "AtrulePrelude" ? atrule.prelude.children.first : null;
+        if (prelude === null || prelude.type !== "Scope") {
+            return undefined;
+        }
+        const root: CssNode | null = prelude.root;
+        const limit: CssNode | null = prelude.limit;
+        if ((root !== null && root.type !== "SelectorList") || (limit !== null && limit.type !== "SelectorList")) {
+            return undefined;
+        }
+        return { root: root as SelectorList | null, limit: limit as SelectorList | null };
+    }
+
+    private rawScope(text: string): { root: SelectorList | null; limit: SelectorList | null } | undefined {
+        // A prelude whose selectors css-tree cannot read is taken as [(<scope-start>)]? [to (<scope-end>)]? and each list parsed apart.
+        let rest: string = text.trim();
+        let root: SelectorList | null = null;
+        let limit: SelectorList | null = null;
+        if (rest.startsWith("(")) {
+            const close: number = this.matchingParenthesis(rest, 0);
+            const parsed: SelectorList | undefined = close === -1 ? undefined : this.selectorText.parseList(rest.substring(1, close));
+            if (parsed === undefined) {
+                return undefined;
+            }
+            root = parsed;
+            rest = rest.substring(close + 1).trim();
+        }
+        const to: RegExpExecArray | null = /^to\s*\(/i.exec(rest);
+        if (to !== null) {
+            const open: number = to[0].length - 1;
+            const close: number = this.matchingParenthesis(rest, open);
+            const parsed: SelectorList | undefined = close === -1 ? undefined : this.selectorText.parseList(rest.substring(open + 1, close));
+            if (parsed === undefined) {
+                return undefined;
+            }
+            limit = parsed;
+            rest = rest.substring(close + 1).trim();
+        }
+        return rest.length === 0 ? { root, limit } : undefined;
+    }
+
+    private matchingParenthesis(text: string, open: number): number {
+        // Read as tokens, since a parenthesis inside a string or a comment does not count.
+        let depth: number = 0;
+        let found: number = -1;
+        tokenize(text, (type: number, start: number, end: number) => {
+            if (found !== -1 || end <= open) {
+                return;
+            }
+            if (type === tokenTypes.LeftParenthesis || type === tokenTypes.Function) {
+                depth++;
+            } else if (type === tokenTypes.RightParenthesis && --depth === 0) {
+                found = start;
+            }
+        });
+        return found;
+    }
+
+    private scopedList(list: SelectorList, scopeStart?: SelectorList): SelectorList {
+        // CSS Cascade 6 §2.5.3: a scoped selector without & or :scope is relative to the scoping root, which adds no specificity.
+        const scoped: Array<CssNode> = [];
+        for (const item of list.children) {
+            if (item.type !== "Selector") {
+                scoped.push(item);
+                continue;
+            }
+            const selector: Selector = this.withNesting({ type: "SelectorList", children: new List<CssNode>().fromArray([item]) } as SelectorList, scopeStart).children.first as Selector;
+            let anchored: boolean = false;
+            walk(item, (node: CssNode) => {
+                anchored = anchored || node.type === "NestingSelector" || (node.type === "PseudoClassSelector" && node.name.toLowerCase() === "scope");
+            });
+            const first: CssNode | null = selector.children.first;
+            const relative: boolean = first !== null && first.type === "Combinator";
+            if (relative || !anchored) {
+                if (!relative) {
+                    selector.children.prependData({ type: "Combinator", name: " " });
+                }
+                selector.children.prependData((this.selectorList(":where(:scope)").children.first as Selector).children.first as CssNode);
+            }
+            scoped.push(selector);
+        }
+        return { type: "SelectorList", children: new List<CssNode>().fromArray(scoped) } as SelectorList;
+    }
+
+    private withNesting(list: SelectorList, replacement?: SelectorList): SelectorList {
+        // Inside @scope, & stands for :is(<scope-start>), or for :scope when there is no start.
+        const copy: SelectorList = clone(list) as SelectorList;
+        if (replacement !== undefined) {
+            walk(copy, {
+                visit: "NestingSelector",
+                enter: (node: CssNode, listItem: ListItem<CssNode>, siblings: List<CssNode>) => {
+                    siblings.replace(listItem, siblings.createItem(this.isOf(replacement)));
+                }
+            });
+        }
+        return copy;
+    }
+
+    private selectorList(text: string): SelectorList {
+        return parse(text, { context: "selectorList" }) as SelectorList;
+    }
+
+    private nestedList(list: SelectorList, parent: SelectorList): SelectorList {
+        // CSS Nesting 1 §3.1 and §4: & stands for :is(parent selectors); a selector without & is relative to them.
+        const nested: Array<CssNode> = [];
+        for (const item of list.children) {
+            if (item.type !== "Selector") {
+                nested.push(item);
+                continue;
+            }
+            const selector: Selector = clone(item) as Selector;
+            let hasNesting: boolean = false;
+            walk(selector, (node: CssNode) => {
+                hasNesting = hasNesting || node.type === "NestingSelector";
+            });
+            if (hasNesting) {
+                walk(selector, {
+                    visit: "NestingSelector",
+                    enter: (node: CssNode, listItem: ListItem<CssNode>, siblings: List<CssNode>) => {
+                        siblings.replace(listItem, siblings.createItem(this.isOf(parent)));
+                    }
+                });
+            } else {
+                const first: CssNode | null = selector.children.first;
+                if (first === null || first.type !== "Combinator") {
+                    selector.children.prependData({ type: "Combinator", name: " " });
+                }
+                selector.children.prependData(this.isOf(parent));
+            }
+            nested.push(selector);
+        }
+        return { type: "SelectorList", children: new List<CssNode>().fromArray(nested) } as SelectorList;
+    }
+
+    private isOf(parent: SelectorList): CssNode {
+        return { type: "PseudoClassSelector", name: "is", children: new List<CssNode>().fromArray([clone(parent)]) } as CssNode;
+    }
+
+    private blockItems(block: Block): Array<CssNode> {
+        // A nested rule that does not start with "&" leaves the rest of the block as raw text; CSS Syntax 3 §5.5.5 reads it as
+        // declarations and qualified rules.
+        const items: Array<CssNode> = [];
+        for (const child of block.children) {
+            if (child.type === "Raw") {
+                items.push(...this.rawItems(child.value));
+            } else {
+                items.push(child);
+            }
+        }
+        return items;
+    }
+
+    private rawItems(text: string): Array<CssNode> {
+        const items: Array<CssNode> = [];
+        let start: number = 0;
+        let depth: number = 0;
+        let sawBlock: boolean = false;
+        tokenize(text, (type: number, tokenStart: number, tokenEnd: number) => {
+            if (type === tokenTypes.LeftCurlyBracket || type === tokenTypes.LeftParenthesis || type === tokenTypes.LeftSquareBracket || type === tokenTypes.Function) {
+                depth++;
+                sawBlock = sawBlock || (type === tokenTypes.LeftCurlyBracket && depth === 1);
+            } else if (type === tokenTypes.RightCurlyBracket || type === tokenTypes.RightParenthesis || type === tokenTypes.RightSquareBracket) {
+                depth--;
+                if (depth === 0 && type === tokenTypes.RightCurlyBracket && sawBlock) {
+                    items.push(...this.parseItem(text.substring(start, tokenEnd), true));
+                    start = tokenEnd;
+                    sawBlock = false;
+                }
+            } else if (type === tokenTypes.Semicolon && depth === 0) {
+                items.push(...this.parseItem(text.substring(start, tokenStart), false));
+                start = tokenEnd;
+            }
+        });
+        if (text.substring(start).trim().length > 0) {
+            items.push(...this.parseItem(text.substring(start), sawBlock));
+        }
+        return items;
+    }
+
+    private parseItem(text: string, block: boolean): Array<CssNode> {
+        const trimmed: string = text.trim();
+        if (trimmed.length === 0) {
+            return [];
+        }
+        try {
+            if (block) {
+                const parsed: StyleSheet = parse(trimmed) as StyleSheet;
+                return parsed.children.toArray();
+            }
+            return [parse(trimmed, { context: "declaration" })];
+        } catch {
+            return [];
         }
     }
 
@@ -742,12 +1246,26 @@ export class SvgStyles {
         this.hostCandidates(node, add);
         for (const [rules, agent] of [[this.agentRules, true], [this.authorRules, false]] as Array<[ReadonlyArray<CompiledRule>, boolean]>) {
             rules.forEach((rule: CompiledRule, order: number) => {
-                const specificity: readonly [number, number, number] | undefined = this.specificity(node, rule[0]);
+                // Without a host document there is no query container, so a container query is unknown and its rules do not apply.
+                if (rule[4].length > 0 && (this.hostHolds === undefined || !this.hostHolds(rule[4]))) {
+                    return;
+                }
+                let specificity: readonly [number, number, number] | undefined;
+                let proximity: number = Number.POSITIVE_INFINITY;
+                if (rule[3] === undefined) {
+                    specificity = this.specificity(node, rule[0]);
+                } else {
+                    const found: readonly [readonly [number, number, number], number] | undefined = this.scoped(node, rule[0], rule[3]);
+                    if (found !== undefined) {
+                        [specificity, proximity] = found;
+                    }
+                }
                 if (specificity !== undefined) {
                     const rank: number = agent ? 0 : this.rank(rule[2]);
+                    const own: readonly [number, number, number] = specificity;
                     rule[1].forEach((declaration: Declaration, position: number) => {
                         const layer: number = declaration.important ? -rank : rank;
-                        add(declaration, [declaration.important ? (agent ? 4 : 3) : (agent ? 0 : 2), 0, layer, ...specificity, UNSCOPED, agent ? order : hostCount + order, position]);
+                        add(declaration, [declaration.important ? (agent ? 4 : 3) : (agent ? 0 : 2), 0, layer, ...own, -proximity, agent ? order : hostCount + order, position]);
                     });
                 }
             });
@@ -788,18 +1306,9 @@ export class SvgStyles {
             if (rule.containers.length > 0 && this.hostHolds?.(rule.containers) !== true) {
                 return;
             }
-            let specificity: readonly [number, number, number] | undefined;
-            let proximity: number = Number.POSITIVE_INFINITY;
-            for (const [root, distance] of rule.scope === undefined ? NO_SCOPE : this.scopeMatches(node, rule.scope)) {
-                const found: readonly [number, number, number] | undefined = this.inScopeOf(root, () => this.specificity(node, rule.selectors));
-                const difference: number = found === undefined ? -1 : (specificity === undefined ? 1 : this.compare(found, specificity));
-                if (found !== undefined && (difference > 0 || (difference === 0 && distance < proximity))) {
-                    specificity = found;
-                    proximity = distance;
-                }
-            }
-            const own: readonly [number, number, number] | undefined = specificity;
-            if (own !== undefined) {
+            const found: readonly [readonly [number, number, number], number] | undefined = this.scoped(node, rule.selectors, rule.scope);
+            if (found !== undefined) {
+                const [own, proximity]: readonly [readonly [number, number, number], number] = found;
                 const rank: number = this.rank(this.hostLayers[rule.layer][0]);
                 rule.declarations.forEach((declaration: Declaration, position: number) => {
                     add(declaration, [declaration.important ? 3 : 2, 0, declaration.important ? -rank : rank, ...own, -proximity, order, position]);
@@ -808,21 +1317,40 @@ export class SvgStyles {
         });
     }
 
+    private scoped(node: SvgNode, selectors: ReadonlyArray<CompiledSelector>, scope?: Scope): readonly [readonly [number, number, number], number] | undefined {
+        // CSS Cascade 6 §2.5.3: of the scoping roots the node is in scope of, the match with the highest specificity counts, and
+        // the nearest root breaks a tie.
+        let specificity: readonly [number, number, number] | undefined;
+        let proximity: number = Number.POSITIVE_INFINITY;
+        for (const [root, distance] of scope === undefined ? NO_SCOPE : this.scopeMatches(node, scope)) {
+            const found: readonly [number, number, number] | undefined = this.inScopeOf(root, () => this.specificity(node, selectors));
+            const difference: number = found === undefined ? -1 : (specificity === undefined ? 1 : this.compare(found, specificity));
+            if (found !== undefined && (difference > 0 || (difference === 0 && distance < proximity))) {
+                specificity = found;
+                proximity = distance;
+            }
+        }
+        return specificity === undefined ? undefined : [specificity, proximity];
+    }
+
     private scopeMatches(node: SvgNode, scope: Scope): Array<readonly [SvgNode | undefined, number]> {
         // CSS Cascade 6 §2.5: the subject must be in scope of a scoping root, and proximity counts the generations between them.
         const matches: Array<readonly [SvgNode | undefined, number]> = [];
         const outerRoots: ReadonlyArray<SvgNode | undefined> = scope.parent === undefined ? [undefined]
             : this.scopeMatches(node, scope.parent).map((match: readonly [SvgNode | undefined, number]) => match[0]);
+        const owner: XMLElement | undefined = this.rootOf.get(scope);
         let generations: number = 0;
         for (let candidate: SvgNode | undefined = node; candidate !== undefined; candidate = candidate.parent) {
             const current: SvgNode = candidate;
             if (scope.start !== undefined && outerRoots.some((outer: SvgNode | undefined) => this.matchesAny(current, scope.start as ReadonlyArray<CompiledSelector>, outer))
                 && this.inScope(node, current, scope)) {
                 matches.push([current, generations]);
+            } else if (owner !== undefined && current.element === owner && this.inScope(node, current, scope)) {
+                matches.push([current, generations]);
             }
             generations++;
         }
-        if (scope.start === undefined && this.inScope(node, undefined, scope)) {
+        if (scope.start === undefined && owner === undefined && this.inScope(node, undefined, scope)) {
             matches.push([undefined, generations]);
         }
         return matches;
