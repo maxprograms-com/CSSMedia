@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="pseudo-classes">
+    <title>Pseudo-classes</title>
+    <shortdesc>A pseudo-class starts with <codeph>:</codeph> and tests something about an element, such as its position in the <xref href="../glossaries/XML.dita">XML</xref> tree, its language, or an interaction state. Some pseudo-classes can be evaluated from the XML tree. Others depend on interaction states, a media timeline, or meanings defined by a document vocabulary, which CSSMedia does not use when processing a <xref href="../glossaries/PDF.dita">PDF</xref>.</shortdesc>
+    <conbody>
+        <p>CSSMedia accepts selector syntax only when it recognizes that syntax. A recognized pseudo-class does not necessarily match an element. The guides below distinguish pseudo-classes CSSMedia can use to match XML elements from valid pseudo-classes it accepts but does not match in PDF processing.</p>
+        <section id="child-and-sibling-position">
+            <title>Child and sibling position</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#structural-pseudos" scope="external" format="html">“Selectors 4 §13, Tree-Structural pseudo-classes”</xref>.</p>
+            <p>Structural pseudo-classes select elements by their position among siblings in the XML tree. They do not depend on how the elements are displayed.</p>
+            <pre outputclass="language-css21">chapter:first-child { color: navy; }
+chapter:last-child { color: teal; }
+chapter:only-child { color: gray; }
+chapter:first-of-type { color: purple; }
+</pre>
+            <p>
+                <codeph>:first-child</codeph>, <codeph>:last-child</codeph> and <codeph>:only-child</codeph> count all element siblings. The <codeph>-of-type</codeph> forms count siblings with the same element name and namespace. Text, comments and processing instructions are not counted as element siblings.</p>
+        </section>
+        <section id="nth-position-selectors">
+            <title>Nth-position selectors</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#child-index" scope="external" format="html">“Selectors 4 §13.3, Child-indexed Pseudo-classes”</xref>.</p>
+            <p>Use an <codeph>:nth-*</codeph> pseudo-class to select an element by its numbered position among siblings. Positions start at one. <codeph>odd</codeph> and <codeph>even</codeph> select alternating positions; <codeph>An+B</codeph> describes a repeating sequence.</p>
+            <pre outputclass="language-css21">chapter:nth-child(odd) { color: navy; }
+chapter:nth-child(2n + 1) { color: teal; }
+chapter:nth-child(2 of [status="active"]) { color: purple; }
+</pre>
+            <p>The <codeph>of</codeph> clause in <codeph>:nth-child()</codeph> and <codeph>:nth-last-child()</codeph> filters the siblings before CSSMedia counts them. The <codeph>-last-</codeph> forms count from the end. The <codeph>-of-type</codeph> forms count only siblings with the same element name and namespace.</p>
+            <p>CSSMedia matches <codeph>:nth-child()</codeph>, <codeph>:nth-last-child()</codeph>, <codeph>:nth-of-type()</codeph> and <codeph>:nth-last-of-type()</codeph>.</p>
+        </section>
+        <section id="column-position">
+            <title>Column position</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-5/#the-nth-col-pseudo" scope="external" format="html">“Selectors 5 §8.2, :nth-col() pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#the-nth-last-col-pseudo" scope="external" format="html">“Selectors 5 §8.3, :nth-last-col() pseudo-class”</xref>.</p>
+            <p>
+                <codeph>:nth-col()</codeph> and <codeph>:nth-last-col()</codeph> select cells by their position in a table column.</p>
+        </section>
+        <section id="root-empty-and-scope">
+            <title>Root, empty and scope</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#the-root-pseudo" scope="external" format="html">“Selectors 4 §13.1, :root pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#the-empty-pseudo" scope="external" format="html">“Selectors 4 §13.2, :empty pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#the-scope-pseudo" scope="external" format="html">“Selectors 4 §8.4, The Reference Element Pseudo-class: :scope”</xref>.</p>
+            <p>
+                <codeph>:root</codeph> selects the root element of the XML document. <codeph>:empty</codeph> selects an element with no child elements or non-whitespace text. Whitespace-only text, comments and processing instructions do not prevent an element from matching <codeph>:empty</codeph>.</p>
+            <p>
+                <codeph>:scope</codeph> selects the current scoping element. When CSSMedia matches a selector without another scope, the document root is the scope.</p>
+            <pre outputclass="language-css21">:root { color: navy; }
+chapter:empty { display: none; }
+:scope &gt; chapter { color: teal; }
+</pre>
+            <p>CSSMedia matches these pseudo-classes using the XML tree. The nesting selector <codeph>&amp;</codeph> is different from a pseudo-class. It refers to the parent selector inside a nested rule.</p>
+        </section>
+        <section id="selector-list-and-relational-pseudo-classes">
+            <title>Selector-list and relational pseudo-classes</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#matches" scope="external" format="html">“Selectors 4 §4.2, The Matches-Any Pseudo-class: :is()”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#negation" scope="external" format="html">“Selectors 4 §4.3, The Negation (Matches-None) Pseudo-class: :not()”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#zero-matches" scope="external" format="html">“Selectors 4 §4.4, The Specificity-adjustment Pseudo-class: :where()”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#relational" scope="external" format="html">“Selectors 4 §4.5, The Relational Pseudo-class: :has()”</xref>.</p>
+            <p>These pseudo-classes let you combine selectors. <codeph>:is()</codeph> matches an element if it matches at least one selector in its argument. <codeph>:where()</codeph> works the same way but adds no specificity. <codeph>:not()</codeph> excludes elements that match its argument. <codeph>:has()</codeph> selects an element based on a related element.</p>
+            <pre outputclass="language-css21">chapter:not([status="draft"]) { color: navy; }
+:is(chapter, appendix) &gt; title { color: teal; }
+:where([compact]) paragraph { font-size: 10pt; }
+section:has(&gt; figure) { color: purple; }
+title:has(+ paragraph) { color: gray; }
+</pre>
+            <p>
+                <codeph>:not()</codeph> makes the selector invalid if its argument contains an invalid selector. <codeph>:is()</codeph> and <codeph>:where()</codeph> discard invalid selectors from their lists. CSSMedia also accepts <codeph>:matches()</codeph> as an alias for <codeph>:is()</codeph>. A <codeph>:has()</codeph> argument cannot contain another <codeph>:has()</codeph> or a pseudo-element.</p>
+        </section>
+        <section id="language-and-direction">
+            <title>Language and direction</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#the-dir-pseudo" scope="external" format="html">“Selectors 4 §7.1, The Directionality Pseudo-class: :dir()”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#the-lang-pseudo" scope="external" format="html">“Selectors 4 §7.2, The Language Pseudo-class: :lang()”</xref>.</p>
+            <p>Use <codeph>:lang()</codeph> to select elements by language. CSSMedia checks the nearest <codeph>xml:lang</codeph> value on the element or its ancestors.</p>
+            <pre outputclass="language-css21">:lang(fr) { font-family: serif; }
+</pre>
+            <p>If no language is set, <codeph>:lang("")</codeph> matches. For <codeph>:dir(ltr)</codeph> and <codeph>:dir(rtl)</codeph>, CSSMedia scans the element’s descendant text for the first strong character using the Unicode Bidirectional Algorithm. If there is none, it checks the nearest inherited, normalized <codeph>xml:lang</codeph> value and uses its bidi classification. If there is no language or it is not classified as bidi, the direction defaults to left-to-right. The <xref href="../glossaries/CSS.dita">CSS</xref> <codeph>direction</codeph> property does not affect <codeph>:dir()</codeph>.</p>
+        </section>
+        <section id="links-and-document-location">
+            <title>Links and document location</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#the-any-link-pseudo" scope="external" format="html">“Selectors 4 §8.1, The Hyperlink Pseudo-class: :any-link”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#link" scope="external" format="html">“Selectors 4 §8.2, The Link History Pseudo-classes: :link and :visited”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#the-target-pseudo" scope="external" format="html">“Selectors 4 §8.3, The Target Pseudo-class: :target”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#local-pseudo" scope="external" format="html">“Selectors 5 §2.1, The Local Link Pseudo-class :local-link”</xref>.</p>
+            <p>CSSMedia uses its <codeph>link</codeph> property to identify elements with hyperlink destinations. <codeph>:link</codeph> and <codeph>:any-link</codeph> select those elements. <codeph>:local-link</codeph> selects a link to the same document. Its optional integer limits the number of path segments compared.</p>
+            <pre outputclass="language-css21">:any-link { color: blue; }
+:local-link { color: navy; }
+</pre>
+            <p>CSSMedia does not track browsing history, so it does not distinguish visited links. <codeph>:visited</codeph> and <codeph>:target</codeph> are accepted but do not match elements. The <xref href="../tasks/links.dita#links">
+                    <codeph>link</codeph> property</xref> is a CSSMedia extension; it supplies link destinations for XML elements.</p>
+        </section>
+        <section id="user-interaction">
+            <title>User interaction</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#useraction-pseudos" scope="external" format="html">“Selectors 4 §9, User Action Pseudo-classes”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#interest-pseudos" scope="external" format="html">“Selectors 5 §3.1, The Interest Pseudo-classes: :interest-source and :interest-target”</xref>.</p>
+            <p>User-action pseudo-classes describe states such as pointing at an element, activating it, or giving it keyboard focus. Interest pseudo-classes describe a user indicating interest in an element. These states require interaction; they do not occur during PDF processing.</p>
+            <p>
+                <codeph>:hover</codeph> means a pointing device is over an element. <codeph>:active</codeph> means the element is being activated. <codeph>:focus</codeph> means it has input focus; <codeph>:focus-visible</codeph> means that focus should be indicated; and <codeph>:focus-within</codeph> also matches an element containing the focused element. <codeph>:interest-source</codeph> and <codeph>:interest-target</codeph> identify the source and target of a user’s declared interest.</p>
+            <p>CSSMedia accepts these selectors, but none match elements in PDF processing.</p>
+        </section>
+        <section id="media-playback-and-time">
+            <title>Media playback and time</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#video-state" scope="external" format="html">“Selectors 4 §10.1, Media Playback State: the :playing, :paused, and :seeking pseudo-classes”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#media-loading-state" scope="external" format="html">“Selectors 4 §10.2, Media Loading State: the :buffering and :stalled pseudo-classes”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#sound-state" scope="external" format="html">“Selectors 4 §10.3, Sound State: the :muted and :volume-locked pseudo-classes”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#the-current-pseudo" scope="external" format="html">“Selectors 5 §5.1, The Current-element Pseudo-class: :current”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#the-past-pseudo" scope="external" format="html">“Selectors 5 §5.2, The Past-element Pseudo-class: :past”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#the-future-pseudo" scope="external" format="html">“Selectors 5 §5.3, The Future-element Pseudo-class: :future”</xref>.</p>
+            <p>
+                <codeph>:playing</codeph>, <codeph>:paused</codeph> and <codeph>:seeking</codeph> describe playback state. <codeph>:buffering</codeph> and <codeph>:stalled</codeph> describe media loading. <codeph>:muted</codeph> and <codeph>:volume-locked</codeph> describe sound state. The time-dimensional pseudo-classes <codeph>:current</codeph>, <codeph>:current(...)</codeph>, <codeph>:past</codeph> and <codeph>:future</codeph> describe elements in relation to a timeline, such as the current playback position or speech rendering.</p>
+            <p>CSSMedia accepts these pseudo-classes, but none match elements in a PDF. CSSMedia has no media playback state or timeline to evaluate.</p>
+        </section>
+        <section id="input-and-interface-state">
+            <title>Input and interface state</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#enableddisabled" scope="external" format="html">“Selectors 4 §12.1.1, The :enabled and :disabled Pseudo-classes”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#rw-pseudos" scope="external" format="html">“Selectors 4 §12.1.2, The Mutability Pseudo-classes: :read-only and :read-write”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#placeholder" scope="external" format="html">“Selectors 4 §12.1.3, The Placeholder-shown Pseudo-class: :placeholder-shown”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#autofill" scope="external" format="html">“Selectors 4 §12.1.4, The Automatic Input Pseudo-class: :autofill”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#the-default-pseudo" scope="external" format="html">“Selectors 4 §12.1.5, The Default-option Pseudo-class: :default”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#checked" scope="external" format="html">“Selectors 4 §12.2.1, The Selected-option Pseudo-classes: :checked, :unchecked, and :indeterminate”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#validity-pseudos" scope="external" format="html">“Selectors 4 §12.3.1, The Validity Pseudo-classes: :valid and :invalid”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#range-pseudos" scope="external" format="html">“Selectors 4 §12.3.2, The Range Pseudo-classes: :in-range and :out-of-range”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#opt-pseudos" scope="external" format="html">“Selectors 4 §12.3.3, The Optionality Pseudo-classes: :required and :optional”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#user-pseudos" scope="external" format="html">“Selectors 4 §12.3.4, The User-interaction Pseudo-classes: :user-valid and :user-invalid”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#blank" scope="external" format="html">“Selectors 5 §4.1.1, The Empty-Value Pseudo-class: :blank”</xref>.</p>
+            <p>These pseudo-classes describe form controls and interface states. <codeph>:enabled</codeph> and <codeph>:disabled</codeph> test whether a control can be used. <codeph>:read-write</codeph> tests whether its value can be changed; <codeph>:placeholder-shown</codeph> tests whether placeholder text is visible; <codeph>:autofill</codeph> tests whether a value was filled automatically; and <codeph>:default</codeph> identifies a default control. <codeph>:checked</codeph>, <codeph>:unchecked</codeph> and <codeph>:indeterminate</codeph> test selection state. <codeph>:valid</codeph> and <codeph>:invalid</codeph> test constraint validation; <codeph>:in-range</codeph> and <codeph>:out-of-range</codeph> test a value against its allowed range. <codeph>:required</codeph> and <codeph>:optional</codeph> test whether a value is required. <codeph>:user-valid</codeph> and <codeph>:user-invalid</codeph> test validity after user interaction. <codeph>:blank</codeph> tests whether a control’s value is empty.</p>
+            <p>Their meaning depends on behavior defined by a host language, such as HTML. CSSMedia treats XML names and attributes as data and does not infer that an element is a form control.</p>
+            <p>CSSMedia accepts <codeph>:enabled</codeph>, <codeph>:disabled</codeph>, <codeph>:read-write</codeph>, <codeph>:placeholder-shown</codeph>, <codeph>:autofill</codeph>, <codeph>:default</codeph>, <codeph>:checked</codeph>, <codeph>:unchecked</codeph>, <codeph>:indeterminate</codeph>, <codeph>:blank</codeph>, <codeph>:valid</codeph>, <codeph>:invalid</codeph>, <codeph>:in-range</codeph>, <codeph>:out-of-range</codeph>, <codeph>:required</codeph>, <codeph>:optional</codeph>, <codeph>:user-valid</codeph> and <codeph>:user-invalid</codeph>, but none match elements. <codeph>:read-only</codeph> matches every element.</p>
+        </section>
+        <section id="document-language-defined-states">
+            <title>Document-language-defined states</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-5/#custom-state" scope="external" format="html">“Selectors 5 §6, Exposing custom state: the :state() pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-5/#headings" scope="external" format="html">“Selectors 5 §7, Heading Structures: the heading pseudo-classes :heading, and :heading()”</xref>.</p>
+            <p>Some pseudo-classes depend on states or semantics supplied by a document vocabulary. <codeph>:state(name)</codeph> checks a custom element state. <codeph>:heading</codeph> and <codeph>:heading()</codeph> depend on which elements the vocabulary defines as headings and what levels they represent.</p>
+            <p>CSSMedia accepts <codeph>:state()</codeph>, <codeph>:heading</codeph> and <codeph>:heading()</codeph>, but they do not match elements because CSSMedia does not assign custom states or heading semantics to XML elements.</p>
+        </section>
+        <section id="interface-and-presentation-states">
+            <title>Interface and presentation states</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#open-state" scope="external" format="html">“Selectors 4 §11.1, Collapse State: the :open pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#popover-open-state" scope="external" format="html">“Selectors 4 §11.2, Popover State: the :popover-open pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#modal-state" scope="external" format="html">“Selectors 4 §11.3, Modal (Exclusive Interaction) State: the :modal pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#fullscreen-state" scope="external" format="html">“Selectors 4 §11.4, Fullscreen Presentation State: the :fullscreen pseudo-class”</xref>; <xref href="https://www.w3.org/TR/selectors-4/#pip-state" scope="external" format="html">“Selectors 4 §11.5, Picture-in-Picture Presentation State: the :picture-in-picture pseudo-class”</xref>.</p>
+            <p>
+                <codeph>:open</codeph> identifies an open or expanded element. <codeph>:popover-open</codeph> identifies an open popover. <codeph>:modal</codeph> identifies an element in modal presentation. <codeph>:fullscreen</codeph> identifies an element shown in fullscreen mode, and <codeph>:picture-in-picture</codeph> identifies an element presented in picture-in-picture mode.</p>
+            <p>These are interface or presentation states that CSSMedia does not provide. It accepts the pseudo-classes, but they do not match elements.</p>
+        </section>
+        <section id="defined-elements">
+            <title>Defined elements</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#the-defined-pseudo" scope="external" format="html">“Selectors 4 §5.4, The Defined Pseudo-class: :defined”</xref>.</p>
+            <p>
+                <codeph>:defined</codeph> tests whether the document vocabulary distinguishes fully defined elements from undefined ones. XML as processed by CSSMedia has no separate defined or constructed state, so <codeph>:defined</codeph> matches every element.</p>
+        </section>
+    </conbody>
+</concept>
+

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="cascade-and-declarations">
+    <title>Cascade and declarations</title>
+    <shortdesc><xref href="../glossaries/CSS.dita">CSS</xref> rules associate selectors with declarations. A declaration has a property name, a colon, a value and a semicolon:</shortdesc>
+    <conbody>
+        <pre outputclass="language-css21">chapter {
+    color: navy;
+    margin: 1em;
+}
+</pre>
+        <p>The <b>cascade</b> is the process that decides which declaration sets a property on an element when several declarations apply to it. It compares the declarations one criterion at a time and keeps the winner.</p>
+        <p>For each element and property, the cascade chooses among the declarations that apply. It does not choose one declaration for an entire rule. One rule can win for <codeph>color</codeph> while another wins for <codeph>margin</codeph>.</p>
+        <section id="from-a-declaration-to-a-value">
+            <title>From a declaration to a value</title>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#value-stages" scope="external" format="html">CSS Cascade 5 §4, Value Processing</xref>; <xref href="https://www.w3.org/TR/css-cascade-5/#filtering" scope="external" format="html">CSS Cascade 5 §5, Filtering</xref>.</p>
+            <p>CSS processes a property through several value stages:</p>
+            <ol>
+                <li>A declared value is the value written in a declaration.</li>
+                <li>A cascaded value is the result of comparing the applicable declarations.</li>
+                <li>A specified value resolves CSS-wide keywords and uses inheritance or the property’s initial value when needed.</li>
+                <li>A computed value resolves values that can be determined without knowing the final layout.</li>
+                <li>A used value incorporates information available during layout.</li>
+                <li>An actual value is the value that can be represented in the output medium.</li>
+            </ol>
+            <p>The cascade concerns the first two stages. Inheritance and defaulting follow the cascade. Computation and layout follow those stages.</p>
+            <p>Declarations are filtered before they compete. A rule must apply to the element, its selector must match, and its enclosing conditions must hold. A declaration with an unknown property or invalid value does not provide a candidate. A value that becomes invalid only after substitution is different: it fails after the cascade has already chosen it. See <xref href="inheritance-and-defaults.dita#inheritance-and-defaults">Inheritance and default values</xref> and <xref href="../tasks/custom-properties.dita#custom-properties">Custom properties and substitution</xref>.</p>
+            <p>CSSMedia processes declarations from its user-agent rules and author stylesheets. The cascade guides explain the CSS rules used to select values from those declarations.</p>
+        </section>
+        <section id="guides-in-this-topic">
+            <title>Guides in this topic</title>
+            <ul>
+                <li>
+                    <xref href="cascade-order.dita#cascade-order">Cascade order and layers</xref>: importance, origins, layers, specificity, scope proximity and source order.</li>
+                <li>
+                    <xref href="inheritance-and-defaults.dita#inheritance-and-defaults">Inheritance and default values</xref>: inherited values, initial values and CSS-wide keywords.</li>
+                <li>
+                    <xref href="shorthand-properties.dita#shorthand-properties">Shorthand properties</xref>: how shorthand declarations set and reset longhands.</li>
+                <li>
+                    <xref href="../tasks/custom-properties.dita#custom-properties">Custom properties and substitution</xref>: custom properties, <codeph>var()</codeph>, <codeph>attr()</codeph> and <codeph>@property</codeph>.</li>
+                <li>
+                    <xref href="../tasks/conditional-rules.dita#conditional-rules">Conditional rules</xref>: when rules participate in the cascade and how imported stylesheets are ordered.</li>
+            </ul>
+        </section>
+    </conbody>
+</concept>
+

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="DTD">
+    <glossterm>DTD</glossterm>
+    <glossdef>A Document Type Definition (DTD) is a grammar, defined by the <xref
+            href="https://www.w3.org/TR/xml/#dt-doctype" format="html" scope="external">XML
+            specification</xref>, that declares the elements and attributes an XML document may
+        use. A document points to its DTD in its document type declaration. When the DTD is not at
+        the location the document names, an <xref href="OASISCatalog.dita">OASIS Catalog</xref>
+        tells CSSMedia where to find it.</glossdef>
+</glossentry>

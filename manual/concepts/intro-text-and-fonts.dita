@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introTextAndFonts">
+    <title>Text and fonts</title>
+    <shortdesc>The font properties in your stylesheet decide how text looks in the <xref href="../glossaries/PDF.dita">PDF</xref>.</shortdesc>
+    <conbody>
+        <p>Choose a family, size and weight first. Load your own fonts when you need ones that are not
+            available, and use font features for finer control. These topics explain each step:</p>
+        <ul>
+            <li><xref href="../tasks/font-properties.dita"/></li>
+            <li><xref href="../tasks/font-faces.dita"/></li>
+            <li><xref href="../tasks/font-variants.dita"/></li>
+            <li><xref href="../tasks/variable-and-color-fonts.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

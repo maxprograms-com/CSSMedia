@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="named-strings">
+    <title>Named strings</title>
+    <shortdesc>Named strings let a stylesheet save content from elements as a value and retrieve that value elsewhere. They are intended for paged content such as running headers and footers.</shortdesc>
+    <taskbody>
+        <context>
+            <p>Before writing a rule, inspect your <xref href="../glossaries/XML.dita">XML</xref> and find the element whose text or attribute you want to reuse. A <xref href="../glossaries/CSS.dita">CSS</xref> rule has a selector followed by declarations inside braces. The selector chooses which XML elements the declarations apply to. In these examples, a name such as <codeph>title</codeph> is a type selector: it matches elements with that name. It has no special meaning to CSSMedia. Replace example names such as <codeph>title</codeph>, <codeph>group</codeph>, and <codeph>item</codeph> with names that actually occur in your XML. Each declaration sets a property using <codeph>property: value;</codeph> syntax. See <xref href="../concepts/selector-matching.dita#selector-matching">Selectors overview</xref> for other ways to choose elements.</p>
+        </context>
+        <steps>
+            <step id="assign-named-strings-with-string-set">
+                <cmd>Assign named strings with <codeph>string-set</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-content-3/#propdef-string-set" scope="external" format="html">CSS Content 3 §2.7.1, The string-set property</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-content" scope="external" format="html">CSS GCPM 3 §1.1.1.1, The content() function</xref>.</p>
+                    <p>CSS Content 3 specifies <codeph>none</codeph> or one or more comma-separated pairs, each containing a <xref href="https://www.w3.org/TR/css-values-4/#identifier-value" scope="external" format="html">
+                            <codeph>&lt;custom-ident&gt;</codeph>
+                        </xref> followed by one or more strings. CSSMedia’s parser also accepts a <xref href="https://www.w3.org/TR/css-content-3/#typedef-content-content-list" scope="external" format="html">
+                            <codeph>&lt;content-list&gt;</codeph>
+                        </xref> after each name. That broader form is a CSSMedia parser extension, not the specified value grammar. The initial value is <xref href="https://www.w3.org/TR/css-content-3/#propdef-string-set" scope="external" format="html">
+                            <codeph>none</codeph>
+                        </xref>, which assigns no named strings.</p>
+                    <p>The examples below use the parser extension so you can see its accepted syntax. CSSMedia currently validates <codeph>string-set</codeph> but does not save named strings or resolve the <codeph>string()</codeph> function.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">h1 {
+    string-set: chapter-title content(text);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Here, <codeph>h1</codeph> is the selector, <codeph>string-set</codeph> is the property, and the text after the colon is its value. <codeph>chapter-title</codeph> is a name you choose for the saved value. It does not need to occur in the XML. <codeph>content(text)</codeph> takes the text from each selected element. Use the actual element name from your XML instead of <codeph>h1</codeph> if it is different. A later matching element can replace the saved value with its own text. One declaration can save multiple values:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">h1 {
+    string-set: chapter-title content(text), chapter-label "Chapter " counter(chapter);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The <codeph>&lt;custom-ident&gt;</codeph> is an author-defined identifier. It cannot be a CSS-wide keyword or <codeph>none</codeph>.</p>
+                    <p>The content is one or more items. The <xref href="https://www.w3.org/TR/css-gcpm-3/#content-list" scope="external" format="html">
+                            <codeph>&lt;content-list&gt;</codeph>
+                        </xref> grammar allows these forms:</p>
+                    <ul>
+                        <li>A <xref href="https://www.w3.org/TR/css-values-4/#string-value" scope="external" format="html">
+                                <codeph>&lt;string&gt;</codeph>
+                            </xref> contributes its written text.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-lists-3/#funcdef-counter" scope="external" format="html">
+                                <codeph>counter(&lt;counter-name&gt;, &lt;counter-style&gt;?)</codeph>
+                            </xref> contributes the formatted value of the innermost counter with that name on the element.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-lists-3/#funcdef-counters" scope="external" format="html">
+                                <codeph>counters(&lt;counter-name&gt;, &lt;string&gt;, &lt;counter-style&gt;?)</codeph>
+                            </xref> contributes the formatted values of every in-scope counter with that name, from outermost to innermost, joining them with the required string.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-content" scope="external" format="html">
+                                <codeph>content()</codeph>
+                            </xref> reads text from the element or one of its generated parts.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-values-5/#funcdef-attr" scope="external" format="html">
+                                <codeph>attr(&lt;attr-name&gt; &lt;syntax&gt;?, &lt;fallback&gt;?)</codeph>
+                            </xref> contributes an attribute value. The optional syntax controls how that value is parsed; the fallback is used when the attribute is missing or cannot be parsed.</li>
+                    </ul>
+                    <div outputclass="role-h3" id="counter-functions">Counter functions</div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-lists-3/#nested-counters" scope="external" format="html">CSS Lists 3 §4.3, Nested Counters and Scope</xref>; <xref href="https://www.w3.org/TR/css-lists-3/#counter-functions" scope="external" format="html">CSS Lists 3 §4.7, Outputting Counters</xref>; <xref href="https://www.w3.org/TR/css-counter-styles-3/#typedef-counter-style" scope="external" format="html">CSS Counter Styles 3, Counter styles</xref>.</p>
+                    <p>Counters are values maintained by CSS. Use <codeph>counter-reset</codeph>, <codeph>counter-increment</codeph>, or <codeph>counter-set</codeph> to create or change them. A counter name is a <xref href="https://www.w3.org/TR/css-lists-3/#typedef-counter-name" scope="external" format="html">
+                            <codeph>&lt;custom-ident&gt;</codeph>
+                        </xref> and cannot be <codeph>none</codeph> or a CSS-wide keyword. To include a counter value in generated content, use <codeph>counter()</codeph> or <codeph>counters()</codeph>.</p>
+                    <p>A reset of a counter with the same name inside an existing counter’s scope creates a nested counter. This lets repeated structures use one counter name at every depth. On an element inside those scopes:</p>
+                    <ul>
+                        <li>
+                            <codeph>counter(name)</codeph> returns only the innermost counter named <codeph>name</codeph>.</li>
+                        <li>
+                            <codeph>counters(name, separator)</codeph> returns all in-scope counters named <codeph>name</codeph>, ordered outermost first and innermost last. <codeph>separator</codeph> is a CSS string inserted between the formatted values.</li>
+                    </ul>
+                    <p>In the sample XML below, a <codeph>group</codeph> can contain <codeph>item</codeph> elements and another nested <codeph>group</codeph>. These names are examples. If your XML uses different element names, change the selectors to match them. The <codeph>group</codeph> rule starts an <codeph>item</codeph> counter at zero for each group. The <codeph>item</codeph> rule increases that counter by one for each item. The <codeph>item::before</codeph> rule adds generated text before each item’s own text. Its <codeph>content</codeph> value calls both counter functions: <codeph>counter(item)</codeph> shows only the current, innermost number; <codeph>counters(item, ".")</codeph> shows the number at each nesting level, separated by a period.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;group&gt;
+    &lt;item&gt;First&lt;/item&gt;
+    &lt;item&gt;
+        Second
+        &lt;group&gt;
+            &lt;item&gt;Nested first&lt;/item&gt;
+            &lt;item&gt;Nested second&lt;/item&gt;
+        &lt;/group&gt;
+    &lt;/item&gt;
+&lt;/group&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">group {
+    counter-reset: item;
+}
+
+item {
+    counter-increment: item;
+}
+
+item::before {
+    content: counter(item) " (" counters(item, ".") ") ";
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The first two items display <codeph>1 (1)</codeph> and <codeph>2 (2)</codeph>. The nested items display <codeph>1 (2.1)</codeph> and <codeph>2 (2.2)</codeph>. In each function, the optional <xref href="https://www.w3.org/TR/css-counter-styles-3/#typedef-counter-style" scope="external" format="html">
+                            <codeph>&lt;counter-style&gt;</codeph>
+                        </xref> selects how each number is represented. If omitted, the style is <codeph>decimal</codeph>. For example, <codeph>counters(item, ".", upper-roman)</codeph> joins values formatted as uppercase Roman numerals. A <codeph>&lt;counter-style&gt;</codeph> can be the name of a predefined or author-defined <codeph>@counter-style</codeph>, or a <xref href="https://www.w3.org/TR/css-counter-styles-3/#funcdef-symbols" scope="external" format="html">
+                            <codeph>symbols()</codeph>
+                        </xref> function.</p>
+                    <p>If the named counter does not exist at the point of use, CSS first creates it with a value of <codeph>0</codeph>. The counter functions return formatted text; they do not substitute the source element’s contents.</p>
+                    <p>The <codeph>content()</codeph> function takes one optional keyword:</p>
+                    <ul>
+                        <li>
+                            <codeph>text</codeph> reads the element’s text, treating whitespace as if <codeph>white-space: normal</codeph> applied. This is the default when the argument is omitted.</li>
+                        <li>
+                            <codeph>before</codeph> reads the text of the element’s <codeph>::before</codeph> pseudo-element.</li>
+                        <li>
+                            <codeph>after</codeph> reads the text of its <codeph>::after</codeph> pseudo-element.</li>
+                        <li>
+                            <codeph>first-letter</codeph> reads the first typographic letter, following the rules for <codeph>::first-letter</codeph>.</li>
+                    </ul>
+                    <div outputclass="role-h3" id="read-element-text-and-attributes">Read element text and attributes</div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-content" scope="external" format="html">CSS GCPM 3 §1.1.1.1, The content() function</xref>; <xref href="https://www.w3.org/TR/css-values-5/#attr-notation" scope="external" format="html">CSS Values 5 §7.7, The attr() notation</xref>.</p>
+                    <p>Use <codeph>content(text)</codeph> to save an element’s text from the XML tree, including text inside descendant elements, in document order. Whitespace is handled as if <codeph>white-space: normal</codeph> applied. Text generated by <codeph>::before</codeph> or <codeph>::after</codeph> is not part of this value. Use <codeph>content(before)</codeph> or <codeph>content(after)</codeph> to read the corresponding pseudo-element’s generated text instead.</p>
+                    <p>Use <codeph>attr(name)</codeph> to save an attribute from the element matched by the rule. Without a syntax, CSS treats the attribute’s literal value as a string. If the attribute is missing, the value is an empty string unless you provide a fallback. A fallback can supply text for missing or unparseable attribute values.</p>
+                    <p>This sample XML has a <codeph>title</codeph> element, a <codeph>code</codeph> attribute, and an <codeph>em</codeph> child element. These names are examples; use the names and attributes present in your own XML. A CSS selector containing just <codeph>title</codeph> matches each <codeph>title</codeph> element. A selector such as <codeph>title::before</codeph> targets generated content before that element’s XML text.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;title code="A-4"&gt;Install &lt;em&gt;the package&lt;/em&gt;&lt;/title&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    string-set: title-text content(text), title-prefix content(before), title-code attr(code, "No code");
+}
+
+title::before {
+    content: "Chapter ";
+}
+
+@page {
+    @top-left {
+        content: string(title-prefix) string(title-code);
+    }
+    @top-right {
+        content: string(title-text);
+    }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Inside the <codeph>title</codeph> rule, the three comma-separated assignments save three values. <codeph>title-text</codeph> is the name chosen for the element’s text. <codeph>title-prefix</codeph> saves what the <codeph>::before</codeph> rule generates. <codeph>title-code</codeph> saves the <codeph>code</codeph> attribute, or “No code” when that attribute is missing. <codeph>attr(code)</codeph> reads from the element selected by <codeph>title</codeph>, not a child or ancestor.</p>
+                    <p>The <codeph>@page</codeph> rule applies settings to pages in the <xref href="../glossaries/PDF.dita">PDF</xref>. The nested <codeph>@top-left</codeph> and <codeph>@top-right</codeph> rules put content in the left and right positions of the top page margin. Their <codeph>content</codeph> declarations retrieve the saved values with <codeph>string(name)</codeph>. The left margin displays “Chapter A-4”; the right margin displays “Install the package”. For a title without <codeph>code</codeph>, the left margin displays “Chapter No code”.</p>
+                    <p>A named string’s value is assigned when the element’s content box is created, or would be created if <codeph>display: none</codeph> applies. The values can change as matching elements occur in the document. The layout process must retain these successive assignments because <codeph>string()</codeph> can request a value from a particular point on a page.</p>
+                </info>
+            </step>
+            <step id="retrieve-a-named-string-with-string">
+                <cmd>Retrieve a named string with <codeph>string()</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-string" scope="external" format="html">CSS GCPM 3 §1.1.2, The string() function</xref>; <xref href="https://www.w3.org/TR/css-page-3/#at-page-rule" scope="external" format="html">CSS Paged Media 3 §4.1, The @page rule</xref>; <xref href="https://www.w3.org/TR/css-page-3/#margin-at-rules" scope="external" format="html">CSS Paged Media 3 §5.1, At-rules for page-margin boxes</xref>.</p>
+                    <p>Use <codeph>string(&lt;custom-ident&gt;, &lt;mode&gt;?)</codeph> in a content value to retrieve a named string. The first argument is the name you wrote in <codeph>string-set</codeph>. The optional second argument selects which assignment to use on the page. For example, <codeph>chapter-title</codeph> below must match the name after <codeph>string-set</codeph> in the earlier example, or the name you used in your own stylesheet.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    @top-center {
+        content: string(chapter-title, first);
+    }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The mode accepts these four keywords:</p>
+                    <ul>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-gcpm-3/#string-first" scope="external" format="html">
+                                <codeph>first</codeph>
+                            </xref> selects the first assignment on the page. If there is no assignment there, it uses the value in effect at the end of the previous page. This is the default.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-gcpm-3/#string-start" scope="external" format="html">
+                                <codeph>start</codeph>
+                            </xref> selects the value in effect at the beginning of the page. If the named string has not yet been assigned, this value is empty.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-gcpm-3/#string-last" scope="external" format="html">
+                                <codeph>last</codeph>
+                            </xref> selects the value in effect at the end of the page.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-gcpm-3/#string-first-except" scope="external" format="html">
+                                <codeph>first-except</codeph>
+                            </xref> works like <codeph>first</codeph>, but returns an empty value on a page that contains an assignment to the named string.</li>
+                    </ul>
+                    <p>The <codeph>@page</codeph> rule describes the page being produced. <codeph>@top-center</codeph> puts this content in the center of the top page margin.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+

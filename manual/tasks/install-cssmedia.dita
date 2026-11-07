@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="install-cssmedia">
+    <title>Install CSSMedia</title>
+    <shortdesc>Follow these steps to build CSSMedia from source or to install it as a global
+        command.</shortdesc>
+    <taskbody>
+        <steps>
+            <step>
+                <cmd>Clone the CSSMedia project and build it with npm:</cmd>
+                <stepxmp>
+                    <pre>git clone https://github.com/maxprograms-com/CSSMedia.git
+cd CSSMedia
+npm install
+npm run build</pre>
+                </stepxmp>
+            </step>
+            <step>
+                <cmd>Check that the build works by running CSSMedia:</cmd>
+                <stepxmp>
+                    <pre>node dist/cssmedia.js</pre>
+                </stepxmp>
+                <info>
+                    <p>Without parameters, CSSMedia displays its help.</p>
+                </info>
+            </step>
+            <step importance="optional">
+                <cmd>To use the <codeph>cssmedia</codeph> command from any folder, install the package
+                    globally:</cmd>
+                <stepxmp>
+                    <pre>npm i -g file:cssmedia-x.x.x.tgz</pre>
+                </stepxmp>
+                <info>
+                    <p>Download or build the package first, and replace <codeph>x.x.x</codeph> with
+                        its version.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

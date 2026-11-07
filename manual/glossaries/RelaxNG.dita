@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="RelaxNG">
+    <glossterm>RelaxNG</glossterm>
+    <glossdef><xref href="https://relaxng.org/" format="html" scope="external">RelaxNG</xref> is a
+        schema language for <xref href="XML.dita">XML</xref>, standardized as ISO/IEC 19757-2. A
+        RelaxNG schema describes the structure of a document in an XML syntax or in a compact
+        non-XML syntax. It is an alternative to a <xref href="DTD.dita">DTD</xref> and to an <xref
+            href="XMLSchema.dita">XML Schema</xref>, and it can be located with an <xref
+            href="OASISCatalog.dita">OASIS Catalog</xref>.</glossdef>
+</glossentry>

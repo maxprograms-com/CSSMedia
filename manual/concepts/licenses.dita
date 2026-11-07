@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="licenses">
+    <title>Licenses</title>
+    <conbody>
+        <p><b>CSSMedia</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/maxprograms-com/CSSMedia"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref
+                    href="https://github.com/maxprograms-com/CSSMedia/blob/main/LICENSE"
+                    format="html" scope="external">Business Source License 1.1</xref></li>
+        </ul>
+        <p><b>Adobe Core 14 AFM files</b></p>
+        <ul>
+            <li>Available from <xref
+                    href="https://download.macromedia.com/pub/developer/opentype/tech-notes/Core14_AFMs.zip"
+                    scope="external" format="html"/></li>
+            <li>Published under a permissive license, the text of which is the file
+                    <filepath>MustRead.html</filepath> inside the zip. The files may be used, copied
+                and distributed for any purpose and without charge, with or without modification,
+                provided that the copyright notices are retained, the AFM files are not distributed
+                without <filepath>MustRead.html</filepath>, and modifications are noted</li>
+        </ul>
+        <p><b>Adobe Glyph List and ITC Zapf Dingbats Glyph List</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/adobe-type-tools/agl-aglfn"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref
+                    href="https://github.com/adobe-type-tools/agl-aglfn/blob/master/LICENSE.md"
+                    format="html" scope="external">BSD 3-Clause License</xref></li>
+        </ul>
+        <p><b>css-tree</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/csstree/csstree" scope="external"
+                    format="html"/></li>
+            <li>Published under <xref href="https://github.com/csstree/csstree/blob/master/LICENSE"
+                    format="html" scope="external">MIT License</xref></li>
+        </ul>
+        <p><b>Noto Fonts</b></p>
+        <ul>
+            <li>Available from <xref href="https://fonts.google.com/noto" scope="external"
+                    format="html"/></li>
+            <li>Published under <xref
+                    href="https://github.com/notofonts/noto-fonts/blob/main/LICENSE" format="html"
+                    scope="external">SIL Open Font License 1.1</xref></li>
+        </ul>
+        <p><b>pdfnative</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/Nizoka/pdfnative" scope="external"
+                    format="html"/></li>
+            <li>Published under <xref href="https://github.com/Nizoka/pdfnative/blob/main/LICENSE"
+                    format="html" scope="external">MIT License</xref></li>
+        </ul>
+        <p><b>TeX hyphenation patterns</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/hyphenation/tex-hyphen"
+                    scope="external" format="html"/></li>
+            <li>Published under LPPL, MIT, MPL or other permissive licenses</li>
+        </ul>
+        <p><b>TypesBCP47</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/maxprograms-com/TypesBCP47"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref
+                    href="https://github.com/maxprograms-com/TypesBCP47/blob/main/LICENSE"
+                    format="html" scope="external">Eclipse Public License v1.0</xref></li>
+        </ul>
+        <p><b>TypesXML</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/maxprograms-com/TypesXML"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref
+                    href="https://github.com/maxprograms-com/TypesXML/blob/main/LICENSE"
+                    format="html" scope="external">Eclipse Public License v1.0</xref></li>
+        </ul>
+        <p><b>Unicode Character Database</b></p>
+        <ul>
+            <li>Available from <xref href="https://www.unicode.org/Public/UCD/latest/ucd/"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref href="https://www.unicode.org/license.txt" format="html"
+                    scope="external">Unicode License v3</xref></li>
+        </ul>
+        <p><b>Unicode CLDR</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/unicode-org/cldr-json"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref
+                    href="https://github.com/unicode-org/cldr-json/blob/main/LICENSE" format="html"
+                    scope="external">Unicode License v3</xref></li>
+        </ul>
+        <p><b>Universal Shaping Engine data</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/microsoft/font-tools/tree/main/USE"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref
+                    href="https://github.com/microsoft/font-tools/blob/main/LICENSE" format="html"
+                    scope="external">MIT License</xref></li>
+        </ul>
+        <p><b>W3C CSS Counter Styles Level 3</b></p>
+        <ul>
+            <li>Available from <xref href="https://www.w3.org/TR/css-counter-styles-3/"
+                    scope="external" format="html"/></li>
+            <li>Published under <xref
+                    href="https://www.w3.org/copyright/software-license-2023/" format="html"
+                    scope="external">W3C Software and Document License</xref></li>
+        </ul>
+        <p><b>W3C webref</b></p>
+        <ul>
+            <li>Available from <xref href="https://github.com/w3c/webref" scope="external"
+                    format="html"/></li>
+            <li>Published under <xref href="https://github.com/w3c/webref/blob/main/LICENSE"
+                    format="html" scope="external">MIT License</xref></li>
+        </ul>
+    </conbody>
+</concept>

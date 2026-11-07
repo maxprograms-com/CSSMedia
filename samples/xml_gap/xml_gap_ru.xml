@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "docbook/docbookx.dtd">
+<article lang="ru">
+  <articleinfo>
+    <title>Устранение несоответствий XML в TypeScript (для процессов локализации)</title>
+    <author>
+      <firstname>Родольфо М.</firstname>
+      <surname>Рая</surname>
+      <affiliation>
+        <orgname><ulink url="https://maxprograms.com">Maxprograms</ulink></orgname>
+        <address format="linespecific"><email>rmraya@maxprograms.com</email></address>
+      </affiliation>
+    </author>
+    <pubdate>17 июня 2026</pubdate>
+    <copyright>
+      <year>2026</year>
+      <holder>Maxprograms</holder>
+    </copyright>
+    <abstract>
+      <para>Описывает переход с Java на TypeScript для обработки XML в рабочих процессах локализации, а также библиотеки TypesXML, TypesBCP47 и TypesXLIFF, созданные для обеспечения валидации DTD и XML-схем для форматов TMX, XLIFF и SRX в Node.js.</para>
+    </abstract>
+  </articleinfo>
+
+  <section id="intro">
+    <title>Введение</title>
+    <para>Если вы когда-либо пытались обрабатывать XML в Node.js или TypeScript, вы, вероятно, сталкивались с одним ограничением: синтаксический анализ — дело несложное, а вот проверка на соответствие DTD или XML-схеме — нет.</para>
+    <para>Это становится настоящей проблемой при работе со стандартами локализации, такими как TMX, XLIFF или SRX, где структура и валидность не являются опциональными. Именно они определяют, пригодны ли ваши данные для использования.</para>
+    <para>Именно с этим пробелом я столкнулся и в итоге решил его устранить.</para>
+  </section>
+
+  <section id="the-old-setup-java-for-xml">
+    <title>Старая конфигурация: Java для XML</title>
+    <para>Стандарты локализации, такие как TMX, XLIFF, SRX и TBX, все основаны на XML. Когда я начал работать с ними более 20 лет назад, Java была наиболее практичным выбором. Её инструментарий для работы с XML не был идеальным, но достаточно надёжным для разбора и проверки на соответствие.</para>
+    <para>Долгое время это работало хорошо.</para>
+    <para>Проблема заключалась не в XML, а во всем, что его окружало.</para>
+    <para>Варианты пользовательского интерфейса для настольных приложений на Java не развивались так, как мне было нужно. Я много лет пользовался SWT, но поддержка этого фреймворка стала ухудшаться, а альтернативы, такие как Swing или JavaFX, меня не привлекали.</para>
+  </section>
+
+  <section id="moving-to-typescript">
+    <title>Переход на TypeScript</title>
+    <para>Примерно в 2018 году я перешёл на создание пользовательских интерфейсов с помощью HTML, CSS и JavaScript. В конечном итоге TypeScript стал очевидным выбором, поскольку он обеспечивает более безопасную модель разработки благодаря статической проверке.</para>
+    <para>Это решило проблему с пользовательским интерфейсом.</para>
+    <para>Но это породило новую проблему:</para>
+    <itemizedlist>
+      <listitem><para>Пользовательский интерфейс на TypeScript</para></listitem>
+      <listitem><para>Обработка XML по-прежнему в Java</para></listitem>
+    </itemizedlist>
+    <para>Поддержка двух стеков для одного рабочего процесса была неидеальным решением.</para>
+  </section>
+
+  <section id="the-missing-piece-xml-validation-in-typescript">
+    <title>Недостающий элемент: валидация XML в TypeScript</title>
+    <para>В то время в JavaScript существовали XML-парсеры, но ни один из них не поддерживал:</para>
+    <itemizedlist>
+      <listitem><para>валидацию по DTD</para></listitem>
+      <listitem><para>валидацию по XML-схеме</para></listitem>
+    </itemizedlist>
+    <para>Для форматов локализации это обязательное требование. Без валидации невозможно гарантировать, что файл TMX или XLIFF структурно корректен.</para>
+    <para>Поэтому я начал разрабатывать <ulink url="https://maxprograms.com/products/typesxml.html">TypesXML</ulink>— собственный XML-парсер и валидатор для TypeScript.</para>
+  </section>
+
+  <section id="a-minimal-example">
+    <title>Минимальный пример</title>
+    <para>Вот как выглядит базовый разбор XML:</para>
+    <programlisting format="linespecific" xml:space="preserve">import { Catalog, DOMBuilder, SAXParser } from "typesxml";
+
+const parser: SAXParser = new SAXParser();
+const handler: DOMBuilder = new DOMBuilder();
+const catalog = new Catalog('/pathTo/catalog.xml');
+
+parser.setCatalog(catalog);
+parser.setContentHandler(handler);
+parser.setValidating(true);
+parser.parseFile("example.xml");
+
+const document = handler.getDocument();
+console.log(document.toString());</programlisting>
+    <para>Этот же парсер можно настроить для:</para>
+    <itemizedlist>
+      <listitem><para>проверку на соответствие DTD</para></listitem>
+      <listitem><para>проверку на соответствие XML-схеме</para></listitem>
+      <listitem><para>разрешать XML-каталоги</para></listitem>
+    </itemizedlist>
+    <para>Это позволяет обрабатывать XML в Node.js с тем же уровнем контроля, который традиционно ассоциируется с библиотеками Java.</para>
+  </section>
+
+  <section id="building-the-missing-stack">
+    <title>Создание недостающего стека</title>
+    <para>Создание полного XML-стека заняло время:</para>
+    <itemizedlist>
+      <listitem><para>Сначала появились средства разбора в стиле DOM и SAX</para></listitem>
+      <listitem><para>Затем последовала валидация DTD</para></listitem>
+      <listitem><para>Проверка по XML-схеме стала последним шагом</para></listitem>
+    </itemizedlist>
+    <para>Поддержка XML-схем значительно сложнее, но она необходима для таких форматов, как XLIFF.</para>
+  </section>
+
+  <section id="supporting-pieces-language-data">
+    <title>Вспомогательные элементы: языковые данные</title>
+    <para>Рабочие процессы локализации также в значительной степени зависят от кодов языков.</para>
+    <para>Стандарт определяется BCP47, но официальные данные распространяются в виде большого текстового файла. Чтобы упростить их использование в TypeScript, я создал <ulink url="https://github.com/maxprograms-com/TypesBCP47">TypesBCP47</ulink>— вспомогательную библиотеку, которая анализирует эти данные и предоставляет их в структурированном виде.</para>
+  </section>
+
+  <section id="proof-of-concept-rewriting-existing-tools">
+    <title>Подтверждение работоспособности концепции: переработка существующих инструментов</title>
+    <para>Чтобы проверить этот подход, я переписал существующие инструменты на TypeScript:</para>
+    <itemizedlist>
+      <listitem><para><ulink url="https://maxprograms.com/products/srxeditor.html">SRXEditor</ulink></para></listitem>
+      <listitem><para><ulink url="https://maxprograms.com/products/tmxvalidator.html">TMXValidator</ulink></para></listitem>
+    </itemizedlist>
+    <para>Эти инструменты:</para>
+    <itemizedlist>
+      <listitem><para>обрабатывают большие XML-файлы</para></listitem>
+      <listitem><para>проверяют соответствие официальным грамматикам</para></listitem>
+      <listitem><para>обеспечивают производительность, сопоставимую с исходными версиями на Java</para></listitem>
+    </itemizedlist>
+    <para>Это подтвердило, что TypeScript способен справляться с реальными задачами локализации.</para>
+  </section>
+
+  <section id="xliff-support">
+    <title>Поддержка XLIFF</title>
+    <para>XLIFF использует XML-схему, что потребовало реализации полноценного валидатора схем.</para>
+    <para>После этого я создал <ulink url="https://maxprograms.com/products/typesxliff.html">TypesXLIFF</ulink>— библиотеку для разбора, генерации и проверки файлов XLIFF 2.x.</para>
+    <para>Она поддерживает:</para>
+    <itemizedlist>
+      <listitem><para>проверку на соответствие XML-схеме</para></listitem>
+      <listitem><para>проверку на соответствие спецификации XLIFF</para></listitem>
+      <listitem><para>типизированную объектную модель</para></listitem>
+      <listitem><para>преобразование в JSON</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="what-this-enables">
+    <title>Что это позволяет</title>
+    <para>Благодаря этим компонентам теперь можно:</para>
+    <itemizedlist>
+      <listitem><para>Проверять TMX, XLIFF и SRX непосредственно в Node.js</para></listitem>
+      <listitem><para>Создавать конвейеры локализации полностью на TypeScript</para></listitem>
+      <listitem><para>Избавиться от необходимости использовать отдельный бэкенд на Java</para></listitem>
+      <listitem><para>Использовать один и тот же язык для интерфейса пользователя и обработки данных</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="whats-next">
+    <title>Что дальше</title>
+    <para>Ведётся работа над поддержкой TBX, а также обновлениями других инструментов с целью их полного перехода на TypeScript.</para>
+    <para>В старых компонентах по-прежнему присутствует некоторый код на Java, но новая разработка теперь сосредоточена на TypeScript.</para>
+  </section>
+
+  <section id="closing-thoughts">
+    <title>Заключительные мысли</title>
+    <para>Долгое время для обработки XML в процессах локализации фактически требовался Java.</para>
+    <para>Теперь это уже не так.</para>
+    <para>Если вы работаете с форматами на основе XML в Node.js, особенно в локализации или конвейерах структурированных данных, теперь вы можете полностью осуществлять разбор, валидацию и обработку в TypeScript.</para>
+  </section>
+
+  <section id="author">
+    <title>Об авторе</title>
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/p-rodolfo-white.jpg"/>
+      </imageobject>
+    </mediaobject>
+    <para>Родольфо М. Рая (Rodolfo M. Raya), технический директор компании Maxprograms SAS, участвует в разработке стандартов локализации, включая XLIFF, TMX, TBX, SRX и GlossML.</para>
+    <para>Он разрабатывает инструменты и библиотеки, реализующие эти спецификации, в том числе программное обеспечение и сервисы валидации, доступные на этом сайте.</para>
+  </section>
+</article>

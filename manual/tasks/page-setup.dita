@@ -1,0 +1,435 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="page-setup">
+    <title>Define pages</title>
+    <shortdesc>Use an <codeph>@page</codeph> rule to define the page box used for paged output. The page context contains ordinary <xref href="../glossaries/CSS.dita">CSS</xref> property declarations and the <codeph>@page</codeph> descriptors <codeph>size</codeph>, <codeph>bleed</codeph>, <codeph>marks</codeph> and <codeph>page-orientation</codeph>. Ordinary properties set page-box values. Descriptors set page-specific dimensions, marks and orientation.</shortdesc>
+    <taskbody>
+        <context>
+            <p>
+                <xref href="https://www.w3.org/TR/css-page-3/#at-page-rule" scope="external" format="html">CSS Paged Media 3 §4.1, The @page Rule</xref>; <xref href="https://www.w3.org/TR/css-page-3/#syntax-page-selector" scope="external" format="html">§4.3, @page rule grammar</xref>.</p>
+        </context>
+        <steps>
+            <step id="page-rule-syntax">
+                <cmd>
+                    <codeph>@page</codeph> rule syntax</cmd>
+                <info>
+                    <p>Write <codeph>@page</codeph>, an optional comma-separated list of page selectors, and a block:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    size: A4;
+}
+
+@page :first, :left {
+    margin-top: 25mm;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The first rule has no selector and applies to every page. The second applies when either selector matches. A selector consists of an optional page-type name followed by zero or more page pseudo-classes. Do not put whitespace between the name and pseudo-classes or between pseudo-classes. Page-type names are case-sensitive identifiers; <codeph>auto</codeph> is never a matching page-type name.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#syntax-page-selector" scope="external" format="html">Page selector list and grammar</xref>; <xref href="https://www.w3.org/TR/css-page-3/#page-selectors" scope="external" format="html">Page-type selectors</xref>.</p>
+                    <p>Each declaration block can contain page-box properties and the four descriptors described below. The rule can also contain page-margin at-rules, described in <xref href="#page-setup/page-margin-rules">Page-margin rules</xref>.</p>
+                </info>
+            </step>
+            <step id="set-page-size-with-size">
+                <cmd>Set page size with <codeph>size</codeph>
+                </cmd>
+                <info>
+                    <p>The <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-size" scope="external" format="html">
+                            <codeph>size</codeph>
+                        </xref> descriptor sets the target page-box dimensions and orientation. Its initial value is <codeph>auto</codeph>. It accepts <codeph>auto</codeph>, one or two lengths, or a page-size name optionally combined with <codeph>portrait</codeph> or <codeph>landscape</codeph>.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#page-size-prop" scope="external" format="html">CSS Paged Media 3 §7.1, Page size</xref>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    size: A4;
+}
+
+@page landscape {
+    size: A4 landscape;
+}
+
+@page square {
+    size: 150mm;
+}
+
+@page custom {
+    size: 210mm 297mm;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <div outputclass="role-h3" id="size-values">
+                        <codeph>size</codeph> values</div>
+                    <ul>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-auto" scope="external" format="html">
+                                <codeph>auto</codeph>
+                            </xref> lets the user agent choose the page-box size and orientation to suit its output. CSSMedia uses A4 as its default page size.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-portrait" scope="external" format="html">
+                                <codeph>portrait</codeph>
+                            </xref> makes the shorter sides horizontal. Without a page-size name, it orients the user agent’s chosen page size this way.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-landscape" scope="external" format="html">
+                                <codeph>landscape</codeph>
+                            </xref> makes the longer sides horizontal. Without a page-size name, it orients the user agent’s chosen page size this way.</li>
+                        <li>A <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-length" scope="external" format="html">single length</xref>, such as <codeph>210mm</codeph>, sets both width and height, producing a square page box.</li>
+                        <li>Two lengths set the width first and the height second. A length must not be negative.</li>
+                    </ul>
+                    <p>The standard <xref href="https://www.w3.org/TR/css-page-3/#typedef-page-size-page-size" scope="external" format="html">
+                            <codeph>&lt;page-size&gt;</codeph> names</xref> correspond to these sheet dimensions:</p>
+                    <table id="page-setup__I_2k_">
+                        <tgroup cols="2">
+                            <thead>
+                                <row valign="middle">
+                                    <entry align="center">Value</entry>
+                                    <entry align="center">Sheet dimensions</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-a3" scope="external" format="html">
+                                            <codeph>A3</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>297 mm wide by 420 mm high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-a4" scope="external" format="html">
+                                            <codeph>A4</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>210 mm wide by 297 mm high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-a5" scope="external" format="html">
+                                            <codeph>A5</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>148 mm wide by 210 mm high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-b4" scope="external" format="html">
+                                            <codeph>B4</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>250 mm wide by 353 mm high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-b5" scope="external" format="html">
+                                            <codeph>B5</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>176 mm wide by 250 mm high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-jis-b4" scope="external" format="html">
+                                            <codeph>JIS-B4</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>257 mm wide by 364 mm high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-jis-b5" scope="external" format="html">
+                                            <codeph>JIS-B5</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>182 mm wide by 257 mm high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-letter" scope="external" format="html">
+                                            <codeph>letter</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>8.5 inches wide by 11 inches high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-legal" scope="external" format="html">
+                                            <codeph>legal</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>8.5 inches wide by 14 inches high</entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>
+                                        <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-size-ledger" scope="external" format="html">
+                                            <codeph>ledger</codeph>
+                                        </xref>
+                                    </entry>
+                                    <entry>11 inches wide by 17 inches high</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <ul>
+                        <li>
+                            <codeph>portrait</codeph> and <codeph>landscape</codeph> can each be combined with one page-size name, as in <codeph>size: A4 landscape</codeph>.</li>
+                        <li>If the declaration appears in a media query that tests page size or orientation, CSS ignores it. This avoids using the selected page size to decide which page size to select.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#page-size-prop" scope="external" format="html">CSS Paged Media 3 §7.1, Page size</xref>.</li>
+                    </ul>
+                </info>
+            </step>
+            <step id="set-page-margins">
+                <cmd>Set page margins</cmd>
+                <info>
+                    <p>Margins set the space between the page box and the page area. The page area is where the document’s boxes are laid out. CSSMedia uses the page margins when it calculates that area. If you do not set page margins, CSSMedia’s user-agent page rule sets each margin to <codeph>1in</codeph>.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#at-page-rule" scope="external" format="html">CSS Paged Media 3 §4.1, The @page Rule</xref>; <xref href="https://www.w3.org/TR/css-box-4/#margin-physical" scope="external" format="html">CSS Box Model 4 §3.1, Physical margin properties</xref>; <xref href="https://www.w3.org/TR/css-box-4/#margin-shorthand" scope="external" format="html">§3.2, Margin shorthand</xref>.</p>
+                    <div outputclass="role-h3" id="margin">
+                        <codeph>margin</codeph>
+                    </div>
+                    <p>The <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin" scope="external" format="html">
+                            <codeph>margin</codeph>
+                        </xref> shorthand sets all four page margins. It accepts one to four lengths such as <codeph>12pt</codeph>, percentages such as <codeph>5%</codeph>, or <codeph>auto</codeph>. A negative length is allowed. Its initial value is <codeph>0</codeph>, and it is not inherited.</p>
+                    <ul>
+                        <li>One value sets all four sides.</li>
+                        <li>Two values set the top and bottom, then the right and left.</li>
+                        <li>Three values set the top, left and right, then the bottom.</li>
+                        <li>Four values set the top, right, bottom and left.</li>
+                    </ul>
+                    <p>Percentages are resolved against the page size in the corresponding axis. For example, left and right margins use the page width; top and bottom margins use the page height.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    size: A4;
+    margin: 20mm 25mm;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <div outputclass="role-h3" id="individual-margin-properties">Individual margin properties</div>
+                    <p>Each longhand sets the margin on one physical side of the page box. Each accepts a length such as <codeph>12pt</codeph>, a percentage such as <codeph>5%</codeph>, or <codeph>auto</codeph>; negative lengths are allowed. Each has an initial value of <codeph>0</codeph> and is not inherited.</p>
+                    <ul>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-top" scope="external" format="html">
+                                <codeph>margin-top</codeph>
+                            </xref> sets the top margin.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-right" scope="external" format="html">
+                                <codeph>margin-right</codeph>
+                            </xref> sets the right margin.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-bottom" scope="external" format="html">
+                                <codeph>margin-bottom</codeph>
+                            </xref> sets the bottom margin.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-left" scope="external" format="html">
+                                <codeph>margin-left</codeph>
+                            </xref> sets the left margin.</li>
+                    </ul>
+                    <p>For example, use wider inner margins for two-sided pages:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page :left {
+    margin-left: 30mm;
+}
+
+@page :right {
+    margin-right: 30mm;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="select-pages">
+                <cmd>Select pages</cmd>
+                <info>
+                    <p>A page selector matches pages by page type or page position. You can combine a page type name with page pseudo-classes.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#page-selectors" scope="external" format="html">CSS Paged Media 3 §4.2, Page selectors</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#document-page-selectors" scope="external" format="html">CSS GCPM 3 §3.1, Page selectors</xref>.</p>
+                    <div outputclass="role-h3" id="page-type-names">Page-type names</div>
+                    <p>A page-type name in an <codeph>@page</codeph> selector matches pages assigned that name by the <codeph>page</codeph> property. The name is a case-sensitive custom identifier. For example, <codeph>@page wide</codeph> selects pages whose type is <codeph>wide</codeph>.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#page-selectors" scope="external" format="html">CSS Paged Media 3 §4.2, Page selectors</xref>; <xref href="https://www.w3.org/TR/css-page-3/#using-named-pages" scope="external" format="html">§8.1, Using named pages</xref>.</p>
+                    <div outputclass="role-h3" id="page-pseudo-classes">Page pseudo-classes</div>
+                    <ul>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-first" scope="external" format="html">
+                                <codeph>:first</codeph>
+                            </xref> matches the first printed page.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-left" scope="external" format="html">
+                                <codeph>:left</codeph>
+                            </xref> matches a left page, as determined by the document’s page progression.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-right" scope="external" format="html">
+                                <codeph>:right</codeph>
+                            </xref> matches a right page, as determined by the document’s page progression.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-blank" scope="external" format="html">
+                                <codeph>:blank</codeph>
+                            </xref> matches content-empty pages produced by forced page breaks.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-gcpm-3/#document-page-selectors" scope="external" format="html">
+                                <codeph>:nth(An+B)</codeph>
+                            </xref> matches pages by their document position. <codeph>A</codeph> and <codeph>B</codeph> define an arithmetic sequence: <codeph>:nth(2n)</codeph> selects pages 2, 4, 6 and so on, and <codeph>:nth(3n+1)</codeph> selects pages 1, 4, 7 and so on.</li>
+                    </ul>
+                    <p>The optional <codeph>of</codeph> clause in <xref href="https://www.w3.org/TR/css-gcpm-3/#document-page-selectors" scope="external" format="html">
+                            <codeph>:nth(An+B of page-group)</codeph>
+                        </xref> counts within the named page group instead of from the start of the document. A page group is created when an element has both a named <codeph>page</codeph> value and a forced page break. Each instance starts a new group.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-gcpm-3/#document-sequence-selectors" scope="external" format="html">CSS GCPM 3 §3.2, Page groups</xref>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page :first {
+    margin-top: 30mm;
+}
+
+@page :nth(2n) {
+    margin-top: 25mm;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="assign-a-named-page-with-page">
+                <cmd>Assign a named page with <codeph>page</codeph>
+                </cmd>
+                <info>
+                    <p>The <xref href="https://www.w3.org/TR/css-page-3/#propdef-page" scope="external" format="html">
+                            <codeph>page</codeph>
+                        </xref> property assigns a page type to a box. Its initial value is <codeph>auto</codeph>; it is not inherited. It accepts <codeph>auto</codeph> or a custom identifier that names an <codeph>@page</codeph> rule.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#using-named-pages" scope="external" format="html">CSS Paged Media 3 §8.1, Using named pages</xref>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page wide {
+    size: A4 landscape;
+}
+
+wide-table {
+    page: wide;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>When <codeph>page</codeph> is <codeph>auto</codeph>, the used page type comes from the nearest ancestor whose value is not <codeph>auto</codeph>; on the root element it is the unnamed page type. A named page type requires content to start on a page of that type, inserting a forced page break when necessary.</p>
+                </info>
+            </step>
+            <step id="set-print-marks-with-marks">
+                <cmd>Set print marks with <codeph>marks</codeph>
+                </cmd>
+                <info>
+                    <p>The <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-marks" scope="external" format="html">
+                            <codeph>marks</codeph>
+                        </xref> descriptor requests marks outside the page box. Its initial value is <codeph>none</codeph>. Marks help trim or align printed sheets and are visible only when the page box is smaller than the printable area.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#marks" scope="external" format="html">CSS Paged Media 3 §7.2, Crop and registration marks</xref>.</p>
+                    <ul>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-marks-none" scope="external" format="html">
+                                <codeph>none</codeph>
+                            </xref> requests neither crop nor registration marks.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-marks-crop" scope="external" format="html">
+                                <codeph>crop</codeph>
+                            </xref> requests short lines that indicate the page-box edges for trimming.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-marks-cross" scope="external" format="html">
+                                <codeph>cross</codeph>
+                            </xref> requests cross-shaped registration marks used to align sheets.</li>
+                        <li>
+                            <codeph>crop cross</codeph> requests both types. The grammar also accepts them in the opposite order.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    marks: crop cross;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="set-the-bleed-area-with-bleed">
+                <cmd>Set the bleed area with <codeph>bleed</codeph>
+                </cmd>
+                <info>
+                    <p>The <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-bleed" scope="external" format="html">
+                            <codeph>bleed</codeph>
+                        </xref> descriptor sets how far the bleed area extends beyond the page box before rendering is clipped. Its initial value is <codeph>auto</codeph>.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#bleed" scope="external" format="html">CSS Paged Media 3 §7.3, Bleed area</xref>.</p>
+                    <ul>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-bleed-auto" scope="external" format="html">
+                                <codeph>auto</codeph>
+                            </xref> computes to <codeph>6pt</codeph> when <codeph>marks</codeph> includes <codeph>crop</codeph>, and to zero otherwise.</li>
+                        <li>A <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-bleed-length" scope="external" format="html">length</xref>, such as <codeph>3mm</codeph>, sets the outward extension on every side. The value may be negative.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    marks: crop;
+    bleed: 3mm;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="rotate-the-laid-out-page-with-page-orientation">
+                <cmd>Rotate the laid-out page with <codeph>page-orientation</codeph>
+                </cmd>
+                <info>
+                    <p>The <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-page-orientation" scope="external" format="html">
+                            <codeph>page-orientation</codeph>
+                        </xref> descriptor changes the orientation of the laid-out page in the output, after layout. It does not change the page-box dimensions used during layout. Its initial value is <codeph>upright</codeph>; rotation applies when the output medium supports it.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#page-orientation-prop" scope="external" format="html">CSS Paged Media 3 §7.1.2, Rotating the printed page</xref>.</p>
+                    <ul>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-orientation-upright" scope="external" format="html">
+                                <codeph>upright</codeph>
+                            </xref> leaves the page orientation unchanged.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-orientation-rotate-left" scope="external" format="html">
+                                <codeph>rotate-left</codeph>
+                            </xref> rotates the page a quarter turn counter-clockwise after layout.</li>
+                        <li>
+                            <xref href="https://www.w3.org/TR/css-page-3/#valdef-page-orientation-rotate-right" scope="external" format="html">
+                                <codeph>rotate-right</codeph>
+                            </xref> rotates the page a quarter turn clockwise after layout.</li>
+                    </ul>
+                    <p>Use <codeph>size: A4 landscape</codeph> to lay out a landscape page box. Use <codeph>page-orientation</codeph> when the page should be laid out at one orientation and then rotated in the output.</p>
+                </info>
+            </step>
+            <step id="page-margin-rules">
+                <cmd>Page-margin rules</cmd>
+                <info>
+                    <p>Page-margin at-rules go inside an <codeph>@page</codeph> rule. Each one identifies a box in a page margin. The <xref href="https://www.w3.org/TR/css-content-3/#propdef-content" scope="external" format="html">
+                            <codeph>content</codeph>
+                        </xref> property determines whether the box is generated: <codeph>none</codeph> or <codeph>normal</codeph> generates no box; a string generates text. A margin box can also use a counter, such as <codeph>counter(page)</codeph>, to show the page number.</p>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-page-3/#margin-boxes" scope="external" format="html">CSS Paged Media 3 §5, Page-margin boxes</xref>; <xref href="https://www.w3.org/TR/css-page-3/#margin-at-rules" scope="external" format="html">§5.1, At-rules for page-margin boxes</xref>; <xref href="https://www.w3.org/TR/css-page-3/#populating-margin-boxes" scope="external" format="html">§5.2, Populating page-margin boxes</xref>; <xref href="https://www.w3.org/TR/css-content-3/#propdef-content" scope="external" format="html">CSS Content 3, <codeph>content</codeph>
+                        </xref>; <xref href="https://www.w3.org/TR/css-page-3/#page-based-counters" scope="external" format="html">CSS Paged Media 3 §6.1, Page-based counters</xref>.</p>
+                    <p>The <xref href="../references/page-reference.dita#page-reference">page reference</xref> lists all 16 page-margin at-rules and describes where each box sits. Its <xref href="../references/page-reference.dita#page-reference/declarations-in-page-margin-rules">declarations section</xref> lists the properties you can use and links to the specification’s property list.</p>
+                    <p>For example, put a running title in the top-center box and the page number in the bottom-center box:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    @top-center {
+        content: "Document title";
+    }
+
+    @bottom-center {
+        content: counter(page);
+    }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>See <xref href="named-strings.dita#named-strings">Named strings</xref> for using element content in page-margin boxes.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+

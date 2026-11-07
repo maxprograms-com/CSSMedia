@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "docbook/docbookx.dtd">
+<article lang="ar">
+  <articleinfo>
+    <title>سد الفجوة بين XML و TypeScript (لسير عمل الترجمة)</title>
+    <author>
+      <firstname>رودولفو م.</firstname>
+      <surname>رايا</surname>
+      <affiliation>
+        <orgname><ulink url="https://maxprograms.com">ماكسبروجرامز</ulink></orgname>
+        <address format="linespecific"><email>rmraya@maxprograms.com</email></address>
+      </affiliation>
+    </author>
+    <pubdate>17 يونيو 2026</pubdate>
+    <copyright>
+      <year>2026</year>
+      <holder>Maxprograms</holder>
+    </copyright>
+    <abstract>
+      <para>يصف هذا المقال الانتقال من Java إلى TypeScript لمعالجة XML في سير عمل الترجمة، ومكتبات TypesXML وTypesBCP47 وTypesXLIFF التي تم إنشاؤها لتوفير التحقق من صحة DTD وXML Schema لملفات TMX وXLIFF وSRX في Node.js.</para>
+    </abstract>
+  </articleinfo>
+
+  <section id="intro">
+    <title>مقدمة</title>
+    <para>إذا سبق لك أن حاولت معالجة XML في Node.js أو TypeScript، فمن المحتمل أنك واجهت قيدًا: فالتحليل سهل، لكن التحقق من الصحة وفقًا لـ DTD أو XML Schema ليس كذلك.</para>
+    <para>ويصبح ذلك مشكلة حقيقية عند العمل مع معايير الترجمة مثل TMX وXLIFF وSRX، حيث لا يُعتبر الهيكل والصحة أمرًا اختياريًا. فهما يحددان ما إذا كانت بياناتك قابلة للاستخدام أم لا.</para>
+    <para>هذه هي الفجوة التي واجهتها، وقررت في النهاية سدها.</para>
+  </section>
+
+  <section id="the-old-setup-java-for-xml">
+    <title>الإعداد القديم: Java لـ XML</title>
+    <para>معايير الترجمة مثل TMX وXLIFF وSRX وTBX كلها قائمة على XML. عندما بدأت العمل بها منذ أكثر من 20 عامًا، كانت Java هي الخيار الأكثر عملية. لم تكن أدوات XML الخاصة بها مثالية، لكنها كانت موثوقة بما يكفي للتحليل والتحقق من الصحة.</para>
+    <para>وقد نجح ذلك لفترة طويلة.</para>
+    <para>لم تكن المشكلة في XML؛ بل في كل ما يحيط بها.</para>
+    <para>لم تتطور خيارات واجهة المستخدم لـ Java على سطح المكتب بطريقة تناسب احتياجاتي. استخدمت SWT لسنوات، لكن صيانتها أصبحت أقل، ولم تروق لي البدائل مثل Swing أو JavaFX.</para>
+  </section>
+
+  <section id="moving-to-typescript">
+    <title>الانتقال إلى TypeScript</title>
+    <para>حوالي عام 2018، تحولت إلى بناء واجهات المستخدم باستخدام HTML وCSS وJavaScript. في النهاية، أصبح TypeScript الخيار الواضح لأنه يوفر نموذج تطوير أكثر أمانًا مع فحوصات ثابتة.</para>
+    <para>وقد حل ذلك مشكلة واجهة المستخدم.</para>
+    <para>لكنه خلق مشكلة جديدة:</para>
+    <itemizedlist>
+      <listitem><para>واجهة المستخدم في TypeScript</para></listitem>
+      <listitem><para>معالجة XML لا تزال تتم في Java</para></listitem>
+    </itemizedlist>
+    <para>لم يكن الحفاظ على مجموعتين من التقنيات لسير عمل واحد أمراً مثالياً.</para>
+  </section>
+
+  <section id="the-missing-piece-xml-validation-in-typescript">
+    <title>الجزء المفقود: التحقق من صحة XML في TypeScript</title>
+    <para>في ذلك الوقت، كانت هناك محللات XML في JavaScript، لكن لم تدعم أي منها:</para>
+    <itemizedlist>
+      <listitem><para>التحقق من صحة DTD</para></listitem>
+      <listitem><para>التحقق من صحة مخطط XML</para></listitem>
+    </itemizedlist>
+    <para>بالنسبة لتنسيقات الترجمة، يعد ذلك متطلبًا أساسيًا. فبدون التحقق من الصحة، لا يمكنك ضمان صحة بنية ملف TMX أو XLIFF.</para>
+    <para>لذلك بدأت في إنشاء <ulink url="https://maxprograms.com/products/typesxml.html">TypesXML</ulink>، وهو محلل ومدقق XML أصلي لـ TypeScript.</para>
+  </section>
+
+  <section id="a-minimal-example">
+    <title>مثال بسيط</title>
+    <para>إليك كيف يبدو تحليل XML الأساسي:</para>
+    <programlisting format="linespecific" xml:space="preserve">import { Catalog, DOMBuilder, SAXParser } from "typesxml";
+
+const parser: SAXParser = new SAXParser();
+const handler: DOMBuilder = new DOMBuilder();
+const catalog = new Catalog('/pathTo/catalog.xml');
+
+parser.setCatalog(catalog);
+parser.setContentHandler(handler);
+parser.setValidating(true);
+parser.parseFile("example.xml");
+
+const document = handler.getDocument();
+console.log(document.toString());</programlisting>
+    <para>يمكن تكوين نفس المحلل من أجل:</para>
+    <itemizedlist>
+      <listitem><para>التحقق من صحة DTD</para></listitem>
+      <listitem><para>التحقق من صحة XML Schema</para></listitem>
+      <listitem><para>حل كتالوجات XML</para></listitem>
+    </itemizedlist>
+    <para>وهذا يجعل من الممكن معالجة XML في Node.js بنفس مستوى التحكم المرتبط تقليديًا بمكتبات Java.</para>
+  </section>
+
+  <section id="building-the-missing-stack">
+    <title>بناء المكدس المفقود</title>
+    <para>استغرق إنشاء مكدس XML كامل بعض الوقت:</para>
+    <itemizedlist>
+      <listitem><para>جاء تحليل DOM و SAX أولاً</para></listitem>
+      <listitem><para>ثم تبع ذلك التحقق من صحة DTD</para></listitem>
+      <listitem><para>كان التحقق من صحة مخطط XML هو الخطوة الأخيرة</para></listitem>
+    </itemizedlist>
+    <para>يعد دعم مخطط XML أكثر تعقيدًا بشكل ملحوظ، ولكنه ضروري لتنسيقات مثل XLIFF.</para>
+  </section>
+
+  <section id="supporting-pieces-language-data">
+    <title>العناصر الداعمة: بيانات اللغة</title>
+    <para>تعتمد سير عمل الترجمة أيضًا بشكل كبير على رموز اللغات.</para>
+    <para>يحدد BCP47 المعيار، لكن البيانات الرسمية تُوزَّع في شكل ملف نصي كبير. لتسهيل استخدامها في TypeScript، قمتُ بإنشاء <ulink url="https://github.com/maxprograms-com/TypesBCP47">TypesBCP47</ulink>، وهي مكتبة مصاحبة تقوم بتحليل تلك البيانات وعرضها بطريقة منظمة.</para>
+  </section>
+
+  <section id="proof-of-concept-rewriting-existing-tools">
+    <title>إثبات المفهوم: إعادة كتابة الأدوات الحالية</title>
+    <para>للتحقق من صحة هذه الطريقة، قمت بإعادة كتابة الأدوات الحالية بلغة TypeScript:</para>
+    <itemizedlist>
+      <listitem><para><ulink url="https://maxprograms.com/products/srxeditor.html">SRXEditor</ulink></para></listitem>
+      <listitem><para><ulink url="https://maxprograms.com/products/tmxvalidator.html">TMXValidator</ulink></para></listitem>
+    </itemizedlist>
+    <para>تقوم هذه الأدوات بما يلي:</para>
+    <itemizedlist>
+      <listitem><para>تقوم بمعالجة ملفات XML كبيرة الحجم</para></listitem>
+      <listitem><para>تتحقق من صحة البيانات وفقًا لقواعد النحو الرسمية</para></listitem>
+      <listitem><para>تحافظ على أداء يضاهي الإصدارات الأصلية من Java</para></listitem>
+    </itemizedlist>
+    <para>وقد أكد ذلك أن TypeScript قادرة على التعامل مع أحمال عمل الترجمة في العالم الواقعي.</para>
+  </section>
+
+  <section id="xliff-support">
+    <title>دعم XLIFF</title>
+    <para>يستخدم XLIFF مخطط XML، مما تطلب تنفيذ أداة تحقق كاملة من صحة المخطط.</para>
+    <para>وبعد توفير ذلك، قمت بإنشاء <ulink url="https://maxprograms.com/products/typesxliff.html">TypesXLIFF</ulink>، وهي مكتبة لتحليل ملفات XLIFF 2.x وإنشائها والتحقق من صحتها.</para>
+    <para>وهي تدعم:</para>
+    <itemizedlist>
+      <listitem><para>التحقق من صحة مخطط XML</para></listitem>
+      <listitem><para>التحقق من الصحة وفقًا لمواصفات XLIFF</para></listitem>
+      <listitem><para>نموذج كائنات مُصنف</para></listitem>
+      <listitem><para>تحويل JSON</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="what-this-enables">
+    <title>ما يتيحه ذلك</title>
+    <para>بعد توفر هذه العناصر، أصبح من الممكن الآن:</para>
+    <itemizedlist>
+      <listitem><para>التحقق من صحة ملفات TMX وXLIFF وSRX مباشرةً في Node.js</para></listitem>
+      <listitem><para>إنشاء مسارات عمل الترجمة بالكامل في TypeScript</para></listitem>
+      <listitem><para>التخلص من الحاجة إلى خادم خلفي منفصل يعمل بلغة Java</para></listitem>
+      <listitem><para>الحفاظ على كل من واجهة المستخدم والمعالجة بنفس اللغة</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="whats-next">
+    <title>ما هي الخطوة التالية</title>
+    <para>يجري حالياً العمل على دعم TBX، إلى جانب تحديثات لأدوات أخرى لنقلها بالكامل إلى TypeScript.</para>
+    <para>لا يزال بعض كود Java موجودًا في المكونات القديمة، لكن التطوير الجديد يركز الآن على TypeScript.</para>
+  </section>
+
+  <section id="closing-thoughts">
+    <title>خاتمة</title>
+    <para>لفترة طويلة، كانت معالجة XML في سير عمل الترجمة تتطلب فعليًا استخدام Java.</para>
+    <para>لم يعد الأمر كذلك.</para>
+    <para>إذا كنت تعمل بتنسيقات تستند إلى XML في Node.js، خاصة في الترجمة أو مسارات البيانات المنظمة، فيمكنك الآن التعامل مع التحليل والتحقق من الصحة والمعالجة بالكامل باستخدام TypeScript.</para>
+  </section>
+
+  <section id="author">
+    <title>نبذة عن المؤلف</title>
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/p-rodolfo-white.jpg"/>
+      </imageobject>
+    </mediaobject>
+    <para>يشارك رودولفو م. رايا، المدير التقني لشركة Maxprograms SAS، في تطوير معايير الترجمة، بما في ذلك XLIFF وTMX وTBX وSRX وGlossML.</para>
+    <para>وهو يطور الأدوات والمكتبات التي تنفذ هذه المواصفات، بما في ذلك البرامج وخدمات التحقق من الصحة المتوفرة على هذا الموقع.</para>
+  </section>
+</article>

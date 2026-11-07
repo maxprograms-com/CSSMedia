@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="prepare-xml">
+    <title>Prepare your XML</title>
+    <shortdesc>CSSMedia generates a <xref href="../glossaries/PDF.dita">PDF</xref> from almost any well-formed <xref href="../glossaries/XML.dita">XML</xref> file, provided that you give
+        it an appropriate <xref href="../glossaries/CSS.dita">CSS</xref> file.</shortdesc>
+    <conbody>
+        <p>Some XML projects consist of multiple files that need pre-processing before they are ready
+            for publishing. Projects based on DITA or DocBook need to merge all the files that make up
+            a project into one XML file.</p>
+        <ul>
+            <li>If you work with DITA, use <xref href="https://maxprograms.com/products/typesditac.html"
+                    format="html" scope="external">TypesDitac</xref> to process your topics and
+                generate one combined XML file for CSSMedia.</li>
+            <li>If you work with DocBook, <xref href="https://github.com/maxprograms-com/TypesBook"
+                    format="html" scope="external">TypesBook</xref> helps you merge your files into a
+                single document ready for CSSMedia.</li>
+        </ul>
+    </conbody>
+</concept>

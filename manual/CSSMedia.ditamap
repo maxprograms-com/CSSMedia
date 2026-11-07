@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE bookmap PUBLIC "-//OASIS//DTD DITA BookMap//EN" "bookmap.dtd">
+<bookmap>
+    <booktitle>
+        <mainbooktitle>
+            <ph>CSSMedia User Guide</ph>
+            <image href="images/CSSMedia-256.svg" placement="break"/>
+        </mainbooktitle>
+        <booktitlealt>
+            <ph>Copyright © 2026 Maxprograms</ph>
+        </booktitlealt>
+    </booktitle>
+    <frontmatter>
+        <booklists>
+            <toc/>
+        </booklists>
+    </frontmatter>
+
+    <chapter href="concepts/features.dita">
+        <topicref href="concepts/features.dita"/>
+    </chapter>
+
+    <chapter href="concepts/intro-get-started.dita">
+        <topicref href="tasks/install-cssmedia.dita"/>
+        <topicref href="concepts/prepare-xml.dita"/>
+        <topicref href="concepts/generatePdf.dita"/>
+        <topicref href="tasks/first-stylesheet.dita"/>
+        <topicref href="tasks/try-the-samples.dita"/>
+    </chapter>
+
+    <chapter href="concepts/selector-matching.dita">
+        <topicref href="concepts/basic-selectors.dita"/>
+        <topicref href="concepts/combinators.dita"/>
+        <topicref href="concepts/pseudo-classes.dita"/>
+        <topicref href="concepts/pseudo-elements.dita"/>
+        <topicref href="concepts/specificity.dita"/>
+    </chapter>
+
+    <chapter href="tasks/page-setup.dita"/>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Page orientation, bleed and marks</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter href="tasks/named-strings.dita"/>
+
+    <chapter href="tasks/links.dita"/>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Footnotes</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter href="concepts/intro-text-and-fonts.dita">
+        <topicref href="tasks/font-properties.dita"/>
+        <topicref href="tasks/font-faces.dita"/>
+        <topicref href="tasks/font-variants.dita"/>
+        <topicref href="tasks/variable-and-color-fonts.dita"/>
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Languages and hyphenation</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Ruby and vertical text</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter href="concepts/intro-boxes.dita">
+        <topicref href="concepts/box-sizing-and-spacing.dita"/>
+        <topicref href="concepts/box-dimensions.dita"/>
+        <topicref href="tasks/color-and-images.dita"/>
+        <topicref href="tasks/positioning-and-size.dita"/>
+        <topicref href="tasks/repetition-and-attachment.dita"/>
+        <topicref href="tasks/clipping-shorthand-and-blending.dita"/>
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Shadows, opacity, transforms and masks</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Multi-column layout</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Flexbox and grid</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Images, SVG and MathML</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Tables</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter href="concepts/cascade-and-declarations.dita">
+        <topicref href="concepts/cascade-order.dita"/>
+        <topicref href="concepts/inheritance-and-defaults.dita"/>
+        <topicref href="concepts/shorthand-properties.dita"/>
+        <topicref href="tasks/custom-properties.dita"/>
+        <topicref href="tasks/conditional-rules.dita"/>
+    </chapter>
+
+    <chapter href="concepts/intro-reference.dita">
+        <topicref href="references/selector-reference.dita"/>
+        <topicref href="references/font-reference.dita"/>
+        <topicref href="references/box-model-properties.dita"/>
+        <topicref href="references/dimension-properties.dita"/>
+        <topicref href="references/background-reference.dita"/>
+        <topicref href="references/display-and-positioning.dita"/>
+        <topicref href="references/page-reference.dita"/>
+        <topicref href="references/content-reference.dita"/>
+        <topicref href="references/cascade-reference.dita"/>
+    </chapter>
+
+    <chapter href="concepts/licenses.dita"/>
+
+    <backmatter>
+        <booklists>
+            <glossarylist chunk="to-content">
+                <topicref href="glossaries/CSS.dita" type="glossentry"/>
+                <topicref href="glossaries/DTD.dita" type="glossentry"/>
+                <topicref href="glossaries/MathML.dita" type="glossentry"/>
+                <topicref href="glossaries/OASISCatalog.dita" type="glossentry"/>
+                <topicref href="glossaries/PDF.dita" type="glossentry"/>
+                <topicref href="glossaries/RelaxNG.dita" type="glossentry"/>
+                <topicref href="glossaries/SVG.dita" type="glossentry"/>
+                <topicref href="glossaries/XML.dita" type="glossentry"/>
+                <topicref href="glossaries/XMLSchema.dita" type="glossentry"/>
+            </glossarylist>
+        </booklists>
+    </backmatter>
+</bookmap>

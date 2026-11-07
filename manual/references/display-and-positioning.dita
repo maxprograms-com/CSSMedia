@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="display-and-positioning">
+    <title>Display and positioning</title>
+    <shortdesc>The <codeph>display</codeph> property determines the kind of box an element generates. Positioning properties describe how a box is placed relative to its normal position or containing block.</shortdesc>
+    <refbody>
+        <table id="display-and-positioning__I_2h_">
+            <tgroup cols="5">
+                <colspec colname="c1" />
+                <colspec colname="c2" />
+                <colspec colname="c3" />
+                <colspec colname="c4" />
+                <colspec colname="c5" />
+                <thead>
+                    <row valign="middle">
+                        <entry align="center">Name</entry>
+                        <entry align="center">Description</entry>
+                        <entry align="center">Values</entry>
+                        <entry align="center">Default</entry>
+                        <entry align="center">Specification</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>display</codeph>
+                        </entry>
+                        <entry>Selects whether an element generates a box and describes its outer and inner display types.</entry>
+                        <entry namest="c3" nameend="c4">
+                            <codeph>none</codeph>, <codeph>contents</codeph>, or combinations of outer types (<codeph>block</codeph>, <codeph>inline</codeph>, <codeph>run-in</codeph>), inner types (<codeph>flow</codeph>, <codeph>flow-root</codeph>, <codeph>table</codeph>, <codeph>flex</codeph>, <codeph>grid</codeph>, <codeph>ruby</codeph>), and <codeph>list-item</codeph>; also internal table and ruby types, legacy combinations such as <codeph>inline-block</codeph>, <codeph>inline-flex</codeph>, and <codeph>inline-grid</codeph>, plus <codeph>math</codeph>, <codeph>grid-lanes</codeph>, and <codeph>inline-grid-lanes</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-display-4/#the-display-properties" scope="external" format="html">CSS Display 4 §2</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>visibility</codeph>
+                        </entry>
+                        <entry>Controls whether a box is visible while preserving its place in layout.</entry>
+                        <entry namest="c3" nameend="c4">
+                            <codeph>visible</codeph>, <codeph>hidden</codeph>, <codeph>force-hidden</codeph>, or <codeph>collapse</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-display-4/#visibility" scope="external" format="html">CSS Display 4 §5</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>order</codeph>
+                        </entry>
+                        <entry>Changes the order of flex and grid items for layout and painting.</entry>
+                        <entry namest="c3" nameend="c4">An integer</entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-display-4/#order-property" scope="external" format="html">CSS Display 4 §3</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>reading-flow</codeph>
+                        </entry>
+                        <entry>Chooses the reading order of children in a block, flex, or grid container.</entry>
+                        <entry namest="c3" nameend="c4">
+                            <codeph>normal</codeph>, <codeph>source-order</codeph>, <codeph>flex-visual</codeph>, <codeph>flex-flow</codeph>, <codeph>grid-rows</codeph>, <codeph>grid-columns</codeph>, or <codeph>grid-order</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-display-4/#reading-flow" scope="external" format="html">CSS Display 4 §4</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>reading-order</codeph>
+                        </entry>
+                        <entry>Assigns an integer ordering value to a direct child of a reading-flow container.</entry>
+                        <entry namest="c3" nameend="c4">An integer</entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-display-4/#reading-order" scope="external" format="html">CSS Display 4 §4.1</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>position</codeph>
+                        </entry>
+                        <entry>Chooses the positioning scheme for an element.</entry>
+                        <entry namest="c3" nameend="c4">
+                            <codeph>static</codeph>, <codeph>relative</codeph>, <codeph>absolute</codeph>, <codeph>sticky</codeph>, <codeph>fixed</codeph>, or <codeph>running()</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-position-3/#position-property" scope="external" format="html">CSS Position 3 §2</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-running" scope="external" format="html">CSS GCPM 3 §1.2.1</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph>, <codeph>left</codeph>
+                        </entry>
+                        <entry>Set an inset from the corresponding side of the containing block for a positioned element.</entry>
+                        <entry namest="c3" nameend="c4">
+                            <codeph>auto</codeph>, a length or percentage, <codeph>anchor()</codeph>, or <codeph>anchor-size()</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-position-3/#insets" scope="external" format="html">CSS Position 3 §3.1</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>inset</codeph>
+                        </entry>
+                        <entry>Sets the four physical insets.</entry>
+                        <entry namest="c3" nameend="c4">One to four values accepted by <codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph>, and <codeph>left</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-position-3/#inset-shorthands" scope="external" format="html">CSS Position 3 §3.2</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>inset-block</codeph>, <codeph>inset-inline</codeph>
+                        </entry>
+                        <entry>Set the start and end insets along the block or inline axis.</entry>
+                        <entry namest="c3" nameend="c4">One or two values accepted by the corresponding logical inset properties</entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-position-3/#inset-shorthands" scope="external" format="html">CSS Position 3 §3.2</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>inset-block-start</codeph>, <codeph>inset-block-end</codeph>, <codeph>inset-inline-start</codeph>, <codeph>inset-inline-end</codeph>
+                        </entry>
+                        <entry>Set one inset on the block or inline axis.</entry>
+                        <entry namest="c3" nameend="c4">
+                            <codeph>auto</codeph>, a length or percentage, <codeph>anchor()</codeph>, or <codeph>anchor-size()</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-position-3/#insets" scope="external" format="html">CSS Position 3 §3.1</xref>
+                        </entry>
+                    </row>
+                    <row valign="middle">
+                        <entry>
+                            <codeph>z-index</codeph>
+                        </entry>
+                        <entry>Sets a positioned box’s stack level.</entry>
+                        <entry namest="c3" nameend="c4">
+                            <codeph>auto</codeph> or an integer</entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/CSS2/visuren.html#propdef-z-index" scope="external" format="html">CSS 2 §9.9</xref>
+                        </entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <section>
+            <ul>
+                <li>A length is a size with a unit, such as <codeph>12pt</codeph> or <codeph>1em</codeph>. A percentage is relative to the containing block, as defined for the relevant inset.</li>
+                <li>
+                    <codeph>anchor()</codeph> uses an anchor’s side or center as an inset coordinate. <codeph>anchor-size()</codeph> uses a selected anchor’s size. See <xref href="https://www.w3.org/TR/css-anchor-position-1/#anchor-function" scope="external" format="html">CSS Anchor Positioning 1</xref> and <xref href="https://www.w3.org/TR/css-anchor-position-1/#anchor-size-function" scope="external" format="html">the <codeph>anchor-size()</codeph> function</xref>.</li>
+                <li>
+                    <codeph>running()</codeph> names an element to move into a page margin box. See <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-running" scope="external" format="html">CSS GCPM 3</xref>.</li>
+                <li>An integer is a whole number without a fractional part. Negative values, zero, and positive values are allowed for <codeph>order</codeph> and <codeph>z-index</codeph>; CSS Display defines how ordering is applied.</li>
+            </ul>
+        </section>
+    </refbody>
+</reference>

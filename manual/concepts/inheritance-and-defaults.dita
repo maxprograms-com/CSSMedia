@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="inheritance-and-defaults">
+    <title>Inheritance and default values</title>
+    <shortdesc>The cascade selects a cascaded value for a property on an element. <xref href="../glossaries/CSS.dita">CSS</xref> then determines the property’s specified value. If no declaration supplies a cascaded value, inheritance or the property’s initial value provides the default.</shortdesc>
+    <conbody>
+        <section id="inheritance">
+            <title>Inheritance</title>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#inheriting" scope="external" format="html">CSS Cascade 5 §7.2, Inheritance</xref>.</p>
+            <p>Some properties inherit automatically. Their definitions say whether they are inherited. A child element uses the parent’s computed value unless a declaration gives the child another value.</p>
+            <pre outputclass="language-css21">chapter { color: navy; }
+title { color: teal; }
+</pre>
+            <p>The title uses teal. Other descendants inherit navy. A property that does not normally inherit uses its initial value when it has no cascaded value.</p>
+            <p>Inheritance follows the <xref href="../glossaries/XML.dita">XML</xref> element tree. It is not determined by whether the property describes text, a box, or another feature.</p>
+        </section>
+        <section id="css-wide-keywords">
+            <title>CSS-wide keywords</title>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#defaulting-keywords" scope="external" format="html">CSS Cascade 5 §7.3, Explicit Defaulting</xref>.</p>
+            <p>CSS-wide keywords can be used as the complete value of any property. They affect defaulting after the cascade has selected the declaration.</p>
+            <div outputclass="role-h3" id="initial">
+                <codeph>initial</codeph>
+            </div>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#initial" scope="external" format="html">CSS Cascade 5 §7.3.1, Resetting a Property: the initial keyword</xref>.</p>
+            <p>
+                <codeph>initial</codeph> selects the property’s initial value from its definition. It does not mean the value inherited from the parent, even for a property that normally inherits.</p>
+            <pre outputclass="language-css21">title { color: initial; }
+</pre>
+            <div outputclass="role-h3" id="inherit">
+                <codeph>inherit</codeph>
+            </div>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#inherit" scope="external" format="html">CSS Cascade 5 §7.3.2, Explicit Inheritance: the inherit keyword</xref>.</p>
+            <p>
+                <codeph>inherit</codeph> uses the parent’s computed value, whether or not the property normally inherits. At the root, where there is no parent, it uses the initial value.</p>
+            <pre outputclass="language-css21">title { margin-left: inherit; }
+</pre>
+            <div outputclass="role-h3" id="unset">
+                <codeph>unset</codeph>
+            </div>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#inherit-initial" scope="external" format="html">CSS Cascade 5 §7.3.3, Erasing All Declarations: the unset keyword</xref>.</p>
+            <p>
+                <codeph>unset</codeph> acts like <codeph>inherit</codeph> for a property that normally inherits. It acts like <codeph>initial</codeph> for a property that does not normally inherit.</p>
+            <pre outputclass="language-css21">chapter { color: unset; }
+title { margin-left: unset; }
+</pre>
+            <p>The first declaration follows the normal inheritance behavior of <codeph>color</codeph>. The second uses the initial value of <codeph>margin-left</codeph>.</p>
+            <div outputclass="role-h3" id="revert">
+                <codeph>revert</codeph>
+            </div>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#default" scope="external" format="html">CSS Cascade 5 §7.3.4, Rolling Back Cascade Origins: the revert keyword</xref>.</p>
+            <p>
+                <codeph>revert</codeph> removes declarations from the winning declaration’s origin for that property and runs the cascade again. For an author declaration, this means the author-origin value is rolled back so a lower origin can supply a value. If no declaration remains, normal defaulting and inheritance apply.</p>
+            <pre outputclass="language-css21">title { color: navy; }
+title { color: revert; }
+</pre>
+            <div outputclass="role-h3" id="revert-layer">
+                <codeph>revert-layer</codeph>
+            </div>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#revert-layer" scope="external" format="html">CSS Cascade 5 §7.3.5, Rolling Back Cascade Layers: the revert-layer keyword</xref>.</p>
+            <p>
+                <codeph>revert-layer</codeph> removes declarations from the winning declaration’s layer at that origin and reruns the cascade. A declaration in a lower-priority layer can then win. If no declaration remains in that origin, the cascade can fall back to a lower origin.</p>
+            <pre outputclass="language-css21">@layer base, theme;
+
+@layer base {
+    title { color: black; }
+}
+
+@layer theme {
+    title { color: revert-layer; }
+}
+</pre>
+            <p>The <codeph>theme</codeph> declaration rolls back to the <codeph>base</codeph> layer’s value.</p>
+        </section>
+        <section id="the-all-property">
+            <title>The <codeph>all</codeph> property</title>
+            <p>
+                <xref href="https://www.w3.org/TR/css-cascade-5/#all-shorthand" scope="external" format="html">CSS Cascade 5 §3.2, Resetting All Properties: the all property</xref>.</p>
+            <p>The <codeph>all</codeph> property accepts a CSS-wide keyword and applies it to nearly every property. It does not affect <codeph>direction</codeph>, <codeph>unicode-bidi</codeph>, or custom properties.</p>
+            <pre outputclass="language-css21">title { all: unset; }
+</pre>
+            <p>This uses each property’s normal <codeph>unset</codeph> behavior. Inherited properties inherit; other properties use their initial values. Use <codeph>all</codeph> carefully because it can reset declarations from many unrelated property groups.</p>
+        </section>
+        <section id="a-declaration-invalid-after-the-cascade">
+            <title>A declaration invalid after the cascade</title>
+            <p>
+                <xref href="https://www.w3.org/TR/css-variables-1/#cycles" scope="external" format="html">CSS Variables 1 §2.3, Resolving Dependency Cycles</xref>; <xref href="https://www.w3.org/TR/css-variables-1/#invalid-variables" scope="external" format="html">CSS Variables 1 §3.1, Invalid Variables</xref>.</p>
+            <p>A value can pass the declaration’s initial syntax check and become invalid later, for example when a <codeph>var()</codeph> reference has no usable value or substitution produces text that does not match the property’s grammar. The cascade has already selected that declaration. CSS does not return to an earlier, lower-priority declaration for that property; the invalid-at-computed-value-time declaration acts as <codeph>unset</codeph>.</p>
+            <p>This differs from a declaration that is invalid before it enters the cascade. An invalid declaration is discarded, so another valid declaration can win.</p>
+        </section>
+    </conbody>
+</concept>
+

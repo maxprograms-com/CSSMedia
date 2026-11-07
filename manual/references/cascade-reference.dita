@@ -1,0 +1,924 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="cascade-reference">
+    <title>Cascade reference</title>
+    <shortdesc>The <codeph>Default</codeph> column lists values used by CSSMedia’s current PDF-oriented rule evaluation. Media-query width, height and ratio values use the A4 default page size.</shortdesc>
+    <refbody>
+        <section id="property-and-at-rule-reference">
+            <title>Property and at-rule reference</title>
+            <table id="cascade-reference__I_3n_">
+                <tgroup cols="5">
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Values</entry>
+                            <entry align="center">Default</entry>
+                            <entry align="center">Specification</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>all</codeph>
+                            </entry>
+                            <entry>Resets all properties except <codeph>direction</codeph> and <codeph>unicode-bidi</codeph>.</entry>
+                            <entry>
+                                <codeph>initial</codeph> | <codeph>inherit</codeph> | <codeph>unset</codeph> | <codeph>revert</codeph> | <codeph>revert-layer</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-cascade-5/#propdef-all" scope="external" format="html">CSS Cascade 5 §3.2</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@charset</codeph>
+                            </entry>
+                            <entry>Declares the stylesheet’s fallback character encoding.</entry>
+                            <entry>
+                                <codeph>@charset "&lt;label&gt;";</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-syntax-3/#at-ruledef-charset" scope="external" format="html">CSS Syntax 3 §8.3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@import</codeph>
+                            </entry>
+                            <entry>Loads another stylesheet, optionally conditioned on a layer, support test or media query.</entry>
+                            <entry>
+                                <codeph>@import &lt;url-or-string&gt; [layer \| layer(&lt;layer-name&gt;)]? [supports(&lt;condition&gt;)]? &lt;media-query-list&gt;?;</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-cascade-5/#at-ruledef-import" scope="external" format="html">CSS Cascade 5 §2</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@namespace</codeph>
+                            </entry>
+                            <entry>Declares a namespace prefix for selectors.</entry>
+                            <entry>
+                                <codeph>@namespace &lt;namespace-prefix&gt;? &lt;string-or-url&gt;;</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-namespaces-3/#declaration" scope="external" format="html">CSS Namespaces 3 §3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@layer</codeph>
+                            </entry>
+                            <entry>Declares layer order or groups rules in a cascade layer.</entry>
+                            <entry>
+                                <codeph>@layer &lt;layer-name&gt;? { &lt;stylesheet&gt; }</codeph> or <codeph>@layer &lt;layer-name-list&gt;;</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-cascade-5/#at-ruledef-layer" scope="external" format="html">CSS Cascade 5 §6.4</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@property</codeph>
+                            </entry>
+                            <entry>Registers a custom property with syntax, inheritance and optional initial value.</entry>
+                            <entry>
+                                <codeph>@property &lt;custom-property-name&gt; { &lt;declaration-list&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-properties-values-api-1/#at-ruledef-property" scope="external" format="html">CSS Properties and Values API 1 §3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>syntax</codeph>
+                            </entry>
+                            <entry>Defines the grammar of a registered custom property.</entry>
+                            <entry>
+                                <codeph>&lt;string&gt;</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-properties-values-api-1/#the-syntax-descriptor" scope="external" format="html">CSS Properties and Values API 1 §3.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>inherits</codeph>
+                            </entry>
+                            <entry>Sets whether a registered custom property inherits by default.</entry>
+                            <entry>
+                                <codeph>true</codeph> | <codeph>false</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-properties-values-api-1/#inherits-descriptor" scope="external" format="html">CSS Properties and Values API 1 §3.2</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>initial-value</codeph>
+                            </entry>
+                            <entry>Sets the registered custom property’s initial value.</entry>
+                            <entry>
+                                <codeph>&lt;declaration-value&gt;</codeph>
+                            </entry>
+                            <entry>Guaranteed-invalid for <codeph>syntax: "*"</codeph>; otherwise required</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-properties-values-api-1/#initial-value-descriptor" scope="external" format="html">CSS Properties and Values API 1 §3.3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@media</codeph>
+                            </entry>
+                            <entry>Includes rules when a media query matches the <xref href="../glossaries/PDF.dita">PDF</xref> environment.</entry>
+                            <entry>
+                                <codeph>@media &lt;media-query-list&gt; { &lt;rule-list&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-media" scope="external" format="html">CSS Conditional 3 §5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@supports</codeph>
+                            </entry>
+                            <entry>Includes rules when CSSMedia accepts a declaration, selector or supported feature test.</entry>
+                            <entry>
+                                <codeph>@supports &lt;supports-condition&gt; { &lt;rule-list&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-supports" scope="external" format="html">CSS Conditional 3 §6</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@supports-condition</codeph>
+                            </entry>
+                            <entry>Defines a named group of support tests.</entry>
+                            <entry>
+                                <codeph>@supports-condition &lt;supports-condition-name&gt; { &lt;block-contents&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-supports-condition" scope="external" format="html">CSS Conditional 5 §8</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@container</codeph>
+                            </entry>
+                            <entry>Includes rules when a selected ancestor container passes the query.</entry>
+                            <entry>
+                                <codeph>@container &lt;container-condition&gt;# { &lt;block-contents&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-container" scope="external" format="html">CSS Conditional 5 §5.4</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@scope</codeph>
+                            </entry>
+                            <entry>Limits the selectors in a rule list to a scope root and optional scope limit.</entry>
+                            <entry>
+                                <codeph>@scope [(&lt;scope-start&gt;)]? [to (&lt;scope-end&gt;)]? { &lt;rule-list&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-cascade-6/#at-ruledef-scope" scope="external" format="html">CSS Cascade 6 §2.5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@custom-media</codeph>
+                            </entry>
+                            <entry>Gives a name to a media query list or boolean value.</entry>
+                            <entry>
+                                <codeph>@custom-media &lt;extension-name&gt; [&lt;media-query-list&gt; \| true \| false];</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#at-ruledef-custom-media" scope="external" format="html">Media Queries 5 §10</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@when</codeph>
+                            </entry>
+                            <entry>Includes rules when a generalized boolean condition is true.</entry>
+                            <entry>
+                                <codeph>@when &lt;boolean-condition&gt; { &lt;rule-list&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-when" scope="external" format="html">CSS Conditional 5 §3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@else</codeph>
+                            </entry>
+                            <entry>Supplies the next branch of a conditional chain.</entry>
+                            <entry>
+                                <codeph>@else &lt;boolean-condition&gt;? { &lt;rule-list&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-else" scope="external" format="html">CSS Conditional 5 §4</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@function</codeph>
+                            </entry>
+                            <entry>Defines a custom CSS function.</entry>
+                            <entry>
+                                <codeph>@function &lt;name&gt;(&lt;parameters&gt;) [returns &lt;type&gt;]? { &lt;declaration-rule-list&gt; }</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-mixins-1/#at-ruledef-function" scope="external" format="html">CSS Functions and Mixins 1 §2.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>result</codeph>
+                            </entry>
+                            <entry>Supplies a custom function’s return value.</entry>
+                            <entry>
+                                <codeph>&lt;declaration-value&gt;?</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-mixins-1/#descdef-function-result" scope="external" format="html">CSS Functions and Mixins 1 §2.2</xref>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <ul>
+                <li>
+                    <codeph>?</codeph> means optional, <codeph>|</codeph> means choose one, <codeph>#</codeph> means one or more comma-separated items, <codeph>||</codeph> means one or more options in any order, and brackets group parts of the syntax.</li>
+                <li>
+                    <codeph>&lt;label&gt;</codeph> is an encoding name.</li>
+                <li>
+                    <codeph>&lt;url-or-string&gt;</codeph> and <codeph>&lt;string-or-url&gt;</codeph> each mean a URL or quoted string.</li>
+                <li>
+                    <codeph>&lt;namespace-prefix&gt;</codeph> is the prefix bound to a namespace.</li>
+                <li>
+                    <codeph>&lt;layer-name&gt;</codeph> names a cascade layer. <codeph>&lt;layer-name-list&gt;</codeph> is a comma-separated list of layer names.</li>
+                <li>
+                    <codeph>&lt;stylesheet&gt;</codeph> is a CSS stylesheet.</li>
+                <li>
+                    <codeph>&lt;custom-property-name&gt;</codeph> is a custom property name beginning with <codeph>--</codeph>.</li>
+                <li>
+                    <codeph>&lt;declaration-list&gt;</codeph> is a list of declarations.</li>
+                <li>
+                    <codeph>&lt;block-contents&gt;</codeph> is content inside a rule’s braces, including declarations and nested rules.</li>
+                <li>
+                    <codeph>&lt;declaration-value&gt;</codeph> is the value part of a declaration: one or more CSS tokens, such as <codeph>navy</codeph>, <codeph>calc(1em + 2px)</codeph> or <codeph>var(--size)</codeph>. It cannot contain a top-level semicolon or <codeph>!</codeph>, since those delimit declarations and <codeph>!important</codeph>. Semicolons and exclamation marks inside functions are not top-level. See <xref href="https://www.w3.org/TR/css-syntax-3/#typedef-declaration-value" scope="external" format="html">CSS Syntax 3</xref>.</li>
+                <li>
+                    <codeph>&lt;string&gt;</codeph> is a quoted CSS string.</li>
+                <li>
+                    <codeph>&lt;media-query-list&gt;</codeph> is one or more comma-separated media queries.</li>
+                <li>
+                    <codeph>&lt;rule-list&gt;</codeph> is a sequence of rules.</li>
+                <li>
+                    <codeph>&lt;condition&gt;</codeph> and <codeph>&lt;supports-condition&gt;</codeph> are support conditions made from feature tests and boolean operators.</li>
+                <li>
+                    <codeph>&lt;supports-condition-name&gt;</codeph> names a reusable support condition.</li>
+                <li>
+                    <codeph>&lt;container-condition&gt;</codeph> optionally names a query container and gives its query.</li>
+                <li>
+                    <codeph>&lt;boolean-condition&gt;</codeph> combines <codeph>media()</codeph> and <codeph>supports()</codeph> tests.</li>
+                <li>
+                    <codeph>&lt;scope-start&gt;</codeph> and <codeph>&lt;scope-end&gt;</codeph> are selector lists that set the scope roots and limits of <codeph>@scope</codeph>.</li>
+                <li>
+                    <codeph>&lt;extension-name&gt;</codeph> names a custom media query.</li>
+                <li>
+                    <codeph>&lt;name&gt;</codeph> in the function syntax is a function name beginning with <codeph>--</codeph>.</li>
+                <li>
+                    <codeph>&lt;parameters&gt;</codeph> is a comma-separated list of function parameters.</li>
+                <li>
+                    <codeph>&lt;type&gt;</codeph> is the optional syntax expected for the function result.</li>
+                <li>
+                    <codeph>&lt;declaration-rule-list&gt;</codeph> contains declarations and nested rules.</li>
+                <li>
+                    <codeph>&lt;number&gt;</codeph> in the function example is a CSS number, which can be an integer or include a fractional part.</li>
+            </ul>
+            <p>The <codeph>@charset</codeph> rule must be the first rule in a stylesheet to affect byte decoding. Use <codeph>@namespace</codeph> before ordinary rules, and place <codeph>@import</codeph> rules before namespace declarations and ordinary rules.</p>
+            <p>Function names start with <codeph>--</codeph>. Parameters can have a syntax type and a default value. Use the <codeph>result</codeph> descriptor for the returned value:</p>
+            <pre outputclass="language-css21">@function --double(--value &lt;number&gt;) returns &lt;number&gt; {
+    result: calc(var(--value) * 2);
+}
+</pre>
+            <p>
+                <codeph>@supports</codeph> declaration tests use parentheses. <codeph>selector()</codeph> tests one complex selector. <codeph>font-tech()</codeph>, <codeph>font-format()</codeph> and <codeph>at-rule()</codeph> test supported features. A named condition is tested by placing its name inside parentheses:</p>
+            <pre outputclass="language-css21">@supports (color: navy) and selector(chapter &gt; title) {
+    chapter &gt; title { color: navy; }
+}
+
+@supports-condition --has-navy {
+    color: navy;
+}
+
+@supports (--has-navy) {
+    chapter { color: navy; }
+}
+</pre>
+            <p>
+                <codeph>@when</codeph> conditions combine <codeph>media()</codeph> and <codeph>supports()</codeph> tests with <codeph>and</codeph>, <codeph>or</codeph> and <codeph>not</codeph>. Parentheses group mixed operators:</p>
+            <pre outputclass="language-css21">@when media(width &gt;= 6in) and supports(color: navy) {
+    chapter { color: navy; }
+}
+</pre>
+            <p>Use <codeph>@else</codeph> immediately after an <codeph>@when</codeph>, <codeph>@media</codeph>, <codeph>@supports</codeph> or <codeph>@container</codeph> branch. An unrelated rule ends the chain.</p>
+        </section>
+        <section id="media-features">
+            <title>Media features</title>
+            <p>Media feature values describe the page or PDF environment used for conditional rule evaluation. They do not describe a screen.</p>
+            <table id="cascade-reference__I_3p_">
+                <tgroup cols="5">
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Values</entry>
+                            <entry align="center">Default</entry>
+                            <entry align="center">Specification</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>any-hover</codeph>
+                            </entry>
+                            <entry>Whether any pointing device can hover.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>hover</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-any-hover" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>any-pointer</codeph>
+                            </entry>
+                            <entry>The accuracy of any available pointing device.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>coarse</codeph> | <codeph>fine</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-any-pointer" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>aspect-ratio</codeph>
+                            </entry>
+                            <entry>The ratio of page width to page height.</entry>
+                            <entry>
+                                <codeph>&lt;ratio&gt;</codeph>
+                            </entry>
+                            <entry>A4 page ratio</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-aspect-ratio" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>color</codeph>
+                            </entry>
+                            <entry>Bits per color component in the output.</entry>
+                            <entry>
+                                <codeph>&lt;integer&gt;</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>8</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-color" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>color-gamut</codeph>
+                            </entry>
+                            <entry>The approximate output color gamut.</entry>
+                            <entry>
+                                <codeph>srgb</codeph> | <codeph>p3</codeph> | <codeph>rec2020</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>srgb</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-color-gamut" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>color-index</codeph>
+                            </entry>
+                            <entry>Number of entries in the output color lookup table.</entry>
+                            <entry>
+                                <codeph>&lt;integer&gt;</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>0</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-color-index" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>device-aspect-ratio</codeph>
+                            </entry>
+                            <entry>The ratio of output width to output height.</entry>
+                            <entry>
+                                <codeph>&lt;ratio&gt;</codeph>
+                            </entry>
+                            <entry>A4 page ratio</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-device-aspect-ratio" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>device-height</codeph>
+                            </entry>
+                            <entry>Output height.</entry>
+                            <entry>
+                                <codeph>&lt;length&gt;</codeph>
+                            </entry>
+                            <entry>A4 page height</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-device-height" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>device-width</codeph>
+                            </entry>
+                            <entry>Output width.</entry>
+                            <entry>
+                                <codeph>&lt;length&gt;</codeph>
+                            </entry>
+                            <entry>A4 page width</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-device-width" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>display-mode</codeph>
+                            </entry>
+                            <entry>The presentation mode.</entry>
+                            <entry>
+                                <codeph>fullscreen</codeph> | <codeph>standalone</codeph> | <codeph>minimal-ui</codeph> | <codeph>browser</codeph> | <codeph>picture-in-picture</codeph>
+                            </entry>
+                            <entry>Not set</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-display-mode" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>dynamic-range</codeph>
+                            </entry>
+                            <entry>The output’s dynamic range.</entry>
+                            <entry>
+                                <codeph>standard</codeph> | <codeph>high</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>standard</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-dynamic-range" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>environment-blending</codeph>
+                            </entry>
+                            <entry>Whether output blends with the surrounding environment.</entry>
+                            <entry>
+                                <codeph>opaque</codeph> | <codeph>additive</codeph> | <codeph>subtractive</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>opaque</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-environment-blending" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>forced-colors</codeph>
+                            </entry>
+                            <entry>Whether the output forces a limited color palette.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>active</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-forced-colors" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>grid</codeph>
+                            </entry>
+                            <entry>Whether the output is grid-based.</entry>
+                            <entry>
+                                <codeph>&lt;mq-boolean&gt;</codeph> (<codeph>0</codeph> or <codeph>1</codeph>)</entry>
+                            <entry>
+                                <codeph>0</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-grid" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>height</codeph>
+                            </entry>
+                            <entry>Page height.</entry>
+                            <entry>
+                                <codeph>&lt;length&gt;</codeph>
+                            </entry>
+                            <entry>A4 page height</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-height" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>horizontal-viewport-segments</codeph>
+                            </entry>
+                            <entry>Number of horizontal viewport segments.</entry>
+                            <entry>
+                                <codeph>&lt;integer&gt;</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>1</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-horizontal-viewport-segments" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>hover</codeph>
+                            </entry>
+                            <entry>Whether the primary pointing device can hover.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>hover</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-hover" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>inverted-colors</codeph>
+                            </entry>
+                            <entry>Whether the output inverts colors.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>inverted</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-inverted-colors" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>monochrome</codeph>
+                            </entry>
+                            <entry>Number of bits per pixel in a monochrome output.</entry>
+                            <entry>
+                                <codeph>&lt;integer&gt;</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>0</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-monochrome" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>nav-controls</codeph>
+                            </entry>
+                            <entry>Availability of navigation controls.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>back</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-nav-controls" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>orientation</codeph>
+                            </entry>
+                            <entry>Whether the page is portrait or landscape.</entry>
+                            <entry>
+                                <codeph>portrait</codeph> | <codeph>landscape</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>portrait</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-orientation" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>overflow-block</codeph>
+                            </entry>
+                            <entry>How the output handles block-axis overflow.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>scroll</codeph> | <codeph>paged</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>paged</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-overflow-block" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>overflow-inline</codeph>
+                            </entry>
+                            <entry>How the output handles inline-axis overflow.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>scroll</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-overflow-inline" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>pointer</codeph>
+                            </entry>
+                            <entry>The accuracy of the primary pointing device.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>coarse</codeph> | <codeph>fine</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-pointer" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>prefers-color-scheme</codeph>
+                            </entry>
+                            <entry>The preferred color scheme.</entry>
+                            <entry>
+                                <codeph>light</codeph> | <codeph>dark</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>light</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-prefers-color-scheme" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>prefers-contrast</codeph>
+                            </entry>
+                            <entry>The preferred contrast level.</entry>
+                            <entry>
+                                <codeph>no-preference</codeph> | <codeph>less</codeph> | <codeph>more</codeph> | <codeph>custom</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>no-preference</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-prefers-contrast" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>prefers-reduced-data</codeph>
+                            </entry>
+                            <entry>Whether the user prefers reduced data use.</entry>
+                            <entry>
+                                <codeph>no-preference</codeph> | <codeph>reduce</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>no-preference</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-prefers-reduced-data" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>prefers-reduced-motion</codeph>
+                            </entry>
+                            <entry>Whether the user prefers reduced motion.</entry>
+                            <entry>
+                                <codeph>no-preference</codeph> | <codeph>reduce</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>no-preference</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-prefers-reduced-motion" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>prefers-reduced-transparency</codeph>
+                            </entry>
+                            <entry>Whether the user prefers reduced transparency.</entry>
+                            <entry>
+                                <codeph>no-preference</codeph> | <codeph>reduce</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>no-preference</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-prefers-reduced-transparency" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>resolution</codeph>
+                            </entry>
+                            <entry>Output pixel density.</entry>
+                            <entry>
+                                <codeph>&lt;resolution&gt;</codeph> | <codeph>infinite</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>infinite</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-resolution" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>scan</codeph>
+                            </entry>
+                            <entry>The output’s scanning process.</entry>
+                            <entry>
+                                <codeph>interlace</codeph> | <codeph>progressive</codeph>
+                            </entry>
+                            <entry>Not set</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-scan" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>scripting</codeph>
+                            </entry>
+                            <entry>Whether scripting is available.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>initial-only</codeph> | <codeph>enabled</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-scripting" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>update</codeph>
+                            </entry>
+                            <entry>How frequently the output can update.</entry>
+                            <entry>
+                                <codeph>none</codeph> | <codeph>slow</codeph> | <codeph>fast</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-update" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>vertical-viewport-segments</codeph>
+                            </entry>
+                            <entry>Number of vertical viewport segments.</entry>
+                            <entry>
+                                <codeph>&lt;integer&gt;</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>1</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-vertical-viewport-segments" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>video-color-gamut</codeph>
+                            </entry>
+                            <entry>The color gamut of the output video.</entry>
+                            <entry>
+                                <codeph>srgb</codeph> | <codeph>p3</codeph> | <codeph>rec2020</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>srgb</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-video-color-gamut" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>video-dynamic-range</codeph>
+                            </entry>
+                            <entry>The dynamic range of the output video.</entry>
+                            <entry>
+                                <codeph>standard</codeph> | <codeph>high</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>standard</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-video-dynamic-range" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>width</codeph>
+                            </entry>
+                            <entry>Page width.</entry>
+                            <entry>
+                                <codeph>&lt;length&gt;</codeph>
+                            </entry>
+                            <entry>A4 page width</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/mediaqueries-5/#descdef-media-width" scope="external" format="html">Media Queries 5</xref>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <ul>
+                <li>
+                    <codeph>&lt;ratio&gt;</codeph> is a ratio of two numbers.</li>
+                <li>
+                    <codeph>&lt;integer&gt;</codeph> is a whole number.</li>
+                <li>
+                    <codeph>&lt;length&gt;</codeph> is a CSS length, such as <codeph>12pt</codeph> or <codeph>2em</codeph>.</li>
+                <li>
+                    <codeph>&lt;mq-boolean&gt;</codeph> is an integer with the value <codeph>0</codeph> or <codeph>1</codeph>.</li>
+                <li>
+                    <codeph>&lt;resolution&gt;</codeph> is a pixel density, such as <codeph>300dpi</codeph>.</li>
+            </ul>
+        </section>
+        <section id="container-style-queries">
+            <title>Container style queries</title>
+            <p>A container style query uses <codeph>style()</codeph> to test a computed style or custom property on an ancestor. See <xref href="../tasks/conditional-rules.dita#conditional-rules/container-queries-with-container">Conditional rules</xref>.</p>
+        </section>
+    </refbody>
+</reference>
+

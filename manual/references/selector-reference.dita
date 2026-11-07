@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="selector-reference">
+    <title>Selector reference</title>
+    <shortdesc>This table will list the selectors and rules covered in this chapter.</shortdesc>
+    <refbody>
+        <table id="selector-reference__I_t_">
+            <tgroup cols="5">
+                <thead>
+                    <row valign="middle">
+                        <entry align="center">Name</entry>
+                        <entry align="center">Description</entry>
+                        <entry align="center">Values</entry>
+                        <entry align="center">Default</entry>
+                        <entry align="center">Specification</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </refbody>
+</reference>

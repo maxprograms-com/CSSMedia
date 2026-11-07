@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="generatePdf">
+    <title>Run CSSMedia</title>
+    <shortdesc>Run CSSMedia from the command line with an <xref href="../glossaries/XML.dita">XML</xref> file, a <xref href="../glossaries/CSS.dita">CSS</xref> file and the name of the <xref href="../glossaries/PDF.dita">PDF</xref>
+        to write.</shortdesc>
+    <conbody>
+        <p>This command generates a PDF from your XML and your stylesheet:</p>
+        <pre>cssmedia -x document.xml -c document.css -p document.pdf</pre>
+        <p>If you built CSSMedia from source and did not install it globally, run
+                <codeph>node dist/cssmedia.js</codeph> instead of <codeph>cssmedia</codeph>.</p>
+        <p>Running CSSMedia without parameters displays this help:</p>
+        <pre>Usage: cssmedia -x &lt;file> -c &lt;file> -p &lt;file> [-f &lt;fontsFolder>] [-g &lt;catalog>]
+
+  -x, --xml &lt;file>       XML file to format
+  -c, --css &lt;file>       CSS stylesheet to apply
+  -p, --pdf &lt;file>       PDF file to write
+  -f, --fonts &lt;folder>   (optional) alternative fonts folder
+  -g, --catalog &lt;file>   (optional) OASIS catalog to use when parsing XML
+</pre>
+        <p>Use <codeph>-f</codeph> to pass a fonts folder that you reuse from any project. Use
+                <codeph>-g</codeph> to pass an <xref href="../glossaries/OASISCatalog.dita">OASIS Catalog</xref> when your XML refers to grammars.</p>
+    </conbody>
+</concept>

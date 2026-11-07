@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="SVG">
+    <glossterm>SVG</glossterm>
+    <glossdef><xref href="https://www.w3.org/Graphics/SVG/" format="html" scope="external">Scalable
+            Vector Graphics</xref> (SVG) is a W3C format for two-dimensional vector graphics, written
+        as <xref href="XML.dita">XML</xref>. An SVG drawing describes shapes, paths, text and
+        images that can be scaled without losing quality. CSSMedia draws SVG found in a document as
+        an image.</glossdef>
+</glossentry>

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="first-stylesheet">
+    <title>Your first stylesheet</title>
+    <shortdesc>CSSMedia takes two files: an <xref href="../glossaries/XML.dita">XML</xref> document and a <xref href="../glossaries/CSS.dita">CSS</xref> stylesheet. XML contains the document’s elements and text. CSS contains rules that describe how selected elements should be styled.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="look-at-the-xml">
+                <cmd>Look at the XML</cmd>
+                <info>
+                    <p>Suppose your XML contains this element:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;chapter&gt;
+    &lt;title&gt;Using the device&lt;/title&gt;
+    &lt;p&gt;Follow these steps before starting.&lt;/p&gt;
+&lt;/chapter&gt;
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The names <codeph>chapter</codeph>, <codeph>title</codeph>, and <codeph>p</codeph> belong to this XML document. They are not special CSS names. You can use the names from your own XML in a stylesheet.</p>
+                </info>
+            </step>
+            <step id="write-a-rule">
+                <cmd>Write a rule</cmd>
+                <info>
+                    <p>A CSS rule has a selector and a declaration block:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    font-size: 18pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The selector <codeph>title</codeph> chooses XML elements with that name. The declaration <codeph>font-size: 18pt;</codeph> sets a property to a value. The braces contain the declarations for the selected elements.</p>
+                    <p>You can add more declarations to the same rule:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    font-family: serif;
+    font-size: 18pt;
+    color: navy;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Each declaration has a property name, a colon, a value, and a semicolon. CSSMedia checks property values against the CSS syntax it supports. A selector only matches when it describes elements in your XML.</p>
+                </info>
+            </step>
+            <step id="use-names-from-your-own-xml">
+                <cmd>Use names from your own XML</cmd>
+                <info>
+                    <p>The element names in the examples are placeholders. If your XML uses <codeph>heading</codeph> instead of <codeph>title</codeph>, write <codeph>heading</codeph> as the selector:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">heading {
+    font-size: 18pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>CSSMedia does not infer that <codeph>heading</codeph> is a title or that
+                            <codeph>p</codeph> is a paragraph. You decide which XML names to select
+                        and which CSS properties to set.</p>
+                </info>
+            </step>
+            <step id="generate-the-pdf">
+                <cmd>Generate the <xref href="../glossaries/PDF.dita">PDF</xref></cmd>
+                <info>
+                    <p>Save the XML as <filepath>document.xml</filepath> and the stylesheet as
+                            <filepath>document.css</filepath>, then run CSSMedia:</p>
+                </info>
+                <stepxmp>
+                    <pre>cssmedia -x document.xml -c document.css -p document.pdf</pre>
+                </stepxmp>
+                <info>
+                    <p>Open <filepath>document.pdf</filepath>. The <codeph>title</codeph> element is
+                        styled by the rule you wrote.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+

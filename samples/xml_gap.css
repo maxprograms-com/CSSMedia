@@ -1,0 +1,201 @@
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-Regular.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-Bold.ttf");
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-Italic.ttf");
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-BoldItalic.ttf");
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Sans Mono";
+    src: url("./fonts/NotoSansMono-VariableFont_wdth,wght.ttf");
+    font-weight: 100 900;
+    font-stretch: 62.5% 100%;
+}
+
+@font-face {
+    font-family: "Noto Sans Arabic UI";
+    src: url("./fonts/NotoSansArabicUI-Regular.ttf");
+}
+
+@font-face {
+    font-family: "Noto Sans CJK JP";
+    src: url("./fonts/NotoSansCJKjp-Regular.otf");
+}
+
+@page {
+    size: A4;
+    margin: 2.5cm 2cm;
+
+    @bottom-left {
+        content: string(doc-title);
+        font-family: "Noto Sans", "Noto Sans Arabic UI", "Noto Sans CJK JP", sans-serif;
+        font-size: 8pt;
+        color: #5B5B5B;
+    }
+
+    @bottom-right {
+        content: counter(page);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #5B5B5B;
+    }
+}
+
+article {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    color: #000000;
+}
+
+article:lang(en),
+article:lang(ru) {
+    font-family: "Noto Sans", sans-serif;
+    hyphens: auto;
+}
+
+article[lang|="ar"] {
+    font-family: "Noto Sans Arabic UI", "Noto Sans", sans-serif;
+    direction: rtl;
+    font-synthesis-style: none;
+}
+
+article[lang|="ja"] {
+    font-family: "Noto Sans CJK JP", "Noto Sans", sans-serif;
+    line-break: strict;
+    font-synthesis-style: none;
+}
+
+articleinfo > title {
+    string-set: doc-title content();
+    display: block;
+    font-weight: lighter;
+    font-size: 24pt;
+    color: #005393;
+    margin-top: 0;
+    margin-bottom: 12pt;
+}
+
+section > title {
+    display: block;
+    font-weight: 400;
+    font-size: 18pt;
+    color: #005393;
+    margin-top: 20pt;
+    margin-bottom: 10pt;
+}
+
+para {
+    display: block;
+    margin: 0 0 10pt 0;
+}
+
+abstract {
+    display: block;
+    font-style: italic;
+    margin: 8pt 0;
+}
+
+authorgroup,
+author {
+    display: block;
+}
+
+pubdate {
+    display: block;
+    color: #5B5B5B;
+    font-size: 9pt;
+}
+
+copyright {
+    display: block;
+    color: #5B5B5B;
+    font-size: 9pt;
+}
+
+copyright::before {
+    content: "\00a9 ";
+}
+
+year,
+holder {
+    display: inline;
+}
+
+year::after {
+    content: " ";
+}
+
+b {
+    font-weight: bold;
+    color: #005393;
+}
+
+itemizedlist {
+    display: block;
+    list-style-type: disc;
+    margin: 0 0 10pt 0;
+    padding-inline-start: 24pt;
+}
+
+listitem {
+    display: list-item;
+    margin: 0 0 8pt 0;
+}
+
+ulink {
+    -cssmedia-link: attr(url);
+    color: #3367e1;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+programlisting {
+    display: block;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: "Noto Sans Mono", monospace;
+    font-size: 9pt;
+    white-space: pre;
+    background: #000000;
+    color: #FFFFFF;
+    padding: 16pt;
+    margin: 10pt 0 10pt 16pt;
+}
+
+code {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: "Noto Sans Mono", monospace;
+}
+
+mediaobject {
+    display: block;
+    float: inline-start;
+    margin: 0 16pt 8pt 0;
+}
+
+imagedata {
+    content: attr(fileref url);
+}

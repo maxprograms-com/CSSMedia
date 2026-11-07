@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introGetStarted">
+    <title>Get started</title>
+    <shortdesc>CSSMedia turns an <xref href="../glossaries/XML.dita">XML</xref> file and a <xref href="../glossaries/CSS.dita">CSS</xref> file into a <xref href="../glossaries/PDF.dita">PDF</xref>.</shortdesc>
+    <conbody>
+        <p>To produce a PDF, install CSSMedia, prepare your XML and run it from the command line with
+            your stylesheet. These topics show how:</p>
+        <ul>
+            <li><xref href="../tasks/install-cssmedia.dita"/></li>
+            <li><xref href="prepare-xml.dita"/></li>
+            <li><xref href="generatePdf.dita"/></li>
+            <li><xref href="../tasks/first-stylesheet.dita"/></li>
+            <li><xref href="../tasks/try-the-samples.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

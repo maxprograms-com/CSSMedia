@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="repetition-and-attachment">
+    <title>Background repetition and attachment</title>
+    <shortdesc>These <xref href="../glossaries/CSS.dita">CSS</xref> properties specify whether a background image repeats to fill its area and what the image is attached to.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="background-repeat">
+                <cmd>
+                    <codeph>background-repeat</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-backgrounds-4/#background-repeat" scope="external" format="html">“CSS Backgrounds 4 §2.4, Tiling Images Shorthand: the background-repeat property”</xref>.</p>
+                    <p>Use <codeph>background-repeat</codeph> to specify whether an image repeats horizontally, vertically, both or neither. One value applies to both axes. Two values set the horizontal and vertical behavior, in that order.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-repeat: no-repeat;
+}
+
+table {
+    background-repeat: repeat no-repeat;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Use <codeph>repeat</codeph> to tile the image, <codeph>no-repeat</codeph> to show it once, <codeph>space</codeph> to distribute whole copies with space between them, or <codeph>round</codeph> to resize the copies so they fit evenly. <codeph>repeat-x</codeph> and <codeph>repeat-y</codeph> repeat on one physical axis only. <codeph>repeat-block</codeph> and <codeph>repeat-inline</codeph> repeat on the logical block or inline axis, respectively, and do not repeat on the other axis. Separate values for multiple image layers with commas.</p>
+                    <p>CSSMedia expands <codeph>background-repeat</codeph> into its physical or logical axis properties.</p>
+                </info>
+            </step>
+            <step id="background-repeat-x-background-repeat-y-background-repeat-inline-and-background-repeat-block">
+                <cmd>
+                    <codeph>background-repeat-x</codeph>, <codeph>background-repeat-y</codeph>, <codeph>background-repeat-inline</codeph> and <codeph>background-repeat-block</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-backgrounds-4/#background-repeat-longhands" scope="external" format="html">“CSS Backgrounds 4 §2.3, Tiling Images: the background-repeat-x, background-repeat-y, background-repeat-block, and background-repeat-inline properties”</xref>.</p>
+                    <p>Use these properties to specify repetition on one axis. The <codeph>x</codeph> and <codeph>y</codeph> properties use the physical horizontal and vertical axes. The <codeph>inline</codeph> and <codeph>block</codeph> properties use the logical axes, which follow the element’s writing mode.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-repeat-x: repeat;
+    background-repeat-block: no-repeat;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Each accepts <codeph>repeat</codeph>, <codeph>no-repeat</codeph>, <codeph>space</codeph> or <codeph>round</codeph>. Use the shorthand when you want to set both axes together.</p>
+                </info>
+            </step>
+            <step id="background-attachment">
+                <cmd>
+                    <codeph>background-attachment</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-backgrounds-4/#background-attachment" scope="external" format="html">“CSS Backgrounds 4 §2.5, Affixing Images: the background-attachment property”</xref>.</p>
+                    <p>Use <codeph>background-attachment</codeph> to specify how a background image is positioned in relation to its box or its contents. In paged media, CSS defines <codeph>fixed</codeph> relative to the page box, so that the background is repeated on each page.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-attachment: fixed;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>In paged media, <codeph>fixed</codeph> attaches the image to the page box. CSSMedia’s <xref href="../glossaries/PDF.dita">PDF</xref> default is <codeph>fixed</codeph>. Separate values for multiple image layers with commas.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+

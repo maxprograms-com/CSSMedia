@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="page-reference">
+    <title>Page reference</title>
+    <refbody>
+        <section>
+            <table id="page-reference__I_2s_">
+                <tgroup cols="5">
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Values</entry>
+                            <entry align="center">Default</entry>
+                            <entry align="center">Specification</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>page</codeph>
+                            </entry>
+                            <entry>Assigns a named page type to a box.</entry>
+                            <entry>
+                                <codeph>auto</codeph> or a custom identifier</entry>
+                            <entry>
+                                <codeph>auto</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#propdef-page" scope="external" format="html">CSS Paged Media 3, <codeph>page</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@page</codeph>
+                            </entry>
+                            <entry>Defines page-box declarations and may contain page-margin rules.</entry>
+                            <entry>Optional comma-separated page selectors</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-page" scope="external" format="html">CSS Paged Media 3, <codeph>@page</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>size</codeph>
+                            </entry>
+                            <entry>Sets page-box size and orientation. <codeph>auto</codeph> uses A4.</entry>
+                            <entry>
+                                <codeph>auto</codeph>; one or two lengths; or <codeph>A3</codeph>, <codeph>A4</codeph>, <codeph>A5</codeph>, <codeph>B4</codeph>, <codeph>B5</codeph>, <codeph>JIS-B4</codeph>, <codeph>JIS-B5</codeph>, <codeph>ledger</codeph>, <codeph>legal</codeph>, or <codeph>letter</codeph>, optionally combined with <codeph>portrait</codeph> or <codeph>landscape</codeph>
+                            </entry>
+                            <entry>A4</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-size" scope="external" format="html">CSS Paged Media 3, <codeph>size</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>bleed</codeph>
+                            </entry>
+                            <entry>Sets the bleed extension beyond the page box. <codeph>auto</codeph> uses <codeph>6pt</codeph> with crop marks and <codeph>0</codeph> otherwise.</entry>
+                            <entry>
+                                <codeph>auto</codeph> or a length</entry>
+                            <entry>
+                                <codeph>0</codeph> (<codeph>auto</codeph>)</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-bleed" scope="external" format="html">CSS Paged Media 3, <codeph>bleed</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>marks</codeph>
+                            </entry>
+                            <entry>Requests crop marks, registration marks, or both outside the page box.</entry>
+                            <entry>
+                                <codeph>none</codeph>, <codeph>crop</codeph>, <codeph>cross</codeph>, or both <codeph>crop</codeph> and <codeph>cross</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-marks" scope="external" format="html">CSS Paged Media 3, <codeph>marks</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>page-orientation</codeph>
+                            </entry>
+                            <entry>Rotates the laid-out page in the output.</entry>
+                            <entry>
+                                <codeph>upright</codeph>, <codeph>rotate-left</codeph>, or <codeph>rotate-right</codeph>
+                            </entry>
+                            <entry>
+                                <codeph>upright</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#descdef-page-page-orientation" scope="external" format="html">CSS Paged Media 3, <codeph>page-orientation</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@top-left-corner</codeph>
+                            </entry>
+                            <entry>Defines the fixed-size box at the intersection of the top and left page margins.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-top-left-corner" scope="external" format="html">CSS Paged Media 3, <codeph>@top-left-corner</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@top-left</codeph>
+                            </entry>
+                            <entry>Defines the box between the top-left corner and top-center boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-top-left" scope="external" format="html">CSS Paged Media 3, <codeph>@top-left</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@top-center</codeph>
+                            </entry>
+                            <entry>Defines the centered box in the top page margin.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-top-center" scope="external" format="html">CSS Paged Media 3, <codeph>@top-center</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@top-right</codeph>
+                            </entry>
+                            <entry>Defines the box between the top-center and top-right corner boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-top-right" scope="external" format="html">CSS Paged Media 3, <codeph>@top-right</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@top-right-corner</codeph>
+                            </entry>
+                            <entry>Defines the fixed-size box at the intersection of the top and right page margins.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-top-right-corner" scope="external" format="html">CSS Paged Media 3, <codeph>@top-right-corner</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@right-top</codeph>
+                            </entry>
+                            <entry>Defines the box between the top-right corner and right-middle boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-right-top" scope="external" format="html">CSS Paged Media 3, <codeph>@right-top</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@right-middle</codeph>
+                            </entry>
+                            <entry>Defines the centered box in the right page margin.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-right-middle" scope="external" format="html">CSS Paged Media 3, <codeph>@right-middle</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@right-bottom</codeph>
+                            </entry>
+                            <entry>Defines the box between the right-middle and bottom-right corner boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-right-bottom" scope="external" format="html">CSS Paged Media 3, <codeph>@right-bottom</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@bottom-right-corner</codeph>
+                            </entry>
+                            <entry>Defines the fixed-size box at the intersection of the bottom and right page margins.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-bottom-right-corner" scope="external" format="html">CSS Paged Media 3, <codeph>@bottom-right-corner</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@bottom-right</codeph>
+                            </entry>
+                            <entry>Defines the box between the bottom-center and bottom-right corner boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-bottom-right" scope="external" format="html">CSS Paged Media 3, <codeph>@bottom-right</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@bottom-center</codeph>
+                            </entry>
+                            <entry>Defines the centered box in the bottom page margin.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-bottom-center" scope="external" format="html">CSS Paged Media 3, <codeph>@bottom-center</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@bottom-left</codeph>
+                            </entry>
+                            <entry>Defines the box between the bottom-left corner and bottom-center boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-bottom-left" scope="external" format="html">CSS Paged Media 3, <codeph>@bottom-left</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@bottom-left-corner</codeph>
+                            </entry>
+                            <entry>Defines the fixed-size box at the intersection of the bottom and left page margins.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-bottom-left-corner" scope="external" format="html">CSS Paged Media 3, <codeph>@bottom-left-corner</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@left-bottom</codeph>
+                            </entry>
+                            <entry>Defines the box between the left-middle and bottom-left corner boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-left-bottom" scope="external" format="html">CSS Paged Media 3, <codeph>@left-bottom</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@left-middle</codeph>
+                            </entry>
+                            <entry>Defines the centered box in the left page margin.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-left-middle" scope="external" format="html">CSS Paged Media 3, <codeph>@left-middle</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@left-top</codeph>
+                            </entry>
+                            <entry>Defines the box between the top-left corner and left-middle boxes.</entry>
+                            <entry />
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-left-top" scope="external" format="html">CSS Paged Media 3, <codeph>@left-top</codeph>
+                                </xref>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="declarations-in-page-margin-rules">
+            <title>Declarations in page-margin rules</title>
+            <p>Each page-margin at-rule contains declarations written as <codeph>property: value;</codeph>. Use properties that apply to page-margin boxes, including <codeph>content</codeph>, font and text properties, color, backgrounds, borders, margins, padding, dimensions and <codeph>vertical-align</codeph>. See the <xref href="https://www.w3.org/TR/css-page-3/#margin-property-list" scope="external" format="html">CSS Paged Media page-margin property list</xref>.</p>
+            <p>For example, set a running title in the top-center box and a page number in the bottom-center box:</p>
+            <pre outputclass="language-css21">@page {
+    @top-center {
+        content: "Annual report";
+        font-weight: bold;
+    }
+
+    @bottom-center {
+        content: "Page " counter(page);
+        text-align: center;
+    }
+}
+</pre>
+        </section>
+    </refbody>
+</reference>
+

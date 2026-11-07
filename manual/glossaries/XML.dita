@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="XML">
+    <glossterm>XML</glossterm>
+    <glossdef><xref href="https://www.w3.org/TR/xml/" format="html" scope="external">Extensible
+            Markup Language</xref> (XML) is a W3C standard for writing structured documents. An XML
+        document is a tree of elements, with attributes and text, whose names are chosen by the
+        author or by a vocabulary such as DITA or DocBook. CSSMedia reads an XML file as the
+        content of the PDF.</glossdef>
+</glossentry>

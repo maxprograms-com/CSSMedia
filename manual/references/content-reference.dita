@@ -1,0 +1,402 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="content-reference">
+    <title>Links and generated content reference</title>
+    <shortdesc>The values list the syntax defined by the cited specifications.</shortdesc>
+    <refbody>
+        <section>
+            <table id="content-reference__I_2e_">
+                <tgroup cols="5">
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Values</entry>
+                            <entry align="center">Default</entry>
+                            <entry align="center">Specification</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>content</codeph>
+                            </entry>
+                            <entry>Replaces an element’s contents or supplies generated content for pseudo-elements and page margin boxes.</entry>
+                            <entry>
+                                <codeph>normal</codeph>, <codeph>none</codeph>, an image that replaces the contents, a list of generated items, or <codeph>element()</codeph>; a list can include alternative text after <codeph>/</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#propdef-content" scope="external" format="html">CSS Content 3 §1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>bookmark-label</codeph>
+                            </entry>
+                            <entry>Sets the text for a generated bookmark.</entry>
+                            <entry>A list of generated content items</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#propdef-bookmark-label" scope="external" format="html">CSS Content 3 §3.2</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>bookmark-level</codeph>
+                            </entry>
+                            <entry>Sets a bookmark’s hierarchy level, or disables its creation.</entry>
+                            <entry>
+                                <codeph>none</codeph> or an integer of 1 or greater</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#propdef-bookmark-level" scope="external" format="html">CSS Content 3 §3.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>bookmark-state</codeph>
+                            </entry>
+                            <entry>Sets whether a generated bookmark starts open or closed.</entry>
+                            <entry>
+                                <codeph>open</codeph> or <codeph>closed</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#propdef-bookmark-state" scope="external" format="html">CSS Content 3 §3.3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>quotes</codeph>
+                            </entry>
+                            <entry>Selects the quotation marks used by generated <codeph>open-quote</codeph> and <codeph>close-quote</codeph> content.</entry>
+                            <entry>
+                                <codeph>auto</codeph>, <codeph>none</codeph>, <codeph>match-parent</codeph>, or one or more pairs of quoted strings</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#propdef-quotes" scope="external" format="html">CSS Content 3 §2.4.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>string-set</codeph>
+                            </entry>
+                            <entry>Assigns named values from an element for retrieval in page content.</entry>
+                            <entry>
+                                <codeph>none</codeph> or comma-separated pairs of a name and one or more strings</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#propdef-string-set" scope="external" format="html">CSS Content 3 §2.7.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>link</codeph>
+                            </entry>
+                            <entry>Sets the destination of an <xref href="../glossaries/XML.dita">XML</xref> element as a CSSMedia extension.</entry>
+                            <entry>
+                                <codeph>none</codeph> or one or more quoted strings or <codeph>url()</codeph> and <codeph>src()</codeph> values</entry>
+                            <entry />
+                            <entry>CSSMedia extension; see <xref href="../tasks/links.dita#links/set-a-link-destination">Links</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>link-parameters</codeph>
+                            </entry>
+                            <entry>Supplies parameters for links to external resources.</entry>
+                            <entry>
+                                <codeph>none</codeph> or a comma-separated list of <codeph>param()</codeph> values</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-link-params-1/#propdef-link-parameters" scope="external" format="html">CSS Link Parameters 1 §2.1</xref>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <ul>
+                <li>A <codeph>&lt;content-list&gt;</codeph> is one or more generated content items, such as strings, quote keywords, counters, images, attribute values, or <codeph>content()</codeph> values. See <xref href="https://www.w3.org/TR/css-content-3/#typedef-content-content-list" scope="external" format="html">CSS Content 3</xref> and <xref href="../tasks/named-strings.dita#named-strings">Named strings</xref>.</li>
+                <li>A <codeph>&lt;content-replacement&gt;</codeph> is one image that replaces the element’s normal contents. See <xref href="https://www.w3.org/TR/css-content-3/#typedef-content-content-replacement" scope="external" format="html">CSS Content 3</xref>.</li>
+                <li>The image form of <codeph>element()</codeph> uses an element ID to produce an image; the running-element form selects a named element for use in page margin boxes. See <xref href="https://www.w3.org/TR/css-images-4/#funcdef-element" scope="external" format="html">CSS Images 4</xref> and <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-element" scope="external" format="html">CSS GCPM 3</xref>.</li>
+                <li>A positive <codeph>&lt;integer&gt;</codeph> for <codeph>bookmark-level</codeph> is a whole number of at least 1. The top level is 1.</li>
+                <li>A <codeph>&lt;string&gt;</codeph> is text between quotes. <codeph>url()</codeph> and <codeph>src()</codeph> provide URL values.</li>
+                <li>A <codeph>&lt;custom-ident&gt;</codeph> is an author-chosen identifier, not a CSS-wide keyword or <codeph>none</codeph>.</li>
+                <li>
+                    <codeph>param()</codeph> takes a dashed parameter name beginning with <codeph>--</codeph> and an optional <codeph>&lt;declaration-value&gt;</codeph>. If omitted, the parameter value is empty. A <codeph>&lt;declaration-value&gt;</codeph> is the sequence of <xref href="../glossaries/CSS.dita">CSS</xref> component values after a declaration’s colon, excluding top-level semicolons and unmatched closing braces. See <xref href="https://www.w3.org/TR/css-link-params-1/#funcdef-param" scope="external" format="html">CSS Link Parameters 1</xref> and <xref href="https://www.w3.org/TR/css-syntax-3/#typedef-declaration-value" scope="external" format="html">CSS Syntax 3</xref>.</li>
+            </ul>
+            <p>For examples of destinations, named strings, and generated content, see <xref href="../tasks/links.dita#links">Links</xref> and <xref href="../tasks/named-strings.dita#named-strings">Named strings</xref>.</p>
+        </section>
+        <section id="counters-list-markers-and-footnotes">
+            <title>Counters, list markers, and footnotes</title>
+            <table id="content-reference__I_2g_">
+                <tgroup cols="5">
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Values</entry>
+                            <entry align="center">Default</entry>
+                            <entry align="center">Specification</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>counter-reset</codeph>
+                            </entry>
+                            <entry>Creates a new counter instance and initializes it.</entry>
+                            <entry>
+                                <codeph>none</codeph> or one or more counter names, each optionally followed by an integer; the default value for each name is <codeph>0</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-counter-reset" scope="external" format="html">CSS Lists 3 §4.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>counter-increment</codeph>
+                            </entry>
+                            <entry>Increases each named counter, creating it if needed.</entry>
+                            <entry>
+                                <codeph>none</codeph> or one or more counter names, each optionally followed by an integer; the default increment is <codeph>1</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-counter-increment" scope="external" format="html">CSS Lists 3 §4.2</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>counter-set</codeph>
+                            </entry>
+                            <entry>Sets the value of existing counters, creating a counter if it does not exist.</entry>
+                            <entry>
+                                <codeph>none</codeph> or one or more counter names, each optionally followed by an integer; the default value is <codeph>0</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-counter-set" scope="external" format="html">CSS Lists 3 §4.3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>list-style</codeph>
+                            </entry>
+                            <entry>Sets the marker’s position, image, and type.</entry>
+                            <entry>Any order of <codeph>inside</codeph> or <codeph>outside</codeph>, an image or <codeph>none</codeph>, and a counter style, string, or <codeph>none</codeph>; any component can be omitted</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-list-style" scope="external" format="html">CSS Lists 3 §3.6</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>list-style-image</codeph>
+                            </entry>
+                            <entry>Uses an image as the list marker.</entry>
+                            <entry>An image or <codeph>none</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-list-style-image" scope="external" format="html">CSS Lists 3 §3.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>list-style-position</codeph>
+                            </entry>
+                            <entry>Places the marker inside the list item’s contents or outside its principal box.</entry>
+                            <entry>
+                                <codeph>inside</codeph> or <codeph>outside</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-list-style-position" scope="external" format="html">CSS Lists 3 §3.5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>list-style-type</codeph>
+                            </entry>
+                            <entry>Chooses the marker’s counter style or a literal marker string.</entry>
+                            <entry>A counter-style name, a string, or <codeph>none</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-list-style-type" scope="external" format="html">CSS Lists 3 §3.4</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>marker-side</codeph>
+                            </entry>
+                            <entry>Chooses whether an outside marker’s position follows the list item’s directionality or its parent’s.</entry>
+                            <entry>
+                                <codeph>match-self</codeph> or <codeph>match-parent</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-marker-side" scope="external" format="html">CSS Lists 3 §3.7</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>@counter-style</codeph>
+                            </entry>
+                            <entry>Defines a named counter style for markers and counter functions.</entry>
+                            <entry>A name followed by counter-style descriptors</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#at-ruledef-counter-style" scope="external" format="html">CSS Counter Styles 3 §3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>system</codeph> descriptor</entry>
+                            <entry>Selects the algorithm that converts counter values to symbols.</entry>
+                            <entry>
+                                <codeph>cyclic</codeph>, <codeph>numeric</codeph>, <codeph>alphabetic</codeph>, <codeph>symbolic</codeph>, <codeph>additive</codeph>, <codeph>fixed</codeph> with an optional starting integer, or <codeph>extends</codeph> with another counter-style name</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-system" scope="external" format="html">CSS Counter Styles 3 §3.1</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>symbols</codeph> descriptor</entry>
+                            <entry>Lists the symbols used by the cyclic, fixed, symbolic, alphabetic, or numeric systems.</entry>
+                            <entry>One or more symbols</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-symbols" scope="external" format="html">CSS Counter Styles 3 §3.2</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>additive-symbols</codeph> descriptor</entry>
+                            <entry>Maps descending counter weights to symbols for the additive system.</entry>
+                            <entry>Comma-separated pairs of a non-negative integer and a symbol, in descending weight order</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-additive-symbols" scope="external" format="html">CSS Counter Styles 3 §3.3</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>negative</codeph> descriptor</entry>
+                            <entry>Adds symbols before and optionally after a negative counter representation.</entry>
+                            <entry>One or two symbols</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-negative" scope="external" format="html">CSS Counter Styles 3 §3.4</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>prefix</codeph> descriptor</entry>
+                            <entry>Adds a symbol before each marker.</entry>
+                            <entry>One symbol</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-prefix" scope="external" format="html">CSS Counter Styles 3 §3.7</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>suffix</codeph> descriptor</entry>
+                            <entry>Adds a symbol after each marker.</entry>
+                            <entry>One symbol</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-suffix" scope="external" format="html">CSS Counter Styles 3 §3.7</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>range</codeph> descriptor</entry>
+                            <entry>Limits the values that the counter style can represent before fallback is used.</entry>
+                            <entry>
+                                <codeph>auto</codeph> or comma-separated pairs of integer bounds or <codeph>infinite</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-range" scope="external" format="html">CSS Counter Styles 3 §3.5</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>pad</codeph> descriptor</entry>
+                            <entry>Pads short representations to a minimum length with a chosen symbol.</entry>
+                            <entry>A non-negative integer and a symbol</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-pad" scope="external" format="html">CSS Counter Styles 3 §3.6</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>fallback</codeph> descriptor</entry>
+                            <entry>Names the counter style used when this style cannot represent a value.</entry>
+                            <entry>A counter-style name</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-fallback" scope="external" format="html">CSS Counter Styles 3 §3.8</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>footnote-display</codeph>
+                            </entry>
+                            <entry>Chooses the layout form used to display a footnote.</entry>
+                            <entry>
+                                <codeph>block</codeph>, <codeph>inline</codeph>, or <codeph>compact</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#propdef-footnote-display" scope="external" format="html">CSS GCPM 3 §2.6</xref>
+                            </entry>
+                        </row>
+                        <row valign="middle">
+                            <entry>
+                                <codeph>footnote-policy</codeph>
+                            </entry>
+                            <entry>Controls how footnote content is kept together when it does not fit in the remaining page space.</entry>
+                            <entry>
+                                <codeph>auto</codeph>, <codeph>line</codeph>, or <codeph>block</codeph>
+                            </entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#propdef-footnote-policy" scope="external" format="html">CSS GCPM 3 §2.8</xref>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <ul>
+                <li>A <codeph>&lt;counter-name&gt;</codeph> is an identifier naming a CSS counter. <codeph>none</codeph> and CSS-wide keywords are not counter names. See <xref href="https://www.w3.org/TR/css-lists-3/#typedef-counter-name" scope="external" format="html">CSS Lists 3</xref>.</li>
+                <li>An <codeph>&lt;integer&gt;</codeph> is a whole number without a fractional part. In the <codeph>range</codeph> descriptor, <codeph>infinite</codeph> means there is no bound in that direction. See <xref href="https://www.w3.org/TR/css-values-4/#integer-value" scope="external" format="html">CSS Values 4</xref>.</li>
+                <li>An <codeph>&lt;image&gt;</codeph> is a URL, image function, or gradient that can provide image data. See <xref href="https://www.w3.org/TR/css-images-3/#typedef-image" scope="external" format="html">CSS Images 3</xref>.</li>
+                <li>A <codeph>&lt;counter-style&gt;</codeph> is a predefined counter style name, a name defined by <codeph>@counter-style</codeph>, or a <codeph>symbols()</codeph> function. See <xref href="https://www.w3.org/TR/css-counter-styles-3/#typedef-counter-style" scope="external" format="html">CSS Counter Styles 3</xref>.</li>
+                <li>A <codeph>&lt;counter-style-name&gt;</codeph> is the identifier naming a predefined or author-defined counter style. See <xref href="https://www.w3.org/TR/css-counter-styles-3/#typedef-counter-style-name" scope="external" format="html">CSS Counter Styles 3</xref>.</li>
+                <li>A <codeph>&lt;symbol&gt;</codeph> is a string, an identifier whose characters form the symbol, or an image. See <xref href="https://www.w3.org/TR/css-counter-styles-3/#typedef-symbol" scope="external" format="html">CSS Counter Styles 3</xref>.</li>
+            </ul>
+            <p>For example, this rule defines a two-symbol cycle. Replace <codeph>item</codeph> with an element name in your XML. The <codeph>display</codeph> declaration makes those elements list items, and their markers use the defined style.</p>
+            <pre outputclass="language-css21">@counter-style stars {
+    system: cyclic;
+    symbols: "★" "☆";
+    suffix: " ";
+}
+
+item {
+    display: list-item;
+    list-style-type: stars;
+}
+</pre>
+            <p>CSSMedia applies counter operations and prepares text marker content while building the box tree.</p>
+        </section>
+    </refbody>
+</reference>
+

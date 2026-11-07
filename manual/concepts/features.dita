@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="featureThemes">
+    <title>Features</title>
+    <shortdesc>CSSMedia offers these main features.</shortdesc>
+    <conbody>
+        <ul>
+            <li><b>XML format agnostic.</b> CSSMedia works with any well-formed <xref href="../glossaries/XML.dita">XML</xref>. It does not
+                assume anything about element names or attributes.</li>
+            <li><b>Any grammar.</b> XML is parsed with TypesXML, which handles any vocabulary. You
+                can pass the grammars of your documents to CSSMedia with an <xref href="../glossaries/OASISCatalog.dita">OASIS Catalog</xref>.</li>
+            <li><b>CSS based.</b> The stylesheet is the only source of styling. Selector matching,
+                the cascade, inheritance and value resolution follow the <xref href="../glossaries/CSS.dita">CSS</xref> specifications.</li>
+            <li><b>PDF for paged media.</b> Page sizes, margins, page breaks, named pages, headers,
+                footers and page numbers are controlled with CSS paged media features.</li>
+            <li><b>Multilingual support.</b> Documents can be in any language and script, including
+                right-to-left languages and CJK languages.</li>
+            <li><b>Hyphenation by language.</b> Text is hyphenated with the patterns of the language
+                declared with <codeph>xml:lang</codeph>.</li>
+            <li><b>Fonts.</b> OpenType, TrueType, font collections, WOFF and WOFF 2.0 fonts, loaded
+                from <codeph>@font-face</codeph> rules or a fonts folder, plus the 14 standard <xref href="../glossaries/PDF.dita">PDF</xref>
+                fonts.</li>
+            <li><b>Shared fonts folder.</b> You can pass a central fonts folder to CSSMedia and
+                reuse it from any project.</li>
+            <li><b>Generated content.</b> Counters, quotes, list markers, named strings, running
+                elements, cross-references and tables of contents.</li>
+            <li><b>Links and bookmarks.</b> Internal and external links and PDF bookmarks.</li>
+            <li><b>Images.</b> PNG, JPEG, JPEG 2000 and WebP images.</li>
+            <li><b>SVG and MathML.</b> <xref href="../glossaries/SVG.dita">SVG</xref> and <xref href="../glossaries/MathML.dita">MathML</xref> found in a document are drawn as images.</li>
+        </ul>
+    </conbody>
+</concept>

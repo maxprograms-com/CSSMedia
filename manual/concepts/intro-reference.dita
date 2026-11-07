@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introReference">
+    <title>Reference</title>
+    <shortdesc>Look up properties, values and at-rules by subject.</shortdesc>
+    <conbody>
+        <p>Each table links to the <xref href="../glossaries/CSS.dita">CSS</xref> specification that defines its entries. The references are
+            grouped by subject:</p>
+        <ul>
+            <li><xref href="../references/selector-reference.dita"/></li>
+            <li><xref href="../references/font-reference.dita"/></li>
+            <li><xref href="../references/box-model-properties.dita"/></li>
+            <li><xref href="../references/dimension-properties.dita"/></li>
+            <li><xref href="../references/background-reference.dita"/></li>
+            <li><xref href="../references/display-and-positioning.dita"/></li>
+            <li><xref href="../references/page-reference.dita"/></li>
+            <li><xref href="../references/content-reference.dita"/></li>
+            <li><xref href="../references/cascade-reference.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="basic-selectors">
+    <title>Basic selectors and namespaces</title>
+    <shortdesc>Basic selectors match an element by its name, attributes or namespace. Combine selector parts when you want to require more than one condition.</shortdesc>
+    <conbody>
+        <section id="element-names-and-any-element">
+            <title>Element names and any element</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#type-selectors" scope="external" format="html">Selectors 4 §5.1, Type (tag name) selector</xref>; <xref href="https://www.w3.org/TR/selectors-4/#universal-selector" scope="external" format="html">Selectors 4 §5.2, Universal selector</xref>.</p>
+            <p>A type selector is an element name, such as <codeph>chapter</codeph> or <codeph>title</codeph>. It matches elements with that name. The universal selector <codeph>*</codeph> matches any element.</p>
+            <pre outputclass="language-css21">chapter { color: navy; }
+* { font-family: serif; }
+</pre>
+            <p>An unprefixed name uses the default namespace declared with <codeph>@namespace</codeph>. Without a declared default namespace, it matches an element with no namespace.</p>
+        </section>
+        <section id="ids-and-classes">
+            <title>IDs and classes</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#class-html" scope="external" format="html">Selectors 4 §6.6, Class selectors</xref>; <xref href="https://www.w3.org/TR/selectors-4/#id-selectors" scope="external" format="html">Selectors 4 §6.7, ID selectors</xref>.</p>
+            <p>An ID identifies an element. Write <codeph>#</codeph> followed by the ID value to select it. CSSMedia checks the <codeph>id</codeph> and <codeph>xml:id</codeph> attributes.</p>
+            <pre outputclass="language-css21">#overview { color: navy; }
+</pre>
+            <p>A class selector starts with a period, as in <codeph>.warning</codeph>. CSSMedia accepts this syntax, but does not use it to test an <xref href="../glossaries/XML.dita">XML</xref> attribute. Selectors Level 4 leaves the meaning of class membership to the document language, and XML does not define one universal class attribute.</p>
+            <p>If your XML uses an unnamespaced <codeph>class</codeph> attribute containing space-separated class names, test it with an attribute selector. The <codeph>~=</codeph> operator checks for one whole, space-separated value:</p>
+            <pre outputclass="language-css21">[class~="warning"] { color: red; }
+</pre>
+            <p>This matches an element whose <codeph>class</codeph> attribute contains <codeph>warning</codeph> as one of its values. It does not make <codeph>.warning</codeph> a working class selector in CSSMedia.</p>
+        </section>
+        <section id="attributes">
+            <title>Attributes</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#attribute-selectors" scope="external" format="html">Selectors 4 §6, Attribute selectors</xref>.</p>
+            <p>An attribute selector checks an XML attribute. Put its name in square brackets to require that the attribute exists. Add an operator and value to compare its contents.</p>
+            <pre outputclass="language-css21">[role] { color: navy; }
+[role="notice"] { color: navy; }
+[class~="warning"] { color: red; }
+[lang|="en"] { font-family: serif; }
+[href^="https"] { color: blue; }
+[href$=".pdf"] { color: purple; }
+[data-kind*="reference"] { color: teal; }
+[role="notice" i] { color: navy; }
+</pre>
+            <p>
+                <codeph>=</codeph> compares the whole value. <codeph>~=</codeph> checks for a space-separated word. <codeph>|=</codeph> matches the value itself or a value followed by a hyphen. <codeph>^=</codeph>, <codeph>$=</codeph> and <codeph>*=</codeph> check for text at the start, end or anywhere in the value. The <codeph>i</codeph> flag ignores ASCII letter case. The <codeph>s</codeph> flag requests case-sensitive comparison.</p>
+            <p>An attribute selector without a namespace prefix checks an attribute with no namespace. Use a declared prefix to select an attribute in a namespace.</p>
+        </section>
+        <section id="xml-namespaces">
+            <title>XML namespaces</title>
+            <p>
+                <xref href="https://www.w3.org/TR/css-namespaces-3/#declaration" scope="external" format="html">CSS Namespaces 3 §3, Declaring namespaces: the @namespace rule</xref>.</p>
+            <p>XML elements and attributes can belong to namespaces. A <xref href="../glossaries/CSS.dita">CSS</xref> namespace declaration assigns a prefix to a namespace URI. Use that prefix in a selector to choose elements in that namespace.</p>
+            <pre outputclass="language-css21">@namespace svg url("http://www.w3.org/2000/svg");
+
+svg|rect { color: navy; }
+*|rect { color: teal; }
+|rect { color: gray; }
+</pre>
+            <p>
+                <codeph>svg|rect</codeph> selects <codeph>rect</codeph> elements in the declared <xref href="../glossaries/SVG.dita">SVG</xref> namespace. <codeph>*|rect</codeph> selects <codeph>rect</codeph> elements in any namespace. <codeph>|rect</codeph> selects <codeph>rect</codeph> elements with no namespace. The CSS prefix is an alias for the URI. It does not need to match the prefix used in the XML.</p>
+            <p>A bare attribute selector such as <codeph>[id]</codeph> always selects an attribute with no namespace. An undeclared prefix makes that selector invalid. CSSMedia ignores a style rule if any selector in its selector list is invalid.</p>
+        </section>
+    </conbody>
+</concept>
+

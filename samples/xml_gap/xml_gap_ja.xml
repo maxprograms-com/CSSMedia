@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "docbook/docbookx.dtd">
+<article lang="ja">
+  <articleinfo>
+    <title>TypeScriptにおけるXMLのギャップを埋める（ローカライズワークフロー向け）</title>
+    <author>
+      <firstname>ロドルフォ・M.</firstname>
+      <surname>ラヤ</surname>
+      <affiliation>
+        <orgname><ulink url="https://maxprograms.com">Maxprograms</ulink></orgname>
+        <address format="linespecific"><email>rmraya@maxprograms.com</email></address>
+      </affiliation>
+    </author>
+    <pubdate>2026年6月17日</pubdate>
+    <copyright>
+      <year>2026</year>
+      <holder>Maxprograms</holder>
+    </copyright>
+    <abstract>
+      <para>ローカリゼーションワークフローにおけるXML処理のためにJavaからTypeScriptへの移行について解説し、TMX、XLIFF、SRXのDTDおよびXMLスキーマ検証をNode.jsで実現するために構築されたライブラリ「TypesXML」、「TypesBCP47」、「TypesXLIFF」について説明します。</para>
+    </abstract>
+  </articleinfo>
+
+  <section id="intro">
+    <title>はじめに</title>
+    <para>Node.js や TypeScript で XML を処理しようとしたことがある方なら、ある制限に直面したことがあるでしょう。パーシングは簡単ですが、DTD や XML スキーマに対する検証はそう簡単ではありません。</para>
+    <para>これは、構造や妥当性が必須である TMX、XLIFF、SRX といったローカリゼーション標準を扱う際に、深刻な問題となります。それらが、データが使用可能かどうかを決定づけるからです。</para>
+    <para>これが私が直面した課題であり、最終的に解決することに決めました。</para>
+  </section>
+
+  <section id="the-old-setup-java-for-xml">
+    <title>従来の環境：XML処理にはJava</title>
+    <para>TMX、XLIFF、SRX、TBXといったローカライゼーション標準は、すべてXMLベースです。20年以上前にこれらの標準を取り扱い始めた当時、Javaが最も実用的な選択肢でした。JavaのXMLツールは完璧ではありませんでしたが、解析や検証を行うには十分な信頼性がありました。</para>
+    <para>長い間、それはうまく機能していました。</para>
+    <para>問題はXMLそのものではなく、その周辺環境にありました。</para>
+    <para>JavaのデスクトップUIの選択肢は、私のニーズに合うように進化しませんでした。私は長年SWTを使用してきましたが、そのメンテナンスは疎かになり、SwingやJavaFXといった代替手段には魅力を感じませんでした。</para>
+  </section>
+
+  <section id="moving-to-typescript">
+    <title>TypeScriptへの移行</title>
+    <para>2018年頃、私はユーザーインターフェースの構築をHTML、CSS、JavaScriptへと移行しました。最終的には、静的チェックによるより安全な開発モデルを提供するTypeScriptが、当然の選択肢となりました。</para>
+    <para>これでUI面の問題は解決しました。</para>
+    <para>しかし、新たな問題が生じました：</para>
+    <itemizedlist>
+      <listitem><para>TypeScriptでのUI</para></listitem>
+      <listitem><para>XML処理は依然としてJava</para></listitem>
+    </itemizedlist>
+    <para>単一のワークフローに対して2つの技術スタックを維持するのは理想的ではありませんでした。</para>
+  </section>
+
+  <section id="the-missing-piece-xml-validation-in-typescript">
+    <title>欠けていたピース：TypeScriptでのXML検証</title>
+    <para>当時、JavaScriptにはXMLパーサーが存在しましたが、以下の機能をサポートしているものは一つもありませんでした：</para>
+    <itemizedlist>
+      <listitem><para>DTDによる検証</para></listitem>
+      <listitem><para>XMLスキーマによる検証</para></listitem>
+    </itemizedlist>
+    <para>ローカライズ形式においては、これは必須要件です。検証なしでは、TMXやXLIFFファイルの構造が正しいことを保証できません。</para>
+    <para>そこで、私は <ulink url="https://maxprograms.com/products/typesxml.html">TypesXML</ulink>という、TypeScript 用のネイティブ XML パーサー兼バリデータの開発を始めました。</para>
+  </section>
+
+  <section id="a-minimal-example">
+    <title>最小限のサンプル</title>
+    <para>基本的なXMLの解析は以下のようになります：</para>
+    <programlisting format="linespecific" xml:space="preserve">import { Catalog, DOMBuilder, SAXParser } from "typesxml";
+
+const parser: SAXParser = new SAXParser();
+const handler: DOMBuilder = new DOMBuilder();
+const catalog = new Catalog('/pathTo/catalog.xml');
+
+parser.setCatalog(catalog);
+parser.setContentHandler(handler);
+parser.setValidating(true);
+parser.parseFile("example.xml");
+
+const document = handler.getDocument();
+console.log(document.toString());</programlisting>
+    <para>同じパーサーを次のように設定することもできます：</para>
+    <itemizedlist>
+      <listitem><para>DTD に基づいて検証を行う</para></listitem>
+      <listitem><para>XMLスキーマに基づいた検証</para></listitem>
+      <listitem><para>XMLカタログの解決</para></listitem>
+    </itemizedlist>
+    <para>これにより、従来Javaライブラリで可能だったのと同等の制御レベルで、Node.js上でXMLを処理することが可能になります。</para>
+  </section>
+
+  <section id="building-the-missing-stack">
+    <title>不足していたスタックの構築</title>
+    <para>完全な XML スタックの構築には時間がかかりました。</para>
+    <itemizedlist>
+      <listitem><para>最初にDOMおよびSAXスタイルの解析が実現された</para></listitem>
+      <listitem><para>続いてDTD検証が行われました</para></listitem>
+      <listitem><para>XMLスキーマの検証が最後のステップでした</para></listitem>
+    </itemizedlist>
+    <para>XMLスキーマのサポートははるかに複雑ですが、XLIFFのようなフォーマットには不可欠です。</para>
+  </section>
+
+  <section id="supporting-pieces-language-data">
+    <title>関連要素：言語データ</title>
+    <para>ローカライゼーションのワークフローも、言語コードに大きく依存しています。</para>
+    <para>BCP47 が標準を定義していますが、公式データは巨大なテキストファイルとして配布されています。TypeScript で使いやすくするために、私は <ulink url="https://github.com/maxprograms-com/TypesBCP47">TypesBCP47</ulink>というコンパニオンライブラリを作成しました。これは、そのデータを解析し、構造化された形で公開するものです。</para>
+  </section>
+
+  <section id="proof-of-concept-rewriting-existing-tools">
+    <title>概念実証：既存ツールの書き換え</title>
+    <para>このアプローチの有効性を検証するため、既存のツールをTypeScriptで書き直しました：</para>
+    <itemizedlist>
+      <listitem><para><ulink url="https://maxprograms.com/products/srxeditor.html">SRXEditor</ulink></para></listitem>
+      <listitem><para><ulink url="https://maxprograms.com/products/tmxvalidator.html">TMXValidator</ulink></para></listitem>
+    </itemizedlist>
+    <para>これらのツールは：</para>
+    <itemizedlist>
+      <listitem><para>大規模なXMLファイルを処理し</para></listitem>
+      <listitem><para>公式の文法に基づいて検証を行う</para></listitem>
+      <listitem><para>元のJava版と同等のパフォーマンスを維持</para></listitem>
+    </itemizedlist>
+    <para>これにより、TypeScriptが実環境におけるローカライゼーションのワークロードに対応できることが確認されました。</para>
+  </section>
+
+  <section id="xliff-support">
+    <title>XLIFFのサポート</title>
+    <para>XLIFFはXMLスキーマを使用しているため、完全なスキーマバリデータの実装が必要でした。</para>
+    <para>それが整ったところで、私は <ulink url="https://maxprograms.com/products/typesxliff.html">TypesXLIFF</ulink>という、XLIFF 2.x ファイルの解析、生成、および検証を行うライブラリを作成しました。</para>
+    <para>以下の機能をサポートしています：</para>
+    <itemizedlist>
+      <listitem><para>XMLスキーマによる検証</para></listitem>
+      <listitem><para>XLIFF仕様に対する検証</para></listitem>
+      <listitem><para>型付きオブジェクトモデル</para></listitem>
+      <listitem><para>JSON 変換</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="what-this-enables">
+    <title>これにより可能になること</title>
+    <para>これらの要素が整ったことで、以下のことが可能になりました：</para>
+    <itemizedlist>
+      <listitem><para>Node.js上でTMX、XLIFF、SRXを直接検証する</para></listitem>
+      <listitem><para>ローカライゼーションパイプラインを完全にTypeScriptで構築する</para></listitem>
+      <listitem><para>別途Javaバックエンドを用意する必要がなくなる</para></listitem>
+      <listitem><para>UIと処理の両方を同じ言語で統一できる</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="whats-next">
+    <title>今後の予定</title>
+    <para>TBXのサポートを進めているほか、他のツールについてもTypeScriptへ完全移行するための更新を行っています。</para>
+    <para>古いコンポーネントにはまだ一部のJavaコードが残っていますが、新規開発は現在TypeScriptを中心に進められています。</para>
+  </section>
+
+  <section id="closing-thoughts">
+    <title>まとめ</title>
+    <para>長い間、ローカリゼーションワークフローにおける XML 処理には、事実上 Java が必要とされていました。</para>
+    <para>しかし、もはやそうではありません。</para>
+    <para>Node.js で XML ベースのフォーマットを扱う場合、特にローカリゼーションや構造化データパイプラインでは、解析、検証、処理をすべて TypeScript で処理できるようになりました。</para>
+  </section>
+
+  <section id="author">
+    <title>著者について</title>
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/p-rodolfo-white.jpg"/>
+      </imageobject>
+    </mediaobject>
+    <para>Maxprograms SASのCTOであるRodolfo M. Raya氏は、XLIFF、TMX、TBX、SRX、GlossMLなどのローカリゼーション標準の開発に携わっています。</para>
+    <para>彼は、このサイトで提供されているソフトウェアや検証サービスを含め、これらの仕様を実装するツールやライブラリを開発しています。</para>
+  </section>
+</article>

@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="conditional-rules">
+    <title>Conditional rules</title>
+    <shortdesc>A conditional rule contains rules that participate in the cascade only when its condition is true. A condition filters rules; it does not give declarations extra priority. Declarations that pass the condition compete by the usual cascade order.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="media-conditions-with-media">
+                <cmd>Media conditions with <codeph>@media</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-media" scope="external" format="html">CSS Conditional 3 §5, Media-specific style sheets: the @media rule</xref>; <xref href="https://www.w3.org/TR/mediaqueries-5/#media" scope="external" format="html">Media Queries 5 §2, Media Queries</xref>.</p>
+                    <p>
+                        <codeph>@media</codeph> tests a media query list. Queries can test a media type, media features, or both. A comma separates alternatives: the list matches if at least one query is true. <codeph>and</codeph> combines a media type or feature with another test. <codeph>not</codeph> negates the complete query. <codeph>only</codeph> has no effect on whether a query matches.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@media print and (width &gt;= 6in) {
+    chapter { color: black; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>CSSMedia evaluates media types for paged output. <codeph>print</codeph> and <codeph>all</codeph> match. <codeph>screen</codeph> does not. A query without a media type is treated as <codeph>all</codeph>. Media feature queries are evaluated against the page and environment values CSSMedia uses.</p>
+                </info>
+            </step>
+            <step id="feature-tests-with-supports">
+                <cmd>Feature tests with <codeph>@supports</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-conditional-3/#at-ruledef-supports" scope="external" format="html">CSS Conditional 3 §6, Feature queries: the @supports rule</xref>; <xref href="https://www.w3.org/TR/css-conditional-5/#at-supports-ext" scope="external" format="html">CSS Conditional 5 §2, Extensions to the @supports rule</xref>.</p>
+                    <p>
+                        <codeph>@supports</codeph> tests whether CSSMedia accepts a declaration or selector. A declaration test uses parentheses:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@supports (color: navy) {
+    title { color: navy; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Use <codeph>selector()</codeph> to test one complex selector. <xref href="../glossaries/CSS.dita">CSS</xref> also defines <codeph>font-tech()</codeph> and <codeph>font-format()</codeph> tests. <codeph>at-rule()</codeph> tests whether an at-rule is supported, and a named support condition can test a group declared with <codeph>@supports-condition</codeph>. Conditions can combine tests with <codeph>not</codeph>, <codeph>and</codeph> and <codeph>or</codeph>; use parentheses when combining <codeph>and</codeph> and <codeph>or</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@supports selector(chapter &gt; title) and (display: block) {
+    chapter &gt; title { display: block; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A true feature test means the tested syntax is accepted. It does not test whether a selector matches any element or whether a particular document contains a value.</p>
+                </info>
+            </step>
+            <step id="named-support-conditions">
+                <cmd>Named support conditions</cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-supports-condition" scope="external" format="html">CSS Conditional 5 §8, Defining Custom Support Queries: the @supports-condition rule</xref>.</p>
+                    <p>
+                        <codeph>@supports-condition</codeph> gives a name to a group of feature tests. Declarations and nested selectors in the block are tested for support; they do not add styling declarations. Define the name before using it:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@supports-condition --basic-layout {
+    display: block;
+    color: navy;
+}
+
+@supports (--basic-layout) {
+    chapter { display: block; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>If more than one definition uses the same name, the last definition in document order replaces the earlier one.</p>
+                </info>
+            </step>
+            <step id="general-conditions-with-when">
+                <cmd>General conditions with <codeph>@when</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-when" scope="external" format="html">CSS Conditional 5 §3, Generalized Conditional Rules: the @when rule</xref>.</p>
+                    <p>
+                        <codeph>@when</codeph> tests a boolean condition that can combine <codeph>media()</codeph> and <codeph>supports()</codeph> tests. It provides a single condition syntax for tests that would otherwise appear in separate <codeph>@media</codeph> or <codeph>@supports</codeph> rules.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@when media(overflow-block: paged) and supports(color: navy) {
+    title { color: navy; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Conditions can be grouped with parentheses and combined with <codeph>and</codeph>, <codeph>or</codeph> and <codeph>not</codeph>.</p>
+                </info>
+            </step>
+            <step id="conditional-chains-with-else">
+                <cmd>Conditional chains with <codeph>@else</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-else" scope="external" format="html">CSS Conditional 5 §4, Chained Conditionals: the @else rule</xref>.</p>
+                    <p>An <codeph>@else</codeph> rule follows an <codeph>@when</codeph>, <codeph>@media</codeph>, <codeph>@supports</codeph> or <codeph>@container</codeph> rule to form a chain. Only the first branch whose condition is true applies. <codeph>@else</codeph> can have its own condition; without one, it is the final fallback.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@when supports(color: navy) {
+    title { color: navy; }
+} @else supports(color: black) {
+    title { color: black; }
+} @else {
+    title { color: inherit; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Each <codeph>@else</codeph> belongs to the immediately preceding conditional chain in the same rule list. An unrelated rule or declaration ends the chain.</p>
+                </info>
+            </step>
+            <step id="reusable-media-queries-with-custom-media">
+                <cmd>Reusable media queries with <codeph>@custom-media</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/mediaqueries-5/#at-ruledef-custom-media" scope="external" format="html">Media Queries 5 §10, Custom Media Queries</xref>.</p>
+                    <p>
+                        <codeph>@custom-media</codeph> assigns a name to a media query list, or to the boolean value <codeph>true</codeph> or <codeph>false</codeph>. Use the name in a media query by writing it inside parentheses:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@custom-media --wide-page (width &gt;= 6in);
+
+@media (--wide-page) {
+    chapter { color: black; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A definition can refer to other custom media names. Circular references do not produce a true query. When a name is defined more than once, the last definition is used.</p>
+                </info>
+            </step>
+            <step id="container-queries-with-container">
+                <cmd>Container queries with <codeph>@container</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-conditional-5/#propdef-container-type" scope="external" format="html">CSS Conditional 5 §5.1, Creating Query Containers: the container-type property</xref>; <xref href="https://www.w3.org/TR/css-conditional-5/#at-ruledef-container" scope="external" format="html">§5.4, Container Queries: the @container rule</xref>.</p>
+                    <p>
+                        <codeph>@container</codeph> selects a query container from the element’s ancestors. A container name before the condition restricts which ancestor is selected. A style query tests a computed style or custom property on the selected container. Conditions can combine tests with <codeph>and</codeph>, <codeph>or</codeph> and <codeph>not</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@container style(--theme: dark) {
+    chapter { color: white; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A style query can use an element as a container without size containment. Without a name, the nearest eligible ancestor is used. With a name, the nearest ancestor whose <codeph>container-name</codeph> includes that name is used.</p>
+                </info>
+            </step>
+            <step id="importing-stylesheets">
+                <cmd>Importing stylesheets</cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-cascade-5/#at-import" scope="external" format="html">CSS Cascade 5 §2, Importing Style Sheets: the @import rule</xref>; <xref href="https://www.w3.org/TR/css-cascade-5/#conditional-import" scope="external" format="html">CSS Cascade 5 §2.1, Conditional @import Rules</xref>.</p>
+                    <p>
+                        <codeph>@import</codeph> loads another stylesheet. Its rules take part in the cascade at the import’s position. The URL or quoted string comes first. Optional clauses can assign the imported rules to a layer, test feature support, or restrict them to matching media:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@import "print.css" layer(print-theme) supports(color: navy) print;
+</pre>
+                </stepxmp>
+                <info>
+                    <p>An optional <codeph>@charset</codeph>, layer-order statements and <codeph>@supports-condition</codeph> rules can precede imports. Imports precede <codeph>@namespace</codeph>; namespace declarations precede ordinary rules. An import after another rule is ignored. Imports can be conditional. If an import condition is false, its rules do not participate. A layer clause places the imported stylesheet in that layer; an unnamed <codeph>layer</codeph> creates an anonymous layer.</p>
+                </info>
+            </step>
+            <step id="layer-rules">
+                <cmd>Layer rules</cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-cascade-5/#layering" scope="external" format="html">CSS Cascade 5 §6.4, Cascade Layers</xref>.</p>
+                    <p>
+                        <codeph>@layer</codeph> declares a layer order or groups rules into a layer:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@layer reset, base, theme;
+
+@layer theme {
+    title { color: navy; }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Declarations in layers use the layer precedence described in <xref href="../concepts/cascade-order.dita#cascade-order/cascade-layers">Cascade order and layers</xref>. Layer statements establish order, and layer blocks group rules. An <codeph>@import</codeph> can assign its imported rules to a layer with a layer clause.</p>
+                </info>
+            </step>
+            <step id="other-stylesheet-declarations">
+                <cmd>Other stylesheet declarations</cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-namespaces-3/#syntax" scope="external" format="html">CSS Namespaces 3 §3.1, Syntax</xref>.</p>
+                    <p>
+                        <codeph>@namespace</codeph> declares prefixes used by selectors. See <xref href="../concepts/basic-selectors.dita#basic-selectors/xml-namespaces">Basic selectors and namespaces</xref>. Conditional rules and imports can also contain <codeph>@page</codeph> rules; page declarations use the page-context cascade described in <xref href="../concepts/cascade-order.dita#cascade-order/page-context-declarations">Cascade order and layers</xref>.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+

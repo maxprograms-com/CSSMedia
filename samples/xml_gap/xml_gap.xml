@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "docbook/docbookx.dtd">
+<article lang="en-US">
+  <articleinfo>
+    <title>Closing the XML Gap in TypeScript (for Localization Workflows)</title>
+    <author>
+      <firstname>Rodolfo M.</firstname>
+      <surname>Raya</surname>
+      <affiliation>
+        <orgname><ulink url="https://maxprograms.com">Maxprograms</ulink></orgname>
+        <address format="linespecific"><email>rmraya@maxprograms.com</email></address>
+      </affiliation>
+    </author>
+    <pubdate>17 June 2026</pubdate>
+    <copyright>
+      <year>2026</year>
+      <holder>Maxprograms</holder>
+    </copyright>
+    <abstract>
+      <para>Describes the move from Java to TypeScript for XML processing in localization
+        workflows, and the TypesXML, TypesBCP47, and TypesXLIFF libraries built to bring DTD and
+        XML Schema validation for TMX, XLIFF, and SRX to Node.js.</para>
+    </abstract>
+  </articleinfo>
+
+  <section id="intro">
+    <title>Introduction</title>
+    <para>If you've ever tried to process XML in Node.js or TypeScript, you've probably run into a
+      limitation: parsing is easy, but validation against DTD or XML Schema is not.</para>
+    <para>That becomes a real problem when working with localization standards like TMX, XLIFF or
+      SRX, where structure and validity are not optional. They define whether your data is
+      usable.</para>
+    <para>This is the gap I ran into, and eventually decided to close.</para>
+  </section>
+
+  <section id="the-old-setup-java-for-xml">
+    <title>The old setup: Java for XML</title>
+    <para>Localization standards such as TMX, XLIFF, SRX and TBX are all XML-based. When I started
+      working with them more than 20 years ago, Java was the most practical choice. Its XML
+      tooling wasn't perfect, but it was reliable enough for parsing and validation.</para>
+    <para>That worked well for a long time.</para>
+    <para>The problem wasn't XML; it was everything around it.</para>
+    <para>Java desktop UI options didn't evolve in a way that fit my needs. I used SWT for years,
+      but it became less maintained, and alternatives like Swing or JavaFX didn't appeal to
+      me.</para>
+  </section>
+
+  <section id="moving-to-typescript">
+    <title>Moving to TypeScript</title>
+    <para>Around 2018, I shifted toward building user interfaces with HTML, CSS and JavaScript.
+      Eventually, TypeScript became the obvious choice because it provides a safer development
+      model with static checks.</para>
+    <para>That solved the UI side.</para>
+    <para>But it created a new problem:</para>
+    <itemizedlist>
+      <listitem><para>UI in TypeScript</para></listitem>
+      <listitem><para>XML processing still in Java</para></listitem>
+    </itemizedlist>
+    <para>Maintaining two stacks for a single workflow wasn't ideal.</para>
+  </section>
+
+  <section id="the-missing-piece-xml-validation-in-typescript">
+    <title>The missing piece: XML validation in TypeScript</title>
+    <para>At the time, there were XML parsers in JavaScript, but none supported:</para>
+    <itemizedlist>
+      <listitem><para>DTD validation</para></listitem>
+      <listitem><para>XML Schema validation</para></listitem>
+    </itemizedlist>
+    <para>For localization formats, that's a hard requirement. Without validation, you can't
+      guarantee that a TMX or XLIFF file is structurally correct.</para>
+    <para>So I started building <ulink url="https://maxprograms.com/products/typesxml.html">TypesXML</ulink>,
+      a native XML parser and validator for TypeScript.</para>
+  </section>
+
+  <section id="a-minimal-example">
+    <title>A minimal example</title>
+    <para>Here's what basic XML parsing looks like:</para>
+    <programlisting xml:space="preserve">import { Catalog, DOMBuilder, SAXParser } from "typesxml";
+
+const parser: SAXParser = new SAXParser();
+const handler: DOMBuilder = new DOMBuilder();
+const catalog = new Catalog('/pathTo/catalog.xml');
+
+parser.setCatalog(catalog);
+parser.setContentHandler(handler);
+parser.setValidating(true);
+parser.parseFile("example.xml");
+
+const document = handler.getDocument();
+console.log(document.toString());</programlisting>
+    <para>The same parser can be configured to:</para>
+    <itemizedlist>
+      <listitem><para>validate against DTD</para></listitem>
+      <listitem><para>validate against XML Schema</para></listitem>
+      <listitem><para>resolve XML catalogs</para></listitem>
+    </itemizedlist>
+    <para>This makes it possible to process XML in Node.js with the same level of control
+      traditionally associated with Java libraries.</para>
+  </section>
+
+  <section id="building-the-missing-stack">
+    <title>Building the missing stack</title>
+    <para>Creating a full XML stack took time:</para>
+    <itemizedlist>
+      <listitem><para>DOM and SAX-style parsing came first</para></listitem>
+      <listitem><para>DTD validation followed</para></listitem>
+      <listitem><para>XML Schema validation was the final step</para></listitem>
+    </itemizedlist>
+    <para>XML Schema support is significantly more complex, but it's essential for formats like
+      XLIFF.</para>
+  </section>
+
+  <section id="supporting-pieces-language-data">
+    <title>Supporting pieces: language data</title>
+    <para>Localization workflows also depend heavily on language codes.</para>
+    <para>BCP47 defines the standard, but the official data is distributed as a large text file.
+      To make it easier to use in TypeScript, I built
+      <ulink url="https://github.com/maxprograms-com/TypesBCP47">TypesBCP47</ulink>, a companion
+      library that parses that data and exposes it in a structured way.</para>
+  </section>
+
+  <section id="proof-of-concept-rewriting-existing-tools">
+    <title>Proof of concept: rewriting existing tools</title>
+    <para>To validate the approach, I rewrote existing tools in TypeScript:</para>
+    <itemizedlist>
+      <listitem><para><ulink url="https://maxprograms.com/products/srxeditor.html">SRXEditor</ulink></para></listitem>
+      <listitem><para><ulink url="https://maxprograms.com/products/tmxvalidator.html">TMXValidator</ulink></para></listitem>
+    </itemizedlist>
+    <para>These tools:</para>
+    <itemizedlist>
+      <listitem><para>process large XML files</para></listitem>
+      <listitem><para>validate against official grammars</para></listitem>
+      <listitem><para>maintain performance comparable to the original Java versions</para></listitem>
+    </itemizedlist>
+    <para>That confirmed that TypeScript can handle real-world localization workloads.</para>
+  </section>
+
+  <section id="xliff-support">
+    <title>XLIFF support</title>
+    <para>XLIFF uses XML Schema, which required implementing a full schema validator.</para>
+    <para>With that in place, I built <ulink url="https://maxprograms.com/products/typesxliff.html">TypesXLIFF</ulink>,
+      a library for parsing, generating, and validating XLIFF 2.x files.</para>
+    <para>It supports:</para>
+    <itemizedlist>
+      <listitem><para>XML Schema validation</para></listitem>
+      <listitem><para>validation against the XLIFF specification</para></listitem>
+      <listitem><para>a typed object model</para></listitem>
+      <listitem><para>JSON conversion</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="what-this-enables">
+    <title>What this enables</title>
+    <para>With these pieces in place, it's now possible to:</para>
+    <itemizedlist>
+      <listitem><para>Validate TMX, XLIFF and SRX directly in Node.js</para></listitem>
+      <listitem><para>Build localization pipelines entirely in TypeScript</para></listitem>
+      <listitem><para>Remove the need for a separate Java backend</para></listitem>
+      <listitem><para>Keep both UI and processing in the same language</para></listitem>
+    </itemizedlist>
+  </section>
+
+  <section id="whats-next">
+    <title>What's next</title>
+    <para>TBX support is in progress, along with updates to other tools to move them fully to
+      TypeScript.</para>
+    <para>Some Java code still exists in older components, but new development is now centered on
+      TypeScript.</para>
+  </section>
+
+  <section id="closing-thoughts">
+    <title>Closing thoughts</title>
+    <para>For a long time, XML processing in localization workflows effectively required
+      Java.</para>
+    <para>That's no longer the case.</para>
+    <para>If you're working with XML-based formats in Node.js, especially in localization or
+      structured data pipelines, you can now handle parsing, validation, and processing entirely
+      in TypeScript.</para>
+  </section>
+
+  <section id="author">
+    <title>About the author</title>
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/p-rodolfo-white.jpg" />
+      </imageobject>
+    </mediaobject>
+    <para>Rodolfo M. Raya, CTO of Maxprograms SAS, is involved in the development of localization
+      standards including XLIFF, TMX, TBX, SRX and GlossML.</para>
+    <para>He develops tools and libraries that implement these specifications, including the
+      software and validation services available on this site.</para>
+  </section>
+</article>

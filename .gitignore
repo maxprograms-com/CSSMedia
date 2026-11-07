@@ -1,0 +1,14 @@
+.DS_Store
+.claude/
+.github/
+.scannerwork/
+dist/
+/fonts
+/specs
+node_modules/
+.font-cache/
+/tests/
+/*.pdf
+CLAUDE.md
+IMPLEMENTATION.md
+PLAN.md

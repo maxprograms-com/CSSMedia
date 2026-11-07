@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="custom-properties">
+    <title>Custom properties and substitution</title>
+    <shortdesc>Custom properties store values that can be substituted into other declarations. The cascade selects their values like it selects values for other properties.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="defining-custom-properties">
+                <cmd>Defining custom properties</cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-variables-1/#defining-variables" scope="external" format="html">CSS Variables 1 §2, Defining Custom Properties: the --* family of properties</xref>.</p>
+                    <p>A custom property name is a dashed identifier that begins with two hyphens, such as <codeph>--accent</codeph>. Names are case-sensitive. An unregistered custom property accepts a sequence of <xref href="../glossaries/CSS.dita">CSS</xref> component values rather than a property’s normal value grammar.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    --accent: navy;
+    --space: 1em;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Custom properties participate in the cascade. Unregistered custom properties inherit by default, and their initial value is the guaranteed-invalid value. This value is different from an empty string and cannot be substituted unless a fallback is provided.</p>
+                </info>
+            </step>
+            <step id="substituting-values-with-var">
+                <cmd>Substituting values with <codeph>var()</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-variables-1/#using-variables" scope="external" format="html">CSS Variables 1 §3, Using Cascading Variables: the var() notation</xref>; <xref href="https://www.w3.org/TR/css-variables-1/#cycles" scope="external" format="html">CSS Variables 1 §2.3, Resolving Dependency Cycles</xref>; <xref href="https://www.w3.org/TR/css-variables-1/#invalid-variables" scope="external" format="html">CSS Variables 1 §3.1, Invalid Variables</xref>.</p>
+                    <p>Use <codeph>var()</codeph> with a custom property name. An optional fallback follows a comma:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    color: var(--accent, black);
+    margin-left: var(--space, 0);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The fallback is used when the referenced custom property has the guaranteed-invalid value. A fallback can contain another <codeph>var()</codeph> call. The fallback is not used merely because the substituted text fails the consuming property’s grammar.</p>
+                    <p>Custom properties can refer to one another. CSS resolves their dependencies for each element. A cycle makes every custom property in that cycle invalid on that element. Descendants inherit the parent’s computed custom-property values; they do not re-evaluate the parent’s declarations in the descendant’s context.</p>
+                    <p>Substitution happens after the cascade. If the resulting value does not match the consuming property’s grammar, the winning declaration becomes invalid at computed-value time and acts as <codeph>unset</codeph>. The cascade does not select an earlier declaration instead.</p>
+                </info>
+            </step>
+            <step id="registering-a-custom-property-with-property">
+                <cmd>Registering a custom property with <codeph>@property</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-properties-values-api-1/#at-property-rule" scope="external" format="html">CSS Properties and Values API 1 §3, The @property Rule</xref>; <xref href="https://www.w3.org/TR/css-properties-values-api-1/#the-syntax-descriptor" scope="external" format="html">§3.1, The syntax Descriptor</xref>; <xref href="https://www.w3.org/TR/css-properties-values-api-1/#inherits-descriptor" scope="external" format="html">§3.2, The inherits Descriptor</xref>; <xref href="https://www.w3.org/TR/css-properties-values-api-1/#initial-value-descriptor" scope="external" format="html">§3.3, The initial-value Descriptor</xref>.</p>
+                    <p>
+                        <codeph>@property</codeph> registers a custom property with a syntax, an inheritance setting and, for typed syntax, an initial value:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@property --accent {
+    syntax: "&lt;color&gt;";
+    inherits: true;
+    initial-value: navy;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The <codeph>syntax</codeph> descriptor is a string containing the property’s accepted grammar. <codeph>"*"</codeph> accepts an arbitrary token sequence. A typed syntax uses component types such as <codeph>"&lt;length&gt;"</codeph>, which accepts a length such as <codeph>12pt</codeph>, or <codeph>"&lt;color&gt;"</codeph>, which accepts a CSS color. It can combine alternatives with <codeph>|</codeph> and use <codeph>+</codeph> or <codeph>#</codeph> multipliers. The <codeph>inherits</codeph> descriptor is required and must be <codeph>true</codeph> or <codeph>false</codeph>. A typed syntax requires an <codeph>initial-value</codeph> that matches the syntax and is computationally independent. With <codeph>"*"</codeph>, <codeph>initial-value</codeph> may be omitted.</p>
+                    <p>A registered property’s value is checked against its syntax when computed. Its <codeph>inherits</codeph> descriptor controls whether it inherits when no value is specified. Its <codeph>initial-value</codeph> supplies the default when it does not inherit or has no inherited value. If more than one valid registration names the same custom property, the last one in stylesheet order is used.</p>
+                </info>
+            </step>
+            <step id="reading-xml-attributes-with-attr">
+                <cmd>Reading <xref href="../glossaries/XML.dita">XML</xref> attributes with <codeph>attr()</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-values-5/#attr-notation" scope="external" format="html">CSS Values 5 §7.7, Attribute References: the attr() notation</xref>.</p>
+                    <p>
+                        <codeph>attr()</codeph> reads an attribute from the XML element being styled. Without a type, it produces a string. A syntax can request a parsed CSS value, and an optional fallback supplies a value when the attribute is absent or cannot be parsed:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    content: attr(title);
+    width: attr(data-width &lt;length&gt;, 100pt);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>In <codeph>attr(data-width &lt;length&gt;, 100pt)</codeph>, <codeph>&lt;length&gt;</codeph> means a CSS length such as <codeph>12pt</codeph>. An untyped <codeph>attr()</codeph> has an empty-string fallback when none is written. A typed <codeph>attr()</codeph> has no implicit fallback. Attribute references can include a namespace prefix declared by <codeph>@namespace</codeph>.</p>
+                    <p>An attribute-derived value is tainted. If it is used as or within a URL, the declaration becomes invalid at computed-value time. After substitution, the resulting declaration must still match the property’s grammar.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+

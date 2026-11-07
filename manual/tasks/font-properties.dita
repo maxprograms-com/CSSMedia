@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="font-properties">
+    <title>Font selection and sizing</title>
+    <shortdesc>Font declarations choose a family, a size and a face within that family. They can also control line spacing and whether the processor may create a style that the font does not contain. Put declarations inside a rule that selects the <xref href="../glossaries/XML.dita">XML</xref> elements you want to style:</shortdesc>
+    <taskbody>
+        <context>
+            <pre outputclass="language-css21">chapter {
+    font-family: "Noto Serif", serif;
+    font-size: 12pt;
+    font-weight: 400;
+}
+</pre>
+            <p>For variant and OpenType feature properties, see <xref href="font-variants.dita#font-variants">Font variants and features</xref>. For variable fonts and color palettes, see <xref href="variable-and-color-fonts.dita#variable-and-color-fonts">Variable and color fonts</xref>.</p>
+        </context>
+        <steps>
+            <step id="choosing-the-font-family-and-size">
+                <cmd>Choosing the font family and size</cmd>
+                <info>
+                    <div outputclass="role-h3" id="font-family">
+                        <codeph>font-family</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-family-prop" scope="external" format="html">CSS Fonts 4 §2.1, Font family: the font-family property</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#generic-font-families" scope="external" format="html">CSS Fonts 4 §2.1.5, Generic font families</xref>.</p>
+                    <p>Use <codeph>font-family</codeph> to name the typeface family. Separate alternatives with commas. Put a family name containing spaces in quotes. If a family is unavailable or cannot provide a character, the processor can try the next family in the list.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body { font-family: "Noto Serif", "Times New Roman", serif; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The final <codeph>serif</codeph> is a generic family name. It describes a broad typeface style rather than naming a font file. Other generic names include <codeph>sans-serif</codeph> and <codeph>monospace</codeph>. Available family names depend on the fonts CSSMedia can access.</p>
+                    <div outputclass="role-h3" id="pdf-standard-fonts">PDF standard fonts</div>
+                    <p>
+                        <xref href="https://www.iso.org/standard/51502.html" format="html" scope="external">ISO 32000-1 §9.6.2, Standard Type 1 Fonts</xref>.</p>
+                    <p><xref href="../glossaries/PDF.dita">PDF</xref> defines 14 standard typefaces. They are grouped here by design and face:</p>
+                    <table id="font-properties__I_v_">
+                        <tgroup cols="2">
+                            <thead>
+                                <row valign="middle">
+                                    <entry align="center">Group</entry>
+                                    <entry align="center">Standard typefaces</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row valign="middle">
+                                    <entry>Serif</entry>
+                                    <entry>
+                                        <codeph>Times-Roman</codeph>, <codeph>Times-Bold</codeph>, <codeph>Times-Italic</codeph>, <codeph>Times-BoldItalic</codeph>
+                                    </entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>Sans-serif</entry>
+                                    <entry>
+                                        <codeph>Helvetica</codeph>, <codeph>Helvetica-Bold</codeph>, <codeph>Helvetica-Oblique</codeph>, <codeph>Helvetica-BoldOblique</codeph>
+                                    </entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>Monospaced</entry>
+                                    <entry>
+                                        <codeph>Courier</codeph>, <codeph>Courier-Bold</codeph>, <codeph>Courier-Oblique</codeph>, <codeph>Courier-BoldOblique</codeph>
+                                    </entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>Symbol</entry>
+                                    <entry>
+                                        <codeph>Symbol</codeph>
+                                    </entry>
+                                </row>
+                                <row valign="middle">
+                                    <entry>Dingbats</entry>
+                                    <entry>
+                                        <codeph>ZapfDingbats</codeph>
+                                    </entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <ul>
+                        <li>The Times faces have serifs. The Helvetica faces do not. The Courier faces use fixed-width advances, so each glyph occupies the same width.</li>
+                        <li>
+                            <codeph>Symbol</codeph> contains a symbol character set. <codeph>ZapfDingbats</codeph> contains ornamental marks and symbols.</li>
+                        <li>In each four-face group, <codeph>Bold</codeph> identifies the heavier face, <codeph>Italic</codeph> the italic face, and <codeph>Oblique</codeph> the slanted face. <codeph>Times-BoldItalic</codeph> combines bold and italic; <codeph>Helvetica-BoldOblique</codeph> and <codeph>Courier-BoldOblique</codeph> combine bold and oblique.</li>
+                        <li>CSSMedia includes these standard font faces as font data. Its built-in fallback for the generic family <codeph>serif</codeph> uses the four Times faces, <codeph>sans-serif</codeph> uses the four Helvetica faces, and <codeph>monospace</codeph> uses the four Courier faces.</li>
+                        <li><xref href="../glossaries/CSS.dita">CSS</xref> family lookup also includes the standard groups <codeph>Times</codeph>, <codeph>Helvetica</codeph>, <codeph>Courier</codeph>, <codeph>Symbol</codeph> and <codeph>ZapfDingbats</codeph>. The generic keywords describe broad typographic categories; the standard group names identify the bundled font families.</li>
+                    </ul>
+                    <div outputclass="role-h3" id="font-size">
+                        <codeph>font-size</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-size-prop" scope="external" format="html">CSS Fonts 4 §2.5, Font size: the font-size property</xref>.</p>
+                    <p>Use <codeph>font-size</codeph> to set the size of text. You can use a length such as <codeph>12pt</codeph>, a percentage, a relative keyword such as <codeph>larger</codeph>, or a length relative to another font size.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body { font-size: 12pt; }
+h1 { font-size: 1.5em; }
+small { font-size: smaller; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>An <codeph>em</codeph> value is based on the font size inherited by the selected element. A percentage is based on the parent element’s font size. Use a length such as <codeph>pt</codeph> when you want to state an explicit size.</p>
+                    <div outputclass="role-h3" id="font-size-adjust">
+                        <codeph>font-size-adjust</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-5/#font-size-adjust-prop" scope="external" format="html">CSS Fonts 5 §3.4, Relative sizing: the font-size-adjust property</xref>.</p>
+                    <p>Use <codeph>font-size-adjust</codeph> to request a consistent size for a chosen font measurement, such as the height of lowercase letters. This can help keep text visually similar when the preferred font is unavailable and a fallback font has different proportions.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body { font-size-adjust: 0.5; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The property can use a metric name such as <codeph>ex-height</codeph> or <codeph>cap-height</codeph>, followed by a number, or <codeph>from-font</codeph> to use the metric from the font.</p>
+                </info>
+            </step>
+            <step id="selecting-a-font-face">
+                <cmd>Selecting a font face</cmd>
+                <info>
+                    <div outputclass="role-h3" id="font-weight">
+                        <codeph>font-weight</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-weight-prop" scope="external" format="html">CSS Fonts 4 §2.2, Font weight: the font-weight property</xref>.</p>
+                    <p>Use <codeph>font-weight</codeph> to choose how heavy the letters look. The common values are <codeph>normal</codeph> and <codeph>bold</codeph>. You can also use a number from <codeph>1</codeph> to <codeph>1000</codeph>. In the usual scale, <codeph>400</codeph> is normal and <codeph>700</codeph> is bold.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body { font-weight: 400; }
+strong { font-weight: 700; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The values <codeph>bolder</codeph> and <codeph>lighter</codeph> choose a weight relative to the inherited weight. A font family may not contain every requested weight. CSSMedia uses this property when matching an available font face.</p>
+                    <div outputclass="role-h3" id="font-width">
+                        <codeph>font-width</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-width-prop" scope="external" format="html">CSS Fonts 4 §2.3, Font width: the font-width property</xref>.</p>
+                    <p>Use <codeph>font-width</codeph> to request narrower or wider letters. You can use a percentage or a keyword from <codeph>ultra-condensed</codeph> through <codeph>ultra-expanded</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">heading { font-width: condensed; }
+label { font-width: 110%; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The older name <codeph>font-stretch</codeph> is accepted by CSSMedia as an alias for <codeph>font-width</codeph>. A font family may not provide every width. CSSMedia uses the requested width when matching a font face.</p>
+                    <div outputclass="role-h3" id="font-style">
+                        <codeph>font-style</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-style-prop" scope="external" format="html">CSS Fonts 4 §2.4, Font style: the font-style property</xref>.</p>
+                    <p>Use <codeph>font-style</codeph> to request upright or slanted letters. The usual values are <codeph>normal</codeph>, <codeph>italic</codeph> and <codeph>oblique</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body { font-style: normal; }
+em { font-style: italic; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>An <codeph>oblique</codeph> value can include an angle. The specification also defines <codeph>left</codeph> and <codeph>right</codeph> oblique directions. A font family may not contain a face for every style. CSSMedia uses this property when matching a font face.</p>
+                    <div outputclass="role-h3" id="font-synthesis">
+                        <codeph>font-synthesis</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-intro" scope="external" format="html">CSS Fonts 4 §2.8, Controlling synthetic faces</xref>.</p>
+                    <p>If a font family does not contain a requested face, a processor may create a synthetic version, such as making regular letters look heavier. Use <codeph>font-synthesis</codeph> to allow or disable these substitutions.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body { font-synthesis: none; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>
+                        <codeph>none</codeph> disables synthetic weight, style, small-caps and subscript or superscript faces. The keyword <codeph>weight</codeph>, <codeph>style</codeph>, <codeph>small-caps</codeph> or <codeph>position</codeph> allows that kind of synthesis. The longhand properties control those choices separately.</p>
+                    <div outputclass="role-h3" id="font-synthesis-weight">
+                        <codeph>font-synthesis-weight</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-weight" scope="external" format="html">CSS Fonts 4 §2.8.1, Controlling synthesized bold: The font-synthesis-weight property</xref>.</p>
+                    <p>This property controls whether the processor may make a font look heavier when the family lacks the requested weight. Use <codeph>none</codeph> to forbid that synthetic bolding, or <codeph>auto</codeph> to allow it.</p>
+                    <div outputclass="role-h3" id="font-synthesis-style">
+                        <codeph>font-synthesis-style</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-style" scope="external" format="html">CSS Fonts 4 §2.8.2, Controlling synthesized oblique: The font-synthesis-style property</xref>.</p>
+                    <p>This property controls whether the processor may slant a font when the family lacks the requested italic or oblique face. Use <codeph>none</codeph> to forbid a synthetic slant. <codeph>oblique-only</codeph> allows synthesis for oblique styles but not italic styles. <codeph>auto</codeph> allows the normal synthesis behavior.</p>
+                    <div outputclass="role-h3" id="font-synthesis-small-caps">
+                        <codeph>font-synthesis-small-caps</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-small-caps" scope="external" format="html">CSS Fonts 4 §2.8.3, Controlling synthesized small caps: The font-synthesis-small-caps property</xref>.</p>
+                    <p>This property controls whether the processor may create small capitals when the font does not provide them. Use <codeph>none</codeph> to forbid synthetic small capitals, or <codeph>auto</codeph> to allow them.</p>
+                    <div outputclass="role-h3" id="font-synthesis-position">
+                        <codeph>font-synthesis-position</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-position" scope="external" format="html">CSS Fonts 4 §2.8.4, Controlling synthesized super- and subscripts: The font-synthesis-position property</xref>.</p>
+                    <p>This property controls whether the processor may create subscript or superscript forms when the font does not provide them. Use <codeph>none</codeph> to forbid those synthetic forms, or <codeph>auto</codeph> to allow them.</p>
+                </info>
+            </step>
+            <step id="shorthand-and-line-spacing">
+                <cmd>Shorthand and line spacing</cmd>
+                <info>
+                    <div outputclass="role-h3" id="font">
+                        <codeph>font</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-prop" scope="external" format="html">CSS Fonts 4 §2.7, Shorthand font property: the font property</xref>.</p>
+                    <p>Use <codeph>font</codeph> to set several font properties in one declaration. Write optional style, variant, weight and width values first. Then write the required size, an optional slash and line height, and the required family.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter { font: italic bold 12pt/1.4 "Noto Serif", serif; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The size and family are required. The shorthand also accepts system font keywords such as <codeph>caption</codeph> and <codeph>menu</codeph>. It resets other properties in the shorthand to their initial values. Use separate declarations when you want to set advanced font features without resetting them.</p>
+                    <p>CSS Fonts 4 allows a user agent to substitute its default font when the requested system font is unavailable. CSSMedia uses the <codeph>system-ui</codeph> family and initial values for the other font subproperties as that fallback. It does not resolve platform-specific settings for roles such as <codeph>caption</codeph> or <codeph>menu</codeph>.</p>
+                    <div outputclass="role-h3" id="line-height">
+                        <codeph>line-height</codeph>
+                    </div>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-inline-3/#line-height-property" scope="external" format="html">CSS Inline Layout 3 §5.1, Line Spacing: the line-height property</xref>.</p>
+                    <p>Use <codeph>line-height</codeph> to control the height of a line of text. A unitless number multiplies the font size. A length states the line height directly. A percentage is relative to the font size. <codeph>normal</codeph> lets the processor choose a value.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body { font-size: 12pt; line-height: 1.4; }
+caption { line-height: 16pt; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>With a font size of <codeph>12pt</codeph>, <codeph>line-height: 1.4</codeph> requests a line height of 1.4 times the font size. A unitless number scales when the font size changes.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+

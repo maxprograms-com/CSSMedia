@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="CSS">
+    <glossterm>CSS</glossterm>
+    <glossdef><xref href="https://www.w3.org/Style/CSS/" format="html" scope="external">Cascading
+            Style Sheets</xref> (CSS) is the language, defined by the W3C, that describes how
+        elements of a document are presented. A stylesheet is a list of rules. Each rule has a
+        selector that chooses elements and declarations that set their properties. CSSMedia reads a
+        CSS file to decide how to format an XML document in a PDF.</glossdef>
+</glossentry>

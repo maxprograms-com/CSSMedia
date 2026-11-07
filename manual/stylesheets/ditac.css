@@ -1,0 +1,1209 @@
+/* CSS Paged Media stylesheet for processing DITA content merged with TypesDitac */
+
+@namespace ditac url(http://www.xmlmind.com/ditac/schema/ditac);
+
+@font-face {
+    font-family: "Noto Serif Display";
+    src: url("../fonts/NotoSerifDisplay-Regular.ttf");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Serif Display";
+    src: url("../fonts/NotoSerifDisplay-Bold.ttf");
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Serif Display";
+    src: url("../fonts/NotoSerifDisplay-Italic.ttf");
+    font-weight: 400;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Serif Display";
+    src: url("../fonts/NotoSerifDisplay-BoldItalic.ttf");
+    font-weight: 700;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("../fonts/NotoSans-Regular.ttf");
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("../fonts/NotoSans-Bold.ttf");
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("../fonts/NotoSans-Italic.ttf");
+    font-weight: 400;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("../fonts/NotoSans-BoldItalic.ttf");
+    font-weight: 700;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Sans JP";
+    src: url("../fonts/NotoSansCJKjp-Regular.otf");
+    font-weight: 400;
+    font-style: normal;
+}
+:lang(ja) {
+    font-family: "Noto Sans JP", "Noto Sans", sans-serif;
+}
+
+/* ------------------------------------------------------------------ */
+/* Page geometry, running headers/footers, page numbering             */
+/* ------------------------------------------------------------------ */
+
+@page {
+    size: A4;
+    margin: 1in;
+
+    @top-center {
+        content: string(book-title);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #808080;
+        border-bottom: 0.5pt solid #808080;
+        padding-bottom: 4pt;
+        margin-bottom: 24pt;
+        vertical-align: bottom;
+    }
+
+    @bottom-left {
+        content: "";
+        border-top: 0.5pt solid #808080;
+        margin-top: 24pt;
+    }
+
+    @bottom-center {
+        content: string(chapter-title);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #808080;
+        border-top: 0.5pt solid #808080;
+        padding-top: 4pt;
+        margin-top: 24pt;
+        vertical-align: top;
+    }
+
+    @bottom-right {
+        content: counter(page);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #808080;
+        border-top: 0.5pt solid #808080;
+        padding-top: 4pt;
+        margin-top: 24pt;
+        vertical-align: top;
+    }
+}
+
+/* Title page: no running headers/footers at all */
+@page :first {
+    @top-center { content: none; }
+    @bottom-left { content: none; }
+    @bottom-center { content: none; }
+    @bottom-right { content: none; }
+}
+
+/* Front matter (table of contents) and back matter (glossary) are
+   numbered with their own lower-roman sequence */
+@page roman {
+    @top-center {
+        content: string(book-title);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #808080;
+        border-bottom: 0.5pt solid #808080;
+        padding-bottom: 4pt;
+        margin-bottom: 24pt;
+        vertical-align: bottom;
+    }
+
+    @bottom-left {
+        content: "";
+        border-top: 0.5pt solid #808080;
+        margin-top: 24pt;
+    }
+
+    @bottom-center {
+        content: string(chapter-title);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #808080;
+        border-top: 0.5pt solid #808080;
+        padding-top: 4pt;
+        margin-top: 24pt;
+        vertical-align: top;
+    }
+
+    @bottom-right {
+        content: counter(page, lower-roman);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #808080;
+        border-top: 0.5pt solid #808080;
+        padding-top: 4pt;
+        margin-top: 24pt;
+        vertical-align: top;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Document root and structural wrappers                              */
+/* ------------------------------------------------------------------ */
+
+bookmap {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10pt;
+    line-height: 1.35;
+    orphans: 2;
+    widows: 2;
+    counter-reset: appendix;
+}
+
+/* topicmeta and navtitle carry no printable content. topicref stays visible:
+   it wraps every nested section topic and every glossary entry, and
+   display: none would hide them too. */
+*[class~="map/topicmeta"], *[class~="topic/navtitle"] {
+    display: none;
+}
+
+/* every map/topicref (frontmatter, booklists, glossarylist, chapter,
+   backmatter, topicref...) is a pure container with no visual identity
+   of its own; left inline, one that holds a block would leave an empty
+   anonymous block before it, which stops the forced break of its first
+   topic from reaching the parent and gives a blank page */
+*[class~="map/topicref"] {
+    display: block;
+}
+
+/* page and a forced break make a page group (GCPM 3 §3.2); the page
+   counter belongs to the page context (CSS Paged Media 3 §6.1), so each
+   group restarts it in an @page rule for its first page */
+*[class~="bookmap/frontmatter"] {
+    page: roman;
+    break-before: page;
+}
+
+*[class~="bookmap/backmatter"] {
+    page: roman;
+    break-before: page;
+    /* clear the running chapter-title left over from the last chapter */
+    string-set: chapter-title "";
+}
+
+/* the main body restarts decimal page numbering at 1 on its first page:
+   the title page of the first part when the book has parts, otherwise
+   the first chapter */
+bookmap > *[class~="bookmap/part"]:first-of-type > *[class~="topic/topic"],
+bookmap:not(:has(> *[class~="bookmap/part"])) > *[class~="bookmap/chapter"]:first-of-type > *[class~="topic/topic"] {
+    page: body;
+    break-before: page;
+}
+
+/* counter-set, applied after the automatic increment of the page counter */
+@page roman:nth(1 of roman) {
+    counter-set: page 1;
+}
+
+@page body:nth(1 of body) {
+    counter-set: page 1;
+}
+
+/* ------------------------------------------------------------------ */
+/* Title page                                                         */
+/* ------------------------------------------------------------------ */
+
+ditac|titlePage {
+    display: block;
+    break-after: page;
+}
+
+/* booktitle is also a topic/title: undo the generic heading look so the
+   parts inside it style themselves */
+ditac|titlePage *[class~="bookmap/booktitle"] {
+    display: block;
+    font-weight: normal;
+    color: black;
+    break-after: auto;
+}
+
+/* only the title-page copy of the title feeds the running header;
+   the duplicate bookmap/booktitle in the main flow (image only, no
+   text) must not overwrite the string with an empty value */
+ditac|titlePage *[class~="bookmap/mainbooktitle"] {
+    string-set: book-title content();
+    display: block;
+    text-align: center;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    font-size: 2em;
+    margin-top: 1.3cm;
+}
+
+*[class~="bookmap/mainbooktitle"] {
+    display: block;
+    text-align: center;
+}
+
+*[class~="bookmap/booktitlealt"] {
+    display: block;
+    text-align: center;
+    font-family: "Noto Sans", sans-serif;
+    font-style: italic;
+    font-size: 1.2em;
+    margin-top: 1.5em;
+}
+
+bookmap > *[class~="topic/title"] {
+    display: none;
+}
+
+/* Some books title their cover with a plain topic/title directly
+   inside ditac:titlePage instead of a bookmap/booktitle structure */
+ditac|titlePage > *[class~="topic/title"]:not([class~="bookmap/booktitle"]) {
+    string-set: book-title content();
+    display: block;
+    text-align: center;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    font-size: 2.4em;
+    color: #004885;
+    margin-top: 4cm;
+}
+
+/* Cover byline: author, organization, postal and contact details, date.
+   The titlePage prefix outranks the generic rule that hides topic/data. */
+ditac|titlePage *[class~="bookmap/bookmeta"] {
+    display: block;
+    text-align: center;
+    font-family: "Noto Serif Display", serif;
+    margin-top: 1.5em;
+}
+
+ditac|titlePage *[class~="xnal-d/authorinformation"],
+ditac|titlePage *[class~="xnal-d/personinfo"],
+ditac|titlePage *[class~="xnal-d/organizationinfo"],
+ditac|titlePage *[class~="xnal-d/addressdetails"],
+ditac|titlePage *[class~="xnal-d/locality"],
+ditac|titlePage *[class~="xnal-d/country"],
+ditac|titlePage *[class~="xnal-d/contactnumbers"],
+ditac|titlePage *[class~="xnal-d/contactnumber"],
+ditac|titlePage *[class~="xnal-d/emailaddresses"],
+ditac|titlePage *[class~="xnal-d/emailaddress"],
+ditac|titlePage *[class~="xnal-d/urls"],
+ditac|titlePage *[class~="xnal-d/url"] {
+    display: block;
+}
+
+ditac|titlePage *[class~="xnal-d/organizationinfo"] {
+    margin-top: 0.8em;
+}
+
+ditac|titlePage *[class~="xnal-d/namedetails"],
+ditac|titlePage *[class~="xnal-d/personname"],
+ditac|titlePage *[class~="xnal-d/firstname"],
+ditac|titlePage *[class~="xnal-d/lastname"],
+ditac|titlePage *[class~="xnal-d/organizationnamedetails"],
+ditac|titlePage *[class~="xnal-d/organizationname"] {
+    display: inline;
+}
+
+ditac|titlePage *[class~="xnal-d/emailaddress"],
+ditac|titlePage *[class~="xnal-d/url"] {
+    font-family: monospace;
+    font-size: 0.8em;
+    color: #333399;
+}
+
+ditac|titlePage *[class~="topic/critdates"] {
+    display: block;
+    margin-top: 1.8em;
+}
+
+ditac|titlePage *[class~="topic/revised"]:last-of-type::before {
+    content: attr(golive);
+}
+
+/* ------------------------------------------------------------------ */
+/* Table of contents (frontmatter)                                    */
+/*                                                                     */
+/* ditac:tocEntry carries its label in the "title" attribute and no    */
+/* text children, and the link to the chapter/section it refers to in  */
+/* its "targetLink" attribute. The entry is a leader-dotted title      */
+/* followed by the page of that target.                                */
+/* ------------------------------------------------------------------ */
+
+ditac|toc {
+    display: block;
+    break-before: page;
+    counter-reset: toc-appendix;
+}
+
+ditac|toc > *[class~="topic/title"] {
+    display: block;
+    bookmark-level: 1;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    font-size: 1.9em;
+    color: #004885;
+    margin-bottom: 0.8em;
+}
+
+ditac|tocEntry {
+    display: block;
+    break-inside: avoid;
+    --dest: attr(targetLink);
+    -cssmedia-link: var(--dest);
+}
+
+ditac|tocEntry > ditac|tocEntry {
+    margin-left: 1.5em;
+}
+
+ditac|tocEntry::before {
+    content: attr(title) leader(dotted) -cssmedia-link-counter(page);
+}
+
+ditac|frontmatterTOC ditac|tocEntry::before,
+ditac|backmatterTOC ditac|tocEntry::before {
+    content: attr(title) leader(dotted) -cssmedia-link-counter(page, lower-roman);
+}
+
+ditac|tocEntry[role="appendix"] {
+    counter-increment: toc-appendix;
+}
+
+ditac|tocEntry[role="appendix"]::before {
+    content: "Appendix " counter(toc-appendix, upper-alpha) ": " attr(title) leader(dotted) -cssmedia-link-counter(page);
+}
+
+ditac|tocEntry:not([targetLink]) {
+    --dest: attr(title);
+}
+
+ditac|tocEntry[role="part"] {
+    margin-top: 1em;
+}
+
+ditac|tocEntry[role="part"]::before {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+ditac|tocEntry[role="chapter"],
+ditac|tocEntry[role="appendix"],
+ditac|backmatterTOC > ditac|tocEntry {
+    margin-top: 0.6em;
+}
+
+ditac|tocEntry[role="chapter"]::before,
+ditac|tocEntry[role="appendix"]::before,
+ditac|backmatterTOC > ditac|tocEntry::before {
+    font-weight: bold;
+}
+
+ditac|tocEntry[role="section2"]::before {
+    font-size: 0.95em;
+}
+
+/* Index (backmatter). ditac:indexEntry/ditac:div carry their label in
+   "term"/"title" attributes with no text children, the same situation
+   as ditac:tocEntry above. Each ditac:indexAnchor links to the body
+   location of one occurrence of the term, and prints its page. */
+
+ditac|indexList {
+    display: block;
+    break-before: page;
+}
+
+ditac|indexList > *[class~="topic/title"] {
+    display: block;
+    bookmark-level: 1;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    font-size: 1.9em;
+    color: #004885;
+    border-bottom: 2pt solid #004885;
+    padding-bottom: 0.2em;
+    margin-bottom: 0.6em;
+}
+
+ditac|div {
+    display: block;
+    break-inside: avoid;
+}
+
+/* List of Figures / List of Tables. ditac:figure/ditac:table carry their
+   label in the "title" attribute and no text children, same as
+   ditac:tocEntry above: each entry is the title, a leader and the page of
+   the figure or table it names. Their "number" attribute is a structural
+   path (part.1 chapter.2 figure.1), not a label to print. */
+
+ditac|figureList,
+ditac|tableList {
+    display: block;
+    break-before: page;
+}
+
+ditac|figureList > *[class~="topic/title"],
+ditac|tableList > *[class~="topic/title"] {
+    display: block;
+    bookmark-level: 1;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    font-size: 1.9em;
+    color: #004885;
+    margin-bottom: 0.8em;
+}
+
+ditac|figure,
+ditac|table {
+    display: block;
+    break-inside: avoid;
+    margin: 0.2em 0 0.2em 4em;
+    --dest: attr(targetLink);
+    -cssmedia-link: var(--dest);
+}
+
+ditac|figure::before,
+ditac|table::before {
+    content: attr(title) leader(dotted) target-counter(var(--dest), page);
+}
+
+ditac|div::before {
+    content: attr(title);
+    display: block;
+    font-weight: bold;
+    color: #004885;
+    margin-top: 0.8em;
+    margin-bottom: 0.3em;
+}
+
+ditac|indexEntry {
+    display: block;
+    margin: 0.15em 0;
+}
+
+ditac|indexEntry::before {
+    content: attr(term);
+}
+
+ditac|indexSee::before {
+    content: ". See " attr(term);
+    font-style: italic;
+}
+
+ditac|indexSeeAlso::before {
+    content: ". See also " attr(term);
+    font-style: italic;
+}
+
+ditac|indexAnchor {
+    display: inline;
+    --dest: attr(targetLink);
+    -cssmedia-link: var(--dest);
+}
+
+ditac|indexAnchor::before {
+    content: ", " target-counter(var(--dest), page);
+}
+
+/* ------------------------------------------------------------------ */
+/* Topics, titles, headings                                            */
+/* ------------------------------------------------------------------ */
+
+*[class~="topic/topic"] {
+    display: block;
+}
+
+*[class~="topic/body"] {
+    display: block;
+}
+
+*[class~="topic/title"] {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    color: #004885;
+    break-after: avoid;
+}
+
+/* H1: chapter-level topic title (direct child of a chapter) */
+*[class~="bookmap/chapter"] > *[class~="topic/topic"] {
+    break-before: page;
+}
+
+*[class~="bookmap/chapter"] > *[class~="topic/topic"] > *[class~="topic/title"] {
+    string-set: chapter-title content();
+    bookmark-level: 1;
+    font-size: 1.9em;
+    border-bottom: 2pt solid #004885;
+    padding-bottom: 0.2em;
+    margin-top: 0;
+    margin-bottom: 0.6em;
+}
+
+/* H2: section1-level topic title (one topicref deep inside a chapter) */
+*[class~="bookmap/chapter"] > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
+    bookmark-level: 2;
+    font-size: 1.35em;
+    border-bottom: 1pt solid #004885;
+    padding-bottom: 0.15em;
+    margin-top: 1.4em;
+    margin-bottom: 0.5em;
+}
+
+/* H3: section2-level topic title (two topicrefs deep inside a chapter) */
+*[class~="bookmap/chapter"] > topicref > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
+    bookmark-level: 3;
+    font-size: 1.1em;
+    margin-top: 1.1em;
+    margin-bottom: 0.4em;
+}
+
+/* Part: a divider level above chapter, grouping several chapters
+   under one heading and (optionally) an intro paragraph */
+*[class~="bookmap/part"] > *[class~="topic/topic"] {
+    break-before: page;
+}
+
+*[class~="bookmap/part"] > *[class~="topic/topic"] > *[class~="topic/title"] {
+    display: block;
+    bookmark-level: 1;
+    text-align: center;
+    font-size: 2.2em;
+    margin-top: 3cm;
+    margin-bottom: 0.6em;
+}
+
+*[class~="bookmap/part"] *[class~="bookmap/chapter"] > *[class~="topic/topic"] > *[class~="topic/title"] {
+    bookmark-level: 2;
+}
+
+*[class~="bookmap/part"] *[class~="bookmap/chapter"] > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
+    bookmark-level: 3;
+}
+
+*[class~="bookmap/part"] *[class~="bookmap/chapter"] > topicref > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
+    bookmark-level: 4;
+}
+
+*[class~="map/shortdesc"] {
+    display: block;
+    font-style: italic;
+    margin: 0.6em 0;
+}
+
+*[class~="bookmap/part"] > *[class~="topic/topic"] > *[class~="map/shortdesc"] {
+    text-align: center;
+    margin: 0 3em;
+}
+
+/* Appendix: same visual weight as a chapter title, prefixed with an
+   auto-numbered "Appendix A", "Appendix B"... label */
+*[class~="bookmap/appendix"] > *[class~="topic/topic"] {
+    break-before: page;
+    counter-increment: appendix;
+}
+
+*[class~="bookmap/appendix"] > *[class~="topic/topic"] > *[class~="topic/title"] {
+    string-set: chapter-title content();
+    bookmark-level: 1;
+    font-size: 1.9em;
+    border-bottom: 2pt solid #004885;
+    padding-bottom: 0.2em;
+    margin-top: 0;
+    margin-bottom: 0.6em;
+}
+
+*[class~="bookmap/appendix"] > *[class~="topic/topic"] > *[class~="topic/title"]::before {
+    content: "Appendix " counter(appendix, upper-alpha) ": ";
+}
+
+/* Glossary heading (backmatter) reuses the chapter-level title style */
+*[class~="bookmap/glossarylist"] > *[class~="topic/topic"] > *[class~="topic/title"] {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    bookmark-level: 1;
+    font-size: 1.9em;
+    color: #004885;
+    border-bottom: 2pt solid #004885;
+    padding-bottom: 0.2em;
+    margin-top: 0;
+    margin-bottom: 0.6em;
+    break-before: page;
+    break-after: avoid;
+}
+
+*[class~="topic/shortdesc"], *[class~="topic/abstract"] {
+    display: block;
+    font-style: italic;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/section"] {
+    display: block;
+    margin: 1em 0;
+}
+
+*[class~="topic/section"] > *[class~="topic/title"] {
+    font-size: 1.1em;
+    color: #004885;
+    margin-top: 1em;
+    margin-bottom: 0.4em;
+}
+
+*[class~="topic/fig"] {
+    display: block;
+    margin: 0.8em 0;
+    text-align: center;
+}
+
+*[class~="topic/fig"] > *[class~="topic/title"] {
+    display: block;
+    font-weight: normal;
+    font-style: italic;
+    color: black;
+    font-size: 1em;
+    text-align: left;
+    margin-bottom: 0.4em;
+}
+
+/* front matter book abstract: a preface-like topic, own page,
+   chapter-weight title */
+*[class~="bookmap/bookabstract"] {
+    display: block;
+    break-before: page;
+}
+
+*[class~="bookmap/bookabstract"] > *[class~="topic/topic"] > *[class~="topic/title"] {
+    bookmark-level: 1;
+    font-size: 1.9em;
+    border-bottom: 2pt solid #004885;
+    padding-bottom: 0.2em;
+    margin-top: 0;
+    margin-bottom: 0.6em;
+}
+
+*[class~="topic/example"] {
+    display: block;
+    margin: 1em 0;
+}
+
+*[class~="topic/example"] > *[class~="topic/title"] {
+    font-size: 1em;
+    font-style: italic;
+    color: black;
+    margin-top: 0;
+    margin-bottom: 0.4em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Task/reference structure: auto-generated section labels             */
+/* ------------------------------------------------------------------ */
+
+*[class~="task/taskbody"] {
+    display: block;
+}
+
+*[class~="task/context"]::before,
+*[class~="task/prereq"]::before,
+*[class~="task/result"]::before,
+*[class~="task/postreq"]::before,
+*[class~="reference/refsyn"]::before {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    color: #004885;
+    font-size: 1.1em;
+    margin-top: 1.1em;
+    margin-bottom: 0.4em;
+}
+
+*[class~="task/context"]::before { content: "About this task"; }
+*[class~="task/prereq"]::before { content: "Prerequisites"; }
+*[class~="task/result"]::before { content: "Results"; }
+*[class~="task/postreq"]::before { content: "Next Steps"; }
+*[class~="reference/refsyn"]::before { content: "Syntax"; }
+
+*[class~="task/steps"]::before {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    color: #004885;
+    font-size: 1.1em;
+    margin-top: 1.1em;
+    margin-bottom: 0.4em;
+    content: "Procedure";
+}
+
+*[class~="task/cmd"] {
+    display: inline;
+}
+
+*[class~="task/info"],
+*[class~="task/stepresult"],
+*[class~="task/tutorialinfo"],
+*[class~="task/stepxmp"] {
+    display: block;
+    margin: 0.5em 0 0.5em 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Paragraphs, lists                                                   */
+/* ------------------------------------------------------------------ */
+
+*[class~="topic/p"] {
+    display: block;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/itemgroup"] {
+    display: block;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/note"] {
+    display: block;
+    margin: 1em 0 1em 8pt;
+    padding: 8pt 10pt;
+    background-color: #F2F2F2;
+    border-left: 3pt solid #004885;
+}
+
+*[class~="topic/note"]::before {
+    content: "Note";
+    display: block;
+    break-after: avoid;
+    font-family: "Noto Sans", sans-serif;
+    font-weight: bold;
+    color: #004885;
+    margin-bottom: 4pt;
+}
+
+*[class~="topic/note"][type="important"] {
+    background-color: #FBEAEA;
+    border-left-color: #B00020;
+}
+
+*[class~="topic/note"][type="important"]::before {
+    content: "Important";
+    color: #B00020;
+}
+
+*[class~="topic/note"][type="notice"]::before {
+    content: "Notice";
+    text-transform: uppercase;
+}
+
+*[class~="topic/ol"] {
+    display: block;
+    list-style-type: decimal;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/ul"] {
+    display: block;
+    list-style-type: disc;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/ul"] *[class~="topic/ul"] {
+    list-style-type: "\2013\0020";
+}
+
+*[class~="task/substeps"] {
+    list-style-type: lower-alpha;
+}
+
+*[class~="topic/li"] {
+    display: list-item;
+    margin: 0.3em 0 0.3em 2em;
+}
+
+*[class~="topic/sl"] {
+    display: block;
+    list-style-type: disc;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/sli"] {
+    display: list-item;
+    margin: 0.2em 0 0.2em 2em;
+}
+
+*[class~="topic/dl"] {
+    display: block;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/dlentry"] {
+    display: block;
+    margin: 0.5em 0;
+}
+
+*[class~="topic/dt"] {
+    display: block;
+    font-weight: bold;
+    break-after: avoid;
+}
+
+*[class~="topic/dd"] {
+    display: block;
+    margin-left: 2em;
+}
+
+*[class~="topic/lq"] {
+    display: block;
+    font-style: italic;
+    margin: 0.8em 2em;
+}
+
+/* topic/pre and its pr-d/codeblock and ui-d/screen specializations
+   (both share this base class) */
+*[class~="topic/pre"] {
+    display: block;
+    font-family: monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    background-color: #F0F0F0;
+    border: 0.5pt solid #D0D0D0;
+    padding: 0.5em;
+    margin: 0.6em 0;
+    break-inside: avoid;
+}
+
+*[class~="topic/lines"] {
+    display: block;
+    white-space: pre-line;
+}
+
+/* topic/div is a generic, unstyled grouping wrapper */
+*[class~="topic/div"] {
+    display: block;
+}
+
+/* ------------------------------------------------------------------ */
+/* Inline phrases                                                      */
+/* ------------------------------------------------------------------ */
+
+/* topic/keyword covers its sw-d/pr-d/markup-d/xml-d specializations
+   (cmdname, varname, apiname, option, xmlelement, xmlatt, xmlpi...):
+   all of them name something from code, so monospace throughout */
+*[class~="pr-d/codeph"], *[class~="sw-d/userinput"], *[class~="sw-d/filepath"], *[class~="topic/keyword"], *[class~="hi-d/tt"] {
+    font-family: monospace;
+}
+
+*[class~="topic/cite"], *[class~="topic/term"] {
+    font-style: italic;
+}
+
+*[class~="topic/tm"][tmtype="tm"]::after {
+    content: "\2122";
+    font-size: 0.7em;
+    vertical-align: super;
+}
+
+*[class~="topic/tm"][tmtype="reg"]::after {
+    content: "\00AE";
+    font-size: 0.7em;
+    vertical-align: super;
+}
+
+*[class~="topic/tm"][tmtype="service"]::after {
+    content: "\2120";
+    font-size: 0.7em;
+    vertical-align: super;
+}
+
+*[class~="topic/fn"] {
+    font-size: 0.85em;
+    color: #404040;
+}
+
+*[class~="topic/fn"]::before {
+    content: " (";
+}
+
+*[class~="topic/fn"]::after {
+    content: ")";
+}
+
+*[class~="equation-d/equation-block"], *[class~="equation-d/equation-figure"] {
+    display: block;
+    text-align: center;
+    margin: 0.8em 0;
+}
+
+*[class~="svg-d/svg-container"] {
+    display: block;
+    text-align: center;
+    margin: 0.6em 0;
+}
+
+*[class~="topic/indexterm"] {
+    position: absolute;
+    visibility: hidden;
+}
+
+/* metadata-only elements: nothing here is meant to reach the page */
+*[class~="topic/titlealts"],
+*[class~="topic/prolog"],
+*[class~="topic/data"],
+*[class~="topic/object"],
+*[class~="topic/param"],
+*[class~="topic/index-base"],
+*[class~="map/reltable"] {
+    display: none;
+}
+
+*[class~="hi-d/b"] {
+    font-weight: bold;
+}
+
+*[class~="hi-d/i"] {
+    font-style: italic;
+}
+
+*[class~="hi-d/u"] {
+    text-decoration: underline;
+}
+
+*[class~="hi-d/line-through"] {
+    text-decoration: line-through;
+}
+
+*[class~="ui-d/uicontrol"] {
+    font-weight: bold;
+}
+
+*[class~="ui-d/menucascade"] > *[class~="ui-d/uicontrol"] + *[class~="ui-d/uicontrol"]::before {
+    content: "\0020\2192\0020";
+    font-weight: normal;
+}
+
+*[class~="topic/xref"] {
+    color: #004885;
+    -cssmedia-link: attr(href);
+}
+
+*[class~="topic/xref"][scope="external"]:empty::after {
+    content: attr(href);
+}
+
+/* ------------------------------------------------------------------ */
+/* Tables: topic/table (thead/tbody/row/entry)                         */
+/* ------------------------------------------------------------------ */
+
+*[class~="topic/table"] {
+    display: block;
+    margin: 0.8em 0;
+}
+
+*[class~="topic/tgroup"] {
+    display: table;
+    border-collapse: collapse;
+    width: 100%;
+    border: 0.5pt solid #000000;
+}
+
+*[class~="topic/thead"] {
+    display: table-header-group;
+    font-weight: bold;
+    background-color: #E0E0E0;
+    break-inside: avoid;
+    break-after: avoid;
+}
+
+*[class~="topic/tbody"] {
+    display: table-row-group;
+}
+
+*[class~="topic/row"] {
+    display: table-row;
+}
+
+*[class~="topic/entry"] {
+    display: table-cell;
+    overflow-wrap: break-word;
+    border: 0.5pt solid #000000;
+    padding: 0.4em 0.6em;
+    vertical-align: top;
+}
+
+*[class~="topic/entry"][align="center"] {
+    text-align: center;
+}
+
+/* CSS cannot give a cell a span, so the entry after a spanning one becomes
+   two cells: a blank one for the column spanned, then its own content. */
+*[class~="topic/entry"][namest][nameend] + *[class~="topic/entry"] {
+    display: contents;
+    content: "";
+}
+
+*[class~="topic/entry"][namest][nameend] + *[class~="topic/entry"]::before,
+*[class~="topic/entry"][namest][nameend] + *[class~="topic/entry"]::after {
+    display: table-cell;
+    overflow-wrap: break-word;
+    border: 0.5pt solid #000000;
+    padding: 0.4em 0.6em;
+    vertical-align: top;
+}
+
+*[class~="topic/entry"][namest][nameend] + *[class~="topic/entry"]::before {
+    content: "";
+}
+
+*[class~="topic/entry"][namest][nameend] + *[class~="topic/entry"]::after {
+    content: contents;
+}
+
+*[class~="topic/colspec"] {
+    display: none;
+}
+
+/* Tables: topic/simpletable (sthead/strow/stentry) */
+
+*[class~="topic/simpletable"] {
+    display: table;
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.8em 0;
+    border: 0.5pt solid #000000;
+}
+
+*[class~="topic/sthead"] {
+    display: table-header-group;
+    font-weight: bold;
+    background-color: #E0E0E0;
+    break-inside: avoid;
+    break-after: avoid;
+}
+
+*[class~="topic/strow"] {
+    display: table-row;
+}
+
+*[class~="topic/stentry"] {
+    display: table-cell;
+    overflow-wrap: break-word;
+    border: 0.5pt solid #000000;
+    padding: 0.4em 0.6em;
+    vertical-align: top;
+}
+
+/* task/choicetable is a simpletable specialization (base classes
+   topic/simpletable, topic/strow, topic/stentry), so the rules above
+   style it too. */
+
+/* ------------------------------------------------------------------ */
+/* Images                                                               */
+/* ------------------------------------------------------------------ */
+
+*[class~="topic/image"] {
+    content: attr(href url);
+    max-width: 100%;
+    /* an image that stores no density is taken as 120 dpi */
+    image-resolution: from-image 1.25dppx;
+}
+
+/* the cover keeps its own size */
+ditac|titlePage *[class~="topic/image"] {
+    max-width: none;
+}
+
+*[class~="topic/image"][placement="inline"] {
+    display: inline;
+    vertical-align: middle;
+}
+
+*[class~="topic/image"][placement="inline"][href$=".svg"] {
+    height: 1em;
+}
+
+/* the width and height attributes are read as a CSS length, or else
+   as a number of CSS pixels, and printed at 0.8 of that size */
+*[class~="topic/image"][width] {
+    width: calc(attr(width <length>, calc(attr(width <number>) * 1px)) * 0.8);
+    height: auto;
+}
+
+*[class~="topic/image"][height] {
+    height: calc(attr(height <length>, calc(attr(height <number>) * 1px)) * 0.8);
+}
+
+*[class~="topic/image"][placement="inline"][height] {
+    height: 1em;
+}
+
+*[class~="topic/image"][placement="break"] {
+    display: block;
+    margin: 0.6em auto;
+    text-align: center;
+}
+
+*[class~="topic/image"][scale] {
+    zoom: calc(attr(scale <number>) / 100);
+    max-width: none;
+}
+
+*[class~="topic/alt"] {
+    display: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Glossary (backmatter)                                               */
+/* ------------------------------------------------------------------ */
+
+*[class~="glossentry/glossentry"] {
+    display: block;
+    margin: 0.8em 0;
+    break-inside: avoid;
+}
+
+*[class~="glossentry/glossterm"] {
+    display: block;
+    font-weight: bold;
+    color: black;
+    margin-bottom: 0.2em;
+}
+
+/* overrides topic/abstract (italic, 0.6em vertical margin): glossary
+   definitions print upright with just an indent, not as a shortdesc */
+*[class~="glossentry/glossdef"] {
+    display: block;
+    font-style: normal;
+    margin: 0 0 0 2em;
+}
+
+/* ------------------------------------------------------------------ */
+/* Hidden structural noise                                             */
+/* ------------------------------------------------------------------ */
+
+*[class~="topic/related-links"] {
+    display: none;
+}

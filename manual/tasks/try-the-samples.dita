@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="try-the-samples">
+    <title>Try the samples</title>
+    <shortdesc>The CSSMedia repository includes sample documents, stylesheets, fonts and the PDFs they
+        produce. Follow these steps to generate a <xref href="../glossaries/PDF.dita">PDF</xref> from a sample and change its
+        stylesheet.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The <xref href="https://github.com/maxprograms-com/CSSMedia/tree/main/samples"
+                    format="html" scope="external"><filepath>samples</filepath></xref> folder of the
+                repository has these samples:</p>
+            <simpletable>
+                <sthead>
+                    <stentry>Sample</stentry>
+                    <stentry>Content</stentry>
+                </sthead>
+                <strow>
+                    <stentry>xml_gap</stentry>
+                    <stentry>A DocBook article in English, Arabic, Japanese and Russian, formatted
+                        with one stylesheet, <filepath>xml_gap.css</filepath>.</stentry>
+                </strow>
+                <strow>
+                    <stentry>Swordfish</stentry>
+                    <stentry>The User Guide of a real product, written in DITA and merged into one
+                        <xref href="../glossaries/XML.dita">XML</xref> file with TypesDitac and with the DITA Open Toolkit. The stylesheets
+                            <filepath>ditac.css</filepath>, <filepath>ditac_hyphens.css</filepath>
+                        and <filepath>dita-ot.css</filepath> format the merged files.</stentry>
+                </strow>
+                <strow>
+                    <stentry>fonts</stentry>
+                    <stentry>The Noto fonts that the stylesheets load with
+                            <codeph>@font-face</codeph> rules.</stentry>
+                </strow>
+            </simpletable>
+            <p>Each sample comes with the PDF that CSSMedia generated from it.</p>
+        </context>
+        <steps>
+            <step>
+                <cmd>Open a terminal in the <filepath>samples</filepath> folder.</cmd>
+            </step>
+            <step>
+                <cmd>Generate the PDF of the English article:</cmd>
+                <stepxmp>
+                    <pre>cssmedia -x xml_gap/xml_gap.xml -c xml_gap.css -p xml_gap/xml_gap.pdf</pre>
+                </stepxmp>
+                <info>
+                    <p>The XML files declare a DocBook <xref href="../glossaries/DTD.dita">DTD</xref>. Without a catalog, CSSMedia prints the
+                        warning <codeph>External subset not found: docbook/docbookx.dtd</codeph> and
+                        still generates the PDF. To avoid the warning, pass a catalog that resolves
+                        the DTD with <codeph>-g</codeph>, such as the one in <xref
+                            href="https://github.com/maxprograms-com/TypesBook" format="html"
+                            scope="external">TypesBook</xref>.</p>
+                </info>
+            </step>
+            <step>
+                <cmd>Open the PDF and compare it with the one in the repository.</cmd>
+            </step>
+            <step>
+                <cmd>Edit <filepath>xml_gap.css</filepath> and run the command again.</cmd>
+                <info>
+                    <p>For example, change the <codeph>font-size</codeph> of <codeph>article</codeph>
+                        or the <codeph>color</codeph> of <codeph>section > title</codeph>, and see
+                        what changes in the PDF.</p>
+                </info>
+            </step>
+            <step importance="optional">
+                <cmd>Generate the Swordfish User Guide:</cmd>
+                <stepxmp>
+                    <pre>cssmedia -x Swordfish/typesditac/swordfish.xml -c ditac.css -p Swordfish/typesditac/swordfish.pdf</pre>
+                </stepxmp>
+            </step>
+        </steps>
+        <result>
+            <p>The <filepath>xml_gap.css</filepath> stylesheet uses these techniques:</p>
+            <simpletable>
+                <sthead>
+                    <stentry>Result</stentry>
+                    <stentry>CSS</stentry>
+                </sthead>
+                <strow>
+                    <stentry>Local fonts</stentry>
+                    <stentry><codeph>@font-face</codeph> rules with
+                            <codeph>src: url("./fonts/NotoSans-Regular.ttf")</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>Page size, margins and a footer with the document title and the page
+                        number</stentry>
+                    <stentry><codeph>@page</codeph> with <codeph>@bottom-left</codeph> and
+                            <codeph>@bottom-right</codeph>, <codeph>string-set: doc-title
+                            content()</codeph> on the title, and <codeph>counter(page)</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>A different font for each language</stentry>
+                    <stentry>Selectors such as <codeph>article[lang|="ar"]</codeph> and
+                            <codeph>article[lang|="ja"]</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>Hyphenation in English and Russian</stentry>
+                    <stentry><codeph>hyphens: auto</codeph> on <codeph>article:lang(en)</codeph> and
+                            <codeph>article:lang(ru)</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>Right-to-left text in Arabic</stentry>
+                    <stentry><codeph>direction: rtl</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>Stricter line breaking in Japanese</stentry>
+                    <stentry><codeph>line-break: strict</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>Links from an XML attribute</stentry>
+                    <stentry><codeph>-cssmedia-link: attr(url)</codeph> on
+                        <codeph>ulink</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>An image from an XML attribute</stentry>
+                    <stentry><codeph>content: attr(fileref url)</codeph> on
+                        <codeph>imagedata</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>The photo at the start side of the text, on the right in Arabic and on
+                        the left in the other languages</stentry>
+                    <stentry><codeph>float: inline-start</codeph> on
+                        <codeph>mediaobject</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>An arrow after each link</stentry>
+                    <stentry><codeph>ulink::after { content: " \2197"; }</codeph></stentry>
+                </strow>
+                <strow>
+                    <stentry>Code listings in a monospace font</stentry>
+                    <stentry><codeph>font-family: "Noto Sans Mono", monospace</codeph> with
+                            <codeph>white-space: pre</codeph></stentry>
+                </strow>
+            </simpletable>
+        </result>
+    </taskbody>
+</task>

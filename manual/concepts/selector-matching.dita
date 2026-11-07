@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="selector-matching">
+    <title>Selectors</title>
+    <shortdesc>A selector tells CSSMedia which element or elements in the <xref href="../glossaries/XML.dita">XML</xref> file a <xref href="../glossaries/CSS.dita">CSS</xref> rule applies to. A rule has a selector followed by braces. Inside the braces, write declarations that set property values:</shortdesc>
+    <conbody>
+        <pre outputclass="language-css21">chapter {
+    color: navy;
+}
+</pre>
+        <p>Here, <codeph>chapter</codeph> is the selector and <codeph>color: navy;</codeph> is a declaration. CSSMedia reads XML names and attributes as data. It does not assign vocabulary-specific meanings to them.</p>
+        <p>The guides are grouped by selector type and matching behavior:</p>
+        <ul>
+            <li>
+                <xref href="../references/selector-reference.dita#selector-reference">Selector reference</xref>: a compact reference to the selector forms and their <xref href="../glossaries/PDF.dita">PDF</xref> behavior.</li>
+            <li>
+                <xref href="basic-selectors.dita#basic-selectors">Basic selectors and namespaces</xref>: element names, IDs, classes, attributes and XML namespaces.</li>
+            <li>
+                <xref href="combinators.dita#combinators">Combinators</xref>: selecting elements by their relationship to other elements.</li>
+            <li>
+                <xref href="pseudo-classes.dita#pseudo-classes">Pseudo-classes</xref>: structural tests, selector logic, language and other states.</li>
+            <li>
+                <xref href="pseudo-elements.dita#pseudo-elements">Pseudo-elements</xref>: selecting generated content, text parts and other special targets.</li>
+            <li>
+                <xref href="specificity.dita#specificity">Specificity</xref>: how selectors help resolve competing declarations.</li>
+        </ul>
+    </conbody>
+</concept>
+

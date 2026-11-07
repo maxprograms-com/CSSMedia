@@ -1,0 +1,60 @@
+{
+  "name": "cssmedia",
+  "productName": "CSSMedia",
+  "version": "0.1.0",
+  "description": "Apply a CSS stylesheet (including CSS Paged Media) to a standalone XML file and compute per-element styles and text segments",
+  "keywords": [
+    "CSS",
+    "TypeScript",
+    "XML",
+    "PDF",
+    "Paged Media"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc"
+  },
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "author": {
+    "name": "Rodolfo M. Raya",
+    "url": "https://maxprograms.com",
+    "email": "rmraya@maxprograms.com"
+  },
+  "license": "BUSL-1.1",
+  "type": "module",
+  "bin": {
+    "cssmedia": "dist/cssmedia.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "/dist",
+    "/manual",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxprograms-com/CSSMedia.git"
+  },
+  "dependencies": {
+    "css-tree": "^3.2.1",
+    "pdfnative": "^1.8.0",
+    "typesbcp47": "^1.26.2",
+    "typesxml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/css-tree": "^3.2.0",
+    "@types/node": "^24.19.2",
+    "typescript": "^6.0.3"
+  }
+}

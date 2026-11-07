@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="XMLSchema">
+    <glossterm>XML Schema</glossterm>
+    <glossdef><xref href="https://www.w3.org/XML/Schema" format="html" scope="external">XML
+            Schema</xref> is a W3C language for describing the structure of XML documents and the
+        data types of their content. A schema is itself an XML file, and it is more expressive than
+        a <xref href="DTD.dita">DTD</xref>. Like a DTD, a schema can be located with an <xref
+            href="OASISCatalog.dita">OASIS Catalog</xref>.</glossdef>
+</glossentry>

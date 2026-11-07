@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="combinators">
+    <title>Combinators</title>
+    <shortdesc>A combinator describes the relationship between two elements. Put the related element’s selector on the left and the element you want to match on the right.</shortdesc>
+    <conbody>
+        <section id="descendant-and-sibling-relationships">
+            <title>Descendant and sibling relationships</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-4/#combinators" scope="external" format="html">Selectors 4 §14, Combinators</xref>.</p>
+            <p>Use a space to select a descendant at any depth. Use <codeph>&gt;</codeph> for a direct child, <codeph>+</codeph> for the next element sibling and <codeph>~</codeph> for any later element sibling with the same parent.</p>
+            <pre outputclass="language-css21">chapter title { color: navy; }
+chapter &gt; title { color: teal; }
+title + paragraph { color: gray; }
+title ~ paragraph { color: purple; }
+</pre>
+            <p>The first rule selects every <codeph>title</codeph> inside a <codeph>chapter</codeph>, even when other elements are between them. The second selects only titles that are direct children of a chapter. The last two select paragraphs based on their position after a title.</p>
+        </section>
+        <section id="column-combinator">
+            <title>Column combinator</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-5/#the-column-combinator" scope="external" format="html">Selectors 5 §8.1, Column combinator (||)</xref>.</p>
+            <p>The column combinator <codeph>||</codeph> relates elements that belong to the same table column.</p>
+            <pre outputclass="language-css21">col || td { color: navy; }
+</pre>
+        </section>
+        <section id="reference-combinators">
+            <title>Reference combinators</title>
+            <p>
+                <xref href="https://www.w3.org/TR/selectors-5/#idref-combinators" scope="external" format="html">Selectors 5 §9.1, Reference combinators /ref/</xref>.</p>
+            <p>A reference combinator relates elements through an attribute that refers to an element ID.</p>
+            <pre outputclass="language-css21">section /aria-labelledby/ title { color: navy; }
+</pre>
+            <p>The name between slashes is the reference attribute. CSSMedia accepts this syntax and uses the referenced element relationship when matching.</p>
+        </section>
+    </conbody>
+</concept>
+

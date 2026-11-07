@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introBoxes">
+    <title>Boxes, backgrounds and borders</title>
+    <shortdesc>Every element in your document generates a box that you can size, space and fill with
+        color.</shortdesc>
+    <conbody>
+        <p>A box has content, padding, a border and a margin. These topics explain how to size and
+            space boxes and how to set their backgrounds:</p>
+        <ul>
+            <li><xref href="box-sizing-and-spacing.dita"/></li>
+            <li><xref href="box-dimensions.dita"/></li>
+            <li><xref href="../tasks/color-and-images.dita"/></li>
+            <li><xref href="../tasks/positioning-and-size.dita"/></li>
+            <li><xref href="../tasks/repetition-and-attachment.dita"/></li>
+            <li><xref href="../tasks/clipping-shorthand-and-blending.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

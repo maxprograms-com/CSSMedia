@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="positioning-and-size">
+    <title>Background positioning and size</title>
+    <shortdesc>These <xref href="../glossaries/CSS.dita">CSS</xref> properties specify where a background image is placed, how large it is and which box is used as its positioning area.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="background-position">
+                <cmd>
+                    <codeph>background-position</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-backgrounds-4/#background-position" scope="external" format="html">“CSS Backgrounds 4 §2.7, Background Positioning Shorthand: the background-position shorthand property”</xref>.</p>
+                    <p>Use <codeph>background-position</codeph> to specify each background image’s position inside its positioning area. A position can use keywords, lengths or percentages. With two values, the first sets the horizontal position and the second sets the vertical position.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-position: right 1em bottom 2em;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The CSS initial value is <codeph>0% 0%</codeph>, which places the image at the top-left. A percentage is calculated from the difference between the size of the positioning area and the size of the image. For example, <codeph>100% 100%</codeph> aligns the image’s bottom-right corner with the area’s bottom-right corner.</p>
+                </info>
+            </step>
+            <step id="background-position-x-background-position-y-background-position-inline-and-background-position-block">
+                <cmd>
+                    <codeph>background-position-x</codeph>, <codeph>background-position-y</codeph>, <codeph>background-position-inline</codeph> and <codeph>background-position-block</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-backgrounds-4/#background-position-longhands" scope="external" format="html">“CSS Backgrounds 4 §2.6, Background Positioning: the background-position-x, background-position-y, background-position-inline, and background-position-block properties”</xref>.</p>
+                    <p>Use these properties to specify a position on one axis. <codeph>background-position-x</codeph> and <codeph>background-position-y</codeph> use the physical horizontal and vertical axes. <codeph>background-position-inline</codeph> and <codeph>background-position-block</codeph> use the logical axes, which follow the element’s writing mode.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-position-x: right 1em;
+    background-position-block: end 2em;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The physical properties use values such as <codeph>left</codeph>, <codeph>right</codeph>, <codeph>top</codeph> and <codeph>bottom</codeph>. The logical properties use <codeph>start</codeph> and <codeph>end</codeph>. Each also accepts <codeph>center</codeph>, a length or a percentage.</p>
+                    <p>CSSMedia expands <codeph>background-position</codeph> into physical or logical axis values and also expands the <codeph>background</codeph> shorthand’s position.</p>
+                </info>
+            </step>
+            <step id="background-size">
+                <cmd>
+                    <codeph>background-size</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-backgrounds-4/#background-size" scope="external" format="html">“CSS Backgrounds 4 §2.10, Sizing Images: the background-size property”</xref>.</p>
+                    <p>Use <codeph>background-size</codeph> to specify the width and height of each background image. Use one or two non-negative lengths or percentages. If you give one length or percentage, the other dimension defaults to <codeph>auto</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-size: 12em auto;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>
+                        <codeph>auto</codeph> uses the image’s intrinsic size or proportion. <codeph>cover</codeph> scales the image until it covers the positioning area, possibly cropping part of it. <codeph>contain</codeph> scales it until the whole image fits, possibly leaving part of the area uncovered. Separate sizes for multiple image layers with commas.</p>
+                </info>
+            </step>
+            <step id="background-origin">
+                <cmd>
+                    <codeph>background-origin</codeph>
+                </cmd>
+                <info>
+                    <p>
+                        <xref href="https://www.w3.org/TR/css-backgrounds-4/#background-origin" scope="external" format="html">“CSS Backgrounds 4 §2.9, Positioning Area: the background-origin property”</xref>.</p>
+                    <p>Use <codeph>background-origin</codeph> to specify the box that defines the positioning area for background images.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-origin: content-box;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>
+                        <codeph>border-box</codeph> uses the area inside the outer border edges, <codeph>padding-box</codeph> uses the area inside the outer padding edges, and <codeph>content-box</codeph> uses the content area. The CSS initial value is <codeph>padding-box</codeph>. This property does not affect an image whose <codeph>background-attachment</codeph> is <codeph>fixed</codeph>.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
+
