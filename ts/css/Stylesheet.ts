@@ -226,6 +226,6 @@ export interface Stylesheet {
     customMedia: ReadonlyArray<readonly [string, string | boolean]>;
     supportsConditions: ReadonlyArray<readonly [string, boolean]>;
     tocRules: ReadonlyArray<TocRule>;
-    layerCount: number;
+    layers: ReadonlyArray<readonly [string, ReadonlyArray<string>]>;
     diagnostics: ReadonlyArray<string>;
 }

@@ -1677,7 +1677,7 @@ export class StylesheetReader {
             customMedia: this.customMedia,
             supportsConditions: this.supports.definitions(),
             tocRules: this.tocRules,
-            layerCount: ranks.size,
+            layers: [...ranks.keys()].map((key: string): readonly [string, ReadonlyArray<string>] => [key, (this.layers.get(key) as LayerNode).children]),
             diagnostics: this.diagnostics
         };
     }

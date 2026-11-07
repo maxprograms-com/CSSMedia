@@ -29,6 +29,7 @@ import { DeclarationReader } from "../css/DeclarationReader.js";
 import type { PropertyTable } from "../css/PropertyTable.js";
 import { SelectorCompiler } from "../css/SelectorCompiler.js";
 import { ShorthandExpander } from "../css/ShorthandExpander.js";
+import { SupportsEvaluator } from "../css/SupportsEvaluator.js";
 import type { ContainerQuery, Declaration, DeclaredValue, FontFaceRule, Scope, StyleRule } from "../css/Stylesheet.js";
 import { DEFAULT_PAGE_SIZE, StylesheetReader } from "../css/StylesheetReader.js";
 import { CalcSimplifier } from "../css/values/CalcSimplifier.js";
@@ -53,7 +54,7 @@ export interface SvgNode {
     parent?: SvgNode;
 }
 
-type CompiledRule = readonly [ReadonlyArray<CompiledSelector>, ReadonlyArray<Declaration>];
+type CompiledRule = readonly [ReadonlyArray<CompiledSelector>, ReadonlyArray<Declaration>, string];
 
 const XML_NAMESPACE: string = "http://www.w3.org/XML/1998/namespace";
 const XLINK_NAMESPACE: string = "http://www.w3.org/1999/xlink";
@@ -101,6 +102,9 @@ const NO_CUSTOMS: ReadonlyMap<string, string> = new Map<string, string>();
 const NON_NEGATIVE: ReadonlySet<string> = new Set<string>(["stroke-width", "stroke-miterlimit", "rx", "ry", "r", "width", "height", "path-length"]);
 const BOX_HINTS: ReadonlySet<string> = new Set<string>(["display", "width", "height", "overflow"]);
 const UNSCOPED: number = Number.NEGATIVE_INFINITY;
+const NO_LAYER: string = "";
+const SHEET_AT_RULES: ReadonlySet<string> = new Set<string>(["import", "namespace", "layer", "media", "supports", "font-face"]);
+const CSS_WIDE_KEYWORDS: ReadonlySet<string> = new Set<string>(["initial", "inherit", "unset", "revert", "revert-layer"]);
 const NO_SCOPE: ReadonlyArray<readonly [SvgNode | undefined, number]> = [[undefined, Number.POSITIVE_INFINITY]];
 
 export class SvgStyles {
@@ -146,7 +150,11 @@ export class SvgStyles {
     private hostStyle?: ComputedStyle;
     private hostRoot?: SourceElement;
     private hostIds?: Map<string, XMLElement>;
-    private ownLayer: number = 0;
+    private hostLayers: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [];
+    private readonly layers: Map<string, Array<string>> = new Map<string, Array<string>>([[NO_LAYER, []]]);
+    private anonymousLayers: number = 0;
+    private layerRanks?: Map<string, number>;
+    private supporter?: SupportsEvaluator;
     private rootPlace?: SvgNode;
     private scopeNode?: SvgNode;
 
@@ -176,11 +184,10 @@ export class SvgStyles {
         return this.fonts()[0];
     }
 
-    embed(rules: ReadonlyArray<StyleRule>, ownLayer: number, box: ComputedStyle, rootValues: Readonly<Record<string, CssValue>>, hostRoot: SourceElement,
-        holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): void {
-        // ownLayer: the rules of the image's own style elements are unlayered rules of the same origin as the document's.
+    embed(rules: ReadonlyArray<StyleRule>, layers: ReadonlyArray<readonly [string, ReadonlyArray<string>]>, box: ComputedStyle, rootValues: Readonly<Record<string, CssValue>>,
+        hostRoot: SourceElement, holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): void {
         this.hostRules = rules;
-        this.ownLayer = ownLayer;
+        this.hostLayers = layers;
         this.rootValues = rootValues;
         this.hostRoot = hostRoot;
         this.hostHolds = holds;
@@ -204,7 +211,7 @@ export class SvgStyles {
             return;
         }
         this.sheetsRead = true;
-        this.readSheet(USER_AGENT_SHEET, this.url, this.agentRules);
+        this.readSheet(USER_AGENT_SHEET, this.url, this.agentRules, NO_LAYER);
         // SVG 2 §6.3 and §6.9: the xml-stylesheet processing instructions, then the style sheets in the document; Associating
         // Style Sheets with XML Documents 1.0 puts the instructions "in the document's prolog".
         if (!(this.source instanceof XMLElement)) {
@@ -362,7 +369,7 @@ export class SvgStyles {
         const href: string | undefined = pseudo.get("href");
         const type: string | undefined = pseudo.get("type");
         if (href !== undefined && (type === undefined || type.trim().toLowerCase() === "text/css") && pseudo.get("alternate") !== "yes" && this.mediaHolds(pseudo.get("media"))) {
-            this.importSheet(this.resolve(href));
+            this.importSheet(this.resolve(href), NO_LAYER);
         }
     }
 
@@ -373,7 +380,7 @@ export class SvgStyles {
         if ((namespace === SVG_NAMESPACE || namespace === XHTML_NAMESPACE) && name === "style") {
             const type: string = (this.attribute(element, "type") ?? "").trim().toLowerCase();
             if ((type.length === 0 || type === "text/css") && this.mediaHolds(this.attribute(element, "media"))) {
-                this.readSheet(this.text(element), this.url, this.authorRules);
+                this.readSheet(this.text(element), this.url, this.authorRules, NO_LAYER);
             }
             return;
         }
@@ -381,7 +388,7 @@ export class SvgStyles {
             const relations: Array<string> = (this.attribute(element, "rel") ?? "").toLowerCase().split(WHITE_SPACE);
             const href: string | undefined = this.attribute(element, "href");
             if (relations.includes("stylesheet") && !relations.includes("alternate") && href !== undefined && this.mediaHolds(this.attribute(element, "media"))) {
-                this.importSheet(this.resolve(href));
+                this.importSheet(this.resolve(href), NO_LAYER);
             }
             return;
         }
@@ -417,7 +424,7 @@ export class SvgStyles {
         return this.conditions.matchesList(list);
     }
 
-    private importSheet(url: string): void {
+    private importSheet(url: string, layer: string): void {
         this.loading = this.loading ?? new Set<string>();
         if (this.loading.has(url)) {
             return;
@@ -436,25 +443,205 @@ export class SvgStyles {
             text = new TextDecoder("utf-8").decode(bytes);
         }
         this.loading.add(url);
-        this.readSheet(text, url, this.authorRules);
+        this.readSheet(text, url, this.authorRules, layer);
         this.loading.delete(url);
     }
 
-    private readSheet(text: string, baseUrl: string, rules: Array<CompiledRule>): void {
-        // SVG 2 §6.9: style rules, @import, @media, @charset and @font-face, with @namespace for the selectors.
+    private readSheet(text: string, baseUrl: string, rules: Array<CompiledRule>, layer: string): void {
+        // CSS Cascade 5 §2 and §6.4.4.2, Namespaces 3 §3.1: @import rules, then @namespace rules, then the rest; an @layer
+        // statement may come first, and after an @import or @namespace rule it ends both.
         let sheet: StyleSheet;
         try {
             sheet = parse(text) as StyleSheet;
         } catch {
             return;
         }
-        this.readRules(sheet.children.toArray(), baseUrl, new Map<string, string>(), rules);
+        const namespaces: Map<string, string> = new Map<string, string>();
+        const nodes: Array<CssNode> = sheet.children.toArray();
+        let index: number = 0;
+        let importsAllowed: boolean = true;
+        let prefixed: boolean = false;
+        for (; index < nodes.length; index++) {
+            const node: CssNode = nodes[index];
+            const name: string | undefined = node.type === "Atrule" ? node.name.toLowerCase() : undefined;
+            if (name === "charset") {
+                continue;
+            }
+            if (node.type === "Atrule" && name === "layer" && node.block === null) {
+                if (prefixed) {
+                    break;
+                }
+                this.layerStatement(this.preludeOf(node), layer);
+            } else if (node.type === "Atrule" && name === "import") {
+                prefixed = true;
+                if (importsAllowed) {
+                    this.readImport(this.preludeOf(node), baseUrl, namespaces, layer);
+                }
+            } else if (node.type === "Atrule" && name === "namespace") {
+                prefixed = true;
+                importsAllowed = false;
+                this.readNamespace(this.preludeOf(node), namespaces);
+            } else if (this.validRule(node, namespaces)) {
+                break;
+            }
+        }
+        this.readRules(nodes.slice(index), baseUrl, namespaces, rules, layer);
     }
 
-    private readRules(nodes: ReadonlyArray<CssNode>, baseUrl: string, namespaces: Map<string, string>, rules: Array<CompiledRule>): void {
+    private preludeOf(atrule: Atrule): Array<CssNode> {
+        return atrule.prelude !== null && atrule.prelude.type === "AtrulePrelude" ? atrule.prelude.children.toArray() : [];
+    }
+
+    private validRule(node: CssNode, namespaces: ReadonlyMap<string, string>): boolean {
+        // An invalid rule is ignored, and so does not end the place where @import and @namespace are allowed.
+        if (node.type === "Atrule") {
+            return SHEET_AT_RULES.has(node.name.toLowerCase());
+        }
+        return node.type === "Rule" && node.prelude.type === "SelectorList"
+            && node.prelude.children.toArray().every((selector: CssNode) => selector.type === "Selector" && this.compiler.compile(selector as Selector, namespaces) !== undefined);
+    }
+
+    private readNamespace(prelude: ReadonlyArray<CssNode>, namespaces: Map<string, string>): void {
+        const parts: Array<CssNode> = prelude.filter((part: CssNode) => part.type !== "WhiteSpace");
+        const uri: CssNode | undefined = parts[parts.length - 1];
+        const prefix: CssNode | undefined = parts.length === 2 ? parts[0] : undefined;
+        if (uri !== undefined && (uri.type === "String" || uri.type === "Url") && (prefix === undefined || prefix.type === "Identifier")) {
+            namespaces.set(prefix === undefined ? SelectorCompiler.DEFAULT_NAMESPACE : (prefix as { name: string }).name, uri.value);
+        }
+    }
+
+    private readImport(prelude: ReadonlyArray<CssNode>, baseUrl: string, namespaces: ReadonlyMap<string, string>, parent: string): void {
+        // CSS Cascade 5 §2: the layer of an import joins the layer order even when the style sheet fails to load.
+        let layerName: string | null | undefined;
+        let location: string | undefined;
+        let media: MediaQueryList | undefined;
+        let supported: boolean = true;
+        for (const part of prelude) {
+            if ((part.type === "String" || part.type === "Url") && location === undefined) {
+                location = part.value;
+            } else if (part.type === "Identifier" && part.name.toLowerCase() === "layer") {
+                layerName = null;
+            } else if (part.type === "Function" && part.name.toLowerCase() === "layer") {
+                const first: CssNode | null = part.children.first;
+                layerName = first === null ? null : this.layerName(first);
+                if (layerName === undefined) {
+                    return;
+                }
+            } else if (part.type === "Function" && part.name.toLowerCase() === "supports") {
+                const condition: CssNode | null = part.children.first;
+                supported = condition !== null && this.supportsEvaluator().supports(condition, namespaces);
+            } else if (part.type === "MediaQueryList") {
+                media = part;
+            }
+        }
+        if (location === undefined || !supported || (media !== undefined && !this.media(media))) {
+            return;
+        }
+        const layer: string = layerName === undefined ? parent : (layerName === null ? this.anonymousLayer(parent) : this.registerLayer(parent, layerName));
+        const sheet: string | undefined = BaseUrls.resolved(location, baseUrl);
+        if (sheet !== undefined) {
+            this.importSheet(sheet, layer);
+        } else {
+            this.diagnostics.push("Cannot read the style sheet " + location + " of the SVG image " + this.url);
+        }
+    }
+
+    private supportsEvaluator(): SupportsEvaluator {
+        this.conditions = this.conditions ?? new ConditionEvaluator(DEFAULT_PAGE_SIZE);
+        this.supporter = this.supporter ?? new SupportsEvaluator(this.reader, this.compiler, this.conditions);
+        return this.supporter;
+    }
+
+    private layerStatement(prelude: ReadonlyArray<CssNode>, parent: string): void {
+        const list: CssNode | undefined = prelude[0];
+        if (list === undefined || list.type !== "LayerList") {
+            return;
+        }
+        const names: Array<string | undefined> = list.children.toArray().map((layer: CssNode) => this.layerName(layer));
+        if (names.every((name: string | undefined): name is string => name !== undefined)) {
+            for (const name of names) {
+                this.registerLayer(parent, name as string);
+            }
+        }
+    }
+
+    private layerBlock(prelude: ReadonlyArray<CssNode>, parent: string): string | undefined {
+        const list: CssNode | undefined = prelude[0];
+        if (list === undefined) {
+            return this.anonymousLayer(parent);
+        }
+        const name: string | undefined = list.type === "LayerList" ? (list.children.size === 1 ? this.layerName(list.children.first) : undefined) : this.layerName(list);
+        return name === undefined ? undefined : this.registerLayer(parent, name);
+    }
+
+    private layerName(node: CssNode | null): string | undefined {
+        // CSS Cascade 5 §6.4.2: a CSS-wide keyword in a layer name makes the rule invalid.
+        if (node === null || node.type !== "Layer") {
+            return undefined;
+        }
+        return node.name.split(".").some((part: string) => CSS_WIDE_KEYWORDS.has(part.toLowerCase())) ? undefined : node.name;
+    }
+
+    private registerLayer(parent: string, name: string): string {
+        let current: string = parent;
+        for (const part of name.split(".")) {
+            const key: string = current === NO_LAYER ? part : current + "." + part;
+            this.ensureLayer(current, key);
+            current = key;
+        }
+        return current;
+    }
+
+    private anonymousLayer(parent: string): string {
+        this.anonymousLayers++;
+        const key: string = (parent === NO_LAYER ? "" : parent + ".") + "#image" + this.anonymousLayers;
+        this.ensureLayer(parent, key);
+        return key;
+    }
+
+    private ensureLayer(parent: string, key: string): void {
+        if (!this.layers.has(key)) {
+            this.layers.set(key, []);
+            (this.layers.get(parent) as Array<string>).push(key);
+        }
+    }
+
+    private rank(key: string): number {
+        // CSS Cascade 5 §6.4.2 and §6.4.3: the document's layers and the image's share one order, and a layer of the same name is one layer.
+        if (this.layerRanks === undefined) {
+            const merged: Map<string, Array<string>> = new Map<string, Array<string>>();
+            for (const [name, children] of this.hostLayers) {
+                merged.set(name, [...children]);
+            }
+            const add: (name: string) => void = (name: string): void => {
+                if (!merged.has(name)) {
+                    merged.set(name, []);
+                }
+                for (const child of this.layers.get(name) as Array<string>) {
+                    if (!(merged.get(name) as Array<string>).includes(child)) {
+                        (merged.get(name) as Array<string>).push(child);
+                    }
+                    add(child);
+                }
+            };
+            add(NO_LAYER);
+            const ranks: Map<string, number> = new Map<string, number>();
+            const visit: (current: string) => void = (current: string): void => {
+                for (const child of merged.get(current) as Array<string>) {
+                    visit(child);
+                }
+                ranks.set(current, ranks.size);
+            };
+            visit(NO_LAYER);
+            this.layerRanks = ranks;
+        }
+        return this.layerRanks.get(key) as number;
+    }
+
+    private readRules(nodes: ReadonlyArray<CssNode>, baseUrl: string, namespaces: Map<string, string>, rules: Array<CompiledRule>, layer: string): void {
         for (const node of nodes) {
             if (node.type === "Rule") {
-                this.readRule(node, baseUrl, namespaces, rules);
+                this.readRule(node, baseUrl, namespaces, rules, layer);
                 continue;
             }
             if (node.type !== "Atrule") {
@@ -462,30 +649,25 @@ export class SvgStyles {
             }
             const atrule: Atrule = node;
             const name: string = atrule.name.toLowerCase();
-            const prelude: Array<CssNode> = atrule.prelude !== null && atrule.prelude.type === "AtrulePrelude" ? atrule.prelude.children.toArray() : [];
-            if (name === "namespace") {
-                const parts: Array<CssNode> = prelude.filter((part: CssNode) => part.type !== "WhiteSpace");
-                const uri: CssNode | undefined = parts[parts.length - 1];
-                const prefix: CssNode | undefined = parts.length === 2 ? parts[0] : undefined;
-                if (uri !== undefined && (uri.type === "String" || uri.type === "Url") && (prefix === undefined || prefix.type === "Identifier")) {
-                    namespaces.set(prefix === undefined ? SelectorCompiler.DEFAULT_NAMESPACE : (prefix as { name: string }).name, uri.value);
-                }
-            } else if (name === "import") {
-                const location: CssNode | undefined = prelude.find((part: CssNode) => part.type === "String" || part.type === "Url");
-                const media: CssNode | undefined = prelude.find((part: CssNode) => part.type === "MediaQueryList");
-                if (location !== undefined && (media === undefined || this.media(media as MediaQueryList))) {
-                    const reference: string = (location as { value: string }).value;
-                    const sheet: string | undefined = BaseUrls.resolved(reference, baseUrl);
-                    if (sheet !== undefined) {
-                        this.importSheet(sheet);
-                    } else {
-                        this.diagnostics.push("Cannot read the style sheet " + reference + " of the SVG image " + this.url);
-                    }
-                }
-            } else if (name === "media") {
+            const prelude: Array<CssNode> = this.preludeOf(atrule);
+            if (name === "media") {
                 const list: CssNode | undefined = prelude[0];
                 if (atrule.block !== null && (list === undefined || (list.type === "MediaQueryList" && this.media(list)))) {
-                    this.readRules(atrule.block.children.toArray(), baseUrl, namespaces, rules);
+                    this.readRules(atrule.block.children.toArray(), baseUrl, namespaces, rules, layer);
+                }
+            } else if (name === "supports") {
+                const condition: CssNode | undefined = prelude[0];
+                if (atrule.block !== null && condition !== undefined && this.supportsEvaluator().supports(condition, namespaces)) {
+                    this.readRules(atrule.block.children.toArray(), baseUrl, namespaces, rules, layer);
+                }
+            } else if (name === "layer") {
+                if (atrule.block === null) {
+                    this.layerStatement(prelude, layer);
+                } else {
+                    const inner: string | undefined = this.layerBlock(prelude, layer);
+                    if (inner !== undefined) {
+                        this.readRules(atrule.block.children.toArray(), baseUrl, namespaces, rules, inner);
+                    }
                 }
             } else if (name === "font-face") {
                 this.fontReader = this.fontReader ?? new StylesheetReader(this.table);
@@ -497,7 +679,7 @@ export class SvgStyles {
         }
     }
 
-    private readRule(rule: Rule, baseUrl: string, namespaces: ReadonlyMap<string, string>, rules: Array<CompiledRule>): void {
+    private readRule(rule: Rule, baseUrl: string, namespaces: ReadonlyMap<string, string>, rules: Array<CompiledRule>, layer: string): void {
         if (rule.prelude.type !== "SelectorList") {
             return;
         }
@@ -519,7 +701,7 @@ export class SvgStyles {
             }
         }
         if (selectors.length > 0 && declarations.length > 0) {
-            rules.push([selectors, declarations]);
+            rules.push([selectors, declarations, layer]);
         }
     }
 
@@ -562,8 +744,9 @@ export class SvgStyles {
             rules.forEach((rule: CompiledRule, order: number) => {
                 const specificity: readonly [number, number, number] | undefined = this.specificity(node, rule[0]);
                 if (specificity !== undefined) {
+                    const rank: number = agent ? 0 : this.rank(rule[2]);
                     rule[1].forEach((declaration: Declaration, position: number) => {
-                        const layer: number = agent ? 0 : (declaration.important ? -this.ownLayer : this.ownLayer);
+                        const layer: number = declaration.important ? -rank : rank;
                         add(declaration, [declaration.important ? (agent ? 4 : 3) : (agent ? 0 : 2), 0, layer, ...specificity, UNSCOPED, agent ? order : hostCount + order, position]);
                     });
                 }
@@ -617,8 +800,9 @@ export class SvgStyles {
             }
             const own: readonly [number, number, number] | undefined = specificity;
             if (own !== undefined) {
+                const rank: number = this.rank(this.hostLayers[rule.layer][0]);
                 rule.declarations.forEach((declaration: Declaration, position: number) => {
-                    add(declaration, [declaration.important ? 3 : 2, 0, declaration.important ? -rule.layer : rule.layer, ...own, -proximity, order, position]);
+                    add(declaration, [declaration.important ? 3 : 2, 0, declaration.important ? -rank : rank, ...own, -proximity, order, position]);
                 });
             }
         });

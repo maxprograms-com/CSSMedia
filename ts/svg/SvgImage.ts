@@ -150,7 +150,7 @@ export class SvgImage implements ImageFormat {
         const setup: PageSetup = this.setup();
         const [containers, viewport]: readonly [() => Iterable<QueryContainer>, Size] = this.images.elementPlace(source.element) ?? [StyleComputer.NO_CONTAINERS, setup.viewport];
         this.hostSheet = this.hostSheet ?? new StylesheetReader(this.table).read(input.cssPath);
-        styles.embed(this.hostSheet.styleRules, this.hostSheet.layerCount - 1, source.style, setup.root.values, input.root, (queries: ReadonlyArray<ContainerQuery>) =>
+        styles.embed(this.hostSheet.styleRules, this.hostSheet.layers, source.style, setup.root.values, input.root, (queries: ReadonlyArray<ContainerQuery>) =>
             input.computer.containersHold(queries, containers, viewport));
         return styles;
     }
