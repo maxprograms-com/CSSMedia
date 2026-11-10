@@ -20,7 +20,7 @@
 
 import type { CalcAnchor, CalcNode, CssValue } from "../css/values/CssValue.js";
 import type { ImageFormats, ImageSize } from "../images/ImageFormats.js";
-import type { BoxNode, ElementBox, InlineSequence } from "../pdf/BoxTree.js";
+import type { BoxNode, ElementBox, InlineSequence, InlineText } from "../pdf/BoxTree.js";
 import type { DisplayType } from "../pdf/DisplayTypes.js";
 import { DisplayTypes } from "../pdf/DisplayTypes.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
@@ -82,10 +82,10 @@ interface Wrapping {
     bottom: number;
 }
 
-interface Candidate {
+export interface Candidate {
     appeal: number;
     path: ReadonlyArray<readonly [ElementBox, number]>;
-    line?: number;
+    line?: readonly [number, number];
 }
 
 interface Fragmentation {
@@ -98,6 +98,7 @@ interface Fragmentation {
     resumed: boolean;
     forced: boolean;
     best?: Candidate;
+    prior?: Candidate;
     early?: Candidate;
     restart: boolean;
     worst?: number;
@@ -117,12 +118,14 @@ export class BlockLayout {
     static readonly EDGE_FIELDS: number = 5;
 
     readonly diagnostics: Array<string> = [];
+    pageBreak?: Candidate;
+    pageEarlier?: Candidate;
     private bandOffset: number = 0;
     private readonly sizes: BoxSizes = new BoxSizes((anchor: CalcAnchor, block: boolean): number | undefined => this.anchorLength(anchor, block));
     private readonly inline: InlineLayout;
     private readonly trimmed: WeakSet<LineFragment> = new WeakSet<LineFragment>();
     private readonly images: ImageFormats;
-    private readonly tables: TableLayout = new TableLayout(this, this.sizes);
+    readonly tables: TableLayout = new TableLayout(this, this.sizes);
     private readonly displays: DisplayTypes = new DisplayTypes();
     private readonly contents?: ContainerContents;
     private floats?: Floats;
@@ -135,6 +138,7 @@ export class BlockLayout {
     private limit: number = Number.POSITIVE_INFINITY;
     private port: readonly [number, number] = UNLIMITED;
     private fragmenting?: Fragmentation;
+    private pageState?: Fragmentation;
     private flowAppeal: number = APPEAL_PERFECT;
     private end: number = Number.POSITIVE_INFINITY;
     private floatTokens: Array<BreakToken> = [];
@@ -142,7 +146,6 @@ export class BlockLayout {
     private rootBox?: ElementBox;
     private anchorNames?: Map<string, Array<ReadonlyArray<ElementBox>>>;
     private readonly anchoring: Array<readonly [number, ElementBox, BoxFragment]> = [];
-
     constructor(metrics: FontMetrics, text: InlineTextBuilder, images: ImageFormats, contents?: ContainerContents) {
         this.images = images;
         this.inline = new InlineLayout(metrics, this.sizes, text, this);
@@ -169,7 +172,7 @@ export class BlockLayout {
         return this.flow(box, sizes, Math.max(0, inlineSize - this.inlineEdges(sizes)), 0, true, 0, 0, undefined, space, incoming);
     }
 
-    page(box: ElementBox, inlineSize: number, blockSize: number, token?: BreakToken): BoxFragment {
+    page(box: ElementBox, inlineSize: number, blockSize: number, token?: BreakToken, end?: Candidate): BoxFragment {
         // CSS Paged Media 3 §3: the page area of the first page is the initial containing block, the containing block of the
         // root element (CSS 2 §10.1); CSS Writing Modes 4 §8.1: it takes the writing mode of the root element.
         this.frame = this.sizes.frame(box.style);
@@ -184,11 +187,54 @@ export class BlockLayout {
         // breakpoint on the previous"; §4: "fragmentainers are assumed to have a minimum block size of 1px".
         const space: number = Math.max(MINIMUM_FRAGMENTAINER, blockSize);
         const fragment: BoxFragment = this.fragmented(PAGE_CONTEXT, space, inlineSize, token,
-            (): BoxFragment => this.block(box, inlineSize, true, 0, 0, initialBlock, undefined, 0, space, token, false));
+            (): BoxFragment => this.block(box, inlineSize, true, 0, 0, initialBlock, undefined, 0, space, token, false), end);
         // CSS 2 §8.3.1: "Margins of the root element's box do not collapse."
         fragment.block = fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1];
         this.positioned(fragment, true);
+        const path: Array<readonly [ElementBox, number]> = [];
+        let line: readonly [number, number] | undefined;
+        for (let level: BreakToken | undefined = fragment.token; level !== undefined; level = level.inner) {
+            path.push([level.box, level.child]);
+            const text: InlineText | undefined = level.line === undefined ? undefined : level.box.inline?.[level.sequence]?.text;
+            line = text === undefined || level.line === undefined ? undefined : this.spot(text, level.line);
+        }
+        const taken: Candidate | undefined = path.length === 0 ? undefined : (line === undefined ? { appeal: APPEAL_PERFECT, path } : { appeal: APPEAL_PERFECT, path, line });
+        const state: Fragmentation = this.pageState as Fragmentation;
+        const earlier: Candidate | undefined = taken !== undefined && state.best !== undefined && this.sameCandidate(state.best, taken) ? state.prior : state.best;
+        if (taken === undefined) {
+            delete this.pageBreak;
+        } else {
+            this.pageBreak = taken;
+        }
+        if (earlier === undefined) {
+            delete this.pageEarlier;
+        } else {
+            this.pageEarlier = earlier;
+        }
         return fragment;
+    }
+
+    earlierOf(first: Candidate | undefined, second: Candidate | undefined, end: Candidate | undefined): Candidate | undefined {
+        // CSS Fragmentation 3 §4.5 leaves the choice among the allowed breaks to the UA, so of two layouts that repeat each
+        // other the content ends at the earlier break, when that one comes before the end already given.
+        const earlier: Candidate | undefined = first === undefined || (second !== undefined && this.order(second.path, second.line, first) < 0) ? second : first;
+        return earlier !== undefined && (end === undefined || this.order(earlier.path, earlier.line, end) < 0) ? earlier : undefined;
+    }
+
+    private spot(text: InlineText, offset: number): readonly [number, number] {
+        // A place in a text is kept as its item and the offset in it, which stay when the generated text of another item changes.
+        const starts: ReadonlyArray<number> = text.starts;
+        let low: number = 0;
+        let high: number = starts.length - 1;
+        while (low < high) {
+            const middle: number = (low + high) >> 1;
+            if (starts[middle + 1] > offset) {
+                high = middle;
+            } else {
+                low = middle + 1;
+            }
+        }
+        return [low, offset - starts[low]];
     }
 
     marginBox(box: ElementBox, sizes: UsedSizes, inlineSize: number): BoxFragment {
@@ -1104,6 +1150,7 @@ export class BlockLayout {
             : this.clamped(sizes.blockSize ?? this.sizes.adjusted(sizes, BoxSizes.PREFERRED_BLOCK, emptyContent), sizes.minBlockSize, sizes.maxBlockSize);
         if (box.queryContainer === true && this.contents !== undefined && this.contents(box, inlineSize, containedBlock)) {
             delete this.anchorNames;
+            this.tables.forget();
         }
         const nodes: ReadonlyArray<BoxNode> | undefined = box.replaced ? undefined : box.children;
         if (resumed) {
@@ -1128,7 +1175,7 @@ export class BlockLayout {
                         // CSS Fragmentation 4 §4.3: a forced break puts what follows into the next fragmentainer, and at the top of
                         // one it is already there; §4.4: an unforced break here is a class A break point.
                         const point: readonly [number, string | undefined] = this.betweenBoxes(previous, node, fragmenting);
-                        if ((point[1] !== undefined && filled) || this.isEarly(fragmenting, undefined)) {
+                        if ((point[1] !== undefined && filled) || this.reachesEarly(fragmenting, undefined)) {
                             token = this.token(box, index, sequence, undefined, undefined, point[1]);
                             break;
                         }
@@ -1208,7 +1255,7 @@ export class BlockLayout {
                 if (fragmenting !== undefined && previous !== undefined) {
                     fragmenting.path[fragmenting.path.length - 1][1] = index;
                     const point: readonly [number, string | undefined] = this.betweenBoxes(previous, outside, fragmenting);
-                    if ((point[1] !== undefined && fragmenting.filled) || this.isEarly(fragmenting, undefined)) {
+                    if ((point[1] !== undefined && fragmenting.filled) || this.reachesEarly(fragmenting, undefined)) {
                         token = this.token(box, index, sequence, undefined, undefined, point[1]);
                         break;
                     }
@@ -1244,8 +1291,17 @@ export class BlockLayout {
             const run: InlineSequence | undefined = box.inline?.[sequence++];
             const resume: number | undefined = incoming !== undefined && incoming.child === start ? incoming.line : undefined;
             const marks: Array<Snapshot> | undefined = fragmenting === undefined ? undefined : [];
+            const early: Candidate | undefined = fragmenting?.early;
+            let cut: readonly [number, number] | undefined;
+            if (fragmenting !== undefined && early?.line !== undefined) {
+                // CSS Text 4 §6.1.1: which soft wrap opportunity a line ends at is UA-defined, so a page that has to end inside
+                // a line ends that line at the last opportunity before it.
+                fragmenting.path[fragmenting.path.length - 1][1] = start;
+                cut = this.order(fragmenting.path, early.line, early) === 0 ? early.line : undefined;
+            }
             const lines: Array<LineFragment> | undefined = run === undefined ? undefined
-                : this.inline.layout(run, inlineSize, shiftInline, shiftBlock, offset + (empty && adjoinsStart ? 0 : pending[0] + pending[1]), children, sizes.blockSize, resume, marks);
+                : this.inline.layout(run, inlineSize, shiftInline, shiftBlock, offset + (empty && adjoinsStart ? 0 : pending[0] + pending[1]), children, sizes.blockSize, resume, marks,
+                    cut);
             if (lines === undefined) {
                 continue;
             }
@@ -1285,35 +1341,6 @@ export class BlockLayout {
                 break;
             }
         }
-        if (fragmenting !== undefined && token === undefined && !fragmenting.restart && sizes.blockSize !== undefined && sizes.blockSize > room + TOLERANCE) {
-            // CSS Fragmentation 4 §4.1 class C: the box is taller than what is left, so it breaks after its content, which
-            // the rest of its block size follows in the next fragmentainer.
-            fragmenting.path[fragmenting.path.length - 1][1] = nodes === undefined ? 0 : nodes.length;
-            const early: boolean = this.isEarly(fragmenting, undefined);
-            const local: Candidate = this.record(fragmenting, fragmenting.avoid > 0 ? APPEAL_AVOID : APPEAL_PERFECT, undefined);
-            if (early || fragmenting.best === local || !this.restartAt(fragmenting)) {
-                token = this.token(box, nodes === undefined ? 0 : nodes.length, sequence, undefined, undefined, undefined);
-            }
-        } else if (fragmenting !== undefined && token === undefined && !fragmenting.restart && space !== undefined
-            && startEdge + (sizes.blockSize ?? offset + pending[0] + pending[1]) + endEdge > space + TOLERANCE) {
-            // §4.4: the block-end edge that does not fit is pushed with what comes before it, to the best break point found.
-            this.restartAt(fragmenting);
-        }
-        if (independent && fragmenting !== undefined && !fragmenting.restart && this.floatTokens.length > 0) {
-            token = token ?? this.token(box, nodes === undefined ? 0 : nodes.length, sequence, undefined, undefined, undefined);
-            token.parallel = this.floatTokens;
-        }
-        if (token !== undefined) {
-            // §5.3: "its content box extends to fill any remaining fragmentainer extent", and §5.2: the margins adjoining an
-            // unforced break are truncated; with slice the block-end border and padding come on the last fragment only.
-            token.consumed = (incoming?.consumed ?? 0) + room;
-            offset = room;
-            pending = NO_MARGIN;
-            after = NO_MARGIN;
-            endEdge = clone ? endEdge : 0;
-        } else if (tail !== undefined && own !== undefined && (trimming === "trim-end" || trimming === "trim-both")) {
-            offset -= this.trimLast(tail, own);
-        }
         let markerSize: number = 0;
         for (let index: number = 0; !resumed && nodes !== undefined && index < nodes.length; index++) {
             const node: BoxNode = nodes[index];
@@ -1339,9 +1366,40 @@ export class BlockLayout {
             }
             offset = Math.max(offset, markerSize);
         }
-        // CSS 2 §10.6.3: the auto height reaches the last line box, or the last in-flow child's margin edge when that margin
-        // does not collapse with this box's own, or its border edge when it does.
+        if (token === undefined && tail !== undefined && own !== undefined && (trimming === "trim-end" || trimming === "trim-both")) {
+            offset -= this.trimLast(tail, own);
+        }
+        // CSS 2 §10.6.3: the margins after the last child are inside an auto height only when they collapse neither through
+        // the box nor with its end; CSS Fragmentation 4 §5.2 decides what a break does to the ones outside it.
         const auto: boolean = sizes.blockSize === undefined;
+        const inside: boolean = !(empty && adjoinsStart) && !(adjoinsEnd && auto && !keepsMargin);
+        if (fragmenting !== undefined && token === undefined && !fragmenting.restart && sizes.blockSize !== undefined && sizes.blockSize > room + TOLERANCE) {
+            // CSS Fragmentation 4 §4.1 class C: the box is taller than what is left, so it breaks after its content, which
+            // the rest of its block size follows in the next fragmentainer.
+            fragmenting.path[fragmenting.path.length - 1][1] = nodes === undefined ? 0 : nodes.length;
+            const early: boolean = this.reachesEarly(fragmenting, undefined);
+            const local: Candidate | undefined = early ? undefined : this.record(fragmenting, fragmenting.avoid > 0 ? APPEAL_AVOID : APPEAL_PERFECT, undefined);
+            if (early || fragmenting.best === local || !this.restartAt(fragmenting)) {
+                token = this.token(box, nodes === undefined ? 0 : nodes.length, sequence, undefined, undefined, undefined);
+            }
+        } else if (fragmenting !== undefined && token === undefined && !fragmenting.restart && space !== undefined
+            && startEdge + (sizes.blockSize ?? offset + (inside ? pending[0] + pending[1] : 0)) + endEdge > space + TOLERANCE) {
+            // §4.4: the block-end edge that does not fit is pushed with what comes before it, to the best break point found.
+            this.restartAt(fragmenting);
+        }
+        if (independent && fragmenting !== undefined && !fragmenting.restart && this.floatTokens.length > 0) {
+            token = token ?? this.token(box, nodes === undefined ? 0 : nodes.length, sequence, undefined, undefined, undefined);
+            token.parallel = this.floatTokens;
+        }
+        if (token !== undefined) {
+            // §5.3: "its content box extends to fill any remaining fragmentainer extent", and §5.2: the margins adjoining an
+            // unforced break are truncated; with slice the block-end border and padding come on the last fragment only.
+            token.consumed = (incoming?.consumed ?? 0) + room;
+            offset = room;
+            pending = NO_MARGIN;
+            after = NO_MARGIN;
+            endEdge = clone ? endEdge : 0;
+        }
         let marginAbove: Margins | undefined;
         let content: number = offset;
         if (empty && adjoinsStart && adjoinsEnd && (auto || sizes.blockSize === 0) && !box.replaced && token === undefined) {
@@ -1461,12 +1519,12 @@ export class BlockLayout {
         return outer === undefined ? run() : this.fragmented(outer.kinds, outer.extent, outer.breadth, token, run);
     }
 
-    private fragmented<T>(kinds: ReadonlyArray<string>, extent: number, breadth: number, token: BreakToken | undefined, run: () => T): T {
+    private fragmented<T>(kinds: ReadonlyArray<string>, extent: number, breadth: number, token: BreakToken | undefined, run: () => T, end?: Candidate): T {
         let forced: boolean = false;
         for (let level: BreakToken | undefined = token; level !== undefined; level = level.inner) {
             forced = forced || level.forced !== undefined;
         }
-        let early: Candidate | undefined;
+        let early: Candidate | undefined = end;
         const tried: Array<Candidate> = [];
         for (;;) {
             const state: Fragmentation = { kinds, extent, breadth, path: [], avoid: 0, filled: false, resumed: token !== undefined, forced, restart: false };
@@ -1487,6 +1545,9 @@ export class BlockLayout {
             const next: Candidate | undefined = state.early;
             if (!state.restart || next === undefined || tried.some((candidate: Candidate) => this.sameCandidate(candidate, next))) {
                 this.flowAppeal = state.worst ?? next?.appeal ?? state.best?.appeal ?? APPEAL_PERFECT;
+                if (outer === undefined) {
+                    this.pageState = state;
+                }
                 return result;
             }
             tried.push(next);
@@ -1549,7 +1610,7 @@ export class BlockLayout {
         return token;
     }
 
-    private record(fragmenting: Fragmentation, appeal: number, line: number | undefined): Candidate {
+    private record(fragmenting: Fragmentation, appeal: number, line: readonly [number, number] | undefined): Candidate {
         // CSS Fragmentation 4 §4.5: among the break points that the rules allow equally, the latest one leaves the fewest
         // breaks and the fullest fragmentainers.
         const candidate: Candidate = { appeal, path: fragmenting.path.map((step: [ElementBox, number]): readonly [ElementBox, number] => [step[0], step[1]]) };
@@ -1557,21 +1618,45 @@ export class BlockLayout {
             candidate.line = line;
         }
         if (fragmenting.best === undefined || appeal >= fragmenting.best.appeal) {
+            if (fragmenting.best !== undefined) {
+                fragmenting.prior = fragmenting.best;
+            }
             fragmenting.best = candidate;
         }
         return candidate;
     }
 
-    private isEarly(fragmenting: Fragmentation, line: number | undefined): boolean {
+    private reachesEarly(fragmenting: Fragmentation, line: readonly [number, number] | undefined): boolean {
         const early: Candidate | undefined = fragmenting.early;
-        if (early === undefined || early.path.length !== fragmenting.path.length || early.line !== line) {
-            return false;
+        const order: number = early === undefined ? -1 : this.order(fragmenting.path, line, early);
+        if (order > 0) {
+            // Text that changed since the break point was recorded can leave no break point there.
+            this.restartAt(fragmenting);
         }
-        return early.path.every((step: readonly [ElementBox, number], depth: number) => step[0] === fragmenting.path[depth][0] && step[1] === fragmenting.path[depth][1]);
+        return order >= 0;
+    }
+
+    order(path: ReadonlyArray<readonly [ElementBox, number]>, line: readonly [number, number] | undefined, other: Candidate): number {
+        const depth: number = Math.min(path.length, other.path.length);
+        for (let index: number = 0; index < depth; index++) {
+            if (path[index][1] !== other.path[index][1]) {
+                return path[index][1] < other.path[index][1] ? -1 : 1;
+            }
+        }
+        if (path.length !== other.path.length) {
+            return path.length < other.path.length ? -1 : 1;
+        }
+        if (line === undefined || other.line === undefined) {
+            return line === other.line ? 0 : (line === undefined ? -1 : 1);
+        }
+        if (line[0] !== other.line[0]) {
+            return line[0] < other.line[0] ? -1 : 1;
+        }
+        return line[1] === other.line[1] ? 0 : (line[1] < other.line[1] ? -1 : 1);
     }
 
     private sameCandidate(first: Candidate, second: Candidate): boolean {
-        return first.line === second.line && first.path.length === second.path.length
+        return first.line?.[0] === second.line?.[0] && first.line?.[1] === second.line?.[1] && first.path.length === second.path.length
             && first.path.every((step: readonly [ElementBox, number], depth: number) => step[0] === second.path[depth][0] && step[1] === second.path[depth][1]);
     }
 
@@ -1624,7 +1709,7 @@ export class BlockLayout {
         if (point[1] !== undefined && fragmenting.filled) {
             return [point[1], true, false];
         }
-        if (this.isEarly(fragmenting, undefined)) {
+        if (this.reachesEarly(fragmenting, undefined)) {
             return [undefined, true, false];
         }
         if (!fragmenting.filled) {
@@ -1857,11 +1942,12 @@ export class BlockLayout {
             let local: Candidate | undefined;
             // The line boxes of the parts of one line of text are side by side, so no break falls between them.
             if (index > 0 && line.block !== lines[index - 1].block) {
-                if (this.isEarly(fragmenting, line.start)) {
+                const place: readonly [number, number] = this.spot(line.sequence.text as InlineText, line.start);
+                if (this.reachesEarly(fragmenting, place)) {
                     return index;
                 }
                 const appeal: number = index >= orphans && total - index >= widows ? APPEAL_PERFECT : APPEAL_ORPHANS;
-                local = this.record(fragmenting, fragmenting.avoid > 0 ? Math.min(appeal, APPEAL_AVOID) : appeal, line.start);
+                local = this.record(fragmenting, fragmenting.avoid > 0 ? Math.min(appeal, APPEAL_AVOID) : appeal, place);
             }
             if (offset + line.block + line.blockSize > room + TOLERANCE && fragmenting.filled) {
                 if (local !== undefined && fragmenting.best === local) {

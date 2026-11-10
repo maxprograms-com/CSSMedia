@@ -20,6 +20,7 @@
 
 import { TextNode } from "typesxml";
 import type { CssValue, FunctionValue } from "../css/values/CssValue.js";
+import type { NamedValues } from "../pages/NamedValues.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import type { BoxNode, ElementBox, TextSequence } from "./BoxTree.js";
 import type { DisplayType } from "./DisplayTypes.js";
@@ -39,6 +40,7 @@ export interface ContentState {
     contents?: () => Array<BoxNode>;
     references?: CrossReferences;
     targets?: Map<TextSequence, string>;
+    named?: Map<readonly [string, string], [TextSequence, string]>;
 }
 
 const TARGETS: ReadonlySet<string> = new Set<string>(["target-counter", "target-counters", "target-text"]);
@@ -110,6 +112,8 @@ export class GeneratedContent {
                         }
                         nodes.push(node);
                         state.targets.set(node, node.text);
+                    } else if (item.name === "string" && state.named !== undefined) {
+                        this.addNamed(nodes, item.args, text, state.named, state.language);
                     } else {
                         nodes.push({ kind: "deferred", value: item, style: text });
                     }
@@ -172,7 +176,7 @@ export class GeneratedContent {
     }
 
     namedText(parts: ReadonlyArray<CssValue>, element: SourceElement, text: ComputedStyle, state: ContentState,
-        generated?: Readonly<Record<string, ReadonlyArray<BoxNode>>>): string {
+        generated?: Readonly<Record<string, ReadonlyArray<BoxNode>>>, strings?: NamedValues<string>): string {
         // CSS Content 3 §2.7.1: the values "are concatenated", so a <string> stays as written; GCPM 3 §1.1.1.1: the text taken from
         // the document is "determined as if white-space: normal had been set", and the values next to each other make one line.
         let result: string = "";
@@ -184,6 +188,13 @@ export class GeneratedContent {
                 line += this.textOf(element);
             } else if (part.kind === "function" && part.name === "content" && keyword !== "first-letter") {
                 line += keyword === "text" ? this.textOf(element) : this.boxText(generated?.[keyword]);
+            } else if (part.kind === "function" && part.name === "string") {
+                result += this.normalText(line, text);
+                line = "";
+                const name: CssValue | undefined = part.args[0];
+                const which: CssValue | undefined = part.args[1];
+                result += strings === undefined || name === undefined || name.kind !== "ident" ? ""
+                    : strings.value(name.name, which !== undefined && which.kind === "ident" ? which.lower : "first") ?? "";
             } else {
                 result += this.normalText(line, text);
                 line = "";
@@ -314,7 +325,7 @@ export class GeneratedContent {
 
     private addText(nodes: Array<BoxNode>, content: string, text: ComputedStyle, language?: string): void {
         const last: BoxNode | undefined = nodes[nodes.length - 1];
-        if (last !== undefined && last.kind === "text" && last.style === text && last.leader !== true && last.target === undefined) {
+        if (last !== undefined && last.kind === "text" && last.style === text && last.leader !== true && last.target === undefined && last.named === undefined && last.bookmark === undefined) {
             last.text += content;
         } else if (content.length > 0) {
             const node: TextSequence = { kind: "text", text: content, style: text };
@@ -354,6 +365,22 @@ export class GeneratedContent {
             kind: "box", style: text, display: INLINE, placement: "in-flow", replaced: true, hasStartEdge: true, hasEndEdge: true, usedPage: "", startPage: "", endPage: "",
             children: [{ kind: "deferred", value: image, style: text }]
         };
+    }
+
+    private addNamed(nodes: Array<BoxNode>, args: ReadonlyArray<CssValue>, text: ComputedStyle, named: Map<readonly [string, string], [TextSequence, string]>,
+        language?: string): void {
+        const name: CssValue | undefined = args[0];
+        const which: CssValue | undefined = args[1];
+        if (name === undefined || name.kind !== "ident") {
+            return;
+        }
+        const call: readonly [string, string] = [name.name, which !== undefined && which.kind === "ident" ? which.lower : "first"];
+        const node: TextSequence = { kind: "text", text: "", style: text, named: call };
+        if (language !== undefined) {
+            node.language = language;
+        }
+        nodes.push(node);
+        named.set(call, [node, ""]);
     }
 
     private addLeader(nodes: Array<BoxNode>, type: CssValue | undefined, text: ComputedStyle, language?: string): void {

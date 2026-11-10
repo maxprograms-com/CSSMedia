@@ -413,7 +413,7 @@ export class WhiteSpaceProcessor {
             this.sequences.push(sequence);
             this.items = [];
             for (const text of this.texts) {
-                if (text.target !== undefined) {
+                if (text.target !== undefined || text.named !== undefined || text.bookmark !== undefined) {
                     this.holders.set(text, sequence);
                     this.edges.set(sequence, { trimStart, trimEnd, suppressBreaks: this.suppressBreaks });
                 }

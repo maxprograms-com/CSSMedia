@@ -76,6 +76,11 @@ export class TableLayout {
         this.sizes = sizes;
     }
 
+    forget(): void {
+        delete this.measured;
+        delete this.constraints;
+    }
+
     isGrid(box: ElementBox): boolean {
         return box.display.inner === "table" && box.display.internal === undefined && box.display.box === undefined;
     }

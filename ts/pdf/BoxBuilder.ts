@@ -36,6 +36,7 @@ import { DisplayTypes } from "./DisplayTypes.js";
 import type { ContentState } from "./GeneratedContent.js";
 import { GeneratedContent } from "./GeneratedContent.js";
 import type { ImageFormats } from "../images/ImageFormats.js";
+import type { NamedValues } from "../pages/NamedValues.js";
 import type { Size } from "./PageCanvas.js";
 import type { QuotePair, QuoteSystems } from "./QuoteSystems.js";
 import { RubyBoxes } from "./RubyBoxes.js";
@@ -171,6 +172,10 @@ export class BoxBuilder {
     private readonly tocRules: ReadonlyArray<TocRule>;
     private readonly tocs: Array<TocPlaceholder> = [];
     readonly targets: Map<TextSequence, string> = new Map<TextSequence, string>();
+    readonly namedTexts: Map<readonly [string, string], [TextSequence, string]> = new Map<readonly [string, string], [TextSequence, string]>();
+    stringLabels?: Set<SourceElement | ElementBox>;
+    labelStrings?: ReadonlyMap<SourceElement | ElementBox, NamedValues<string>>;
+    private tocLabels?: Map<SourceElement, Array<TextSequence>>;
     rootStyle?: ComputedStyle;
     readonly diagnostics: Array<string> = [];
 
@@ -322,6 +327,7 @@ export class BoxBuilder {
                 bookmark.divider = divider;
             }
             this.bookmarks.set(element, bookmark);
+            this.markStringLabel(element, bookmark);
             this.references.bookmark(element);
         } else if (this.bookmarks.has(element)) {
             this.bookmarks.set(element, null);
@@ -420,19 +426,75 @@ export class BoxBuilder {
                 this.firstLines.delete(node);
                 this.deferrals.delete(node);
                 this.forget(node.children);
-            } else if (node.kind === "text" && node.target !== undefined) {
-                this.targets.delete(node);
+            } else if (node.kind === "text") {
+                if (node.target !== undefined || node.bookmark !== undefined) {
+                    this.targets.delete(node);
+                }
+                if (node.named !== undefined) {
+                    this.namedTexts.delete(node.named);
+                }
             }
         }
         for (let index: number = this.targetStrings.length - 1; index >= 0; index--) {
-            if (!this.holdsTarget(this.targetStrings[index].generated)) {
+            if (!this.holdsLaterText(this.targetStrings[index].generated)) {
                 this.targetStrings.splice(index, 1);
             }
         }
     }
 
     targetText(node: TextSequence): string {
+        if (node.bookmark !== undefined) {
+            return this.labelText(node.bookmark[0], node.bookmark[1], this.labelStrings?.get(node.bookmark[0]));
+        }
         return node.target === undefined ? node.text : this.content.targetText(node.target, node.style, this.references);
+    }
+
+    labelTexts(): string {
+        const texts: Array<string> = [];
+        for (const nodes of this.tocLabels?.values() ?? []) {
+            for (const node of nodes) {
+                texts.push(this.targets.get(node) ?? "");
+            }
+        }
+        return JSON.stringify(texts);
+    }
+
+    labelMoved(key: SourceElement | ElementBox, strings: NamedValues<string>): boolean {
+        const nodes: ReadonlyArray<TextSequence> | undefined = key instanceof SourceElement ? this.tocLabels?.get(key) : undefined;
+        return nodes !== undefined && nodes.some((node: TextSequence) => node.bookmark !== undefined
+            && this.labelText(node.bookmark[0], node.bookmark[1], strings) !== this.targets.get(node));
+    }
+
+    private labelText(element: SourceElement, divider: boolean, strings?: NamedValues<string>): string {
+        const bookmark: Bookmark | null | undefined = this.bookmarks.get(element);
+        if (bookmark === null || bookmark === undefined) {
+            return "";
+        }
+        const parts: ReadonlyArray<CssValue> = divider ? bookmark.divider ?? [] : bookmark.entry ?? bookmark.label;
+        return this.content.namedText(parts, element, bookmark.style, bookmark.state, bookmark.generated, strings);
+    }
+
+    private tocText(element: SourceElement, divider: boolean, style: ComputedStyle, state: ContentState): Array<BoxNode> {
+        // string() in the text of a bookmark takes the page of its element, which only a layout gives.
+        const text: string = this.labelText(element, divider, this.labelStrings?.get(element));
+        const bookmark: Bookmark | null | undefined = this.bookmarks.get(element);
+        const parts: ReadonlyArray<CssValue> | undefined = bookmark === null || bookmark === undefined ? undefined : (divider ? bookmark.divider : bookmark.entry ?? bookmark.label);
+        if (parts === undefined || !parts.some((part: CssValue) => part.kind === "function" && part.name === "string")) {
+            return this.content.evaluate([{ kind: "string", value: text }], style, state);
+        }
+        const node: TextSequence = { kind: "text", text, style, bookmark: [element, divider] };
+        if (state.language !== undefined) {
+            node.language = state.language;
+        }
+        this.targets.set(node, text);
+        this.tocLabels = this.tocLabels ?? new Map<SourceElement, Array<TextSequence>>();
+        const nodes: Array<TextSequence> | undefined = this.tocLabels.get(element);
+        if (nodes === undefined) {
+            this.tocLabels.set(element, [node]);
+        } else {
+            nodes.push(node);
+        }
+        return [node];
     }
 
     resetStrings(): void {
@@ -441,14 +503,24 @@ export class BoxBuilder {
         }
     }
 
-    bookmarkEntries(): Array<readonly [SourceElement | ElementBox, number, boolean, string]> {
+    bookmarkEntries(strings: (key: SourceElement | ElementBox) => NamedValues<string> | undefined): Array<readonly [SourceElement | ElementBox, number, boolean, string]> {
         const entries: Array<readonly [SourceElement | ElementBox, number, boolean, string]> = [];
         for (const [key, bookmark] of this.bookmarks) {
             if (bookmark !== null) {
-                entries.push([key, bookmark.level, bookmark.open, this.content.namedText(bookmark.label, bookmark.element, bookmark.style, bookmark.state, bookmark.generated)]);
+                entries.push([key, bookmark.level, bookmark.open, this.content.namedText(bookmark.label, bookmark.element, bookmark.style, bookmark.state, bookmark.generated,
+                    strings(key))]);
             }
         }
         return entries;
+    }
+
+    private markStringLabel(key: SourceElement | ElementBox, bookmark: Bookmark): void {
+        // CSS Content 3 §3.2: bookmark-label is a <content-list>, so string() in it takes the value of the page of its element,
+        // and so does the text of its entry in a table of contents.
+        if ([...bookmark.label, ...(bookmark.entry ?? []), ...(bookmark.divider ?? [])].some((part: CssValue) => part.kind === "function" && part.name === "string")) {
+            this.stringLabels = this.stringLabels ?? new Set<SourceElement | ElementBox>();
+            this.stringLabels.add(key);
+        }
     }
 
     private labelParts(value?: CssValue): ReadonlyArray<CssValue> {
@@ -499,27 +571,28 @@ export class BoxBuilder {
             const titleStyle: ComputedStyle = this.tocStyle(PropertyTable.TOC_TITLE, undefined, toc);
             const titleLevel: CssValue | undefined = titleStyle.values["bookmark-level"];
             if (titleLevel !== undefined && titleLevel.kind === "number") {
-                this.bookmarks.set(toc.box, {
+                const titleMark: Bookmark = {
                     element: toc.element, level: titleLevel.value, open: !this.isClosed(titleStyle.values["bookmark-state"]), label: title, style: titleStyle, state: toc.state,
                     generated: {}
-                });
+                };
+                this.bookmarks.set(toc.box, titleMark);
+                this.markStringLabel(toc.box, titleMark);
                 this.references.bookmark(toc.box);
             }
             const children: Array<BoxNode> = [this.tocBox(titleStyle, this.content.evaluate(title, this.anonymousStyle(titleStyle), toc.state), toc.usedPage)];
             for (const [element, bookmark] of entries) {
                 if (bookmark.divider !== undefined) {
                     const style: ComputedStyle = this.tocStyle(PropertyTable.TOC_DIVIDER, bookmark.level, toc);
-                    const text: string = this.content.namedText(bookmark.divider, element, bookmark.style, bookmark.state, bookmark.generated);
-                    children.push(this.tocBox(style, this.content.evaluate([{ kind: "string", value: text }], this.anonymousStyle(style), toc.state), toc.usedPage));
+                    children.push(this.tocBox(style, this.tocText(element, true, this.anonymousStyle(style), toc.state), toc.usedPage));
                 }
                 const style: ComputedStyle = this.tocStyle(PropertyTable.TOC_ENTRY, bookmark.level, toc);
                 const name: string = this.references.anchorName(element);
                 const items: ReadonlyArray<CssValue> = [
-                    { kind: "string", value: this.content.namedText(bookmark.entry ?? bookmark.label, element, bookmark.style, bookmark.state, bookmark.generated) },
                     { kind: "function", name: "leader", args: [style.values[PropertyTable.TOC_LEADER] ?? DOTTED] },
                     { kind: "function", name: "target-counter", args: [{ kind: "string", value: "#" + name }, PAGE_COUNTER] }
                 ];
-                const box: ElementBox = this.tocBox(style, this.content.evaluate(items, this.anonymousStyle(style), toc.state), toc.usedPage);
+                const text: ComputedStyle = this.anonymousStyle(style);
+                const box: ElementBox = this.tocBox(style, [...this.tocText(element, false, text, toc.state), ...this.content.evaluate(items, text, toc.state)], toc.usedPage);
                 box.linkDestination = name;
                 children.push(box);
             }
@@ -567,9 +640,10 @@ export class BoxBuilder {
         return value !== undefined && value.kind === "ident" && value.lower === "closed";
     }
 
-    private holdsTarget(generated: Readonly<Record<string, ReadonlyArray<BoxNode>>>): boolean {
+    private holdsLaterText(generated: Readonly<Record<string, ReadonlyArray<BoxNode>>>): boolean {
         const holds: (nodes: ReadonlyArray<BoxNode>) => boolean = (nodes: ReadonlyArray<BoxNode>): boolean => nodes.some((node: BoxNode) =>
-            (node.kind === "text" && node.target !== undefined && this.targets.has(node)) || (node.kind === "box" && holds(node.children)));
+            (node.kind === "text" && node.target !== undefined && this.targets.has(node)) || (node.kind === "text" && node.named !== undefined && this.namedTexts.has(node.named))
+            || (node.kind === "box" && holds(node.children)));
         return Object.values(generated).some((nodes: ReadonlyArray<BoxNode>) => holds(nodes));
     }
 
@@ -688,7 +762,7 @@ export class BoxBuilder {
             strings[index][0] = name.kind === "ident" ? name.name : "";
             strings[index][1] = this.content.namedText(parts.slice(1), element, style, state, generated);
         }
-        if (generated !== undefined && !this.targetStrings.some((kept: TargetStrings) => kept.strings === strings) && this.holdsTarget(generated)) {
+        if (generated !== undefined && !this.targetStrings.some((kept: TargetStrings) => kept.strings === strings) && this.holdsLaterText(generated)) {
             this.targetStrings.push({ strings, entries, element, style, state, generated });
         }
     }
@@ -983,7 +1057,7 @@ export class BoxBuilder {
 
     private contentState(counters: Array<Counter>, node: number, element: SourceElement, quotes: () => ReadonlyArray<QuotePair>,
         contents?: () => Array<BoxNode>): ContentState {
-        const state: ContentState = { counters, node, quotes, references: this.references, targets: this.targets };
+        const state: ContentState = { counters, node, quotes, references: this.references, targets: this.targets, named: this.namedTexts };
         const language: string | undefined = this.cascade.languageOf(element);
         if (language !== undefined) {
             state.language = language;
@@ -1349,9 +1423,9 @@ export class BoxBuilder {
     }
 
     private collapsesAway(text: TextSequence): boolean {
-        // CSS Text 4 §4.1: with white-space-collapse collapse or discard, document white space collapses away at the edges of a
-        // line; preserve-breaks keeps its segment breaks, and §4 treats a carriage return as a space.
-        if (!SelectorMatcher.WHITESPACE_ONLY.test(text.text)) {
+        // CSS Text 4 §4.1: with white-space-collapse collapse or discard, document white space collapses away at line edges;
+        // preserve-breaks keeps segment breaks, §4 makes a carriage return a space; string() is empty only until its page is known.
+        if (text.named !== undefined || !SelectorMatcher.WHITESPACE_ONLY.test(text.text)) {
             return false;
         }
         const collapse: CssValue | undefined = text.style.values["white-space-collapse"];

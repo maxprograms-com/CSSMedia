@@ -39,6 +39,8 @@ export interface TextSequence {
     collapsedSpaces?: ReadonlyArray<number>;
     leader?: boolean;
     target?: FunctionValue;
+    named?: readonly [string, string];
+    bookmark?: readonly [SourceElement, boolean];
     style: ComputedStyle;
 }
 

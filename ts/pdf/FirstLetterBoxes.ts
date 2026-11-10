@@ -261,6 +261,9 @@ export class FirstLetterBoxes {
         if (text.namedStrings !== undefined) {
             leading.namedStrings = text.namedStrings;
         }
+        if (text.named !== undefined) {
+            leading.named = text.named;
+        }
         found.parent.children.splice(found.parent.children.indexOf(text), 1, ...nodes);
         sequence.items.splice(found.index, 1, ...items);
         return { parent: found.parent, text, nodes, index: found.index, count: items.length };

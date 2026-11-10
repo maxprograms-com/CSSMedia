@@ -27,6 +27,7 @@ import { StandardPdfFont } from "./StandardPdfFont.js";
 
 const TAG_LENGTH: number = 6;
 const LETTERS: number = 26;
+const TAG_COUNT: number = LETTERS ** TAG_LENGTH;
 
 export class PdfFonts {
 
@@ -70,18 +71,25 @@ export class PdfFonts {
     }
 
     private tag(seed: string): string {
-        // ISO 32000-2 §9.9.2: "exactly six uppercase letters", different for "different subsets of the same font".
-        let digest: Buffer = createHash("md5").update(seed).digest();
-        for (; ;) {
-            let tag: string = "";
-            for (let index: number = 0; index < TAG_LENGTH; index++) {
-                tag += String.fromCharCode(65 + (digest[index] % LETTERS));
-            }
-            if (!this.tags.has(tag)) {
-                this.tags.add(tag);
-                return tag;
-            }
-            digest = createHash("md5").update(digest).digest();
+        // ISO 32000-2 §9.9.2: "exactly six uppercase letters", different for "different subsets of the same font"; a tag in
+        // use is followed by the next one, so the tags are tried in turn until a free one.
+        let value: number = createHash("md5").update(seed).digest().readUInt32BE(0) % TAG_COUNT;
+        let tag: string = this.tagText(value);
+        while (this.tags.has(tag)) {
+            value = (value + 1) % TAG_COUNT;
+            tag = this.tagText(value);
         }
+        this.tags.add(tag);
+        return tag;
+    }
+
+    private tagText(value: number): string {
+        let tag: string = "";
+        let rest: number = value;
+        for (let index: number = 0; index < TAG_LENGTH; index++) {
+            tag += String.fromCharCode(65 + rest % LETTERS);
+            rest = Math.floor(rest / LETTERS);
+        }
+        return tag;
     }
 }

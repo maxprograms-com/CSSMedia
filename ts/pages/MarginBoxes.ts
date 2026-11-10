@@ -93,12 +93,15 @@ export class MarginBoxes {
     private readonly content: GeneratedContent;
     private readonly quotes: QuoteSystems = new QuoteSystems();
     private readonly references: CrossReferences;
+    private readonly fill: (box: ElementBox, strings: NamedValues<string>) => void;
 
-    constructor(layout: BlockLayout, text: InlineTextBuilder, counterStyles: CounterStyles, references: CrossReferences) {
+    constructor(layout: BlockLayout, text: InlineTextBuilder, counterStyles: CounterStyles, references: CrossReferences,
+        fill: (box: ElementBox, strings: NamedValues<string>) => void) {
         this.layout = layout;
         this.text = text;
         this.content = new GeneratedContent(this.scopes, counterStyles, this.values);
         this.references = references;
+        this.fill = fill;
     }
 
     boxes(canvas: PageCanvas, counters: CounterSet, strings: NamedValues<string>, running: NamedValues<ElementBox>): Array<BoxFragment> {
@@ -155,6 +158,7 @@ export class MarginBoxes {
             } else if (item.kind === "function" && item.name === "element" && name !== undefined && name.kind === "ident") {
                 const found: ElementBox | undefined = running.value(name.name, keyword);
                 if (found !== undefined) {
+                    this.fill(found, strings);
                     children.push({ ...found, placement: "in-flow" });
                     element = true;
                 }

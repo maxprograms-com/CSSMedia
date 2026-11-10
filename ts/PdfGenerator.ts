@@ -35,6 +35,7 @@ import { JpegImage } from "./images/JpegImage.js";
 import { PngImage } from "./images/PngImage.js";
 import { TiffImage } from "./images/TiffImage.js";
 import { WebpImage } from "./images/WebpImage.js";
+import type { Candidate } from "./layout/BlockLayout.js";
 import { BlockLayout } from "./layout/BlockLayout.js";
 import { PageDriver } from "./pages/PageDriver.js";
 import { ColorOutput } from "./paint/ColorOutput.js";
@@ -164,20 +165,36 @@ export class PdfGenerator {
             setup = this.pageSetup(input, references, images, colors);
             this.settleTexts(setup);
             // CSS Content 3 §2.6: the page of a target is known only from a layout, so the layout that shows it comes after.
+            const ends: Map<number, Candidate> = new Map<number, Candidate>();
+            let previous: PageDriver | undefined;
             if (references.showsPages) {
-                new PageDriver(setup, document).run(false, false);
+                previous = new PageDriver(setup, document, ends);
+                previous.run(false, false);
+                setup.builder.labelStrings = previous.labelStrings;
                 this.settleTexts(setup);
             }
-            if (!new PageDriver(setup, document).run(true, references.showsPages)) {
+            let driver: PageDriver = new PageDriver(setup, document, ends);
+            const shown: Set<string> = new Set<string>([JSON.stringify([[...references.shown], setup.builder.labelTexts()])]);
+            let comparing: boolean = true;
+            while (!driver.run(true, comparing)) {
                 document.restart();
                 colors.restart();
                 images.restart();
+                setup.builder.labelStrings = driver.labelStrings;
                 this.settleTexts(setup);
-                new PageDriver(setup, document).run(true, false);
-                references.reportMoved();
+                const key: string = JSON.stringify([[...references.shown], setup.builder.labelTexts()]);
+                if (shown.has(key) && previous !== undefined) {
+                    // With no page that can end earlier, the pages are single pieces that allow no other layout.
+                    comparing = this.endEarlier(setup.layout, ends, previous, driver);
+                    shown.clear();
+                }
+                shown.add(key);
+                previous = driver;
+                driver = new PageDriver(setup, document, ends);
             }
+            setup.reports.push(driver.diagnostics);
             references.reportLinks((id: string) => document.hasDestination(id));
-            this.outline(setup, document);
+            this.outline(setup, document, driver);
             document.finish();
         } catch (error) {
             document.abort();
@@ -194,10 +211,40 @@ export class PdfGenerator {
         }
     }
 
-    private outline(setup: PageSetup, document: PdfDocument): void {
+    private endEarlier(layout: BlockLayout, ends: Map<number, Candidate>, before: PageDriver, after: PageDriver): boolean {
+        // Page numbers and texts shown before mean that their layouts repeat, so the first page where the last two differ
+        // ends at the earlier of their breaks; the ends of the pages after it came from older layouts.
+        for (let position: number = 1; position < Math.max(before.breaks.length, after.breaks.length); position++) {
+            const first: Candidate | undefined = before.breaks[position];
+            const second: Candidate | undefined = after.breaks[position];
+            if (first === second || (first !== undefined && second !== undefined && layout.order(first.path, first.line, second) === 0)) {
+                continue;
+            }
+            let at: number = position;
+            let earlier: Candidate | undefined = layout.earlierOf(first, second, ends.get(at)) ?? layout.earlierOf(before.earlier[at], after.earlier[at], ends.get(at));
+            while (earlier === undefined && at > 1) {
+                // A page that broke past its end starts too late to reach it, so a page before it ends earlier.
+                at--;
+                earlier = layout.earlierOf(after.earlier[at], undefined, ends.get(at));
+            }
+            if (earlier === undefined) {
+                return false;
+            }
+            ends.set(at, earlier);
+            for (const later of [...ends.keys()]) {
+                if (later > at) {
+                    ends.delete(later);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    private outline(setup: PageSetup, document: PdfDocument, driver: PageDriver): void {
         // CSS Content 3 §3: a bookmark goes to its element "as if navigating to that element by fragment URL", so an element
         // with no box laid out has nowhere to go and makes no bookmark.
-        for (const [target, level, open, label] of setup.builder.bookmarkEntries()) {
+        for (const [target, level, open, label] of setup.builder.bookmarkEntries((key: SourceElement | ElementBox) => driver.labelStrings.get(key))) {
             const name: string | undefined = setup.references.bookmarkName(target);
             if (name !== undefined && document.hasDestination(name)) {
                 document.addOutline(label, level, name, open);

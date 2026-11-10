@@ -191,7 +191,7 @@ export class InlineLayout {
     }
 
     layout(sequence: InlineSequence, inlineSize: number, inlineStart: number, origin: number, top: number, out: Array<BoxFragment | LineFragment>,
-        blockBasis?: number, resume?: number, marks?: Array<Snapshot>): Array<LineFragment> | undefined {
+        blockBasis?: number, resume?: number, marks?: Array<Snapshot>, cut?: readonly [number, number]): Array<LineFragment> | undefined {
         // CSS Pseudo-Elements 4 §2.1: the first formatted line has the styles of ::first-line, so it is made from the text
         // prepared with them, and the lines after it from the text of the block; lines resumed after a break are not first.
         const lined: InlineSequence = resume === undefined ? sequence.firstLine ?? sequence : sequence;
@@ -267,9 +267,9 @@ export class InlineLayout {
                     // necessary to make room for the margin box of the float."
                     segments = this.host.segments(inlineStart, inlineSize, origin + top + lineTop, guess);
                 }
-                parts = this.parts(measured, start, offset, wrap, segments, values, fresh, first, hyphenated, limit, mainText);
+                parts = this.parts(measured, start, offset, wrap, segments, values, fresh, first, hyphenated, limit, mainText, cut);
                 const probe: ReadonlyArray<Part> = parts.length > 0 ? parts
-                    : [this.part(measured, start, offset, wrap, segments[0] ?? [0, inlineSize], values, fresh, first, hyphenated < limit)];
+                    : [this.part(measured, start, offset, wrap, segments[0] ?? [0, inlineSize], values, fresh, first, hyphenated < limit, cut)];
                 const anchored: readonly [Part, number] | undefined = this.floatIn(probe, floated);
                 if (anchored !== undefined) {
                     // §9.5.1: a float goes beside the line it is in when there is room after what comes before it, and
@@ -316,7 +316,8 @@ export class InlineLayout {
             if (keepsLast && this.isHyphenated(last.measured, last.end)
                 && this.lineEnd(next, after, later, fitted - later, next.text.codepoints.length + 1, false, false, true) >= next.text.codepoints.length) {
                 // CSS Text 4 §6.3.5: with always "The last full line of the element" should not be hyphenated.
-                const built: readonly [LineFragment, number, number] = this.broken(last.measured, last.start, last.indent, fitted, last.width, values, last.fresh, last.first, false);
+                const built: readonly [LineFragment, number, number] = this.broken(last.measured, last.start, last.indent, fitted, last.width, values, last.fresh, last.first, false,
+                    cut);
                 last = { ...last, line: built[0], end: built[1], natural: built[2] };
                 parts[parts.length - 1] = last;
                 after = next === last.measured ? last.end : this.text.position(sequence, last.end);
@@ -350,7 +351,7 @@ export class InlineLayout {
     }
 
     private parts(measured: Measured, start: number, offset: number, wrap: number, segments: ReadonlyArray<readonly [number, number]>, values: Values, fresh: boolean,
-        first: boolean, hyphenated: number, limit: number, main: () => Measured): Array<Part> {
+        first: boolean, hyphenated: number, limit: number, main: () => Measured, cut?: readonly [number, number]): Array<Part> {
         // SVG 2 §11.7.1.2: when the wrapping area breaks a line of text into parts "a line box for each part is created";
         // they are filled in turn, and one too narrow for the content that comes next is left empty.
         const parts: Array<Part> = [];
@@ -359,7 +360,7 @@ export class InlineLayout {
         let run: number = hyphenated;
         for (const segment of segments) {
             const lead: boolean = parts.length === 0;
-            const part: Part = this.part(current, position, lead ? offset : 0, wrap, segment, values, lead && fresh, lead && first, run < limit);
+            const part: Part = this.part(current, position, lead ? offset : 0, wrap, segment, values, lead && fresh, lead && first, run < limit, cut);
             if (part.natural > part.width - part.indent + TOLERANCE) {
                 continue;
             }
@@ -376,8 +377,8 @@ export class InlineLayout {
     }
 
     private part(measured: Measured, start: number, indent: number, wrap: number, segment: readonly [number, number], values: Values, fresh: boolean, first: boolean,
-        hyphens: boolean): Part {
-        const built: readonly [LineFragment, number, number] = this.broken(measured, start, indent, Math.min(wrap, segment[1]), segment[1], values, fresh, first, hyphens);
+        hyphens: boolean, cut?: readonly [number, number]): Part {
+        const built: readonly [LineFragment, number, number] = this.broken(measured, start, indent, Math.min(wrap, segment[1]), segment[1], values, fresh, first, hyphens, cut);
         return { line: built[0], measured, start, end: built[1], natural: built[2], offset: segment[0], width: segment[1], indent, fresh, first };
     }
 
@@ -472,9 +473,15 @@ export class InlineLayout {
     }
 
     private broken(measured: Measured, start: number, offset: number, wrap: number, inlineSize: number, values: Values, fresh: boolean, first: boolean,
-        hyphens: boolean): readonly [LineFragment, number, number] {
+        hyphens: boolean, cut?: readonly [number, number]): readonly [LineFragment, number, number] {
         const available: number = wrap - offset;
-        let end: number = this.lineEnd(measured, start, offset, available, measured.text.codepoints.length + 1, fresh, first, hyphens);
+        const count: number = measured.text.codepoints.length;
+        let end: number = this.lineEnd(measured, start, offset, available, count + 1, fresh, first, hyphens);
+        const stop: number = cut === undefined ? count : Math.min(measured.text.starts[cut[0]] + cut[1], measured.text.starts[cut[0] + 1] ?? count);
+        if (end > stop) {
+            const shorter: number = this.lineEnd(measured, start, offset, available, stop + 1, fresh, first, hyphens);
+            end = shorter > start ? shorter : end;
+        }
         let built: readonly [LineFragment, number] = this.line(measured, start, end, offset, inlineSize, values, fresh, first);
         while (built[1] > available + TOLERANCE) {
             // What is left out at the edges of a line is known once its content is in visual order, so a line that

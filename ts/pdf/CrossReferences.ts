@@ -50,7 +50,7 @@ export class CrossReferences {
     private readonly bookmarked: Map<SourceElement | ElementBox, string | undefined> = new Map<SourceElement | ElementBox, string | undefined>();
     private bookmarkNames: number = 0;
     private readonly targets: Map<string, Target> = new Map<string, Target>();
-    private readonly shown: Map<string, number> = new Map<string, number>();
+    readonly shown: Map<string, number> = new Map<string, number>();
     private readonly found: Map<string, number> = new Map<string, number>();
     private readonly moves: Set<string> = new Set<string>();
     private root?: ElementBox;
@@ -230,6 +230,12 @@ export class CrossReferences {
         }
     }
 
+    reportUnsettled(): void {
+        for (const id of this.moves) {
+            this.report("Cross-references to #" + id + " show a wrong page: each page number moves #" + id + ". Allow a line break before it.");
+        }
+    }
+
     finishLayout(): boolean {
         let changed: boolean = false;
         for (const [id, page] of this.found) {
@@ -239,12 +245,6 @@ export class CrossReferences {
             }
         }
         return changed;
-    }
-
-    reportMoved(): void {
-        for (const id of this.moves) {
-            this.report("The page of the element with the ID " + id + " changed again in the last layout, so its cross-references can show another page");
-        }
     }
 
     private report(message: string): void {

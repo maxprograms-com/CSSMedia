@@ -19,8 +19,10 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
+import type { BlockLayout, Candidate } from "../layout/BlockLayout.js";
 import type { BoxFragment, BreakToken, LineFragment } from "../layout/Fragment.js";
 import { PagePainter } from "../paint/PagePainter.js";
+import type { SourceElement } from "../parse/SourceElement.js";
 import type { PageSetup } from "../PdfGenerator.js";
 import type { BoxNode, ElementBox, InlineSequence, InlineText, NamedString, TextSequence } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
@@ -64,6 +66,8 @@ interface Pass {
     running: NamedValues<ElementBox>;
     assigned: WeakSet<ReadonlyArray<NamedString>>;
     seen: boolean;
+    trial: boolean;
+    labels: Array<SourceElement | ElementBox>;
 }
 
 const POINTS_PER_PIXEL: number = 0.75;
@@ -82,12 +86,20 @@ export class PageDriver {
     private readonly groupPages: Map<ElementBox, number> = new Map<ElementBox, number>();
     private readonly stringItems: WeakMap<InlineSequence, ReadonlyArray<number>> = new WeakMap<InlineSequence, ReadonlyArray<number>>();
     private readonly later: Array<LaterMargins> = [];
+    private readonly ends: ReadonlyMap<number, Candidate>;
+    readonly labelStrings: Map<SourceElement | ElementBox, NamedValues<string>> = new Map<SourceElement | ElementBox, NamedValues<string>>();
+    readonly breaks: Array<Candidate | undefined> = [];
+    readonly earlier: Array<Candidate | undefined> = [];
+    readonly diagnostics: Array<string> = [];
+    labelChanged: boolean = false;
 
-    constructor(setup: PageSetup, document: PdfDocument) {
+    constructor(setup: PageSetup, document: PdfDocument, ends: ReadonlyMap<number, Candidate>) {
         this.setup = setup;
         this.document = document;
+        this.ends = ends;
         this.painter = new PagePainter(setup, document);
-        this.margins = new MarginBoxes(setup.layout, setup.text, setup.counterStyles, setup.references);
+        this.margins = new MarginBoxes(setup.layout, setup.text, setup.counterStyles, setup.references,
+            (box: ElementBox, strings: NamedValues<string>): void => this.fillRunning(box, strings));
         // CSS Writing Modes 4 §6.1: the inline size of the page area is its width in a horizontal writing mode.
         const mode: CssValue | undefined = setup.root.values["writing-mode"];
         this.horizontal = mode === undefined || (mode.kind === "ident" && mode.lower === "horizontal-tb");
@@ -97,7 +109,7 @@ export class PageDriver {
         const root: ElementBox = this.setup.boxes;
         const state: Pass = {
             painting, counters: [], node: this.scopes.node(), strings: new NamedValues<string>(), running: new NamedValues<ElementBox>(),
-            assigned: new WeakSet<ReadonlyArray<NamedString>>(), seen: false
+            assigned: new WeakSet<ReadonlyArray<NamedString>>(), seen: false, trial: false, labels: []
         };
         const references: CrossReferences = this.setup.references;
         references.startLayout();
@@ -117,16 +129,24 @@ export class PageDriver {
                 side = this.opposite(side);
                 position++;
             }
-            const page: PageLayout = this.lay(root, name, side, position, token);
+            const page: PageLayout = this.lay(root, name, side, position, state, token);
+            this.breaks[position] = this.setup.layout.pageBreak;
+            this.earlier[position] = this.setup.layout.pageEarlier;
             this.finish(page, token, state);
             token = page.content?.token;
             side = this.opposite(side);
             position++;
             // The pages already painted are thrown away, and the rest of this layout gives the pages of the later targets.
-            if (comparing && state.painting && references.moved) {
+            if (state.painting && comparing && (references.moved || this.labelChanged)) {
                 state.painting = false;
             }
         } while (token !== undefined);
+        if (painting && !comparing) {
+            references.reportUnsettled();
+            if (this.labelChanged) {
+                this.diagnostics.push("A bookmark label shows wrong string() values: each value moves its element. Allow a line break before it.");
+            }
+        }
         references.finishLayout();
         if (painting && !state.painting) {
             this.later.length = 0;
@@ -158,6 +178,15 @@ export class PageDriver {
         state.seen = false;
         if (page.content !== undefined) {
             this.assignments(page.content, state);
+        }
+        if (state.labels.length > 0) {
+            // CSS Content 3 §3.2: a bookmark label reads the named strings of the page where its element starts, all of them.
+            const strings: NamedValues<string> = state.strings.copy();
+            for (const key of state.labels) {
+                this.labelStrings.set(key, strings);
+                this.labelChanged = this.labelChanged || this.setup.builder.labelMoved(key, strings);
+            }
+            state.labels.length = 0;
         }
         let later: Omit<LaterMargins, "page" | "annotations" | "earlier"> | undefined;
         if (page.canvas.marginBoxes.length > 0 && state.painting) {
@@ -211,8 +240,12 @@ export class PageDriver {
         }
         if (fragment.resumed !== true) {
             this.assign(box.namedStrings, state);
-            if (this.setup.references.recording) {
+            if (!state.trial && this.setup.references.recording) {
                 this.setup.references.recordPage(box, this.pageNumber(state));
+            }
+            const key: SourceElement | ElementBox = box.pseudoElement === undefined && box.element !== undefined ? box.element : box;
+            if (!state.trial && !this.labelStrings.has(key) && this.setup.builder.stringLabels?.has(key) === true) {
+                state.labels.push(key);
             }
         }
         for (const child of fragment.children ?? []) {
@@ -278,37 +311,196 @@ export class PageDriver {
         }
     }
 
-    private lay(root: ElementBox, name: string, side: "left" | "right", position: number, token?: BreakToken): PageLayout {
+    private lay(root: ElementBox, name: string, side: "left" | "right", position: number, state: Pass, token?: BreakToken): PageLayout {
         // GCPM 3 §3.2: the page groups of a page are known from the boxes laid out on it, and they can change the page area
         // through :nth(); the page is laid out again in the new area until the groups no longer change it.
         let groups: Array<ElementBox> = this.continuing(token);
         let canvas: PageCanvas = this.canvas(name, side, position, false, groups);
-        let content: BoxFragment = this.content(root, canvas, token);
+        let end: Candidate | undefined = this.ends.get(position);
+        let content: BoxFragment = this.content(root, canvas, token, end);
         const tried: Array<Rectangle> = [canvas.pageArea];
+        const filled: Set<string> = new Set<string>();
+        let previous: Candidate | undefined;
         for (;;) {
             const found: Array<ElementBox> = [];
             this.groupsIn(content, found);
-            if (found.length === groups.length && found.every((box: ElementBox, index: number) => box === groups[index])) {
-                break;
-            }
-            const next: PageCanvas = this.canvas(name, side, position, false, found);
-            if (this.sameArea(next.pageArea, canvas.pageArea)) {
+            let again: boolean = false;
+            if (found.length !== groups.length || found.some((box: ElementBox, index: number) => box !== groups[index])) {
+                const next: PageCanvas = this.canvas(name, side, position, false, found);
+                // The layout depends only on the page area, so an area laid out before means that the groups cycle, which
+                // GCPM 3 does not resolve: the page keeps the area it was last laid out in.
+                if (!this.sameArea(next.pageArea, canvas.pageArea) && tried.some((area: Rectangle) => this.sameArea(area, next.pageArea))) {
+                    break;
+                }
+                again = !this.sameArea(next.pageArea, canvas.pageArea);
                 groups = found;
                 canvas = next;
+                if (again) {
+                    tried.push(canvas.pageArea);
+                }
+            }
+            const filling: readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined = this.fillStrings(content, state);
+            if (filling !== undefined) {
+                // Texts whose values move the content that assigns them, back and forth, end the page at the earlier break.
+                const layout: BlockLayout = this.setup.layout;
+                const earlier: Candidate | undefined = filled.has(filling[0])
+                    ? layout.earlierOf(layout.pageBreak, previous, end) ?? layout.earlierOf(layout.pageEarlier, undefined, end) : undefined;
+                if (earlier !== undefined) {
+                    end = earlier;
+                    filled.clear();
+                }
+                if (earlier !== undefined || !filled.has(filling[0])) {
+                    filled.add(filling[0]);
+                    this.renew(filling[1]);
+                    again = true;
+                } else if (state.painting) {
+                    this.diagnostics.push("Page " + position + " shows wrong string() values: each value moves the element that sets it. Allow a line break before it.");
+                }
+            }
+            if (!again) {
                 break;
             }
-            // The layout depends only on the page area, so an area laid out before means that the groups cycle, which
-            // GCPM 3 does not resolve: the page keeps the area it was last laid out in.
-            if (tried.some((area: Rectangle) => this.sameArea(area, next.pageArea))) {
-                break;
-            }
-            groups = found;
-            canvas = next;
-            tried.push(canvas.pageArea);
-            content = this.content(root, canvas, token);
+            previous = this.setup.layout.pageBreak;
+            content = this.content(root, canvas, token, end);
         }
         this.count(groups);
         return { canvas, content };
+    }
+
+    private fillStrings(content: BoxFragment, state: Pass): readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined {
+        const named: Map<readonly [string, string], [TextSequence, string]> = this.setup.builder.namedTexts;
+        if (named.size === 0) {
+            return undefined;
+        }
+        const found: Map<readonly [string, string], InlineSequence> = new Map<readonly [string, string], InlineSequence>();
+        this.namedTexts(content, found);
+        if (found.size === 0) {
+            return undefined;
+        }
+        // §2.7.2: first, last and first-except read assignments that can come after the text on its page, so the whole page
+        // is laid out before its texts are known.
+        const strings: NamedValues<string> = state.strings.copy();
+        strings.nextPage();
+        const trial: Pass = {
+            ...state, strings, running: new NamedValues<ElementBox>(), assigned: new WeakSet<ReadonlyArray<NamedString>>(), seen: false, trial: true, labels: []
+        };
+        this.assignments(content, trial);
+        const values: Array<string> = [];
+        const changed: Map<InlineSequence, Array<readonly [[TextSequence, string], string]>> = new Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>();
+        for (const [call, sequence] of found) {
+            const value: string = strings.value(call[0], call[1]) ?? "";
+            const entry: [TextSequence, string] | undefined = named.get(call);
+            values.push(value);
+            if (entry === undefined || entry[1] === value) {
+                continue;
+            }
+            const nodes: Array<readonly [[TextSequence, string], string]> | undefined = changed.get(sequence);
+            if (nodes === undefined) {
+                changed.set(sequence, [[entry, value]]);
+            } else {
+                nodes.push([entry, value]);
+            }
+        }
+        return changed.size === 0 ? undefined : [JSON.stringify(values), changed];
+    }
+
+    private fillRunning(box: ElementBox, strings: NamedValues<string>): void {
+        // GCPM 3 §1.2.2: element() places the running element in a page-margin box, so its string() texts are those of that page.
+        if (this.setup.builder.namedTexts.size === 0) {
+            return;
+        }
+        const changed: Map<InlineSequence, Array<readonly [[TextSequence, string], string]>> = new Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>();
+        this.runningTexts(box, strings, changed);
+        this.renew(changed);
+    }
+
+    private runningTexts(box: ElementBox, strings: NamedValues<string>, changed: Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>): void {
+        const named: Map<readonly [string, string], [TextSequence, string]> = this.setup.builder.namedTexts;
+        for (const sequence of box.inline ?? []) {
+            for (const item of sequence.items) {
+                const call: readonly [string, string] | undefined = item.kind === "text" && item.node.kind === "text" ? item.node.named : undefined;
+                const entry: [TextSequence, string] | undefined = call === undefined ? undefined : named.get(call);
+                const value: string = call === undefined ? "" : strings.value(call[0], call[1]) ?? "";
+                if (entry === undefined || entry[1] === value) {
+                    continue;
+                }
+                const nodes: Array<readonly [[TextSequence, string], string]> | undefined = changed.get(sequence);
+                if (nodes === undefined) {
+                    changed.set(sequence, [[entry, value]]);
+                } else {
+                    nodes.push([entry, value]);
+                }
+            }
+        }
+        for (const child of box.children) {
+            if (child.kind === "box") {
+                this.runningTexts(child, strings, changed);
+            }
+        }
+    }
+
+    private renew(changed: ReadonlyMap<InlineSequence, ReadonlyArray<readonly [[TextSequence, string], string]>>): void {
+        for (const [sequence, nodes] of changed) {
+            this.setup.letters.undo(sequence);
+            for (const [entry, value] of nodes) {
+                entry[0].text = value;
+                entry[1] = value;
+            }
+            this.setup.whiteSpace.again(sequence);
+            this.setup.text.prepare([sequence, ...this.setup.letters.again(sequence)]);
+            this.stringItems.delete(sequence);
+        }
+        if (changed.size > 0) {
+            this.setup.layout.tables.forget();
+            this.setup.builder.resetStrings();
+        }
+    }
+
+    private namedTexts(fragment: BoxFragment, found: Map<readonly [string, string], InlineSequence>): void {
+        // A sequence whose only text is still empty has no lines to place its texts by, so they take the page that holds
+        // the whole box.
+        const box: ElementBox = fragment.box;
+        if (box.placement === "running") {
+            return;
+        }
+        for (const sequence of box.inline ?? []) {
+            const indexes: Array<number> = [];
+            for (const [index, item] of sequence.items.entries()) {
+                if (item.kind === "text" && item.node.kind === "text" && item.node.named !== undefined) {
+                    indexes.push(index);
+                }
+            }
+            if (indexes.length === 0) {
+                continue;
+            }
+            let lined: boolean = false;
+            for (const child of fragment.children ?? []) {
+                if (child.kind !== "line" || (child.sequence !== sequence && child.sequence !== sequence.firstLine)) {
+                    continue;
+                }
+                lined = true;
+                const text: InlineText = child.sequence.text as InlineText;
+                for (const index of indexes) {
+                    const position: number = text.starts[index];
+                    const empty: boolean = text.starts[index + 1] === position;
+                    if (position >= child.start && (position < child.end || child.end === child.start || (empty && position === child.end))) {
+                        found.set((sequence.items[index].node as TextSequence).named as readonly [string, string], sequence);
+                    }
+                }
+            }
+            if (!lined && fragment.resumed !== true && fragment.token === undefined) {
+                for (const index of indexes) {
+                    found.set((sequence.items[index].node as TextSequence).named as readonly [string, string], sequence);
+                }
+            }
+        }
+        for (const child of fragment.children ?? []) {
+            for (const piece of child.kind === "line" ? child.pieces : [child]) {
+                if (piece.kind === "box") {
+                    this.namedTexts(piece, found);
+                }
+            }
+        }
     }
 
     private sameArea(first: Rectangle, second: Rectangle): boolean {
@@ -324,9 +516,9 @@ export class PageDriver {
         return { canvas };
     }
 
-    private content(root: ElementBox, canvas: PageCanvas, token?: BreakToken): BoxFragment {
+    private content(root: ElementBox, canvas: PageCanvas, token?: BreakToken, end?: Candidate): BoxFragment {
         const area: Rectangle = canvas.pageArea;
-        return this.setup.layout.page(root, this.horizontal ? area.width : area.height, this.horizontal ? area.height : area.width, token);
+        return this.setup.layout.page(root, this.horizontal ? area.width : area.height, this.horizontal ? area.height : area.width, token, end);
     }
 
     private canvas(name: string, side: "left" | "right", position: number, blank: boolean, groups: ReadonlyArray<ElementBox>): PageCanvas {
