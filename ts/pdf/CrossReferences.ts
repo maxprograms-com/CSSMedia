@@ -232,7 +232,12 @@ export class CrossReferences {
 
     reportUnsettled(): void {
         for (const id of this.moves) {
-            this.report("Cross-references to #" + id + " show a wrong page: each page number moves #" + id + ". Allow a line break before it.");
+            let element: SourceElement | undefined;
+            for (const [target, name] of this.bookmarked) {
+                element = name === id ? (target instanceof SourceElement ? target : target.element) : element;
+            }
+            this.report(element === undefined ? "Cross-references to #" + id + " show a wrong page: each page number moves #" + id + ". Allow a line break before it."
+                : "The table of contents shows a wrong page for <" + element.getName() + ">: each page number moves it. Allow a line break before it.");
         }
     }
 

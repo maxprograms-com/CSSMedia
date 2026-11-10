@@ -22,7 +22,7 @@ import type { CssValue } from "../css/values/CssValue.js";
 import type { BlockLayout, Candidate } from "../layout/BlockLayout.js";
 import type { BoxFragment, BreakToken, LineFragment } from "../layout/Fragment.js";
 import { PagePainter } from "../paint/PagePainter.js";
-import type { SourceElement } from "../parse/SourceElement.js";
+import { SourceElement } from "../parse/SourceElement.js";
 import type { PageSetup } from "../PdfGenerator.js";
 import type { BoxNode, ElementBox, InlineSequence, InlineText, NamedString, TextSequence } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
@@ -91,7 +91,7 @@ export class PageDriver {
     readonly breaks: Array<Candidate | undefined> = [];
     readonly earlier: Array<Candidate | undefined> = [];
     readonly diagnostics: Array<string> = [];
-    labelChanged: boolean = false;
+    private readonly movedLabels: Set<SourceElement | ElementBox> = new Set<SourceElement | ElementBox>();
 
     constructor(setup: PageSetup, document: PdfDocument, ends: ReadonlyMap<number, Candidate>) {
         this.setup = setup;
@@ -137,14 +137,16 @@ export class PageDriver {
             side = this.opposite(side);
             position++;
             // The pages already painted are thrown away, and the rest of this layout gives the pages of the later targets.
-            if (state.painting && comparing && (references.moved || this.labelChanged)) {
+            if (state.painting && comparing && (references.moved || this.movedLabels.size > 0)) {
                 state.painting = false;
             }
         } while (token !== undefined);
         if (painting && !comparing) {
             references.reportUnsettled();
-            if (this.labelChanged) {
-                this.diagnostics.push("A bookmark label shows wrong string() values: each value moves its element. Allow a line break before it.");
+            for (const key of this.movedLabels) {
+                const element: SourceElement | undefined = key instanceof SourceElement ? key : key.element;
+                this.diagnostics.push("The table of contents shows wrong string() values for <" + (element?.getName() ?? "") + ">: each value moves it. "
+                    + "Allow a line break before it.");
             }
         }
         references.finishLayout();
@@ -184,7 +186,9 @@ export class PageDriver {
             const strings: NamedValues<string> = state.strings.copy();
             for (const key of state.labels) {
                 this.labelStrings.set(key, strings);
-                this.labelChanged = this.labelChanged || this.setup.builder.labelMoved(key, strings);
+                if (this.setup.builder.labelMoved(key, strings)) {
+                    this.movedLabels.add(key);
+                }
             }
             state.labels.length = 0;
         }
