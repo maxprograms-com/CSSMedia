@@ -21,6 +21,7 @@
 import type { XMLElement } from "typesxml";
 import type { CssValue } from "../css/values/CssValue.js";
 import type { StrokeStyle } from "../geometry/PathGeometry.js";
+import { PathGeometry } from "../geometry/PathGeometry.js";
 import type { ImageFormats, ImageSamples, ImageSize } from "../images/ImageFormats.js";
 import type { ColorOutput, PdfColor } from "../paint/ColorOutput.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
@@ -56,6 +57,7 @@ const SRGB_WHITE: ReadonlyArray<number> = [0.9505, 1, 1.089];
 const SRGB_MATRIX: ReadonlyArray<number> = [0.4124, 0.2126, 0.0193, 0.3576, 0.7152, 0.1192, 0.1805, 0.0722, 0.9505];
 const FLAT_TRANSFORMS: ReadonlySet<string> = new Set<string>(["clipPath", "linearGradient", "radialGradient", "pattern"]);
 const FLATNESS: number = 0.05;
+const MITER_LIMIT: number = 4;
 const FINEST_PIXEL: number = 96 / 600;
 const LARGEST_IMAGE: number = 4096 * 4096;
 const MAX_TAPS: number = 16;
@@ -84,6 +86,7 @@ export class SvgPainter {
     private space?: Space;
     private projection?: Homography;
     private collecting: boolean = false;
+    private growth: number = 0;
     private links: Array<readonly [PageRectangle, string, boolean]> = [];
     private formHeight: number = 0;
     private quiet: number = 0;
@@ -105,13 +108,12 @@ export class SvgPainter {
         this.formats = formats;
         this.colors = colors;
         this.images = images;
-        this.text = new SvgText(document, formats, this);
+        this.text = new SvgText(document, formats, colors, this);
     }
 
     paint(styles: SvgStyles, pdf: PdfPage, width: number, height: number, scale: number): ReadonlyArray<readonly [PageRectangle, string, boolean]> {
         // SVG 2 §8.4: the initial user space has its origin at the top left with y down, in a form drawn upside down; an
-        // image inside another one gives the painter back to the outer image when it is drawn. The result is the links of the
-        // image, as areas of its viewport with y down, a destination name or a URI.
+        // image inside another one gives the painter back to the outer image when it is drawn.
         styles.setViewport(width, height);
         const node: SvgNode = styles.rootNode();
         const style: ComputedStyle = styles.style(node);
@@ -130,6 +132,47 @@ export class SvgPainter {
         } finally {
             [this.scale, this.links, this.formHeight, this.quiet, this.ctm, this.origin] = saved;
         }
+    }
+
+    glyph(styles: SvgStyles, pdf: PdfPage, element: XMLElement, size: number, scale: number, ctm: Matrix, growth: number): Box | undefined {
+        // OpenType SVG: the element is rendered "according to SVG's <use> tag behavior", in an initial viewport of the em square
+        // that "must not be clipped"; CSS Fonts 4 §2.8: a synthesized bold glyph has a thin stroke around each shape it paints.
+        styles.setViewport(size, size);
+        const node: SvgNode = styles.rootNode();
+        const style: ComputedStyle = styles.style(node);
+        const saved: readonly [number, Array<readonly [PageRectangle, string, boolean]>, number, number, Matrix, Matrix] =
+            [this.scale, this.links, this.formHeight, this.quiet, this.ctm, this.origin];
+        const savedGrowth: number = this.growth;
+        this.growth = growth;
+        this.scale = scale;
+        this.links = [];
+        this.formHeight = size;
+        this.quiet = 1;
+        this.ctm = SvgGeometry.IDENTITY;
+        this.origin = SvgGeometry.IDENTITY;
+        let ink: Box | undefined;
+        try {
+            this.inDocument(styles, size, size, undefined, undefined, () => this.drawIn(pdf, ctm, [0, 0, size, size], () => {
+                const placement: readonly [Matrix, number, number] | undefined = this.placement(node.element, this.rectangle(style), undefined);
+                if (placement === undefined) {
+                    return;
+                }
+                this.transformed(placement[0], () => this.inDocument(styles, placement[1], placement[2], undefined, undefined, () => {
+                    this.guarded(element, () => this.render({ element }, style));
+                    const instance: SvgNode = { element };
+                    const own: ComputedStyle = styles.style(instance, style);
+                    const box: Box | undefined = this.bbox(instance, own, "ink");
+                    const transform: Matrix | null | undefined = this.geometry.flatten(this.elementTransform(instance, own, styles));
+                    if (box !== undefined && transform !== undefined && transform !== null) {
+                        ink = this.geometry.transformBox(this.geometry.concat(placement[0], transform), box);
+                    }
+                }));
+            }, SvgGeometry.IDENTITY));
+        } finally {
+            [this.scale, this.links, this.formHeight, this.quiet, this.ctm, this.origin] = saved;
+            this.growth = savedGrowth;
+        }
+        return ink === undefined || growth <= 0 ? ink : [ink[0] - growth / 2, ink[1] - growth / 2, ink[2] + growth, ink[3] + growth];
     }
 
     private drawIn(pdf: PdfPage, ctm: Matrix, area: Box, draw: () => void, base: Matrix = this.imageMatrix()): void {
@@ -950,11 +993,23 @@ export class SvgPainter {
     }
 
     private fill(path: SvgPath, node: SvgNode, style: ComputedStyle): void {
-        this.pdf.content.save();
-        if (this.paintWith(style.values["fill"], this.fraction(style.values["fill-opacity"]), false, node, style, undefined) && this.outline(path)) {
-            this.painted(this.keyword(style.values["fill-rule"]) === "evenodd");
+        // A shape grown by the thin stroke is one path only for nonzero; with evenodd the stroke around it is filled apart.
+        const evenOdd: boolean = this.keyword(style.values["fill-rule"]) === "evenodd";
+        const shapes: ReadonlyArray<readonly [SvgPath, boolean]> = this.growth <= 0 ? [[path, evenOdd]] : (evenOdd
+            ? [[path, true], [this.geometry.strokeOutline(path, this.thinStroke(), this.tolerance(), PathGeometry.IDENTITY3), false]]
+            : [[this.geometry.thickened(path, this.thinStroke(), this.tolerance()), false]]);
+        for (const [shape, rule] of shapes) {
+            this.pdf.content.save();
+            if (this.paintWith(style.values["fill"], this.fraction(style.values["fill-opacity"]), false, node, style, undefined) && this.outline(shape)) {
+                this.painted(rule);
+            }
+            this.pdf.content.restore();
         }
-        this.pdf.content.restore();
+    }
+
+    private thinStroke(): StrokeStyle {
+        // CSS Fonts 4 §2.8: "a thin stroke around each glyph", with the initial stroke-linejoin and stroke-miterlimit (SVG 2 §13.5).
+        return { width: this.growth, cap: "butt", extension: "miter", shape: "fallback", limit: MITER_LIMIT };
     }
 
     private stroke(path: SvgPath, node: SvgNode, style: ComputedStyle): void {
@@ -962,13 +1017,19 @@ export class SvgPainter {
         // the stroke's shape is filled, since the projection changes its width from place to place.
         this.pdf.content.save();
         const projected: boolean = this.projection !== undefined;
-        if (this.paintWith(style.values["stroke"], this.fraction(style.values["stroke-opacity"]), !projected, node, style, undefined)) {
-            if (projected) {
+        const nonScaling: boolean = this.keyword(style.values["vector-effect"]) === "non-scaling-stroke";
+        const grown: boolean = this.growth > 0 && !projected && !nonScaling;
+        if (this.paintWith(style.values["stroke"], this.fraction(style.values["stroke-opacity"]), !projected && !grown, node, style, undefined)) {
+            if (grown) {
+                if (this.grownStroke(path, style)) {
+                    this.painted(false);
+                }
+            } else if (projected) {
                 if (this.strokeArea(path, style)) {
                     this.painted(false);
                 }
             } else {
-                const inverse: Matrix | undefined = this.keyword(style.values["vector-effect"]) === "non-scaling-stroke" ? this.geometry.invert(this.imageMatrix()) : undefined;
+                const inverse: Matrix | undefined = nonScaling ? this.geometry.invert(this.imageMatrix()) : undefined;
                 if (inverse !== undefined) {
                     this.pdf.content.transform(inverse[0], inverse[1], inverse[2], inverse[3], inverse[4], inverse[5]);
                 }
@@ -979,6 +1040,17 @@ export class SvgPainter {
             }
         }
         this.pdf.content.restore();
+    }
+
+    private grownStroke(path: SvgPath, style: ComputedStyle): boolean {
+        // A wider stroke would not grow the ends of butt caps or the corners of bevel joins as the thin stroke does.
+        const width: number = this.strokeWidth(style);
+        const dashes: readonly [ReadonlyArray<number>, number] | undefined = this.dashes(path, style);
+        if (width <= 0 || this.onlyEmptyDashes(dashes, style)) {
+            return false;
+        }
+        const shape: SvgPath = this.geometry.strokeOutline(path, this.outlineStyle(style, width, dashes), this.tolerance(), SvgGeometry.IDENTITY3);
+        return this.outline(this.geometry.thickened(shape, this.thinStroke(), this.tolerance()));
     }
 
     strokeArea(path: SvgPath, style: ComputedStyle): boolean {
@@ -1013,7 +1085,7 @@ export class SvgPainter {
         const join: readonly [string, string] = SHAPE_JOINS[this.keyword(style.values["stroke-linejoin"]) ?? "miter"] ?? SHAPE_JOINS["miter"];
         const stroke: StrokeStyle = {
             width, cap: this.keyword(style.values["stroke-linecap"]) ?? "butt", extension: join[0], shape: join[1],
-            limit: Math.max(1, limit !== undefined && limit.kind === "number" ? limit.value : 4), joins: true
+            limit: Math.max(1, limit !== undefined && limit.kind === "number" ? limit.value : 4)
         };
         if (dashes !== undefined) {
             stroke.dashes = dashes;
@@ -2089,7 +2161,8 @@ export class SvgPainter {
                 const instanceStyle: ComputedStyle = target[1].style(instance, style);
                 const targetName: string = target[1].localName(target[0]);
                 if (targetName !== "symbol" && targetName !== "svg") {
-                    inner = this.childBox(instance, instanceStyle, kind);
+                    const own: Box | undefined = this.keyword(instanceStyle.values["display"]) === "none" ? undefined : this.bbox(instance, instanceStyle, kind);
+                    inner = own === undefined ? undefined : this.geometry.projectBox(this.geometry.multiply4(this.perspective(instance), this.spatial(instance, instanceStyle)), own);
                     return;
                 }
                 const [box, reference]: readonly [Box, readonly [number | undefined, number | undefined] | undefined] = this.usedViewport(instance, instanceStyle, style, size);

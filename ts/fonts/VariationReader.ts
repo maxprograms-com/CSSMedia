@@ -106,7 +106,7 @@ export class VariationReader {
         return store;
     }
 
-    private deltaSetIndexMap(table: Buffer, offset: number): DeltaSetIndexMap {
+    deltaSetIndexMap(table: Buffer, offset: number): DeltaSetIndexMap {
         const format: number = table[offset];
         const entryFormat: number = table[offset + 1];
         const count: number = format === 0 ? table.readUInt16BE(offset + 2) : table.readUInt32BE(offset + 2);

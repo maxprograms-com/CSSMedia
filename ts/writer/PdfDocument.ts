@@ -18,6 +18,7 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
+import type { ColorSpaceResource } from "./PdfColorSpaces.js";
 import { PdfColorSpaces } from "./PdfColorSpaces.js";
 import { PdfFile } from "./PdfFile.js";
 import { PdfFonts } from "./PdfFonts.js";
@@ -120,10 +121,10 @@ export class PdfDocument {
         return new PdfPage(reserved?.object ?? this.file.reserve(), width, height, turned);
     }
 
-    finishForm(form: PdfPage, box: readonly [number, number, number, number], matrix: ReadonlyArray<number>): ImageResource {
-        // §8.10.1 and §11.6.6: a form XObject that is an isolated transparency group, blended in DeviceRGB.
+    finishForm(form: PdfPage, box: readonly [number, number, number, number], matrix: ReadonlyArray<number>, space: ColorSpaceResource = PdfColorSpaces.RGB): ImageResource {
+        // §8.10.1 and §11.6.6: a form XObject that is an isolated transparency group, blended in DeviceRGB unless another space is given.
         this.file.setStream(form.object, "/Type /XObject /Subtype /Form /BBox [" + this.syntax.numbers([box[0], box[1], box[0] + box[2], box[1] + box[3]])
-            + "] /Matrix [" + this.syntax.numbers(matrix) + "] /Resources " + form.resources() + " /Group << /Type /Group /S /Transparency /I true /CS /DeviceRGB >>",
+            + "] /Matrix [" + this.syntax.numbers(matrix) + "] /Resources " + form.resources() + " /Group << /Type /Group /S /Transparency /I true /CS " + space.value + " >>",
             form.content.bytes(), true);
         return { key: "Fm" + form.object, object: form.object, width: box[2], height: box[3] };
     }

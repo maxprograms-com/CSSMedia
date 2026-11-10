@@ -35,8 +35,9 @@ const TABLE_ROW: RegExp = /<tr[^>]*>/;
 const TABLE_CELL: RegExp = /<t[hd][^>]*>/;
 const AT_RULE_HEADING: RegExp = /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/g;
 const DETACHED_MULTIPLIER: RegExp = /([\]>])\s+([#+*?]|\{\d)/g;
-const PRODUCTION_BLOCK: RegExp = /<pre class="?prod"?[^>]*>([\s\S]*?)<\/pre>/g;
-const PRODUCTION: RegExp = /(<[a-z0-9()-]+>)\s*=\s*([\s\S]*?)(?=\s*<[a-z0-9()-]+>\s*=|$)/g;
+const PRODUCTION_BLOCK: RegExp = /<pre class="?(?:[^">]*\s)?prod(?:\s[^">]*)?"?[^>]*>([\s\S]*?)<\/pre>/g;
+const PRODUCTION: RegExp = /(<[a-z0-9()-]+>|\b[a-z][a-z0-9-]*\(\))\s*=\s*([\s\S]*?)(?=\s*(?:<[a-z0-9()-]+>|\b[a-z][a-z0-9-]*\(\))\s*=|$)/g;
+const BARE_FUNCTION: RegExp = /^[a-z][a-z0-9-]*\(\s*\)$/;
 const ENTITIES: Readonly<Record<string, string>> = { "lt": "<", "gt": ">", "amp": "&", "quot": "\"", "apos": "'", "nbsp": " " };
 const SPEC_URL: RegExp = /\/TR\/([A-Za-z0-9-]+)\/?$/;
 const LEVEL: RegExp = /-(\d+)$/;
@@ -192,6 +193,11 @@ interface Alias {
     source: Source;
 }
 
+interface UnreadType {
+    name: string;
+    source: Source;
+}
+
 interface Candidate<T> {
     item: T;
     grammar?: string;
@@ -210,6 +216,7 @@ class CssDefinitionsGenerator {
     private readonly descriptors: Map<string, Array<Candidate<WebrefDescriptor>>> = new Map<string, Array<Candidate<WebrefDescriptor>>>();
     private readonly types: Map<string, Array<Candidate<string>>> = new Map<string, Array<Candidate<string>>>();
     private readonly unextracted: Array<Unextracted> = [];
+    private readonly unreadTypes: Map<string, Array<UnreadType>> = new Map<string, Array<UnreadType>>();
 
     constructor(outputFile: string, svgFile: string) {
         this.outputFile = outputFile;
@@ -230,6 +237,19 @@ class CssDefinitionsGenerator {
                 this.collect(spec, source);
             }
             console.log("Read " + Math.min(start + BATCH_SIZE, names.length) + " of " + names.length + " specifications");
+        }
+        for (const [url, entries] of this.unreadTypes) {
+            const productions: Map<string, string> = this.productions(await (await this.fetchOk(url)).text());
+            for (const entry of entries) {
+                const grammar: string | undefined = productions.get(entry.name);
+                if (grammar === undefined) {
+                    console.log("No production of " + entry.name + " is found at " + url);
+                    continue;
+                }
+                const value: string = this.proseGrammar(entry.name, entry.source.shortname, this.plainQuotes(grammar));
+                this.add(this.types, entry.name, { item: value, grammar: value, source: entry.source });
+            }
+            console.log("Read the productions of " + url);
         }
         for (const shortname of this.missingLevels(publications, extracted)) {
             const url: string = TR_BASE + shortname + "/";
@@ -360,13 +380,20 @@ class CssDefinitionsGenerator {
                 }
             }
         }
-        const values: Array<WebrefValue> = [];
+        const values: Array<WebrefValue> = [...this.productions(page)].map(([name, value]: [string, string]): WebrefValue =>
+            ({ name, type: name.endsWith("()>") || name.endsWith("()") ? "function" : "type", value }));
+        return { spec: { title: this.plainText(/<title>([\s\S]*?)<\/title>/.exec(page)?.[1] ?? url), url }, properties, atrules: [...atRules.values()], values };
+    }
+
+    private productions(page: string): Map<string, string> {
+        // The production blocks of a specification; a function may be written without angle brackets, as rgb() is in CSS Color 4 §5.1.
+        const productions: Map<string, string> = new Map<string, string>();
         for (const block of page.matchAll(PRODUCTION_BLOCK)) {
             for (const production of this.plainText(block[1]).matchAll(PRODUCTION)) {
-                values.push({ name: production[1], type: production[1].endsWith("()>") ? "function" : "type", value: production[2].replace(DETACHED_MULTIPLIER, "$1$2") });
+                productions.set(production[1], production[2].replace(DETACHED_MULTIPLIER, "$1$2"));
             }
         }
-        return { spec: { title: this.plainText(/<title>([\s\S]*?)<\/title>/.exec(page)?.[1] ?? url), url }, properties, atrules: [...atRules.values()], values };
+        return productions;
     }
 
     private definitionList(page: string, name: string, fragment: string): WebrefProperty | undefined {
@@ -446,7 +473,7 @@ class CssDefinitionsGenerator {
                 } else if (property.href !== undefined) {
                     this.unextracted.push({ name: property.name, href: property.href, source });
                 }
-                this.collectTypes(source, property.values);
+                this.collectTypes(source, spec.spec.url, property.values);
             }
         }
         if (spec.atrules !== undefined) {
@@ -458,13 +485,13 @@ class CssDefinitionsGenerator {
                         if (descriptor.value !== undefined && !SCREEN_ONLY_DESCRIPTORS.has(atRule.name + " " + descriptor.name)) {
                             this.add(this.descriptors, atRule.name + " " + descriptor.name, { item: descriptor, grammar: this.plainQuotes(descriptor.value), source });
                         }
-                        this.collectTypes(source, descriptor.values);
+                        this.collectTypes(source, spec.spec.url, descriptor.values);
                     }
                 }
-                this.collectTypes(source, atRule.values);
+                this.collectTypes(source, spec.spec.url, atRule.values);
             }
         }
-        this.collectTypes(source, spec.values);
+        this.collectTypes(source, spec.spec.url, spec.values);
         // Types given in the text without a production: CSS Shapes 1 §3.1 lists the <basic-shape> functions, and CSS Images 4
         // §3.2.2 extends <radial-size> with them.
         for (const [shortname, name, grammar] of PROSE_TYPES) {
@@ -474,16 +501,24 @@ class CssDefinitionsGenerator {
         }
     }
 
-    private collectTypes(source: Source, values?: Array<WebrefValue>): void {
+    private collectTypes(source: Source, url: string, values?: Array<WebrefValue>): void {
         if (values === undefined) {
             return;
         }
         for (const value of values) {
-            if ((value.type === "type" || value.type === "function") && value.value !== undefined) {
-                const grammar: string = this.proseGrammar(value.name, source.shortname, this.plainQuotes(value.value));
-                this.add(this.types, value.name, { item: grammar, grammar, source });
+            if (value.type === "type" || value.type === "function") {
+                // Webref can give a production no value, or a function only its own name, where the specification defines it in
+                // a production block, as CSS Color 4 §5.1 does rgb() and <legacy-rgb-syntax>; those are read from its page.
+                if (value.value === undefined || BARE_FUNCTION.test(value.value.trim())) {
+                    const unread: Array<UnreadType> = this.unreadTypes.get(url) ?? [];
+                    unread.push({ name: value.name, source });
+                    this.unreadTypes.set(url, unread);
+                } else {
+                    const grammar: string = this.proseGrammar(value.name, source.shortname, this.plainQuotes(value.value));
+                    this.add(this.types, value.name, { item: grammar, grammar, source });
+                }
             }
-            this.collectTypes(source, value.values);
+            this.collectTypes(source, url, value.values);
         }
     }
 

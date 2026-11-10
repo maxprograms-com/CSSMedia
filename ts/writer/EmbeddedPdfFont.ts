@@ -55,8 +55,8 @@ export class EmbeddedPdfFont extends PdfFont {
         super();
         const tables: Readonly<Record<string, Buffer>> = instance.typeface.tables;
         // ISO 32000-2 §9.9.1, Table 124, embeds "CFF " but not CFF2, which needs code that turns it into what PDF embeds, so
-        // until it exists the run stops instead of drawing wrong glyphs.
-        if (tables["glyf"] === undefined && tables["CFF "] === undefined) {
+        // until it exists the run stops instead of drawing wrong glyphs; a synthesized face is written from its own outlines.
+        if (tables["glyf"] === undefined && tables["CFF "] === undefined && tables["CFF2"] !== undefined && instance.emboldening === undefined) {
             throw new Error("The font " + instance.typeface.names.postScriptName + " has CFF2 outlines, whose conversion for PDF is not implemented");
         }
         this.file = file;
@@ -65,7 +65,7 @@ export class EmbeddedPdfFont extends PdfFont {
         this.tag = tag;
         const object: number = file.reserve();
         this.resource = { key: "F" + object, object };
-        if (tables["glyf"] === undefined) {
+        if (tables["glyf"] === undefined && instance.emboldening === undefined) {
             const compact: CompactOutlines | undefined = CompactOutlines.of(tables, instance.coordinates);
             if (compact !== undefined) {
                 this.compact = compact;
@@ -108,11 +108,17 @@ export class EmbeddedPdfFont extends PdfFont {
         const name: string = this.tag + "+" + (typeface.names.postScriptName.replace(NAME_EXCLUDED, "") || "Font");
         let program: string;
         let subtype: string;
-        if (tables["glyf"] !== undefined) {
-            // A PDF font has no way to name a variation instance, so the font program is the instance itself.
-            const varied: boolean = this.instance.coordinates.some((value: number) => value !== 0);
-            const data: Buffer = new TrueTypeSubsetter().subset(varied ? new GlyphInstancer().tables(this.instance, this.used) : tables, this.used);
+        const synthesized: boolean = this.instance.emboldening !== undefined && (tables["CFF "] !== undefined || tables["CFF2"] !== undefined);
+        if (tables["glyf"] !== undefined || synthesized) {
+            // A PDF font has no way to name a variation instance or a synthesized bold face, so the font program is the face itself,
+            // in TrueType outlines whatever those of its source.
+            const written: boolean = this.instance.emboldening !== undefined || this.instance.coordinates.some((value: number) => value !== 0);
+            const data: Buffer = new TrueTypeSubsetter().subset(written ? new GlyphInstancer().tables(this.instance, this.used) : tables, this.used);
             program = "/FontFile2 " + this.syntax.reference(this.file.addStream("/Length1 " + data.length, data, true));
+            subtype = "CIDFontType2";
+        } else if (tables["CFF "] === undefined) {
+            // §9.8, Table 120: the font program is optional, and a font whose glyphs are only bitmaps has none.
+            program = "";
             subtype = "CIDFontType2";
         } else {
             // §9.9.1, Table 124: a CFF program for a CIDFontType0 font, whether or not its Top DICT has the CIDFont operators.
@@ -225,7 +231,9 @@ export class EmbeddedPdfFont extends PdfFont {
         const lines: LineMetrics = this.lineMetrics();
         const italic: boolean = metrics.italicAngle !== 0 || (metrics.selection & (ITALIC_SELECTION | OBLIQUE_SELECTION)) !== 0;
         const flags: number = (metrics.fixedPitch ? FIXED_PITCH : 0) | SYMBOLIC | (italic ? ITALIC : 0);
-        const bounds: Array<number> = metrics.bounds.map((value: number) => value * scale);
+        // A synthesized bold face grows every glyph by half its thin stroke.
+        const grown: number = (this.instance.emboldening ?? 0) / 2;
+        const bounds: Array<number> = metrics.bounds.map((value: number, index: number) => (index < 2 ? value - grown : value + grown) * scale);
         return "<< /Type /FontDescriptor /FontName " + this.syntax.name(name) + " /FontFamily " + this.syntax.textString(this.instance.typeface.names.family)
             + " /FontWeight " + this.weight(metrics.weightClass) + " /Flags " + flags + " /FontBBox [" + this.syntax.numbers(bounds) + "] /ItalicAngle "
             + this.syntax.number(metrics.italicAngle) + " /Ascent " + this.syntax.number(lines.ascender * scale) + " /Descent " + this.syntax.number(this.descent(lines, metrics) * scale)

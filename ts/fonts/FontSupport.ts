@@ -19,7 +19,9 @@
  *******************************************************************************/
 
 const FORMATS: ReadonlySet<string> = new Set<string>(["collection", "opentype", "truetype", "woff", "woff2"]);
-const TECHNOLOGIES: ReadonlySet<string> = new Set<string>(["features-opentype", "features-aat", "variations", "avar2"]);
+const TECHNOLOGIES: ReadonlySet<string> = new Set<string>([
+    "features-opentype", "features-aat", "variations", "avar2", "color-colrv0", "color-colrv1", "color-svg", "color-sbix", "color-cbdt", "palettes"
+]);
 
 export class FontSupport {
 
@@ -30,8 +32,8 @@ export class FontSupport {
     }
 
     technology(technology: string): boolean {
-        // features-graphite, the color font technologies, palettes and incremental are not supported: none of them is needed
-        // to size or place text, and CSS Fonts 4 §4.3 has a source that requires an unsupported technology skipped.
+        // CSS Fonts 4 §4.3: a source that requires an unsupported technology is skipped; Graphite tables are not read, and
+        // incremental transfer is for fonts loaded while a page is shown.
         return TECHNOLOGIES.has(technology);
     }
 }

@@ -22,7 +22,7 @@ import type { XMLDocument, XMLElement } from "typesxml";
 import type { DefinitionOverlay } from "../css/PropertyTable.js";
 import { PropertyTable } from "../css/PropertyTable.js";
 import { SelectorCompiler } from "../css/SelectorCompiler.js";
-import type { ContainerQuery, Declaration, DeclaredValue, FontFaceRule, StyleRule, Stylesheet } from "../css/Stylesheet.js";
+import type { ContainerQuery, Declaration, DeclaredValue, FontFaceRule, FontFeatureValuesRule, StyleRule, Stylesheet } from "../css/Stylesheet.js";
 import { StylesheetReader } from "../css/StylesheetReader.js";
 import type { CssValue } from "../css/values/CssValue.js";
 import type { ElementSource, ImageAlpha, ImageDrawing, ImageFormat, ImageFormats, ImageReader, ImageRequest, ImageSamples, ImageSize } from "../images/ImageFormats.js";
@@ -133,14 +133,15 @@ export class SvgImage implements ImageFormat {
         if (rootNamespace !== undefined) {
             scope.set("", rootNamespace);
         }
-        return new SvgStyles(element, new BaseUrls(this.input.documentUri).of(element), this.table, (rules: ReadonlyArray<FontFaceRule>): DocumentFonts => this.elementFonts(rules),
+        return new SvgStyles(element, new BaseUrls(this.input.documentUri).of(element), this.table, this.input.computer,
+            (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>): DocumentFonts => this.elementFonts(rules, features),
             (resource: string) => this.images.bytes(resource), scope);
     }
 
-    private elementFonts(rules: ReadonlyArray<FontFaceRule>): DocumentFonts {
+    private elementFonts(rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>): DocumentFonts {
         // CSS Fonts 4 §4: the element is part of the document, so its fonts are the document's and those of its own style elements.
         const input: Input = this.input;
-        return rules.length === 0 ? input.fonts : input.fontsFor([...input.fontFaces, ...rules]);
+        return rules.length === 0 && features.length === 0 ? input.fonts : input.fontsFor([...input.fontFaces, ...rules], [...input.fontFeatureValues, ...features]);
     }
 
     private embedded(source: ElementSource): SvgStyles {
@@ -150,7 +151,7 @@ export class SvgImage implements ImageFormat {
         const setup: PageSetup = this.setup();
         const [containers, viewport]: readonly [() => Iterable<QueryContainer>, Size] = this.images.elementPlace(source.element) ?? [StyleComputer.NO_CONTAINERS, setup.viewport];
         this.hostSheet = this.hostSheet ?? new StylesheetReader(this.table).read(input.cssPath);
-        styles.embed(this.hostSheet.styleRules, this.hostSheet.layers, source.style, setup.root.values, input.root, (queries: ReadonlyArray<ContainerQuery>) =>
+        styles.embed(this.hostSheet, source.style, setup.root, setup.palettes, input.root, (queries: ReadonlyArray<ContainerQuery>) =>
             input.computer.containersHold(queries, containers, viewport));
         return styles;
     }
@@ -169,7 +170,7 @@ export class SvgImage implements ImageFormat {
             } catch {
                 return undefined;
             }
-            styles = new SvgStyles(parsed, href, this.table, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
+            styles = new SvgStyles(parsed, href, this.table, this.input.computer, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
         }
         if (!styles.isSvg(styles.root, SVG_ROOT)) {
             return undefined;
@@ -247,6 +248,32 @@ export class SvgImage implements ImageFormat {
                 [{ x: area.x / width, y: area.y / height, width: area.width / width, height: area.height / height }, name, internal]);
         }
         return resource;
+    }
+
+    glyph(href: string, data: Buffer, id: string, size: number, scale: number, host: ComputedStyle, pdf: PdfPage, ctm: readonly [number, number, number, number, number, number],
+        growth: number): Box | undefined {
+        // The text around the glyph gives the root its color and its palette, so the document is read for each glyph.
+        let parsed: XMLDocument;
+        try {
+            parsed = this.parser.parse((position: number, length: number) => data.subarray(position, position + length), href);
+        } catch (error) {
+            this.images.report(href, "cannot be parsed: " + (error instanceof Error ? error.message : String(error)));
+            return undefined;
+        }
+        const styles: SvgStyles = new SvgStyles(parsed, href, this.table, this.input.computer, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
+        styles.loadSheets();
+        this.images.diagnostics.push(...styles.diagnostics);
+        const element: XMLElement | undefined = styles.element(id);
+        if (!styles.isSvg(styles.root, SVG_ROOT) || element === undefined) {
+            return undefined;
+        }
+        styles.host(host);
+        this.drawing.add(href);
+        try {
+            return this.painter.glyph(styles, pdf, element, size, scale, ctm, growth);
+        } finally {
+            this.finished(href);
+        }
     }
 
     private register(styles: SvgStyles): void {
@@ -338,7 +365,7 @@ export class SvgImage implements ImageFormat {
             this.documents.set(url, null);
             return undefined;
         }
-        let styles: SvgStyles | undefined = new SvgStyles(parsed, url, this.table, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
+        let styles: SvgStyles | undefined = new SvgStyles(parsed, url, this.table, this.input.computer, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
         styles.loadSheets();
         this.images.diagnostics.push(...styles.diagnostics);
         if (!styles.isSvg(styles.root, SVG_ROOT)) {

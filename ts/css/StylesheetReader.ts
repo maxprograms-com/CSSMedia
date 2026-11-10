@@ -1098,6 +1098,26 @@ export class StylesheetReader {
         return this.fontFaces.pop();
     }
 
+    fontFeatureValuesRule(atrule: Atrule): FontFeatureValuesRule | undefined {
+        this.readFontFeatureValues(atrule);
+        return this.fontFeatureValues.pop();
+    }
+
+    propertyRule(atrule: Atrule): PropertyRule | undefined {
+        this.readProperty(atrule);
+        return this.properties.pop();
+    }
+
+    functionRule(atrule: Atrule, baseUrl: string, namespaces: Map<string, string>): FunctionRule | undefined {
+        this.readFunction(atrule, { baseUrl, namespaces, layer: UNLAYERED, pageSizeConditional: false, containers: [] });
+        return this.functions.pop()?.rule;
+    }
+
+    fontPaletteValues(atrule: Atrule, baseUrl: string, namespaces: Map<string, string>): DescriptorRule | undefined {
+        this.readDescriptorRule("font-palette-values", atrule, { baseUrl, namespaces, layer: UNLAYERED, pageSizeConditional: false, containers: [] });
+        return this.fontPalettes.pop();
+    }
+
     private readFontFace(atrule: Atrule, baseUrl: string): void {
         // CSS Fonts 4 §4.1: a @font-face rule without a valid font-family and src is ignored.
         let family: string | undefined;

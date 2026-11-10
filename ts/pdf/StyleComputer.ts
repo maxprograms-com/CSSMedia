@@ -672,6 +672,10 @@ export class StyleComputer {
     }
 
     private typedValue(syntax: string, text: string, baseUrl: string, resolution: Resolution): string | undefined {
+        return this.typedText(syntax, text, baseUrl, (): ElementUnits => this.elementUnits(resolution, "other", false));
+    }
+
+    typedText(syntax: string, text: string, baseUrl: string, units: () => ElementUnits): string | undefined {
         // CSS Values 5 §3.3.1 and CSS Properties and Values 1 §2.4: the value is parsed with the first component that matches it
         // and computed as that type; a list computes each of its items.
         if (syntax === SyntaxDefinition.UNIVERSAL) {
@@ -696,7 +700,7 @@ export class StyleComputer {
             const items: ReadonlyArray<CssValue> = component.multiplier !== "" && value.kind === "list" ? value.items : [value];
             const computed: Array<CssValue> = [];
             for (const item of items) {
-                const result: CssValue | undefined = this.computeTyped(component, item, baseUrl, resolution);
+                const result: CssValue | undefined = this.computeTyped(component, item, baseUrl, units);
                 if (result === undefined) {
                     return undefined;
                 }
@@ -709,28 +713,27 @@ export class StyleComputer {
         return undefined;
     }
 
-    private computeTyped(component: SyntaxComponent, value: CssValue, baseUrl: string, resolution: Resolution): CssValue | undefined {
+    private computeTyped(component: SyntaxComponent, value: CssValue, baseUrl: string, units: () => ElementUnits): CssValue | undefined {
         // CSS Properties and Values 1 §2.4 computes each type as its own property does; the value carries no zoom, since the
         // properties it is substituted into apply their own element's.
-        const units: ElementUnits = this.elementUnits(resolution, "other", false);
         switch (component.name) {
             case "length":
             case "length-percentage":
-                return this.lengths.compute(value, units);
+                return this.lengths.compute(value, units());
             case "number":
-                return this.computeGeneric(value, units, false);
+                return this.computeGeneric(value, units(), false);
             case "integer": {
-                const number: number | undefined = value.kind === "number" ? value.value : this.lengths.computeNumber(value, units);
+                const number: number | undefined = value.kind === "number" ? value.value : this.lengths.computeNumber(value, units());
                 return number === undefined ? undefined : { kind: "number", value: Math.round(number), integer: true };
             }
             case "color":
-                return this.computeGeneric(value, units, true);
+                return this.computeGeneric(value, units(), true);
             case "url":
                 return value.kind === "url" ? { kind: "url", href: this.absolute(value.href, baseUrl) } : value;
             case "image":
             case "transform-function":
             case "transform-list":
-                return this.computeGeneric(this.absoluteUrls(value, baseUrl), units, false);
+                return this.computeGeneric(this.absoluteUrls(value, baseUrl), units(), false);
             default:
                 return CANONICAL_TYPES.has(component.name) ? this.canonical(value) : value;
         }
@@ -1024,7 +1027,7 @@ export class StyleComputer {
         }
         let result: ReadonlyArray<Declaration> | CssWideKeyword | undefined = resolution.replaced?.get(pending);
         if (result === undefined) {
-            result = this.substitution.replace(pending, property, resolution.host);
+            result = this.substitution.replace(pending, property, resolution.host, this.isDescriptor(property, resolution.input) ? resolution.input.descriptors?.atRule : undefined);
             if (result === undefined) {
                 resolution.invalid = resolution.invalid ?? new Set<PendingSubstitution>();
                 resolution.invalid.add(pending);

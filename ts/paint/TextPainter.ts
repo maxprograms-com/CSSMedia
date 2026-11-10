@@ -21,6 +21,7 @@
 import type { CssValue } from "../css/values/CssValue.js";
 import type { OutlineBounds } from "../fonts/CompactOutlines.js";
 import { GlyphOutlines } from "../fonts/GlyphOutlines.js";
+import type { ImageFormats } from "../images/ImageFormats.js";
 import type { FontInstance } from "../fonts/Typeface.js";
 import type { PathData, StrokeStyle } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
@@ -37,6 +38,8 @@ import type { FontResource, FontRun, PdfFont } from "../writer/PdfFont.js";
 import type { PdfFonts } from "../writer/PdfFonts.js";
 import type { PdfPage } from "../writer/PdfPage.js";
 import { PdfSyntax } from "../writer/PdfSyntax.js";
+import type { PaletteRule } from "./ColorGlyphPainter.js";
+import { ColorGlyphPainter } from "./ColorGlyphPainter.js";
 import type { ColorOutput } from "./ColorOutput.js";
 
 type Values = Readonly<Record<string, CssValue>>;
@@ -95,16 +98,18 @@ export class TextPainter {
     private readonly syntax: PdfSyntax = new PdfSyntax();
     private readonly outlines: GlyphOutlines = new GlyphOutlines();
     private readonly geometry: PathGeometry = new PathGeometry();
+    private readonly colorGlyphs: ColorGlyphPainter;
     private readonly chains: WeakMap<InlineSequence, Array<ReadonlyArray<ComputedStyle> | undefined>> = new WeakMap<InlineSequence, Array<ReadonlyArray<ComputedStyle> | undefined>>();
     private readonly shiftParents: WeakMap<InlineSequence, Array<ComputedStyle | undefined>> = new WeakMap<InlineSequence, Array<ComputedStyle | undefined>>();
 
-    constructor(document: PdfDocument, colors: ColorOutput, sizes: BoxSizes, metrics: FontMetrics, viewport: Size) {
+    constructor(document: PdfDocument, colors: ColorOutput, sizes: BoxSizes, metrics: FontMetrics, viewport: Size, palettes: ReadonlyArray<PaletteRule>, images: ImageFormats) {
         this.document = document;
         this.fonts = document.fonts;
         this.colors = colors;
         this.sizes = sizes;
         this.metrics = metrics;
         this.viewport = viewport;
+        this.colorGlyphs = new ColorGlyphPainter(document, colors, metrics, palettes, images);
     }
 
     runs(line: LineFragment, texts: ReadonlyArray<TextPiece>, runs: ReadonlyArray<TextPiece>, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage): void {
@@ -164,7 +169,7 @@ export class TextPainter {
             }
             if (!through && kinds.includes("overline")) {
                 // §2.5: over lines "with respect to the highest over EM-box edge of the considered text".
-                const highest: number = Math.min(...spans.map((span: Span) => span.baseline - this.metrics.fontExtent(span.run.font, span.run.size)[0]));
+                const highest: number = Math.min(...spans.map((span: Span) => span.baseline - this.metrics.fontExtent(span.run.font, span.run.size, span.run.upright)[0]));
                 for (const span of spans.filter((candidate: Span) => candidate.shown)) {
                     this.line(owner, span.left, span.right, highest - thickness, thickness, -1, pdf);
                 }
@@ -188,7 +193,7 @@ export class TextPainter {
         const given: number | undefined = offset !== undefined && offset.kind !== "ident" ? this.sizes.pixels(offset, this.metrics.fontSize(owner.values)) : undefined;
         if (position.includes("under")) {
             // §2.5: under lines "with respect to the lowest under EM-box edge of the considered text".
-            return Math.max(...spans.map((span: Span) => span.baseline + this.metrics.fontExtent(span.run.font, span.run.size)[1])) + (given ?? 0);
+            return Math.max(...spans.map((span: Span) => span.baseline + this.metrics.fontExtent(span.run.font, span.run.size, span.run.upright)[1])) + (given ?? 0);
         }
         // §2.5: "the ideal offset (from the alphabetic baseline) of each run of considered text, averaging those, and then
         // using the lowest alphabetic baseline to actually position the line".
@@ -258,7 +263,7 @@ export class TextPainter {
             // §4.2.2: an inset or outset stroke lies inside or outside the outline, so it is drawn twice as wide and clipped
             // to the shape or to what is around it.
             const align: string = this.keywords(this.paintValue(owner, DECORATION, "stroke-align"))[0] ?? "center";
-            const stroke: StrokeStyle = this.strokeOf(owner, DECORATION, layer, align === "center" ? width : 2 * width, align !== "inset");
+            const stroke: StrokeStyle = this.strokeOf(owner, DECORATION, layer, align === "center" ? width : 2 * width, align === "inset");
             const drawable: boolean = this.drawable(stroke);
             if (drawable ? !this.colors.stroke(paint, owner, pdf, alpha) : !this.colors.fill(paint, owner, pdf, alpha)) {
                 return;
@@ -404,7 +409,7 @@ export class TextPainter {
         let reach: number = 0;
         for (const value of this.items(this.paintValue(style, "", "stroke-width"))) {
             const width: number = this.sizes.pixels(value, this.scaledViewport());
-            reach = width > 0 ? Math.max(reach, this.reach(this.strokeOf(style, "", 0, 2 * width, true))) : reach;
+            reach = width > 0 ? Math.max(reach, this.reach(this.strokeOf(style, "", 0, 2 * width, false))) : reach;
         }
         return this.ink(this.pieceGlyphs(line, piece, transform), reach);
     }
@@ -430,7 +435,8 @@ export class TextPainter {
         this.supported(style.values, transform);
         const placed: Array<PlacedGlyph> = this.singleGlyphs(glyphs, transform);
         pdf.content.save();
-        this.show(placed, pdf, this.colors.fill(style.values["color"], style, pdf) ? FILL : INVISIBLE, false);
+        const filled: boolean = this.colors.fill(style.values["color"], style, pdf);
+        this.show(placed, pdf, filled ? FILL : INVISIBLE, false);
         pdf.content.restore();
     }
 
@@ -449,12 +455,28 @@ export class TextPainter {
         // CSS Fill and Stroke 3 §3.3.1: the fill color is drawn when the final layer of fill-image is none, and §3.4.1:
         // fill-opacity is "the opacity of the painting operation used to fill".
         const values: Values = style.values;
+        const opacity: number = this.opacity(values["fill-opacity"]);
         pdf.content.save();
-        const filled: boolean = this.colors.fill(values["fill-color"], style, pdf, this.opacity(values["fill-opacity"]));
-        if (filled) {
-            this.show(glyphs, pdf, FILL, false);
+        const filled: boolean = this.colors.fill(values["fill-color"], style, pdf, opacity);
+        const colored: Set<PlacedGlyph> = new Set<PlacedGlyph>(filled ? glyphs.filter((placed: PlacedGlyph) => this.colorGlyphs.colored(placed.font, placed.glyph)) : []);
+        // A font without outlines is written with no font program, so a viewer would fill its glyphs with another font's;
+        // such a glyph that has no color image is only text.
+        const plain: Array<PlacedGlyph> = filled ? glyphs.filter((placed: PlacedGlyph) => !colored.has(placed) && this.colorGlyphs.outlined(placed.font)) : [];
+        if (plain.length > 0) {
+            this.show(plain, pdf, FILL, false);
         }
         pdf.content.restore();
+        // OpenType COLR: a color glyph is shown "prior to final presentation of glyphs" instead of its base glyph, which
+        // stays as invisible text for its characters.
+        const invisible: Array<PlacedGlyph> = filled ? glyphs.filter((placed: PlacedGlyph) => colored.has(placed) === this.colorGlyphs.outlined(placed.font)) : [];
+        if (invisible.length > 0) {
+            pdf.content.save();
+            this.show(invisible, pdf, INVISIBLE, false);
+            pdf.content.restore();
+        }
+        if (colored.size > 0) {
+            this.colorGlyphs.paint([...colored], style, opacity, pdf);
+        }
         return filled;
     }
 
@@ -462,15 +484,18 @@ export class TextPainter {
         // Text that no fill and no stroke shows as text is still written, invisible (ISO 32000-2 §9.3.6, mode 3), so that it
         // can be found and copied.
         let shown: boolean = filled;
+        const outlined: Array<PlacedGlyph> = glyphs.filter((placed: PlacedGlyph) => this.colorGlyphs.outlined(placed.font));
         this.strokeLayers(style, "", pdf, (layer: number, width: number, color: CssValue, opacity: number): void => {
-            if (this.outline(glyphs, style, layer, width, color, opacity, shown, pdf)) {
+            if (outlined.length > 0 && this.outline(outlined, style, layer, width, color, opacity, shown, pdf)) {
                 shown = true;
             }
         });
-        if (!shown) {
+        // A stroke shows only the glyphs that have outlines, so without a fill the others stay text alone.
+        const unshown: ReadonlyArray<PlacedGlyph> = !shown ? glyphs : (filled ? [] : glyphs.filter((placed: PlacedGlyph) => !this.colorGlyphs.outlined(placed.font)));
+        if (unshown.length > 0) {
             // The text rendering mode is part of the graphics state, which outlives the text object.
             pdf.content.save();
-            this.show(glyphs, pdf, INVISIBLE, false);
+            this.show(unshown, pdf, INVISIBLE, false);
             pdf.content.restore();
         }
     }
@@ -505,7 +530,7 @@ export class TextPainter {
         // §4.2.2: an inset or outset stroke lies inside or outside the outline, so it is drawn twice as wide and kept to the
         // glyphs or to what is around them. What PDF's stroke draws is drawn by it; the rest is the stroke shape, filled.
         const align: string = this.keywords(style.values["stroke-align"])[0] ?? "center";
-        const stroke: StrokeStyle = this.strokeOf(style, "", layer, align === "center" ? width : 2 * width, align !== "inset");
+        const stroke: StrokeStyle = this.strokeOf(style, "", layer, align === "center" ? width : 2 * width, align === "inset");
         if (align !== "inset" && this.drawable(stroke)) {
             const alpha: number = (this.colors.color(color, style)?.[2] ?? 0) * opacity;
             const area: Box | undefined = alpha > 0 && alpha < 1 && glyphs.length > 1 ? this.ink(glyphs, this.reach(stroke)) : undefined;
@@ -557,9 +582,10 @@ export class TextPainter {
                 throw new Error("The painting of " + feature + " with the font " + placed.font.typeface.names.postScriptName + " is not implemented");
             }
             const scale: number = placed.size / placed.font.metrics.unitsPerEm;
+            const skew: number = Math.tan((placed.font.skew ?? 0) * Math.PI / 180);
             path.verbs.push(...outline.verbs);
             for (let index: number = 0; index < outline.points.length; index += 2) {
-                path.points.push(placed.x + outline.points[index] * scale, placed.y - outline.points[index + 1] * scale);
+                path.points.push(placed.x + (outline.points[index] + skew * outline.points[index + 1]) * scale, placed.y - outline.points[index + 1] * scale);
             }
         }
         return path;
@@ -572,16 +598,18 @@ export class TextPainter {
         return stroke.justify !== undefined ? "stroke-dash-justify" : "stroke-linejoin: " + stroke.extension + " " + stroke.shape;
     }
 
-    private strokeOf(style: ComputedStyle, prefix: string, layer: number, width: number, joins: boolean): StrokeStyle {
+    private strokeOf(style: ComputedStyle, prefix: string, layer: number, width: number, inset: boolean): StrokeStyle {
         // §4.2.4: an omitted extension is crop and an omitted limit shape fallback. §4.3.3: corner dashes and justification
         // change a dash pattern, so they count only with one.
         const keywords: ReadonlyArray<string> = this.keywords(this.paintValue(style, prefix, "stroke-linejoin"));
         const limit: CssValue | undefined = this.paintValue(style, prefix, "stroke-miterlimit");
+        // §4.2.2: an inset stroke ignores stroke-linejoin; SVG Strokes, which §4.2.2 comes from, gives its area as the outline "offset
+        // orthogonal from the outline into the fill area", which goes round a corner where the fill is on its outer side.
         const stroke: StrokeStyle = {
             width, cap: this.keywords(this.paintValue(style, prefix, "stroke-linecap"))[0] ?? "butt",
-            extension: keywords.find((keyword: string) => keyword === "crop" || keyword === "arcs" || keyword === "miter") ?? "crop",
-            shape: keywords.find((keyword: string) => keyword === "bevel" || keyword === "round" || keyword === "fallback") ?? "fallback",
-            limit: limit !== undefined && limit.kind === "number" ? limit.value : MITER_LIMIT, joins
+            extension: inset ? "crop" : keywords.find((keyword: string) => keyword === "crop" || keyword === "arcs" || keyword === "miter") ?? "crop",
+            shape: inset ? "round" : keywords.find((keyword: string) => keyword === "bevel" || keyword === "round" || keyword === "fallback") ?? "fallback",
+            limit: limit !== undefined && limit.kind === "number" ? limit.value : MITER_LIMIT
         };
         const dashes: readonly [ReadonlyArray<number>, number] | undefined = this.dashes(style, prefix, layer);
         if (dashes === undefined) {
@@ -679,8 +707,9 @@ export class TextPainter {
             const bounds: OutlineBounds | undefined = this.outlines.bounds(placed.font, placed.glyph);
             if (bounds !== undefined) {
                 const scale: number = placed.size / placed.font.metrics.unitsPerEm;
-                left = Math.min(left, placed.x + bounds.xMin * scale);
-                right = Math.max(right, placed.x + bounds.xMax * scale);
+                const skew: number = Math.tan((placed.font.skew ?? 0) * Math.PI / 180);
+                left = Math.min(left, placed.x + (bounds.xMin + Math.min(skew * bounds.yMin, skew * bounds.yMax)) * scale);
+                right = Math.max(right, placed.x + (bounds.xMax + Math.max(skew * bounds.yMin, skew * bounds.yMax)) * scale);
                 top = Math.min(top, placed.y - bounds.yMax * scale);
                 bottom = Math.max(bottom, placed.y - bounds.yMin * scale);
             }
@@ -822,6 +851,8 @@ export class TextPainter {
         let pen: number = Number.NaN;
         let line: number = Number.NaN;
         let marked: boolean = false;
+        let face: FontInstance | undefined;
+        let slant: number = 0;
         const flush: () => void = (): void => {
             if (parts.length > 0) {
                 pdf.content.showAdjusted(parts);
@@ -847,12 +878,22 @@ export class TextPainter {
                 }
                 marked = !marked;
             }
+            if (placed.font !== face) {
+                // CSS Fonts 4 §2.8: a synthesized oblique face is the glyphs sheared.
+                face = placed.font;
+                const skew: number = Math.tan((face.skew ?? 0) * Math.PI / 180);
+                if (skew !== slant) {
+                    flush();
+                    slant = skew;
+                    pen = Number.NaN;
+                }
+            }
             const font: PdfFont = this.fonts.font(placed.font, false);
             font.use(placed.glyph, placed.text);
             const shown: FontRun = font.show([placed.glyph], 0, 1)[0];
             if (Math.abs(placed.y - line) > TOLERANCE || Number.isNaN(pen)) {
                 flush();
-                pdf.content.textMatrix(1, 0, 0, -1, placed.x, placed.y);
+                pdf.content.textMatrix(1, 0, slant, -1, placed.x, placed.y);
                 pen = placed.x;
                 line = placed.y;
             }

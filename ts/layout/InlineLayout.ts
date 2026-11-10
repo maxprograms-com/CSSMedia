@@ -1388,12 +1388,13 @@ export class InlineLayout {
             }
             // CSS Inline 3 §4: "For a glyph, the alignment baseline is always determined by the parent's dominant baseline."
             const block: number = record.dominant === "alphabetic" ? record.baseline
-                : record.baseline - this.metrics.baseline(record.values, record.dominant) + this.metrics.fontBaseline(run.font, run.size, record.dominant, this.metrics.vertical(record.values));
+                : record.baseline - this.metrics.baseline(record.values, record.dominant)
+                + this.metrics.fontBaseline(run.font, run.size, record.dominant, this.metrics.vertical(record.values), run.upright);
             if (record.normal) {
                 // §5.3: "When its computed line-height is normal, the layout bounds of an inline box encloses all its glyphs".
-                const extent: readonly [number, number] = record.fit === undefined ? this.metrics.fontExtent(run.font, run.size)
-                    : [this.metrics.fontBaseline(run.font, run.size, record.fit[0], this.metrics.vertical(record.values)),
-                        -this.metrics.fontBaseline(run.font, run.size, record.fit[1], this.metrics.vertical(record.values))];
+                const extent: readonly [number, number] = record.fit === undefined ? this.metrics.fontExtent(run.font, run.size, run.upright)
+                    : [this.metrics.fontBaseline(run.font, run.size, record.fit[0], this.metrics.vertical(record.values), run.upright),
+                        -this.metrics.fontBaseline(run.font, run.size, record.fit[1], this.metrics.vertical(record.values), run.upright)];
                 this.bound(record.group, block - extent[0] - record.inflate[0], block + extent[1] + record.inflate[1]);
             }
             const first: number = this.glyphAt(text, run, cursor);

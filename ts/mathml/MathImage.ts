@@ -18,7 +18,7 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
-import type { ContainerQuery, Declaration, DeclaredValue, PropertyRule, StyleRule, Stylesheet } from "../css/Stylesheet.js";
+import type { ContainerQuery, Declaration, DeclaredValue, DescriptorRule, PropertyRule, StyleRule, Stylesheet } from "../css/Stylesheet.js";
 import { StylesheetReader } from "../css/StylesheetReader.js";
 import type { CssValue } from "../css/values/CssValue.js";
 import type { ElementSource, ImageAlpha, ImageDrawing, ImageFormat, ImageFormats, ImageReader, ImageRequest, ImageSamples, ImageSize } from "../images/ImageFormats.js";
@@ -26,6 +26,8 @@ import { BlockLayout } from "../layout/BlockLayout.js";
 import type { Transform } from "../layout/BoxSizes.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
 import type { BoxFragment } from "../layout/Fragment.js";
+import type { PaletteRule } from "../paint/ColorGlyphPainter.js";
+import { ColorGlyphPainter } from "../paint/ColorGlyphPainter.js";
 import type { SourceElement } from "../parse/SourceElement.js";
 import type { XmlRootHandler } from "../parse/XmlRootHandler.js";
 import { XmlTreeBuilder } from "../parse/XmlTreeBuilder.js";
@@ -56,6 +58,7 @@ interface Formula {
     fragment: BoxFragment;
     layout: MathLayout;
     metrics: FontMetrics;
+    palettes: ReadonlyArray<PaletteRule>;
     kept: boolean;
 }
 
@@ -196,7 +199,7 @@ export class MathImage implements ImageFormat {
         const setup: PageSetup = this.setup();
         let painter: MathPainter | undefined = this.painters.get(formula.metrics);
         if (painter === undefined) {
-            painter = new MathPainter(this.document, setup.colors, formula.metrics, setup.viewport, this.images);
+            painter = new MathPainter(this.document, setup.colors, formula.metrics, setup.viewport, this.images, formula.palettes);
             if (formula.kept) {
                 this.painters.set(formula.metrics, painter);
             }
@@ -254,6 +257,7 @@ export class MathImage implements ImageFormat {
         let style: ComputedStyle;
         let root: ComputedStyle;
         let fonts: DocumentFonts = this.input.fonts;
+        let palettes: ReadonlyArray<PaletteRule> = setup.palettes;
         // Fonts of a file's own rules serve only that file, so a document with many such files does not keep them all.
         let kept: boolean = true;
         if (source === undefined) {
@@ -268,11 +272,12 @@ export class MathImage implements ImageFormat {
             }
             const sheet: Stylesheet = this.linkedSheet(tree, href);
             this.keep(sheet.diagnostics);
-            fonts = this.input.fontsFor(sheet.fontFaces);
-            kept = sheet.fontFaces.length === 0;
+            fonts = this.input.fontsFor(sheet.fontFaces, sheet.fontFeatureValues);
+            kept = sheet.fontFaces.length === 0 && sheet.fontFeatureValues.length === 0 && sheet.fontPalettes.length === 0;
             language = this.language(element, tree.getPrefixes(), href, fonts[0], sheet);
             style = language[2].compute(StyleComputer.input(language[1].element(element, () => false), setup.viewport, StyleComputer.NO_CONTAINERS, undefined, undefined, element));
             root = style;
+            palettes = sheet.fontPalettes.map((rule: DescriptorRule) => ColorGlyphPainter.fromRule(rule, language[2], root, setup.viewport));
         } else {
             language = this.documentLanguage();
             element = source.element;
@@ -293,7 +298,7 @@ export class MathImage implements ImageFormat {
         const fragment: BoxFragment = layout.formula(box, {}, available);
         this.keep(host.diagnostics);
         this.keep(computer.diagnostics);
-        this.last = { key, fragment, layout, metrics, kept };
+        this.last = { key, fragment, layout, metrics, palettes, kept };
         return this.last;
     }
 }

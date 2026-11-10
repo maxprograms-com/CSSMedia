@@ -34,16 +34,27 @@ import { ShorthandExpander } from "../css/ShorthandExpander.js";
 import type { Token } from "../css/SubstitutionSyntax.js";
 import { SubstitutionSyntax } from "../css/SubstitutionSyntax.js";
 import { SupportsEvaluator } from "../css/SupportsEvaluator.js";
-import type { ContainerCondition, ContainerQuery, Declaration, DeclaredValue, FontFaceRule, Scope, StyleRule } from "../css/Stylesheet.js";
+import type { TriState } from "../css/ConditionEvaluator.js";
+import type {
+    ContainerCondition, ContainerQuery, CssWideKeyword, Declaration, DeclaredValue, DescriptorRule, FontFaceRule, FontFeatureValuesRule, FunctionRule, PendingSubstitution,
+    PropertyRule, Scope, StyleRule, Stylesheet
+} from "../css/Stylesheet.js";
+import { SyntaxDefinition } from "../css/SyntaxDefinition.js";
 import { DEFAULT_PAGE_SIZE, StylesheetReader } from "../css/StylesheetReader.js";
 import { CalcSimplifier } from "../css/values/CalcSimplifier.js";
 import { ColorKeywords } from "../css/values/ColorKeywords.js";
 import type { ParsedColor } from "../css/values/ColorParser.js";
 import { ColorParser } from "../css/values/ColorParser.js";
-import type { CssValue } from "../css/values/CssValue.js";
+import { CssUnits } from "../css/values/CssUnits.js";
+import type { BaseType, CssValue } from "../css/values/CssValue.js";
 import { CssValueParser } from "../css/values/CssValueParser.js";
+import type { PaletteRule } from "../paint/ColorGlyphPainter.js";
+import { ColorGlyphPainter } from "../paint/ColorGlyphPainter.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
+import type { StyleComputer } from "../pdf/StyleComputer.js";
+import type { CustomValue, SubstitutionHost } from "../pdf/ValueSubstitution.js";
+import { ValueSubstitution } from "../pdf/ValueSubstitution.js";
 import type { DocumentFonts } from "../PdfGenerator.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import { ElementUnits } from "../pdf/ElementUnits.js";
@@ -67,6 +78,21 @@ interface Reading {
     containers: ReadonlyArray<ContainerQuery>;
     scope?: Scope;
     scopeStart?: SelectorList;
+}
+
+interface Resolution {
+    node: SvgNode;
+    cascaded: ReadonlyMap<string, DeclaredValue>;
+    parent: ComputedStyle;
+    values: Record<string, CssValue>;
+    inherited: Record<string, CssValue>;
+    parentCustoms: ReadonlyMap<string, CustomValue>;
+    customs: Map<string, CustomValue | null>;
+    done: Set<string>;
+    host?: SubstitutionHost;
+    replaced?: Map<PendingSubstitution, ReadonlyArray<Declaration> | CssWideKeyword | null>;
+    stack?: Array<string>;
+    cyclic?: Set<string>;
 }
 
 interface Branches {
@@ -117,7 +143,8 @@ const PRIORITIES: ReadonlyMap<string, number> = new Map<string, number>([
 ]);
 const LATER: number = 6;
 const UNSET: DeclaredValue = { kind: "keyword", keyword: "unset" };
-const NO_CUSTOMS: ReadonlyMap<string, string> = new Map<string, string>();
+const NO_CUSTOMS: ReadonlyMap<string, CustomValue> = new Map<string, CustomValue>();
+const NO_DECLARATIONS: ReadonlyMap<string, DeclaredValue> = new Map<string, DeclaredValue>();
 const NON_NEGATIVE: ReadonlySet<string> = new Set<string>(["stroke-width", "stroke-miterlimit", "rx", "ry", "r", "width", "height", "path-length"]);
 const BOX_HINTS: ReadonlySet<string> = new Set<string>(["display", "width", "height", "overflow"]);
 const UNSCOPED: number = Number.NEGATIVE_INFINITY;
@@ -127,7 +154,10 @@ const SHEET_AT_RULES: ReadonlySet<string> = new Set<string>([
     "font-palette-values", "color-profile", "counter-style", "property", "position-try", "function", "custom-media", "keyframes", "starting-style", "view-transition"
 ]);
 const CONDITIONAL_RULES: ReadonlySet<string> = new Set<string>(["media", "supports", "when", "else", "container"]);
-const UNREAD_RULES: ReadonlySet<string> = new Set<string>(["property", "function", "font-feature-values", "font-palette-values", "color-profile"]);
+const UNREAD_RULES: ReadonlySet<string> = new Set<string>(["color-profile"]);
+const FONT_DEPENDENCIES: ReadonlyArray<string> = ["writing-mode", "font-size", "font-family", "font-style", "font-weight", "font-width", "font-size-adjust", "line-height"];
+const PALETTE_RULE: string = "font-palette-values";
+const NO_PALETTES: ReadonlyArray<PaletteRule> = [];
 const CONTAINER_KEYWORDS: ReadonlySet<string> = new Set<string>(["none", "and", "not", "or", "initial", "inherit", "unset", "revert", "revert-layer", "default"]);
 const STYLE_QUERY: RegExp = /(?:^|[^\w-])style\s*\(/i;
 const CSS_WIDE_KEYWORDS: ReadonlySet<string> = new Set<string>(["initial", "inherit", "unset", "revert", "revert-layer"]);
@@ -144,10 +174,15 @@ export class SvgStyles {
     private readonly values: CssValueParser = new CssValueParser();
     private readonly lengths: LengthResolver = new LengthResolver();
     private readonly load: (url: string) => Buffer | undefined;
-    private readonly fontsFor: (rules: ReadonlyArray<FontFaceRule>) => DocumentFonts;
+    private readonly fontsFor: (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>) => DocumentFonts;
     private readonly fontFaces: Array<FontFaceRule> = [];
+    private readonly featureValues: Array<FontFeatureValuesRule> = [];
+    private readonly paletteValues: Array<DescriptorRule> = [];
     private fontReader?: StylesheetReader;
     private ownFonts?: DocumentFonts;
+    private ownPalettes?: ReadonlyArray<PaletteRule>;
+    private hostPalettes: ReadonlyArray<PaletteRule> = NO_PALETTES;
+    private documentRoot?: ComputedStyle;
     private readonly scopes: Map<XMLElement, ReadonlyMap<string, string>> = new Map<XMLElement, ReadonlyMap<string, string>>();
     private readonly parents: Map<XMLElement, XMLElement> = new Map<XMLElement, XMLElement>();
     private readonly ids: Map<string, XMLElement> = new Map<string, XMLElement>();
@@ -163,7 +198,17 @@ export class SvgStyles {
     private ranges?: LanguageRangeMatcher;
     private geometry?: SvgGeometry;
     private places?: Map<XMLElement, readonly [SvgNode, ComputedStyle]>;
-    private customs?: WeakMap<ComputedStyle, ReadonlyMap<string, string>>;
+    private customs?: WeakMap<ComputedStyle, ReadonlyMap<string, CustomValue>>;
+    private substituter?: ValueSubstitution;
+    private expander?: ShorthandExpander;
+    private cssUnits?: CssUnits;
+    private hostSheet?: Stylesheet;
+    private readonly customMedia: Array<readonly [string, string | boolean]> = [];
+    private readonly computer: StyleComputer;
+    private readonly propertyRules: Array<PropertyRule> = [];
+    private readonly functionRules: Array<readonly [FunctionRule, string]> = [];
+    private registered?: ReadonlyMap<string, PropertyRule>;
+    private initials?: Map<string, CustomValue | null>;
     private loading?: Set<string>;
     private initialStyle?: ComputedStyle;
     private viewport: readonly [number, number] = [300, 150];
@@ -189,12 +234,14 @@ export class SvgStyles {
     private rootPlace?: SvgNode;
     private scopeNode?: SvgNode;
 
-    constructor(source: XMLDocument | XMLElement, url: string, table: PropertyTable, fontsFor: (rules: ReadonlyArray<FontFaceRule>) => DocumentFonts, load: (url: string) => Buffer | undefined,
+    constructor(source: XMLDocument | XMLElement, url: string, table: PropertyTable, computer: StyleComputer,
+        fontsFor: (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>) => DocumentFonts, load: (url: string) => Buffer | undefined,
         outer: ReadonlyMap<string, string> = new Map<string, string>([["xml", XML_NAMESPACE]])) {
         this.source = source;
         this.root = source instanceof XMLElement ? source : source.getRoot() as XMLElement;
         this.url = url;
         this.table = table;
+        this.computer = computer;
         this.reader = new DeclarationReader(table);
         this.fontsFor = fontsFor;
         this.load = load;
@@ -203,25 +250,76 @@ export class SvgStyles {
     }
 
     fonts(): DocumentFonts {
-        // The fonts of the image depend on the @font-face rules of its style sheets, so those are read first.
+        // The fonts of the image depend on the @font-face and @font-feature-values rules of its style sheets, so those are read first.
         if (this.ownFonts === undefined) {
             this.loadSheets();
-            this.ownFonts = this.fontsFor(this.fontFaces);
+            this.ownFonts = this.fontsFor(this.fontFaces, this.featureValues);
         }
         return this.ownFonts;
+    }
+
+    palettes(): ReadonlyArray<PaletteRule> {
+        // CSS Fonts 4 §9.2: var(), env() and relative units in the descriptors "are evaluated within the context of the root element",
+        // which for an svg element of the document is the root of the document, whose own rules come first.
+        if (this.ownPalettes === undefined) {
+            this.loadSheets();
+            const root: ComputedStyle = this.documentRoot ?? this.style(this.rootNode());
+            const customs: ReadonlyMap<string, CustomValue> = this.documentRoot === undefined ? this.customs?.get(root) ?? NO_CUSTOMS
+                : new Map<string, CustomValue>(Object.entries(root.custom));
+            const resolution: Resolution = {
+                node: { element: this.hostRoot ?? this.root }, cascaded: NO_DECLARATIONS, parent: root, values: root.values as Record<string, CssValue>,
+                inherited: root.inherited as Record<string, CssValue>, parentCustoms: customs, customs: new Map<string, CustomValue | null>(), done: new Set<string>()
+            };
+            const own: Array<PaletteRule> = this.paletteValues.map((rule: DescriptorRule): PaletteRule => {
+                const values: Record<string, CssValue> = {};
+                for (const [name, declared] of Object.entries(rule.descriptors)) {
+                    const value: CssValue | undefined = this.descriptor(name, declared, resolution);
+                    if (value !== undefined) {
+                        values[name] = value;
+                    }
+                }
+                return ColorGlyphPainter.fromValues(rule.name, values);
+            });
+            this.ownPalettes = own.length === 0 ? this.hostPalettes : [...this.hostPalettes, ...own];
+        }
+        return this.ownPalettes;
+    }
+
+    private descriptor(name: string, declared: DeclaredValue, resolution: Resolution): CssValue | undefined {
+        let read: DeclaredValue | undefined = declared;
+        if (declared.kind === "pending") {
+            const result: ReadonlyArray<Declaration> | CssWideKeyword | undefined = this.substitution().replace(declared, name, this.hostOf(resolution), PALETTE_RULE);
+            read = result === undefined || typeof result === "string" ? undefined : result.find((declaration: Declaration) => declaration.property === name)?.value;
+        }
+        if (read === undefined || read.kind !== "value") {
+            return undefined;
+        }
+        if (name !== "override-colors") {
+            return this.absolute(read.value, this.units(resolution.values, resolution.values, resolution.values));
+        }
+        // CSS Fonts 4 §9.2.3: "Each specified <color> must be an absolute color, otherwise the descriptor is invalid."
+        this.colors = this.colors ?? new ColorParser(undefined);
+        return this.colors.isAbsolute(read.value) ? this.colored(read.value) : undefined;
     }
 
     private get metrics(): FontMetrics {
         return this.fonts()[0];
     }
 
-    embed(rules: ReadonlyArray<StyleRule>, layers: ReadonlyArray<readonly [string, ReadonlyArray<string>]>, box: ComputedStyle, rootValues: Readonly<Record<string, CssValue>>,
-        hostRoot: SourceElement, holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): void {
-        this.hostRules = rules;
-        this.hostLayers = layers;
-        this.rootValues = rootValues;
+    embed(sheet: Stylesheet, box: ComputedStyle, root: ComputedStyle, palettes: ReadonlyArray<PaletteRule>, hostRoot: SourceElement,
+        holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): void {
+        this.hostSheet = sheet;
+        this.hostRules = sheet.styleRules;
+        this.hostLayers = sheet.layers;
+        this.rootValues = root.values;
+        this.documentRoot = root;
+        this.hostPalettes = palettes;
         this.hostRoot = hostRoot;
         this.hostHolds = holds;
+        this.host(box);
+    }
+
+    host(box: ComputedStyle): void {
         const values: Record<string, CssValue> = Object.create(this.initial().values) as Record<string, CssValue>;
         for (const property of this.table.names()) {
             const inherited: CssValue | undefined = box.inherited[property];
@@ -230,9 +328,9 @@ export class SvgStyles {
             }
         }
         this.hostStyle = { values, inherited: values, custom: {} };
-        const customs: Map<string, string> = new Map<string, string>(Object.entries(box.custom).map(([name, value]): [string, string] => [name, value.text]));
+        const customs: Map<string, CustomValue> = new Map<string, CustomValue>(Object.entries(box.custom));
         if (customs.size > 0) {
-            this.customs = this.customs ?? new WeakMap<ComputedStyle, ReadonlyMap<string, string>>();
+            this.customs = this.customs ?? new WeakMap<ComputedStyle, ReadonlyMap<string, CustomValue>>();
             this.customs.set(this.hostStyle, customs);
         }
     }
@@ -567,12 +665,14 @@ export class SvgStyles {
             this.conditions = this.conditions ?? new ConditionEvaluator(DEFAULT_PAGE_SIZE);
             if (value === "true" || value === "false") {
                 this.conditions.define(match[1], value === "true");
+                this.customMedia.push([match[1], value === "true"]);
                 continue;
             }
             try {
                 const list: CssNode = parse(match[2], { context: "mediaQueryList" });
                 if (list.type === "MediaQueryList") {
                     this.conditions.define(match[1], list);
+                    this.customMedia.push([match[1], match[2]]);
                 }
             } catch {
                 // do nothing: an invalid media query list defines nothing
@@ -789,6 +889,30 @@ export class SvgStyles {
             const face: FontFaceRule | undefined = this.fontReader.fontFace(atrule, context.baseUrl);
             if (face !== undefined) {
                 this.fontFaces.push(face);
+            }
+        } else if (name === "font-feature-values") {
+            this.fontReader = this.fontReader ?? new StylesheetReader(this.table);
+            const features: FontFeatureValuesRule | undefined = this.fontReader.fontFeatureValuesRule(atrule);
+            if (features !== undefined) {
+                this.featureValues.push(features);
+            }
+        } else if (name === "property") {
+            this.fontReader = this.fontReader ?? new StylesheetReader(this.table);
+            const property: PropertyRule | undefined = this.fontReader.propertyRule(atrule);
+            if (property !== undefined) {
+                this.propertyRules.push(property);
+            }
+        } else if (name === "function") {
+            this.fontReader = this.fontReader ?? new StylesheetReader(this.table);
+            const rule: FunctionRule | undefined = this.fontReader.functionRule(atrule, context.baseUrl, context.namespaces);
+            if (rule !== undefined) {
+                this.functionRules.push([rule, context.layer]);
+            }
+        } else if (name === PALETTE_RULE) {
+            this.fontReader = this.fontReader ?? new StylesheetReader(this.table);
+            const palette: DescriptorRule | undefined = this.fontReader.fontPaletteValues(atrule, context.baseUrl, context.namespaces);
+            if (palette !== undefined) {
+                this.paletteValues.push(palette);
             }
         } else if (UNREAD_RULES.has(name)) {
             throw new Error("The @" + name + " rule in the style sheet of the SVG image " + this.url + " is not implemented");
@@ -1784,40 +1908,289 @@ export class SvgStyles {
         // An element computes the properties it declares; any other value comes from its parent when the property is
         // inherited, and is the initial value when it is not, through the prototype chain.
         const base: ComputedStyle = parent ?? this.initial();
-        const parentCustom: ReadonlyMap<string, string> | undefined = parent === undefined ? undefined : this.customs?.get(parent);
-        let customs: Map<string, string> | undefined;
-        for (const [property, value] of cascaded) {
-            if (property.startsWith("--") && value.kind === "custom") {
-                customs = customs ?? new Map<string, string>(parentCustom);
-                customs.set(property, value.text);
-            }
-        }
+        const parentCustoms: ReadonlyMap<string, CustomValue> = (parent === undefined ? undefined : this.customs?.get(parent)) ?? NO_CUSTOMS;
         const inherited: Record<string, CssValue> = Object.create(parent === undefined ? this.initial().values : base.inherited) as Record<string, CssValue>;
         const values: Record<string, CssValue> = Object.create(inherited) as Record<string, CssValue>;
         this.metrics.unsettled(values);
+        const resolution: Resolution = { node, cascaded, parent: base, values, inherited, parentCustoms, customs: new Map<string, CustomValue | null>(), done: new Set<string>() };
+        let customs: Map<string, CustomValue> | undefined;
+        for (const property of cascaded.keys()) {
+            if (property.startsWith("--")) {
+                customs = customs ?? new Map<string, CustomValue>(parentCustoms);
+                const value: CustomValue | null = this.customValue(property, resolution);
+                if (value === null) {
+                    customs.delete(property);
+                } else {
+                    customs.set(property, value);
+                }
+            }
+        }
         const properties: Array<string> = [...cascaded.keys()].filter((property: string) => !property.startsWith("--"))
             .sort((first: string, second: string) => this.priority(first) - this.priority(second));
         for (const property of properties) {
-            const declared: DeclaredValue = this.substituted(property, cascaded.get(property) as DeclaredValue, customs ?? parentCustom ?? NO_CUSTOMS);
-            const inheriting: boolean = this.table.definition(property)?.inherited === true;
-            const computed: CssValue | undefined = this.computeValue(property, declared, inheriting, base, values, node);
-            if (computed !== undefined) {
-                values[property] = computed;
-                if (inheriting) {
-                    inherited[property] = computed;
-                }
-            }
+            this.standard(property, resolution);
         }
         if (parent === undefined && node.element === this.root) {
             this.rootValues = values;
         }
         const style: ComputedStyle = { values, inherited, custom: {} };
-        const kept: ReadonlyMap<string, string> | undefined = customs ?? parentCustom;
+        const kept: ReadonlyMap<string, CustomValue> | undefined = customs ?? (parent === undefined ? undefined : this.customs?.get(parent));
         if (kept !== undefined) {
-            this.customs = this.customs ?? new WeakMap<ComputedStyle, ReadonlyMap<string, string>>();
+            this.customs = this.customs ?? new WeakMap<ComputedStyle, ReadonlyMap<string, CustomValue>>();
             this.customs.set(style, kept);
         }
         return style;
+    }
+
+    private standard(property: string, resolution: Resolution): CssValue | undefined {
+        // A property is computed once, in priority order or earlier when a style() query of if() reads it; one that depends on
+        // itself is in a cycle, invalid at computed-value time (CSS Values 5 Appendix A), so it is unset.
+        const declared: DeclaredValue | undefined = resolution.cascaded.get(property);
+        const key: string = "property|" + property;
+        if (declared === undefined || (resolution.done.has(property) && resolution.stack?.includes(key) !== true) || !this.enter(key, resolution)) {
+            return resolution.values[property];
+        }
+        resolution.done.add(property);
+        const inheriting: boolean = this.table.definition(property)?.inherited === true;
+        let computed: CssValue | undefined = this.computeValue(property, this.substituted(property, declared, resolution), inheriting, resolution.parent, resolution.values,
+            resolution.node);
+        if (this.leave(key, resolution)) {
+            computed = this.computeValue(property, UNSET, inheriting, resolution.parent, resolution.values, resolution.node);
+        }
+        if (computed !== undefined) {
+            resolution.values[property] = computed;
+            if (inheriting) {
+                resolution.inherited[property] = computed;
+            }
+        }
+        return resolution.values[property];
+    }
+
+    private customValue(name: string, resolution: Resolution): CustomValue | null {
+        // CSS Variables 1 §2 and §3: an unregistered custom property inherits, and its value has its own substitution
+        // functions replaced on its element; one that is in a cycle is the guaranteed-invalid value.
+        const known: CustomValue | null | undefined = resolution.customs.get(name);
+        if (known !== undefined) {
+            return known;
+        }
+        const declared: DeclaredValue | undefined = resolution.cascaded.get(name);
+        if (declared === undefined) {
+            return this.defaultCustom(name, resolution, this.registrations().get(name));
+        }
+        const key: string = "property|" + name;
+        if (!this.enter(key, resolution)) {
+            return null;
+        }
+        let value: CustomValue | null = this.declaredCustom(name, declared, resolution);
+        if (this.leave(key, resolution)) {
+            value = null;
+        }
+        resolution.customs.set(name, value);
+        return value;
+    }
+
+    private declaredCustom(name: string, declared: DeclaredValue, resolution: Resolution): CustomValue | null {
+        // CSS Values 5 Appendix A: a value that is only a CSS-wide keyword after substitution acts as that keyword; an invalid one
+        // is the guaranteed-invalid value, and on a property registered with a syntax acts as unset (CSS Properties and Values 1 §2.4).
+        const rule: PropertyRule | undefined = this.registrations().get(name);
+        const syntax: string | undefined = rule === undefined || rule.syntax === SyntaxDefinition.UNIVERSAL ? undefined : rule.syntax;
+        let keyword: string | undefined = declared.kind === "keyword" ? declared.keyword : undefined;
+        if (declared.kind === "custom") {
+            const value: CustomValue | null = this.substitution().customValue(declared, name, syntax !== undefined, this.hostOf(resolution));
+            if (value === null) {
+                return syntax === undefined ? null : this.defaultCustom(name, resolution, rule);
+            }
+            keyword = value.text.toLowerCase();
+            if (!CSS_WIDE_KEYWORDS.has(keyword)) {
+                if (syntax === undefined) {
+                    return value;
+                }
+                const computed: string | undefined = this.typedText(syntax, value.text, declared.baseUrl, resolution);
+                if (computed === undefined) {
+                    return this.defaultCustom(name, resolution, rule);
+                }
+                return value.base === undefined ? { text: computed } : { text: computed, base: value.base };
+            }
+        }
+        if (keyword === "inherit" || (keyword === "unset" && (rule === undefined || rule.inherits))) {
+            return resolution.parentCustoms.get(name) ?? this.registeredInitial(rule);
+        }
+        return this.registeredInitial(rule);
+    }
+
+    private defaultCustom(name: string, resolution: Resolution, rule?: PropertyRule): CustomValue | null {
+        return rule === undefined || rule.inherits ? resolution.parentCustoms.get(name) ?? this.registeredInitial(rule) : this.registeredInitial(rule);
+    }
+
+    private registeredInitial(rule?: PropertyRule): CustomValue | null {
+        if (rule === undefined || rule.initialValue === undefined) {
+            return null;
+        }
+        this.initials = this.initials ?? new Map<string, CustomValue | null>();
+        if (!this.initials.has(rule.name)) {
+            const initial: Readonly<Record<string, CssValue>> = this.initial().values;
+            const text: string | undefined = rule.syntax === SyntaxDefinition.UNIVERSAL ? rule.initialValue
+                : this.computer.typedText(rule.syntax, rule.initialValue, "about:blank", (): ElementUnits => this.units(initial, initial, initial));
+            this.initials.set(rule.name, text === undefined ? null : { text });
+        }
+        return this.initials.get(rule.name) ?? null;
+    }
+
+    private typedText(syntax: string, text: string, baseUrl: string, resolution: Resolution): string | undefined {
+        // CSS Properties and Values 1 §2.4: a typed value computes as on its element, whose font-relative units need its font.
+        return this.computer.typedText(syntax, text, baseUrl, (): ElementUnits => {
+            for (const property of FONT_DEPENDENCIES) {
+                this.standard(property, resolution);
+            }
+            return this.units(resolution.values, resolution.values, this.rootValues ?? resolution.values);
+        });
+    }
+
+    private registrations(): ReadonlyMap<string, PropertyRule> {
+        // CSS Properties and Values 1 §3: the last valid @property rule for a name registers it, the document's coming first.
+        if (this.registered === undefined) {
+            this.loadSheets();
+            this.registered = new Map<string, PropertyRule>([...this.hostSheet?.properties ?? [], ...this.propertyRules].map((rule: PropertyRule): [string, PropertyRule] =>
+                [rule.name, rule]));
+        }
+        return this.registered;
+    }
+
+    private hostOf(resolution: Resolution): SubstitutionHost {
+        if (resolution.host === undefined) {
+            resolution.host = {
+                element: resolution.node.element,
+                custom: (name: string): CustomValue | null => this.customValue(name, resolution),
+                inherited: (name: string): CustomValue | null => resolution.parentCustoms.get(name) ?? null,
+                initialCustom: (name: string): CustomValue | null => this.registeredInitial(this.registrations().get(name)),
+                registration: (name: string): string | undefined => {
+                    const rule: PropertyRule | undefined = this.registrations().get(name);
+                    return rule === undefined || rule.syntax === SyntaxDefinition.UNIVERSAL ? undefined : rule.syntax;
+                },
+                inherits: (name: string): boolean => this.registrations().get(name)?.inherits ?? true,
+                typed: (syntax: string, text: string, baseUrl: string): string | undefined => this.typedText(syntax, text, baseUrl, resolution),
+                matches: (property: string, value?: string): TriState => this.styleMatches(property, value, resolution),
+                numeric: (text: string): [number, string] | undefined => this.numeric(text, resolution),
+                containersHold: (queries: ReadonlyArray<ContainerQuery>): boolean => this.hostHolds?.(queries) === true,
+                enter: (key: string): boolean => this.enter(key, resolution),
+                leave: (key: string): boolean => this.leave(key, resolution)
+            };
+        }
+        return resolution.host;
+    }
+
+    private enter(key: string, resolution: Resolution): boolean {
+        // CSS Variables 1 §2.3: what depends on itself is in a cycle, and so is every member.
+        const stack: Array<string> | undefined = resolution.stack;
+        if (stack === undefined) {
+            resolution.stack = [key];
+            return true;
+        }
+        const index: number = stack.indexOf(key);
+        if (index !== -1) {
+            const cyclic: Set<string> = resolution.cyclic ?? new Set<string>();
+            resolution.cyclic = cyclic;
+            for (let member: number = index; member < stack.length; member++) {
+                cyclic.add(stack[member]);
+            }
+            return false;
+        }
+        stack.push(key);
+        return true;
+    }
+
+    private leave(key: string, resolution: Resolution): boolean {
+        resolution.stack?.pop();
+        return resolution.cyclic?.delete(key) === true;
+    }
+
+    private styleMatches(property: string, value: string | undefined, resolution: Resolution): TriState {
+        // CSS Conditional 5 §6.2: a property matches when its computed value equals the given value computed for the same
+        // element, a shorthand when each of its longhands does; without a value, when it differs from the initial value.
+        const name: string = this.table.canonicalName(property);
+        this.expander = this.expander ?? new ShorthandExpander(this.table);
+        const shorthand: boolean = this.expander.isShorthand(name);
+        if (!shorthand && this.table.definition(name) === undefined) {
+            return "unknown";
+        }
+        if (value === undefined) {
+            const initial: Readonly<Record<string, CssValue>> = this.initial().values;
+            return (shorthand ? this.expander.longhands(name) : [name]).some((longhand: string) =>
+                JSON.stringify(this.standard(longhand, resolution)) !== JSON.stringify(initial[longhand])) ? "true" : "false";
+        }
+        const declarations: Array<Declaration> = this.declarations(name + ":" + value);
+        if (declarations.length === 0) {
+            return "false";
+        }
+        for (const declaration of declarations) {
+            const expected: CssValue | undefined = this.computeValue(declaration.property, declaration.value, this.table.definition(declaration.property)?.inherited === true,
+                resolution.parent, resolution.values, resolution.node);
+            if (JSON.stringify(expected) !== JSON.stringify(this.standard(declaration.property, resolution))) {
+                return "false";
+            }
+        }
+        return "true";
+    }
+
+    private numeric(text: string, resolution: Resolution): [number, string] | undefined {
+        // CSS Conditional 5 §6.2: a <number>, <percentage>, <length>, <angle>, <time>, <frequency> or <resolution>, computed.
+        let value: CssValue | undefined;
+        try {
+            const node: CssNode = parse(text, { context: "value" });
+            value = node.type === "Value" ? this.values.parse(node) : undefined;
+        } catch {
+            return undefined;
+        }
+        const units: ElementUnits = this.units(resolution.values, resolution.values, this.rootValues ?? resolution.values);
+        this.cssUnits = this.cssUnits ?? new CssUnits();
+        switch (value?.kind) {
+            case "number":
+                return [value.value, "number"];
+            case "percentage":
+                return [value.value, "percentage"];
+            case "length":
+                return [value.px, "length"];
+            case "dimension": {
+                const length: CssValue | undefined = this.lengths.compute(value, units);
+                if (length !== undefined && length.kind === "length") {
+                    return [length.px, "length"];
+                }
+                const type: BaseType | undefined = this.cssUnits.baseTypeOf(value.unit);
+                const converted: number | undefined = this.cssUnits.toCanonical(value.value, value.unit);
+                return type === undefined || converted === undefined ? undefined : [converted, type];
+            }
+            case "calc": {
+                const length: CssValue | undefined = this.lengths.compute(value, units);
+                if (length !== undefined && length.kind === "length") {
+                    return [length.px, "length"];
+                }
+                const number: number | undefined = this.lengths.computeNumber(value, units);
+                return number === undefined ? undefined : [number, "number"];
+            }
+            default:
+                return undefined;
+        }
+    }
+
+    private substitution(): ValueSubstitution {
+        // The functions read the image's @custom-media and @supports-condition rules, and in an svg element of the document the
+        // document's rules and custom functions too.
+        if (this.substituter === undefined) {
+            this.loadSheets();
+            const sheet: Stylesheet = this.hostSheet ?? new StylesheetReader(this.table).readLinked([], this.url);
+            // CSS Functions and Mixins §2.1.1: the rule in the stronger layer wins, in the one layer order of the document and
+            // the image, and the later one within a layer, the image's coming after the document's.
+            const after: number = sheet.functions.reduce((last: number, rule: FunctionRule) => Math.max(last, rule.order + 1), 0);
+            const functions: Array<FunctionRule> = [
+                ...sheet.functions.map((rule: FunctionRule): FunctionRule => ({ ...rule, layer: this.rank(this.hostLayers[rule.layer][0]) })),
+                ...this.functionRules.map(([rule, layer]: readonly [FunctionRule, string]): FunctionRule => ({ ...rule, layer: this.rank(layer), order: after + rule.order }))
+            ];
+            this.substituter = new ValueSubstitution(this.table, {
+                ...sheet, customMedia: [...sheet.customMedia, ...this.customMedia], supportsConditions: [...sheet.supportsConditions, ...this.supportsEvaluator().definitions()],
+                functions
+            }, this.scopes.get(this.root) ?? this.outer, this.url);
+        }
+        return this.substituter;
     }
 
     private priority(property: string): number {
@@ -1826,44 +2199,49 @@ export class SvgStyles {
         return PRIORITIES.get(property) ?? LATER;
     }
 
-    private substituted(property: string, value: DeclaredValue, customs: ReadonlyMap<string, string>): DeclaredValue {
-        // CSS Variables 1 §3: var() takes the custom property or its fallback; a value that becomes invalid is unset.
+    private substituted(property: string, value: DeclaredValue, resolution: Resolution): DeclaredValue {
+        // CSS Values 5 Appendix A: the arbitrary substitution functions are replaced, and a value that becomes invalid is unset;
+        // the longhands of a shorthand share one substitution, so that a random value is the same in all.
         if (value.kind !== "pending") {
             return value;
         }
-        const text: string | undefined = this.replaceVariables(value.text, customs, new Set<string>());
-        const read: Array<Declaration> = text === undefined ? [] : this.declarations((value.shorthand ?? property) + ":" + text);
-        return read.find((declaration: Declaration) => declaration.property === property)?.value ?? UNSET;
-    }
-
-    private replaceVariables(text: string, customs: ReadonlyMap<string, string>, seen: ReadonlySet<string>): string | undefined {
-        const start: number = text.search(/var\(/i);
-        if (start < 0) {
-            return /\b(?:env|attr|if|inherit|random-item)\(/i.test(text) ? undefined : text;
+        const replaced: Map<PendingSubstitution, ReadonlyArray<Declaration> | CssWideKeyword | null> = resolution.replaced
+            ?? new Map<PendingSubstitution, ReadonlyArray<Declaration> | CssWideKeyword | null>();
+        resolution.replaced = replaced;
+        const known: ReadonlyArray<Declaration> | CssWideKeyword | null | undefined = replaced.get(value);
+        const result: ReadonlyArray<Declaration> | CssWideKeyword | null = known !== undefined ? known
+            : this.substitution().replace(value, property, this.hostOf(resolution)) ?? null;
+        replaced.set(value, result);
+        if (result === null) {
+            return UNSET;
         }
-        let depth: number = 0;
-        let end: number = start + 3;
-        for (; end < text.length; end++) {
-            if (text[end] === "(") {
-                depth++;
-            } else if (text[end] === ")" && --depth === 0) {
-                break;
-            }
+        if (typeof result === "string") {
+            return { kind: "keyword", keyword: result };
         }
-        const inner: string = text.substring(start + 4, end);
-        const comma: number = inner.indexOf(",");
-        const name: string = (comma < 0 ? inner : inner.substring(0, comma)).trim();
-        const known: string | undefined = seen.has(name) ? undefined : customs.get(name);
-        let replacement: string | undefined = known === undefined ? undefined : this.replaceVariables(known, customs, new Set<string>([...seen, name]));
-        if (replacement === undefined && comma >= 0) {
-            replacement = this.replaceVariables(inner.substring(comma + 1), customs, seen);
-        }
-        return replacement === undefined ? undefined : this.replaceVariables(text.substring(0, start) + replacement + text.substring(end + 1), customs, seen);
+        const found: Declaration | undefined = result.find((declaration: Declaration) => declaration.property === property);
+        return found === undefined || !this.inRange(found) ? UNSET : found.value;
     }
 
     private computeValue(property: string, declared: DeclaredValue, inheriting: boolean, parent: ComputedStyle, values: Record<string, CssValue>, node: SvgNode): CssValue | undefined {
         if (declared.kind === "keyword") {
             return declared.keyword === "inherit" || (declared.keyword === "unset" && inheriting) ? parent.values[property] : this.initial().values[property];
+        }
+        if (declared.kind === "toggle") {
+            // CSS Values 5 §7.4: the value after the first one equal to the inherited value, or the first one.
+            const inheritedValue: string = JSON.stringify(parent.values[property] ?? this.initial().values[property]);
+            let first: CssValue | undefined;
+            let matched: boolean = false;
+            for (const [index, alternative] of declared.values.entries()) {
+                const value: CssValue | undefined = this.computeValue(property, alternative, inheriting, parent, values, node);
+                if (matched) {
+                    return value;
+                }
+                if (index === 0) {
+                    first = value;
+                }
+                matched = JSON.stringify(value) === inheritedValue;
+            }
+            return first;
         }
         if (declared.kind !== "value") {
             return undefined;

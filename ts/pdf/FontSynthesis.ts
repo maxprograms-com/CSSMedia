@@ -21,7 +21,7 @@
 import type { CssValue } from "../css/values/CssValue.js";
 import { FontLayout } from "../fonts/layout/FontLayout.js";
 import type { FeatureRecord } from "../fonts/layout/LayoutTable.js";
-import type { FaceMetrics, FontInstance, Typeface } from "../fonts/Typeface.js";
+import type { FaceMetrics, FontInstance, MetricOverride, ScriptMetrics, Typeface } from "../fonts/Typeface.js";
 import { TextTransformer } from "./TextTransformer.js";
 
 type Values = Readonly<Record<string, CssValue>>;
@@ -30,12 +30,11 @@ type CapitalSynthesis = "none" | "lower" | "all" | "upper";
 
 const UPPERCASE: CssValue = { kind: "ident", name: "uppercase", lower: "uppercase" };
 const LOWERCASE: CssValue = { kind: "ident", name: "lowercase", lower: "lowercase" };
+const POSITION_RATIO: number = 1.2;
+const SUPERSCRIPT_RISE: number = 1 / 3;
+const SUBSCRIPT_DROP: number = 1 / 5;
 
 export class FontSynthesis {
-
-    static readonly POSITION_RATIO: number = 1.2;
-    static readonly SUPERSCRIPT_RISE: number = 1 / 3;
-    static readonly SUBSCRIPT_DROP: number = 1 / 5;
 
     private readonly transformer: TextTransformer = new TextTransformer();
     private readonly features: WeakMap<Typeface, Map<string, boolean>> = new WeakMap<Typeface, Map<string, boolean>>();
@@ -121,6 +120,31 @@ export class FontSynthesis {
             return undefined;
         }
         return tag;
+    }
+
+    scriptForm(font: FontInstance, tag: string, upright: boolean, size: number): readonly [number, number] {
+        // CSS Fonts 5 §4.6: an override is a share of the used size, from-font takes the OS/2 metric, which upright text lacks;
+        // normal takes the size of font-size: smaller and the shifts CSS Inline 3 §4.2.3 gives for sub and super.
+        const superscript: boolean = tag === "sups";
+        const axis: number = upright ? 1 : 0;
+        const metrics: ScriptMetrics | undefined = upright ? undefined : (superscript ? font.metrics.superscript : font.metrics.subscript);
+        const position: MetricOverride | undefined = font.overrides?.[superscript ? "superscriptPosition" : "subscriptPosition"][axis];
+        const scaled: MetricOverride | undefined = font.overrides?.[superscript ? "superscriptSize" : "subscriptSize"][axis];
+        const scale: number = size / font.metrics.unitsPerEm;
+        let offset: number = size * (superscript ? SUPERSCRIPT_RISE : SUBSCRIPT_DROP);
+        if (typeof position === "number") {
+            offset = position * size;
+        } else if (position === "from-font" && metrics !== undefined) {
+            offset = metrics.yOffset * scale;
+        }
+        let reduced: number = size / POSITION_RATIO;
+        if (typeof scaled === "number") {
+            reduced = scaled * size;
+        } else if (scaled === "from-font" && metrics !== undefined && metrics.ySize > 0) {
+            reduced = metrics.ySize * scale;
+        }
+        // OpenType gives the superscript offset above the baseline and the subscript offset below it.
+        return [superscript ? offset : -offset, reduced];
     }
 
     private keyword(initial: string, value?: CssValue): string {

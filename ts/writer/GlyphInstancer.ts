@@ -31,8 +31,8 @@ export class GlyphInstancer {
     private readonly outlines: GlyphOutlines = new GlyphOutlines();
 
     tables(instance: FontInstance, used: ReadonlySet<number>): Record<string, Buffer> {
-        // ISO 32000-2 §9.9.1 embeds TrueType without variations, so the used glyphs are written at the instance (gvar, HVAR) as
-        // simple glyphs without the instructions, which cvar would change; the other glyphs are left empty.
+        // ISO 32000-2 §9.9.1 embeds TrueType without variations or synthesized faces, so the glyphs are written as the instance draws
+        // them, without the instructions, which were made for other points.
         const source: Readonly<Record<string, Buffer>> = instance.typeface.tables;
         const count: number = source["maxp"].readUInt16BE(4);
         const pieces: Array<Buffer> = [];
@@ -47,7 +47,7 @@ export class GlyphInstancer {
             const advance: number = Math.max(0, Math.min(0xFFFF, Math.round(instance.advances[glyph] ?? 0)));
             hmtx.writeUInt16BE(advance, glyph * 4);
             extremes[0] = Math.max(extremes[0], advance);
-            const outline: OutlinePoints | undefined = used.has(glyph) ? this.outlines.points(source, glyph, instance.coordinates) : undefined;
+            const outline: OutlinePoints | undefined = used.has(glyph) ? this.outlines.programPoints(instance, glyph) : undefined;
             if (outline === undefined || outline.xs.length === 0) {
                 continue;
             }

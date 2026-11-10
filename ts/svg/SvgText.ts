@@ -24,6 +24,9 @@ import type { OutlineBounds } from "../fonts/CompactOutlines.js";
 import { GlyphOutlines } from "../fonts/GlyphOutlines.js";
 import type { FontInstance } from "../fonts/Typeface.js";
 import type { ImageAlpha, ImageFormats } from "../images/ImageFormats.js";
+import type { PaletteRule } from "../paint/ColorGlyphPainter.js";
+import { ColorGlyphPainter } from "../paint/ColorGlyphPainter.js";
+import type { ColorOutput } from "../paint/ColorOutput.js";
 import type { WrappingArea } from "../layout/BlockLayout.js";
 import { BlockLayout } from "../layout/BlockLayout.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
@@ -37,6 +40,7 @@ import type { DocumentFonts } from "../PdfGenerator.js";
 import type { ContentStream } from "../writer/ContentStream.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { FontRun, PdfFont } from "../writer/PdfFont.js";
+import type { PdfPage } from "../writer/PdfPage.js";
 import type { Box, Matrix, SvgPath } from "./SvgGeometry.js";
 import { SvgGeometry } from "./SvgGeometry.js";
 import type { SvgPainter } from "./SvgPainter.js";
@@ -52,6 +56,9 @@ const RESET: RegExp = /^(?:margin-|padding-|border-.*-style$|float$|position$)/;
 const ALIGNMENT: ReadonlySet<string> = new Set<string>(["text-align-all", "text-align-last", "text-justify"]);
 const SHAPE_ELEMENTS: ReadonlySet<string> = new Set<string>(["rect", "circle", "ellipse", "line", "polyline", "polygon", "path"]);
 const BASIC_SHAPES: ReadonlySet<string> = new Set<string>(["inset", "xywh", "rect", "circle", "ellipse", "polygon", "path", "shape"]);
+const CLIP: number = 0;
+const STROKE: number = 1;
+const INVISIBLE: number = 3;
 
 type Outline = readonly [Array<number>, Array<boolean>, boolean];
 
@@ -95,10 +102,15 @@ export class SvgText {
     private wrapper?: InlineLayout;
     private wrapFonts?: DocumentFonts;
     private painting: boolean = false;
+    private readonly colors: ColorOutput;
+    private colorGlyphs?: ColorGlyphPainter;
+    private colorFonts?: DocumentFonts;
+    private colorRules?: ReadonlyArray<PaletteRule>;
 
-    constructor(document: PdfDocument, formats: ImageFormats, painter: SvgPainter) {
+    constructor(document: PdfDocument, formats: ImageFormats, colors: ColorOutput, painter: SvgPainter) {
         this.document = document;
         this.formats = formats;
+        this.colors = colors;
         this.painter = painter;
     }
 
@@ -125,7 +137,7 @@ export class SvgText {
     }
 
     private fresh(): SvgText {
-        return new SvgText(this.document, this.formats, this.painter);
+        return new SvgText(this.document, this.formats, this.colors, this.painter);
     }
 
     private paintLaidOut(node: SvgNode, style: ComputedStyle, clipping: boolean): void {
@@ -142,30 +154,37 @@ export class SvgText {
             }
             const ownerStyle: ComputedStyle = this.nodeStyles.get(this.owner[from]) as ComputedStyle;
             if (clipping) {
-                this.glyphs(from, to, 0);
+                this.glyphs(from, to, CLIP, false, false);
                 continue;
             }
             if (this.painter.hidden(ownerStyle)) {
                 continue;
             }
             this.decorate(from, to, node, style, false);
+            // The characters of glyphs without outlines are written once, with the fill or, when there is none, with the stroke.
+            const unfilled: boolean = this.keyword(ownerStyle.values["fill"]) === "none";
             for (const operation of this.painter.paintOrder(ownerStyle)) {
                 const stroking: boolean = operation === "stroke";
                 if (operation === "markers") {
                     continue;
                 }
                 this.painter.pdf.content.save();
-                if ((!stroking || this.painter.strokeStyle(ownerStyle, undefined))
-                    && this.painter.paintWith(ownerStyle.values[operation], this.painter.fraction(ownerStyle.values[operation + "-opacity"]), stroking, node, style, undefined)
-                    && !this.painter.masked(() => {
-                        if (stroking) {
-                            this.painter.strokeStyle(ownerStyle, undefined);
-                        }
-                        this.glyphs(from, to, stroking ? 1 : 0);
-                    })) {
-                    this.glyphs(from, to, stroking ? 1 : 0);
+                const opacity: number = this.painter.fraction(ownerStyle.values[operation + "-opacity"]);
+                const painting: boolean = (!stroking || this.painter.strokeStyle(ownerStyle, undefined))
+                    && this.painter.paintWith(ownerStyle.values[operation], opacity, stroking, node, style, undefined);
+                const draw: () => void = (): void => {
+                    if (stroking) {
+                        this.painter.strokeStyle(ownerStyle, undefined);
+                    }
+                    this.glyphs(from, to, stroking ? 1 : 0, !stroking, !stroking || unfilled);
+                };
+                if (painting && !this.painter.masked(draw)) {
+                    draw();
                 }
                 this.painter.pdf.content.restore();
+                if (painting && !stroking) {
+                    this.paintColored(from, to, this.painter.fraction(ownerStyle.values["fill-opacity"]));
+                }
             }
             this.decorate(from, to, node, style, true);
         }
@@ -185,7 +204,7 @@ export class SvgText {
             if (this.middle[index] === 0 && this.hidden[index] === 0 && this.forced[index] === 0 && (within === undefined || this.holds(this.owner[index], within))) {
                 // An upright glyph's cell is 1em across, centred on the central baseline.
                 const run: TextRun = this.runOf[index];
-                const [ascent, descent]: readonly [number, number] = this.metrics.fontExtent(run.font, run.size);
+                const [ascent, descent]: readonly [number, number] = this.metrics.fontExtent(run.font, run.size, this.upright(index));
                 const central: number = this.upright(index) ? this.metrics.baseline((this.nodeStyles.get(this.owner[index]) as ComputedStyle).values, "central") : 0;
                 const cell: Box = this.upright(index) ? [Math.min(0, this.advance[index]), -central - run.size / 2, Math.abs(this.advance[index]), run.size]
                     : [Math.min(0, this.advance[index]), -ascent, Math.abs(this.advance[index]), ascent + descent];
@@ -1120,16 +1139,30 @@ export class SvgText {
         return [path, Number.isNaN(offset) ? 0 : offset];
     }
 
-    private glyphs(from: number, to: number, mode: number): void {
+    private glyphs(from: number, to: number, mode: number, filling: boolean, asText: boolean): void {
         // ISO 32000-2 §9.4.2 and §9.3.6: each glyph placed by its own text matrix in a user space whose y goes down, filled
-        // with mode 0 and stroked with mode 1.
+        // with mode 0, stroked with mode 1, and a color glyph's outline written invisible with mode 3 for its characters.
         const content: ContentStream = this.painter.pdf.content;
+        const colors: ColorGlyphPainter = this.colorPainter();
         content.beginText();
         content.textRenderingMode(mode);
         let shown: string = "";
         let size: number = 0;
-        const stroked: boolean = mode === 1 && this.painter.isProjected();
+        let current: number = mode;
+        const stroked: boolean = mode === STROKE && this.painter.isProjected();
         this.placements(from, to, (instance: FontInstance, glyph: number, glyphSize: number, matrix: Matrix, characters: string, style: ComputedStyle): void => {
+            // A font without outlines is written with no font program, so its glyphs are only text, and its color glyphs carry
+            // their characters themselves.
+            const outlined: boolean = colors.outlined(instance);
+            const colored: boolean = filling && colors.colored(instance, glyph);
+            if (!outlined && (colored || !asText)) {
+                return;
+            }
+            const target: number = colored || !outlined ? INVISIBLE : mode;
+            if (target !== current) {
+                content.textRenderingMode(target);
+                current = target;
+            }
             const font: PdfFont = this.document.fonts.font(instance, false);
             font.use(glyph, characters);
             const [resource, codes]: FontRun = font.show([glyph], 0, 1)[0];
@@ -1151,6 +1184,40 @@ export class SvgText {
         content.endText();
     }
 
+    private paintColored(from: number, to: number, opacity: number): void {
+        // OpenType COLR, SVG, sbix and CBDT: a color glyph is drawn instead of its outline, with the palette of font-palette and
+        // the color of the color property; its text space has y going up, and ColorGlyphPainter draws with y going down.
+        const colors: ColorGlyphPainter = this.colorPainter();
+        const pdf: PdfPage = this.painter.pdf;
+        this.placements(from, to, (instance: FontInstance, glyph: number, size: number, matrix: Matrix, characters: string, style: ComputedStyle): void => {
+            if (!colors.colored(instance, glyph)) {
+                return;
+            }
+            const placed: readonly [Matrix, number] | undefined = this.painter.placed(matrix);
+            if (placed === undefined) {
+                return;
+            }
+            const space: Matrix = placed[0];
+            pdf.content.save();
+            pdf.content.transform(space[0], space[1], -space[2], -space[3], space[4], space[5]);
+            colors.paint([{ x: 0, y: 0, glyph, text: characters, font: instance, size }], style, opacity, pdf, true);
+            pdf.content.restore();
+        });
+    }
+
+    private colorPainter(): ColorGlyphPainter {
+        // The fonts and the palettes are the image's, and a painter keeps the palettes it resolves for its fonts.
+        const styles: SvgStyles = this.painter.styles;
+        const fonts: DocumentFonts = styles.fonts();
+        const palettes: ReadonlyArray<PaletteRule> = styles.palettes();
+        if (this.colorGlyphs === undefined || this.colorFonts !== fonts || this.colorRules !== palettes) {
+            this.colorGlyphs = new ColorGlyphPainter(this.document, this.colors, fonts[0], palettes, this.formats);
+            this.colorFonts = fonts;
+            this.colorRules = palettes;
+        }
+        return this.colorGlyphs;
+    }
+
     ink(node: SvgNode, style: ComputedStyle): Box | undefined {
         // The area that the glyphs and the decorations paint: the bounding box of each glyph's outline, which can reach out
         // of its cell, scaled from font units to the font size.
@@ -1165,8 +1232,8 @@ export class SvgText {
             const bounds: OutlineBounds | undefined = this.outlines.bounds(instance, glyph);
             if (bounds !== undefined) {
                 const scale: number = size / instance.metrics.unitsPerEm;
-                box = this.geometry.union(box, this.geometry.transformBox(matrix, [bounds.xMin * scale, bounds.yMin * scale, (bounds.xMax - bounds.xMin) * scale,
-                    (bounds.yMax - bounds.yMin) * scale]));
+                box = this.geometry.union(box, this.geometry.transformBox(matrix, [bounds.xMin * scale, bounds.yMin * scale,
+                    (bounds.xMax - bounds.xMin) * scale, (bounds.yMax - bounds.yMin) * scale]));
             }
         });
         for (const through of [false, true]) {
@@ -1202,8 +1269,8 @@ export class SvgText {
                 const central: number = this.metrics.baseline(ownerStyle.values, "central");
                 let pen: number = -width / 2;
                 for (let glyph: number = first; glyph < last; glyph++) {
-                    visit(run.font, text.glyphs[glyph], run.size, this.geometry.concat(frame, [scale, 0, 0, -1, pen + (text.xOffsets?.[glyph] ?? 0) * scale,
-                        run.size / 2 + central - (text.yOffsets?.[glyph] ?? 0)]), glyph === first ? characters : "", ownerStyle);
+                    visit(run.font, text.glyphs[glyph], run.size, this.sheared(this.geometry.concat(frame, [scale, 0, 0, -1, pen + (text.xOffsets?.[glyph] ?? 0) * scale,
+                        run.size / 2 + central - (text.yOffsets?.[glyph] ?? 0)]), run.font, true), glyph === first ? characters : "", ownerStyle);
                     pen += text.advances[glyph] * scale;
                 }
                 continue;
@@ -1217,7 +1284,7 @@ export class SvgText {
                 const yOffset: number = text.yOffsets?.[glyph] ?? 0;
                 // An upright glyph's offsets place its outline from its vertical origin, with the pen going down the line.
                 const placement: Matrix = upright ? [1, 0, 0, -stretch, xOffset, pen - yOffset * stretch] : [stretch, 0, 0, -1, pen + xOffset * stretch, -yOffset];
-                visit(run.font, text.glyphs[glyph], run.size, this.geometry.concat(frame, placement), order === 0 ? characters : "", ownerStyle);
+                visit(run.font, text.glyphs[glyph], run.size, this.sheared(this.geometry.concat(frame, placement), run.font, upright), order === 0 ? characters : "", ownerStyle);
                 pen += text.advances[glyph] * stretch;
             }
             const hyphen: readonly [Hyphen, number] | undefined = this.hyphens.get(index);
@@ -1228,13 +1295,23 @@ export class SvgText {
                 for (const part of reversed ? [...hyphen[0].parts].reverse() : hyphen[0].parts) {
                     for (let order: number = 0; order < part.glyphs.length; order++) {
                         const glyph: number = reversed ? part.glyphs.length - 1 - order : order;
-                        visit(part.font, part.glyphs[glyph], part.size, this.geometry.concat(hyphenFrame, [1, 0, 0, -1, at + part.xOffsets[glyph], -part.yOffsets[glyph]]), "",
-                            ownerStyle);
+                        visit(part.font, part.glyphs[glyph], part.size, this.sheared(this.geometry.concat(hyphenFrame, [1, 0, 0, -1, at + part.xOffsets[glyph], -part.yOffsets[glyph]]),
+                            part.font, false), "", ownerStyle);
                         at += part.advances[glyph];
                     }
                 }
             }
         }
+    }
+
+    private sheared(matrix: Matrix, font: FontInstance, upright: boolean): Matrix {
+        // CSS Fonts 4 §2.8: a synthesized oblique face shears the glyphs, the top towards the line-right side; §2.8.2: "In vertical
+        // text, for positive oblique angles, the glyph is skewed such that the line-over edge shifts towards the line-right side".
+        const skew: number = Math.tan((font.skew ?? 0) * Math.PI / 180);
+        if (skew === 0) {
+            return matrix;
+        }
+        return this.geometry.concat(matrix, upright ? [1, -skew, 0, 1, 0, 0] : [1, 0, skew, 1, 0, 0]);
     }
 
     private combinedGlyphs(index: number): readonly [number, number] {

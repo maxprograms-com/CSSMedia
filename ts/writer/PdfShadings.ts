@@ -65,6 +65,19 @@ export class PdfShadings {
         return this.shading(3, space, coordinates, stops, extend, repeat);
     }
 
+    calculated(space: ColorSpaceResource, domain: readonly [number, number, number, number], program: string): ShadingResource {
+        // §8.7.4.5.2: a type 1 shading gives each point (x, y) of its Domain [xmin xmax ymin ymax] the color of a function,
+        // here a type 4 function (§7.10.5), whose PostScript calculator program takes x and y and leaves the components.
+        const range: Array<number> = [];
+        for (let component: number = 0; component < space.components; component++) {
+            range.push(0, 1);
+        }
+        const bounds: string = "[" + this.syntax.numbers(domain) + "]";
+        const code: number = this.file.addStream("/FunctionType 4 /Domain " + bounds + " /Range [" + this.syntax.numbers(range) + "]", Buffer.from("{" + program + "}", "latin1"), true);
+        const object: number = this.file.add("<< /ShadingType 1 /ColorSpace " + space.value + " /Domain " + bounds + " /Function " + this.syntax.reference(code) + " >>");
+        return { key: "Sh" + object, object };
+    }
+
     pattern(shading: ShadingResource, matrix: ReadonlyArray<number>): PatternResource {
         // §8.7.3.3: a shading pattern, whose matrix maps the shading space to the default space of the content that uses it.
         const object: number = this.file.add("<< /Type /Pattern /PatternType 2 /Shading " + this.syntax.reference(shading.object) + " /Matrix [" + this.syntax.numbers(matrix) + "] >>");

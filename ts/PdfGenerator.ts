@@ -21,7 +21,7 @@
 import { resolve as resolvePath } from "node:path";
 import { pathToFileURL } from "node:url";
 import { PropertyTable } from "./css/PropertyTable.js";
-import type { DeclaredValue, Declaration, FontFaceRule, MarginRule, PageRule, PropertyRule, StyleRule, Stylesheet, TocRule } from "./css/Stylesheet.js";
+import type { DeclaredValue, Declaration, DescriptorRule, FontFaceRule, FontFeatureValuesRule, MarginRule, PageRule, PropertyRule, StyleRule, Stylesheet, TocRule } from "./css/Stylesheet.js";
 import { StylesheetReader } from "./css/StylesheetReader.js";
 import type { CssValue, FunctionValue } from "./css/values/CssValue.js";
 import { FontCatalog } from "./fonts/FontCatalog.js";
@@ -38,6 +38,8 @@ import { WebpImage } from "./images/WebpImage.js";
 import type { Candidate } from "./layout/BlockLayout.js";
 import { BlockLayout } from "./layout/BlockLayout.js";
 import { PageDriver } from "./pages/PageDriver.js";
+import type { PaletteRule } from "./paint/ColorGlyphPainter.js";
+import { ColorGlyphPainter } from "./paint/ColorGlyphPainter.js";
 import { ColorOutput } from "./paint/ColorOutput.js";
 import { SourceElement } from "./parse/SourceElement.js";
 import { XmlTreeBuilder } from "./parse/XmlTreeBuilder.js";
@@ -83,6 +85,7 @@ export interface PageSetup {
     references: CrossReferences;
     whiteSpace: WhiteSpaceProcessor;
     letters: FirstLetterBoxes;
+    palettes: ReadonlyArray<PaletteRule>;
     reports: Array<ReadonlyArray<string>>;
 }
 
@@ -106,7 +109,8 @@ export interface Input {
     metrics: FontMetrics;
     fonts: DocumentFonts;
     fontFaces: ReadonlyArray<FontFaceRule>;
-    fontsFor: (rules: ReadonlyArray<FontFaceRule>) => DocumentFonts;
+    fontFeatureValues: ReadonlyArray<FontFeatureValuesRule>;
+    fontsFor: (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>) => DocumentFonts;
     profiles: ColorProfiles;
     marginBoxes: boolean;
     countsPages: boolean;
@@ -114,6 +118,7 @@ export interface Input {
     targetCounters: boolean;
     linkCounters: boolean;
     tocRules: ReadonlyArray<TocRule>;
+    fontPalettes: ReadonlyArray<DescriptorRule>;
     reports: Array<ReadonlyArray<string>>;
 }
 
@@ -270,14 +275,15 @@ export class PdfGenerator {
         const canvases: PageCanvasBuilder = new PageCanvasBuilder(cascade, computer, stylesheet.pageRules, table);
         const text: InlineTextBuilder = new InlineTextBuilder(metrics, matcher, new FontFeatures(stylesheet.fontFeatureValues));
         let plain: DocumentFonts | undefined;
-        const fontsFor: (rules: ReadonlyArray<FontFaceRule>) => DocumentFonts = (rules: ReadonlyArray<FontFaceRule>): DocumentFonts => {
-            // Files without @font-face rules have the same fonts, so they share one set.
-            if (rules.length === 0) {
-                plain = plain ?? this.fontsOf(fonts.ofDocument(rules));
-                return plain;
-            }
-            return this.fontsOf(fonts.ofDocument(rules));
-        };
+        const fontsFor: (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>) => DocumentFonts =
+            (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>): DocumentFonts => {
+                // Files without @font-face and @font-feature-values rules have the same fonts, so they share one set.
+                if (rules.length === 0 && features.length === 0) {
+                    plain = plain ?? this.fontsOf(fonts.ofDocument(rules), features);
+                    return plain;
+                }
+                return this.fontsOf(fonts.ofDocument(rules), features);
+            };
         return {
             root, documentUri, cssPath, prefixes: treeBuilder.getPrefixes(), table, substitution, registered, styleRules: stylesheet.styleRules, computer, cascade, canvases,
             // CSS Paged Media 3 §3: "The edges of the page area on the first page establish the rectangle that is the initial
@@ -288,6 +294,7 @@ export class PdfGenerator {
             metrics,
             fonts: [metrics, text],
             fontFaces: stylesheet.fontFaces,
+            fontFeatureValues: stylesheet.fontFeatureValues,
             fontsFor,
             profiles,
             marginBoxes: stylesheet.pageRules.some((rule: PageRule) => rule.marginRules.length > 0),
@@ -297,14 +304,15 @@ export class PdfGenerator {
             targetCounters: this.usesFunction(stylesheet, TARGET_COUNTERS, (found: FunctionValue): boolean => found.name === "target-counter" || found.name === "target-counters"),
             linkCounters: this.usesFunction(stylesheet, LINK_COUNTERS, (found: FunctionValue): boolean => found.name === PropertyTable.LINK_COUNTER && this.firstName(found) !== PAGE),
             tocRules: stylesheet.tocRules,
+            fontPalettes: stylesheet.fontPalettes,
             reports: [stylesheet.diagnostics, fonts.diagnostics, profiles.diagnostics, computer.diagnostics]
         };
     }
 
-    private fontsOf(catalog: FontCatalog): DocumentFonts {
+    private fontsOf(catalog: FontCatalog, features: ReadonlyArray<FontFeatureValuesRule>): DocumentFonts {
         const matcher: FontMatcher = new FontMatcher(catalog);
         const metrics: FontMetrics = new FontMetrics(matcher);
-        return [metrics, new InlineTextBuilder(metrics, matcher, new FontFeatures([]))];
+        return [metrics, new InlineTextBuilder(metrics, matcher, new FontFeatures(features))];
     }
 
     private usesFunction(stylesheet: Stylesheet, pattern: RegExp, test: (value: FunctionValue) => boolean): boolean {
@@ -441,6 +449,7 @@ export class PdfGenerator {
             references,
             whiteSpace,
             letters,
+            palettes: input.fontPalettes.map((rule: DescriptorRule) => ColorGlyphPainter.fromRule(rule, input.computer, rootStyle, viewport)),
             reports: [boxBuilder.diagnostics, quoteSystems.diagnostics]
         };
     }

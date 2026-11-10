@@ -86,7 +86,7 @@ export class PagePainter {
         this.setup = setup;
         this.document = document;
         const colors: ColorOutput = setup.colors;
-        this.text = new TextPainter(document, colors, this.sizes, setup.metrics, setup.viewport);
+        this.text = new TextPainter(document, colors, this.sizes, setup.metrics, setup.viewport, setup.palettes, setup.images);
         this.borders = new BorderPainter(colors);
         this.backgrounds = new BackgroundPainter(colors, this.borders);
         this.images = new ImagePainter(setup.images, this.sizes);

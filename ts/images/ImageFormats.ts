@@ -28,7 +28,7 @@ import type { Size } from "../pdf/PageCanvas.js";
 import type { QueryContainer } from "../pdf/StyleComputer.js";
 import type { ColorSpaceResource } from "../writer/PdfColorSpaces.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
-import type { ImageResource } from "../writer/PdfPage.js";
+import type { ImageResource, PdfPage } from "../writer/PdfPage.js";
 import { PdfSyntax } from "../writer/PdfSyntax.js";
 
 export type ImageReader = (position: number, length: number) => Buffer;
@@ -92,6 +92,8 @@ export interface ImageFormat {
     replaces?(style: ComputedStyle, element: SourceElement): boolean;
     viewportUsed?(): boolean;
     unclipped?(): boolean;
+    glyph?(href: string, data: Buffer, id: string, size: number, scale: number, host: ComputedStyle, pdf: PdfPage, ctm: readonly [number, number, number, number, number, number],
+        growth: number): readonly [number, number, number, number] | undefined;
 }
 
 const NO_MULTIPLE: readonly [number, number] = [1, 1];
@@ -121,9 +123,23 @@ export class ImageFormats {
     private readonly sizes: Map<string, ImageSize | null> = new Map<string, ImageSize | null>();
     private readonly fittedSizes: Map<string, Map<number, ImageSize | null>> = new Map<string, Map<number, ImageSize | null>>();
     private readonly resources: Map<string, ImageResource | null> = new Map<string, ImageResource | null>();
+    private readonly provided: Map<string, () => Buffer> = new Map<string, () => Buffer>();
 
     constructor(document: PdfDocument) {
         this.document = document;
+    }
+
+    provide(href: string, read: () => Buffer): void {
+        if (!this.provided.has(href)) {
+            this.provided.set(href, read);
+        }
+    }
+
+    glyph(href: string, id: string, size: number, scale: number, host: ComputedStyle, pdf: PdfPage, ctm: readonly [number, number, number, number, number, number],
+        growth: number): readonly [number, number, number, number] | undefined {
+        const format: ImageFormat | undefined = this.format(href);
+        const data: Buffer | undefined = format?.glyph === undefined ? undefined : this.bytes(href);
+        return format?.glyph === undefined || data === undefined ? undefined : format.glyph(href, data, id, size, scale, host, pdf, ctm, growth);
     }
 
     register(accepts: FormatTest, create: () => ImageFormat, namespaces: ReadonlyArray<string> = []): void {
@@ -294,6 +310,10 @@ export class ImageFormats {
     }
 
     bytes(href: string): Buffer | undefined {
+        const provided: (() => Buffer) | undefined = this.provided.get(href);
+        if (provided !== undefined) {
+            return provided();
+        }
         if (href.startsWith(ELEMENT_SCHEME)) {
             return this.sources.has(href) ? NO_BYTES : undefined;
         }
@@ -308,6 +328,16 @@ export class ImageFormats {
         } catch {
             return undefined;
         }
+    }
+
+    written(key: string, create: () => ImageResource): ImageResource {
+        const known: ImageResource | null | undefined = this.resources.get(key);
+        if (known !== undefined && known !== null) {
+            return known;
+        }
+        const resource: ImageResource = create();
+        this.resources.set(key, resource);
+        return resource;
     }
 
     write(image: ImageSamples, space: ColorSpaceResource, interpolate: boolean): ImageResource {
@@ -445,7 +475,7 @@ export class ImageFormats {
     }
 
     private reading(href: string, use: (read: ImageReader) => void): void {
-        if (href.startsWith(DATA_SCHEME) || href.startsWith("http:") || href.startsWith("https:")) {
+        if (this.provided.has(href) || href.startsWith(DATA_SCHEME) || href.startsWith("http:") || href.startsWith("https:")) {
             const data: Buffer | undefined = this.bytes(href);
             if (data === undefined) {
                 this.report(href, "cannot be read" + this.remote.failure(href));

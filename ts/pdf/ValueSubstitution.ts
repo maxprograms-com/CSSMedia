@@ -20,6 +20,7 @@
 
 import type { CssNode, Declaration as CssTreeDeclaration, MediaQueryList } from "css-tree";
 import { string as cssString, url as cssUrl, parse, tokenTypes } from "css-tree";
+import type { XMLElement } from "typesxml";
 import { AsciiCase } from "../css/AsciiCase.js";
 import type { TriState } from "../css/ConditionEvaluator.js";
 import { ConditionEvaluator } from "../css/ConditionEvaluator.js";
@@ -37,7 +38,7 @@ import { SupportsEvaluator } from "../css/SupportsEvaluator.js";
 import { SyntaxDefinition } from "../css/SyntaxDefinition.js";
 import { CssUnits } from "../css/values/CssUnits.js";
 import type { BaseType } from "../css/values/CssValue.js";
-import type { SourceElement } from "../parse/SourceElement.js";
+import { SourceElement } from "../parse/SourceElement.js";
 import { BaseUrls } from "./BaseUrls.js";
 import type { ContainerAxis } from "./ElementUnits.js";
 import type { Size } from "./PageCanvas.js";
@@ -48,7 +49,7 @@ export interface CustomValue {
 }
 
 export interface SubstitutionHost {
-    element?: SourceElement;
+    element?: XMLElement;
     pseudoElement?: string;
     custom(name: string): CustomValue | null;
     inherited(name: string): CustomValue | null;
@@ -119,7 +120,7 @@ export class ValueSubstitution {
     private readonly prefixes: ReadonlyMap<string, string>;
     private readonly bases: BaseUrls;
     private readonly randomValues: Map<string, number> = new Map<string, number>();
-    private readonly elementKeys: WeakMap<SourceElement, number> = new WeakMap<SourceElement, number>();
+    private readonly elementKeys: WeakMap<XMLElement, number> = new WeakMap<XMLElement, number>();
     private readonly asciiCase: AsciiCase = new AsciiCase();
     private readonly escaping: CssIdentifierEscaping = new CssIdentifierEscaping();
     private readonly units: CssUnits = new CssUnits();
@@ -149,9 +150,9 @@ export class ValueSubstitution {
         }
     }
 
-    replace(pending: PendingSubstitution, property: string, host: SubstitutionHost): ReadonlyArray<Declaration> | CssWideKeyword | undefined {
+    replace(pending: PendingSubstitution, property: string, host: SubstitutionHost, atRule?: string): ReadonlyArray<Declaration> | CssWideKeyword | undefined {
         // CSS Values 5 Appendix A: after substitution the value is parsed with the grammar of the declared property, the
-        // shorthand when the declaration was one.
+        // shorthand when the declaration was one, or of the descriptor of its at-rule.
         const target: string = pending.shorthand ?? property;
         const scope: Scope = { host, property:target, baseUrl: pending.baseUrl, namespaces: pending.namespaces, random: true };
         const result: Substituted | undefined = this.substitute(this.syntax.tokens(pending.text), scope);
@@ -169,8 +170,9 @@ export class ValueSubstitution {
         } catch {
             return undefined;
         }
-        return this.reader.read(parsed, pending.baseUrl, pending.namespaces)?.filter((declaration: Declaration) => declaration.value.kind !== "pending"
-            && declaration.value.kind !== "custom");
+        const read: ReadonlyArray<Declaration> | undefined = atRule === undefined ? this.reader.read(parsed, pending.baseUrl, pending.namespaces)
+            : this.reader.readDescriptor(atRule.startsWith("@") ? atRule.substring(1) : atRule, parsed, pending.baseUrl);
+        return read?.filter((declaration: Declaration) => declaration.value.kind !== "pending" && declaration.value.kind !== "custom");
     }
 
     customValue(declared: CustomPropertyValue, name: string, typed: boolean, host: SubstitutionHost): CustomValue | null {
@@ -468,8 +470,10 @@ export class ValueSubstitution {
         }
         const syntax: string | undefined = parsed.syntax;
         const fallback: ReadonlyArray<Token> | undefined = args[1] ?? (syntax === undefined ? [{ type: tokenTypes.String, text: "\"\"" }] : undefined);
-        const value: string | undefined = this.attributeValue(this.escaping.unescape(parsed.local), scope.host.element, namespace);
-        const base: string = this.bases.of(scope.host.element);
+        const element: XMLElement | undefined = scope.host.element;
+        const value: string | undefined = this.attributeValue(this.escaping.unescape(parsed.local), element, namespace);
+        // SVG 2 has no xml:base, so an element of an SVG file has the base of its file.
+        const base: string = this.bases.of(element instanceof SourceElement ? element : undefined);
         if (value === undefined) {
             return this.makeResolved(undefined, fallback, base);
         }
@@ -497,13 +501,13 @@ export class ValueSubstitution {
         return this.matchesSyntax(syntax, this.syntax.serialize(tokens)) ? tokens : undefined;
     }
 
-    private attributeValue(local: string, element?: SourceElement, namespace?: string): string | undefined {
+    private attributeValue(local: string, element?: XMLElement, namespace?: string): string | undefined {
         // Namespaces in XML 1.0 §6.2: an unprefixed attribute is in no namespace, a prefixed one in the namespace of its prefix.
         if (element === undefined) {
             return undefined;
         }
         if (namespace === undefined) {
-            return element.getAttributeValue(local);
+            return element.getAttribute(local)?.getValue();
         }
         for (const attribute of element.getAttributes()) {
             const name: string = attribute.getName();
@@ -816,7 +820,7 @@ export class ValueSubstitution {
         // CSS Values 5 §8.3: the <dashed-ident>, or null, and with per-element a value unique to the element or pseudo-element.
         const words: Array<Token> = options.filter((token: Token) => token.type === tokenTypes.Ident);
         const name: Token | undefined = words.find((token: Token) => token.text.startsWith("--"));
-        const element: SourceElement | undefined = scope.host.element;
+        const element: XMLElement | undefined = scope.host.element;
         const perElement: boolean = words.some((token: Token) => this.asciiCase.foldLower(token.text) === "per-element");
         if (!perElement || element === undefined) {
             return [name?.text ?? null, null];

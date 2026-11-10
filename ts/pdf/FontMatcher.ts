@@ -23,9 +23,12 @@ import { CssUnits } from "../css/values/CssUnits.js";
 import { CharacterMapLookup } from "../fonts/CharacterMapLookup.js";
 import { FontCatalog } from "../fonts/FontCatalog.js";
 import { InstanceBuilder } from "../fonts/InstanceBuilder.js";
+import { STANDARD_FONTS } from "../fonts/generated/StandardFonts.js";
 import { GlyphShaper } from "../fonts/layout/GlyphShaper.js";
 import { ScriptTags } from "../fonts/layout/ScriptTags.js";
-import type { CatalogFace, FontInstance, FontVariations, InstalledFace, NamedInstance, Typeface, VariationAxis } from "../fonts/Typeface.js";
+import type {
+    AxisOverrides, CatalogFace, FaceOverrides, FontInstance, FontVariations, InstalledFace, MetricOverride, NamedInstance, StandardFontData, Typeface, VariationAxis
+} from "../fonts/Typeface.js";
 
 export interface FamilyReference {
     name: string;
@@ -40,6 +43,8 @@ export interface FontRequest {
     angle: number;
     size: number;
     opticalSizing: boolean;
+    boldSynthesis: boolean;
+    styleSynthesis: "auto" | "none" | "oblique-only";
     variations?: CssValue;
     adjustedSize?: (instance: FontInstance) => number;
 }
@@ -58,6 +63,8 @@ interface Candidate {
     traits: Traits;
     slant?: number;
     unicode?: ReadonlyArray<Range>;
+    size?: Range;
+    overrides?: FaceOverrides;
     order: number;
 }
 
@@ -74,6 +81,8 @@ interface Chosen {
     width: number;
     italic?: number;
     oblique?: number;
+    emboldening?: number;
+    skew?: number;
 }
 
 interface Segment {
@@ -81,12 +90,14 @@ interface Segment {
     from: number;
     to: number;
     excludeTo: boolean;
+    synthetic?: boolean;
 }
 
 interface StyleChoice {
     attribute: "italic" | "oblique";
     value: number;
     slant?: number;
+    skew?: number;
 }
 
 const ITALIC_SELECTION: number = 0x0001;
@@ -94,10 +105,16 @@ const OBLIQUE_SELECTION: number = 0x0200;
 const ITALIC_MAC_STYLE: number = 0x0002;
 const WIDTH_CLASSES: ReadonlyArray<number> = [100, 50, 62.5, 75, 87.5, 100, 112.5, 125, 150, 200];
 const OBLIQUE_THRESHOLD: number = 11;
+const BOLD: number = 700;
+const REGULAR: number = 400;
+const STANDARD_UNITS: number = 1000;
+const SHEARING: Segment = { attribute: "oblique", from: 0, to: 0, excludeTo: false, synthetic: true };
 const SPACE: number = 0x20;
 const DEFAULT_IGNORABLE: RegExp = /^\p{Default_Ignorable_Code_Point}$/u;
 const DEFAULT_FONT: FamilyReference = { name: "sans-serif", generic: true };
 const FALLBACK_FONTS: ReadonlyArray<FamilyReference> = [DEFAULT_FONT, { name: "Symbol", generic: false }, { name: "ZapfDingbats", generic: false }];
+const OVERRIDE_DESCRIPTORS: ReadonlyArray<string> = ["size-adjust", "ascent-override", "descent-override", "line-gap-override", "superscript-position-override",
+    "subscript-position-override", "superscript-size-override", "subscript-size-override"];
 
 export class FontMatcher {
 
@@ -108,6 +125,8 @@ export class FontMatcher {
         ["semi-expanded", 112.5], ["expanded", 125], ["extra-expanded", 150], ["ultra-expanded", 200]
     ]);
 
+    private static readonly STEM_GAIN: number = FontMatcher.stemGain();
+
     private readonly catalog: FontCatalog;
     private readonly lookup: CharacterMapLookup = new CharacterMapLookup();
     private readonly builder: InstanceBuilder = new InstanceBuilder();
@@ -115,6 +134,7 @@ export class FontMatcher {
     private readonly families: Map<string, Array<Candidate>> = new Map<string, Array<Candidate>>();
     private readonly slants: Map<Candidate, number> = new Map<Candidate, number>();
     private readonly instances: Map<string, FontInstance> = new Map<string, FontInstance>();
+    private readonly built: Map<string, FontInstance> = new Map<string, FontInstance>();
     private readonly faces: WeakMap<FontInstance, CatalogFace> = new WeakMap<FontInstance, CatalogFace>();
     private readonly matches: Map<string, Chosen | null> = new Map<string, Chosen | null>();
     private readonly scripts: ScriptTags = new ScriptTags();
@@ -123,6 +143,22 @@ export class FontMatcher {
 
     constructor(catalog: FontCatalog) {
         this.catalog = catalog;
+    }
+
+    private static stemGain(): number {
+        // How much thicker, in ems, the dominant vertical stems of the bold standard fonts are than those of the regular face of
+        // the same family and slant, for each unit of weight between them.
+        let total: number = 0;
+        let pairs: number = 0;
+        for (const bold of STANDARD_FONTS.filter((font: StandardFontData) => font.weight === "Bold")) {
+            const regular: StandardFontData | undefined = STANDARD_FONTS.find((font: StandardFontData) =>
+                font.family === bold.family && font.italicAngle === bold.italicAngle && font.weight !== "Bold");
+            if (regular !== undefined) {
+                total += (bold.stemV - regular.stemV) / STANDARD_UNITS / (BOLD - REGULAR);
+                pairs++;
+            }
+        }
+        return pairs === 0 ? 0 : total / pairs;
     }
 
     firstAvailable(request: FontRequest): FontInstance | undefined {
@@ -289,8 +325,11 @@ export class FontMatcher {
     }
 
     private match(family: FamilyReference, request: FontRequest): Chosen | undefined {
-        // The match depends only on the family and on the width, style and weight asked for, so each one is made once.
-        const key: string = (family.generic ? "generic:" : "family:") + family.name + "|" + request.width + "|" + request.style + "|" + request.angle + "|" + request.weight;
+        // The match depends only on the family and on the width, style and weight asked for, and on the size where a face
+        // is declared for some sizes only, so each one is made once.
+        const sized: boolean = this.candidates(family).some((candidate: Candidate) => candidate.size !== undefined);
+        const key: string = (family.generic ? "generic:" : "family:") + family.name + "|" + request.width + "|" + request.style + "|" + request.angle + "|" + request.weight
+            + "|" + request.boldSynthesis + "|" + request.styleSynthesis + (sized ? "|" + Math.round(request.size) : "");
         let chosen: Chosen | null | undefined = this.matches.get(key);
         if (chosen === undefined) {
             chosen = this.choice(family, request) ?? null;
@@ -311,11 +350,31 @@ export class FontMatcher {
         if (style !== undefined) {
             remaining = remaining.filter((candidate: Candidate) => this.contains(style.value, this.styleRange(candidate, style.attribute, style.slant)));
         }
-        const weight: number = this.choose(remaining.map((candidate: Candidate) => candidate.traits.weight), this.weightOrder(request.weight)) ?? request.weight;
+        // CSS Fonts 4 §2.2: a synthesized bold face is "treated as if" it "existed within the family"; §2.8 only allows synthesis,
+        // and a standard font is drawn by the reader from outlines that the document does not hold.
+        const weights: Array<Range> = remaining.map((candidate: Candidate) => candidate.traits.weight);
+        const synthetic: boolean = request.boldSynthesis && !weights.some((range: Range) => range[1] >= BOLD)
+            && remaining.some((candidate: Candidate) => candidate.face.origin !== "standard");
+        let weight: number = this.choose(synthetic ? [...weights, [BOLD, BOLD]] : weights, this.weightOrder(request.weight)) ?? request.weight;
+        let emboldening: number | undefined;
+        if (synthetic && weight === BOLD) {
+            weight = this.choose(weights, this.weightOrder(BOLD)) ?? request.weight;
+            emboldening = BOLD - weight;
+        }
         remaining = remaining.filter((candidate: Candidate) => this.contains(weight, candidate.traits.weight));
+        // "font-size must be matched within a UA-dependent margin of tolerance", typically "rounded to the nearest whole pixel"
+        // for scalable fonts; CSS Fonts 5 §4.3: the font-size descriptor gives the sizes that a face matches.
+        const size: number = Math.round(request.size);
+        remaining = remaining.filter((candidate: Candidate) => candidate.size === undefined || this.contains(size, candidate.size));
         const chosen: Chosen = { candidates: remaining, ordered: [...remaining].sort((first: Candidate, second: Candidate) => second.order - first.order), weight, width };
         if (style !== undefined) {
             chosen[style.attribute] = style.value;
+            if (style.skew !== undefined) {
+                chosen.skew = style.skew;
+            }
+        }
+        if (emboldening !== undefined) {
+            chosen.emboldening = emboldening;
         }
         return chosen;
     }
@@ -355,6 +414,13 @@ export class FontMatcher {
         const sign: number = (request.style === "oblique" && request.angle < 0) || request.style === "right" ? -1 : 1;
         const slant: number | undefined = request.style === "left" || request.style === "right" ? sign : undefined;
         for (const segment of this.styleOrder(request, sign)) {
+            if (segment.synthetic === true) {
+                const skew: number | undefined = this.syntheticSkew(request);
+                if (skew !== undefined && candidates.some((candidate: Candidate) => this.contains(0, candidate.traits.oblique))) {
+                    return { attribute: "oblique", value: 0, skew };
+                }
+                continue;
+            }
             const directed: number | undefined = segment.attribute === "italic" && segment.from > 0 ? slant : undefined;
             const ranges: Array<Range> = [];
             for (const candidate of candidates) {
@@ -373,6 +439,18 @@ export class FontMatcher {
             }
         }
         return undefined;
+    }
+
+    private syntheticSkew(request: FontRequest): number | undefined {
+        // CSS Fonts 4 §5.2: for oblique, "a fallback match is produced by geometric shearing to the specified oblique value"; §2.4:
+        // "If no italic or oblique face is available, oblique faces may be synthesized", which oblique-only forbids for italic.
+        if (request.style === "oblique") {
+            return request.styleSynthesis === "none" ? undefined : request.angle;
+        }
+        if (request.styleSynthesis !== "auto") {
+            return undefined;
+        }
+        return request.style === "right" ? -FontMatcher.DEFAULT_OBLIQUE : FontMatcher.DEFAULT_OBLIQUE;
     }
 
     private styleRange(candidate: Candidate, attribute: "italic" | "oblique", slant?: number): Range | undefined {
@@ -404,13 +482,13 @@ export class FontMatcher {
             return [
                 { attribute: "italic", from: 1, to: up, excludeTo: false }, { attribute: "italic", from: 1, to: 0, excludeTo: true },
                 { attribute: "oblique", from: OBLIQUE_THRESHOLD, to: up, excludeTo: false }, { attribute: "oblique", from: OBLIQUE_THRESHOLD, to: 0, excludeTo: true },
-                { attribute: "italic", from: 0, to: down, excludeTo: false }, { attribute: "oblique", from: 0, to: down, excludeTo: false }
+                SHEARING, { attribute: "italic", from: 0, to: down, excludeTo: false }, { attribute: "oblique", from: 0, to: down, excludeTo: false }
             ];
         }
         const angle: number = request.angle * sign;
         if (angle >= OBLIQUE_THRESHOLD) {
             return [
-                { attribute: "oblique", from: angle, to: up, excludeTo: false }, { attribute: "oblique", from: angle, to: 0, excludeTo: true },
+                { attribute: "oblique", from: angle, to: up, excludeTo: false }, { attribute: "oblique", from: angle, to: 0, excludeTo: true }, SHEARING,
                 { attribute: "italic", from: 1, to: up, excludeTo: false }, { attribute: "italic", from: 1, to: 0, excludeTo: true },
                 { attribute: "oblique", from: 0, to: down, excludeTo: false }, { attribute: "italic", from: 0, to: down, excludeTo: false }
             ];
@@ -418,7 +496,7 @@ export class FontMatcher {
         // §5.2 says "italic values less than 1" and then "above 1", leaving out 1, the value of every non-variable italic face;
         // the italic segment starts at 1, or an italic-only family could never match such a request.
         return [
-            { attribute: "oblique", from: angle, to: 0, excludeTo: angle > 0 }, { attribute: "oblique", from: angle, to: up, excludeTo: false },
+            { attribute: "oblique", from: angle, to: 0, excludeTo: angle > 0 }, { attribute: "oblique", from: angle, to: up, excludeTo: false }, SHEARING,
             { attribute: "italic", from: 1, to: 0, excludeTo: true }, { attribute: "italic", from: 1, to: up, excludeTo: false },
             { attribute: "oblique", from: 0, to: down, excludeTo: false }, { attribute: "italic", from: 0, to: down, excludeTo: false }
         ];
@@ -512,13 +590,44 @@ export class FontMatcher {
         }
         const candidate: Candidate = { face, traits, order: face.rule.order };
         const unicode: ReadonlyArray<Range> | undefined = this.unicodeRanges(descriptors["unicode-range"]);
+        const size: Range | undefined = this.descriptorRange((value: CssValue) => value.kind === "number" ? value.value : undefined, descriptors["font-size"]);
         if (style !== undefined && style.slant !== undefined) {
             candidate.slant = style.slant;
         }
         if (unicode !== undefined) {
             candidate.unicode = unicode;
         }
+        if (size !== undefined) {
+            candidate.size = size;
+        }
+        if (OVERRIDE_DESCRIPTORS.some((name: string) => descriptors[name] !== undefined)) {
+            const adjust: CssValue | undefined = descriptors["size-adjust"];
+            candidate.overrides = {
+                sizeAdjust: adjust !== undefined && adjust.kind === "percentage" ? adjust.value / 100 : 1,
+                ascent: this.axisOverrides(descriptors["ascent-override"], false),
+                descent: this.axisOverrides(descriptors["descent-override"], false),
+                lineGap: this.axisOverrides(descriptors["line-gap-override"], false),
+                superscriptPosition: this.axisOverrides(descriptors["superscript-position-override"], true),
+                subscriptPosition: this.axisOverrides(descriptors["subscript-position-override"], true),
+                superscriptSize: this.axisOverrides(descriptors["superscript-size-override"], true),
+                subscriptSize: this.axisOverrides(descriptors["subscript-size-override"], true)
+            };
+        }
         return candidate;
+    }
+
+    private axisOverrides(value: CssValue | undefined, repeated: boolean): AxisOverrides {
+        // CSS Fonts 5 §4.5 and §4.6: the first value is for the x axis and the second for the y axis, which is normal when
+        // omitted for the line metrics and the first value for the superscript and subscript metrics; percentages are of the size.
+        const items: ReadonlyArray<CssValue> = value === undefined ? [] : (value.kind === "list" && value.separator === "space" ? value.items : [value]);
+        const override: (item?: CssValue) => MetricOverride | undefined = (item?: CssValue): MetricOverride | undefined => {
+            if (item !== undefined && item.kind === "percentage") {
+                return item.value / 100;
+            }
+            return item !== undefined && item.kind === "ident" && item.lower === "from-font" ? "from-font" : undefined;
+        };
+        const first: MetricOverride | undefined = override(items[0]);
+        return [first, items.length > 1 ? override(items[1]) : (repeated ? first : undefined)];
     }
 
     private fontTraits(weightClass: number, widthClass: number, selection: number, macStyle: number, italicAngle: () => number, axes?: ReadonlyArray<VariationAxis>): Traits {
@@ -662,21 +771,41 @@ export class FontMatcher {
             axes["opsz"] = request.size;
         }
         this.applySettings(axes, request.variations);
-        const instance: FontInstance = this.instanceAt(candidate, typeface, axes);
+        const instance: FontInstance = this.instanceAt(candidate, typeface, axes, chosen);
         if (!request.opticalSizing || request.adjustedSize === undefined || variations === undefined || !variations.axes.some((axis: VariationAxis) => axis.tag === "opsz")) {
             return instance;
         }
         // §8.1: "apply an optical sizing value appropriate for the adjusted font size", which needs the metrics of a built instance.
         axes["opsz"] = request.adjustedSize(instance);
         this.applySettings(axes, request.variations);
-        return this.instanceAt(candidate, typeface, axes);
+        return this.instanceAt(candidate, typeface, axes, chosen);
     }
 
-    private instanceAt(candidate: Candidate, typeface: Typeface, axes: Readonly<Record<string, number>>): FontInstance {
-        const key: string = typeface.source + "#" + typeface.index + "|" + (typeface.variations === undefined ? "" : JSON.stringify(axes));
+    private instanceAt(candidate: Candidate, typeface: Typeface, axes: Readonly<Record<string, number>>, chosen: Chosen): FontInstance {
+        const shared: string = typeface.source + "#" + typeface.index + "|" + (typeface.variations === undefined ? "" : JSON.stringify(axes));
+        // Each @font-face rule has an instance of its own, since its descriptors apply only to the text it gives glyphs for, and
+        // so does each synthesized face, which draws the same glyphs otherwise.
+        const synthetic: string = chosen.emboldening === undefined && chosen.skew === undefined ? "" : "|" + (chosen.emboldening ?? 0) + "|" + (chosen.skew ?? 0);
+        const key: string = (candidate.face.rule === undefined ? shared : shared + "|" + candidate.face.rule.order) + synthetic;
         let instance: FontInstance | undefined = this.instances.get(key);
         if (instance === undefined) {
-            instance = this.builder.build(typeface, axes);
+            let built: FontInstance | undefined = this.built.get(shared);
+            if (built === undefined) {
+                built = this.builder.build(typeface, axes);
+                this.built.set(shared, built);
+            }
+            instance = key === shared ? built : { ...built };
+            if (candidate.overrides !== undefined) {
+                instance.overrides = candidate.overrides;
+            }
+            if (chosen.emboldening !== undefined) {
+                // CSS Fonts 4 §2.8: "a thin stroke around each glyph", whose width is the user agent's: in font units, as much as the
+                // standard fonts' bold faces thicken their stems for the weight that the synthesized face adds.
+                instance.emboldening = FontMatcher.STEM_GAIN * chosen.emboldening * built.metrics.unitsPerEm;
+            }
+            if (chosen.skew !== undefined) {
+                instance.skew = chosen.skew;
+            }
             this.instances.set(key, instance);
             this.faces.set(instance, candidate.face);
         }

@@ -41,7 +41,6 @@ export interface StrokeStyle {
     extension: string;
     shape: string;
     limit: number;
-    joins: boolean;
     dashes?: readonly [ReadonlyArray<number>, number];
     corner?: number;
     justify?: DashJustify;
@@ -79,8 +78,28 @@ interface Edge {
     radius: number;
 }
 
+interface HotCell {
+    column: number;
+    row: number;
+    centre: Point;
+}
+
+interface Fragment {
+    from: Point;
+    to: Point;
+    count: number;
+}
+
+interface FragmentBands {
+    low: number;
+    high: number;
+    height: number;
+    bands: Array<Array<readonly [Point, Point, Fragment]>>;
+}
+
 const STRAIGHT: number = 1e-12;
 const W_LIMIT: number = 1e-6;
+const SUBDIVISION: number = 16;
 const MOVE: number = 0;
 const LINE: number = 1;
 const CURVE: number = 2;
@@ -224,12 +243,16 @@ export class PathGeometry {
     }
 
     protected oriented(points: ReadonlyArray<Point>): ReadonlyArray<Point> {
+        return this.area(points) > 0 ? [...points].reverse() : points;
+    }
+
+    private area(points: ReadonlyArray<Point>): number {
         let area: number = 0;
         points.forEach((point: Point, index: number) => {
             const next: Point = points[(index + 1) % points.length];
             area += point[0] * next[1] - next[0] * point[1];
         });
-        return area > 0 ? [...points].reverse() : points;
+        return area;
     }
 
     protected circle(center: Point, radius: number, tolerance: number, homography: Homography): Array<Point> {
@@ -278,6 +301,316 @@ export class PathGeometry {
         }
         return result;
     }
+
+    thickened(path: PathData, stroke: StrokeStyle, tolerance: number): PathData {
+        // A shape with a stroke around it as one path for the nonzero rule: the pieces of the stroke, which oriented() turns to a
+        // negative area, wind as the outer contours of the shape do, the largest of its contours, so overlaps add up and never cancel.
+        let outer: number = 0;
+        for (const [points] of this.flattened(path, tolerance, PathGeometry.IDENTITY3)) {
+            const area: number = this.area(points);
+            outer = Math.abs(area) > Math.abs(outer) ? area : outer;
+        }
+        const pieces: PathData = this.strokeOutline(path, stroke, tolerance, PathGeometry.IDENTITY3);
+        const result: PathData = { verbs: [...path.verbs], points: [...path.points] };
+        let verb: number = 0;
+        let coordinate: number = 0;
+        while (verb < pieces.verbs.length) {
+            let count: number = 0;
+            while (pieces.verbs[verb + count] !== CLOSE) {
+                count++;
+            }
+            const corners: Array<Point> = [];
+            for (let index: number = 0; index < count; index++) {
+                corners.push([pieces.points[coordinate + 2 * index], pieces.points[coordinate + 2 * index + 1]]);
+            }
+            (outer > 0 ? corners.reverse() : corners).forEach((point: Point, index: number) => {
+                result.verbs.push(index === 0 ? MOVE : LINE);
+                result.points.push(point[0], point[1]);
+            });
+            result.verbs.push(CLOSE);
+            verb += count + 1;
+            coordinate += 2 * count;
+        }
+        return result;
+    }
+
+    outlineOf(path: PathData, tolerance: number, grid: number): PathData {
+        // The equivalent path (Fill and Stroke 3 §4.6.1) of the area that the nonzero rule fills, by snap rounding (Hobby 1999) on an
+        // integer grid finer than the cells, so that every test is exact and the parts with the area on one side only form closed contours.
+        const scale: number = SUBDIVISION / grid;
+        const rings: Array<Array<Point>> = [];
+        let outer: number = 0;
+        for (const [points] of this.flattened(path, tolerance, PathGeometry.IDENTITY3)) {
+            const ring: Array<Point> = points.length > 1 && this.same(points[0], points[points.length - 1]) ? points.slice(0, -1) : points;
+            if (ring.length > 2) {
+                rings.push(ring.map((point: Point): Point => [Math.round(point[0] * scale), Math.round(point[1] * scale)]));
+                const area: number = this.area(ring);
+                outer = Math.abs(area) > Math.abs(outer) ? area : outer;
+            }
+        }
+        const edges: Array<readonly [Point, Point]> = [];
+        for (const ring of rings) {
+            ring.forEach((point: Point, index: number) => {
+                const next: Point = ring[(index + 1) % ring.length];
+                if (!this.same(point, next)) {
+                    edges.push([point, next]);
+                }
+            });
+        }
+        // The hot cells hold a corner or a crossing of the edges; each edge goes through the centre of every hot cell it touches.
+        const hot: Map<string, HotCell> = new Map<string, HotCell>();
+        const mark: (column: number, row: number) => void = (column: number, row: number): void => {
+            const key: string = column + "," + row;
+            if (!hot.has(key)) {
+                hot.set(key, { column, row, centre: [column * SUBDIVISION + SUBDIVISION / 2, row * SUBDIVISION + SUBDIVISION / 2] });
+            }
+        };
+        for (const [a, b] of edges) {
+            mark(Math.floor(a[0] / SUBDIVISION), Math.floor(a[1] / SUBDIVISION));
+            mark(Math.floor(b[0] / SUBDIVISION), Math.floor(b[1] / SUBDIVISION));
+        }
+        this.crossings(edges, mark);
+        const fragments: Map<string, Fragment> = new Map<string, Fragment>();
+        for (const edge of edges) {
+            // Iterated snap rounding (Halperin and Packer 2002): a piece between two centres that touches another hot cell is routed
+            // through it too, until none does, so that no piece passes through a centre that is not one of its ends.
+            let centres: Array<Point> = this.routed(edge, hot);
+            let changed: boolean = true;
+            while (changed) {
+                const next: Array<Point> = centres.slice(0, 1);
+                for (let at: number = 0; at + 1 < centres.length; at++) {
+                    next.push(...this.routed([centres[at], centres[at + 1]], hot).slice(1));
+                }
+                changed = next.length !== centres.length;
+                centres = next;
+            }
+            for (let at: number = 0; at + 1 < centres.length; at++) {
+                const from: Point = centres[at];
+                const to: Point = centres[at + 1];
+                const forward: string = this.key(from) + "|" + this.key(to);
+                const backward: string = this.key(to) + "|" + this.key(from);
+                const known: Fragment | undefined = fragments.get(forward) ?? fragments.get(backward);
+                if (known === undefined) {
+                    fragments.set(forward, { from, to, count: 1 });
+                } else {
+                    known.count += known.from === from ? 1 : -1;
+                }
+            }
+        }
+        // The winding number on either side of a fragment differs by its count; the one at its middle without it is that of the side
+        // that a ray along x, or along y for a horizontal fragment, leaves into.
+        const across: FragmentBands = this.fragmentBands([...fragments.values()], false);
+        const along: FragmentBands = this.fragmentBands([...fragments.values()], true);
+        const following: Map<string, Array<readonly [Point, Point]>> = new Map<string, Array<readonly [Point, Point]>>();
+        for (const fragment of fragments.values()) {
+            if (fragment.count === 0) {
+                continue;
+            }
+            const turned: boolean = fragment.from[1] === fragment.to[1];
+            const bands: FragmentBands = turned ? along : across;
+            const from: Point = this.framed(fragment.from, turned);
+            const to: Point = this.framed(fragment.to, turned);
+            const winding: number = this.windingAt(bands, [(from[0] + to[0]) / 2, (from[1] + to[1]) / 2], fragment);
+            const left: number = to[1] > from[1] ? winding + fragment.count : winding;
+            const right: number = to[1] > from[1] ? winding : winding - fragment.count;
+            if ((left !== 0) === (right !== 0)) {
+                continue;
+            }
+            const part: readonly [Point, Point] = (left !== 0) === outer > 0 ? [fragment.from, fragment.to] : [fragment.to, fragment.from];
+            const list: Array<readonly [Point, Point]> | undefined = following.get(this.key(part[0]));
+            if (list === undefined) {
+                following.set(this.key(part[0]), [part]);
+            } else {
+                list.push(part);
+            }
+        }
+        const result: PathData = { verbs: [], points: [] };
+        for (const list of following.values()) {
+            while (list.length > 0) {
+                const first: readonly [Point, Point] = list.pop() as readonly [Point, Point];
+                const contour: Array<Point> = [first[0], first[1]];
+                let next: readonly [Point, Point] | undefined = following.get(this.key(first[1]))?.pop();
+                while (next !== undefined) {
+                    contour.push(next[1]);
+                    next = this.same(next[1], first[0]) ? undefined : following.get(this.key(next[1]))?.pop();
+                }
+                if (contour.length > 3 && this.same(contour[0], contour[contour.length - 1])) {
+                    contour.slice(0, -1).forEach((point: Point, index: number) => {
+                        result.verbs.push(index === 0 ? MOVE : LINE);
+                        result.points.push(point[0] / scale, point[1] / scale);
+                    });
+                    result.verbs.push(CLOSE);
+                }
+            }
+        }
+        return result;
+    }
+
+    private key(point: Point): string {
+        return point[0] + "," + point[1];
+    }
+
+    private crossings(edges: ReadonlyArray<readonly [Point, Point]>, mark: (column: number, row: number) => void): void {
+        // The edges are taken in the order of their left ends, so each meets only those that start before it ends. Where two cross
+        // away from their ends, the crossing has rational coordinates, and its cell is the floor of their quotients.
+        const order: Array<number> = edges.map((edge: readonly [Point, Point], index: number) => index)
+            .sort((first: number, second: number) => Math.min(edges[first][0][0], edges[first][1][0]) - Math.min(edges[second][0][0], edges[second][1][0]));
+        for (let first: number = 0; first < order.length; first++) {
+            const [a, b]: readonly [Point, Point] = edges[order[first]];
+            const right: number = Math.max(a[0], b[0]);
+            for (let second: number = first + 1; second < order.length; second++) {
+                const [c, d]: readonly [Point, Point] = edges[order[second]];
+                if (Math.min(c[0], d[0]) > right) {
+                    break;
+                }
+                const atA: number = this.turn(c, d, a);
+                const atB: number = this.turn(c, d, b);
+                if (Math.sign(atA) * Math.sign(atB) >= 0 || Math.sign(this.turn(a, b, c)) * Math.sign(this.turn(a, b, d)) >= 0) {
+                    continue;
+                }
+                // The crossing is a + (b - a) atA / (atA - atB).
+                const denominator: bigint = BigInt(atA - atB) * BigInt(SUBDIVISION);
+                const part: bigint = BigInt(atA);
+                mark(this.floorDivision(BigInt(a[0]) * BigInt(atA - atB) + BigInt(b[0] - a[0]) * part, denominator),
+                    this.floorDivision(BigInt(a[1]) * BigInt(atA - atB) + BigInt(b[1] - a[1]) * part, denominator));
+            }
+        }
+    }
+
+    private turn(a: Point, b: Point, c: Point): number {
+        return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    }
+
+    private floorDivision(numerator: bigint, denominator: bigint): number {
+        const [top, bottom]: readonly [bigint, bigint] = denominator < 0n ? [-numerator, -denominator] : [numerator, denominator];
+        const quotient: bigint = top / bottom;
+        return Number(top % bottom !== 0n && top < 0n ? quotient - 1n : quotient);
+    }
+
+    private routed(edge: readonly [Point, Point], hot: ReadonlyMap<string, HotCell>): Array<Point> {
+        // The centres of the hot cells that the edge touches, in the order it reaches them.
+        const [a, b]: readonly [Point, Point] = edge;
+        const touched: Array<readonly [readonly [number, number], Point]> = [];
+        const left: number = Math.floor(Math.min(a[0], b[0]) / SUBDIVISION);
+        const right: number = Math.floor(Math.max(a[0], b[0]) / SUBDIVISION);
+        const bottom: number = Math.floor(Math.min(a[1], b[1]) / SUBDIVISION);
+        const top: number = Math.floor(Math.max(a[1], b[1]) / SUBDIVISION);
+        const visit: (cell: HotCell) => void = (cell: HotCell): void => {
+            const entry: readonly [number, number] | undefined = this.entry(a, b, cell.column * SUBDIVISION, cell.row * SUBDIVISION, (cell.column + 1) * SUBDIVISION,
+                (cell.row + 1) * SUBDIVISION);
+            if (entry !== undefined) {
+                touched.push([entry, cell.centre]);
+            }
+        };
+        if ((right - left + 1) * (top - bottom + 1) <= hot.size) {
+            for (let column: number = left; column <= right; column++) {
+                for (let row: number = bottom; row <= top; row++) {
+                    const cell: HotCell | undefined = hot.get(column + "," + row);
+                    if (cell !== undefined) {
+                        visit(cell);
+                    }
+                }
+            }
+        } else {
+            for (const cell of hot.values()) {
+                if (cell.column >= left && cell.column <= right && cell.row >= bottom && cell.row <= top) {
+                    visit(cell);
+                }
+            }
+        }
+        touched.sort((first: readonly [readonly [number, number], Point], second: readonly [readonly [number, number], Point]) =>
+            first[0][0] * second[0][1] - second[0][0] * first[0][1]);
+        const centres: Array<Point> = [];
+        for (const [, centre] of touched) {
+            if (centres[centres.length - 1] !== centre) {
+                centres.push(centre);
+            }
+        }
+        return centres;
+    }
+
+    private entry(a: Point, b: Point, left: number, bottom: number, right: number, top: number): readonly [number, number] | undefined {
+        // Liang and Barsky, with the parameters as fractions of integers. A cell holds its left and bottom sides only, as the floor of
+        // a point gives its cell, so a segment that meets the square only on its right or top side, at its middle there, misses it.
+        let enter: readonly [number, number] = [0, 1];
+        let leave: readonly [number, number] = [1, 1];
+        const dx: number = b[0] - a[0];
+        const dy: number = b[1] - a[1];
+        for (const [p, q] of [[-dx, a[0] - left], [dx, right - a[0]], [-dy, a[1] - bottom], [dy, top - a[1]]] as Array<readonly [number, number]>) {
+            if (p === 0) {
+                if (q < 0) {
+                    return undefined;
+                }
+                continue;
+            }
+            const ratio: readonly [number, number] = p > 0 ? [q, p] : [-q, -p];
+            if (p < 0 && ratio[0] * enter[1] > enter[0] * ratio[1]) {
+                enter = ratio;
+            } else if (p > 0 && ratio[0] * leave[1] < leave[0] * ratio[1]) {
+                leave = ratio;
+            }
+        }
+        if (enter[0] * leave[1] > leave[0] * enter[1]) {
+            return undefined;
+        }
+        const middle: bigint = BigInt(enter[0]) * BigInt(leave[1]) + BigInt(leave[0]) * BigInt(enter[1]);
+        const whole: bigint = 2n * BigInt(enter[1]) * BigInt(leave[1]);
+        const x: bigint = BigInt(a[0]) * whole + BigInt(dx) * middle;
+        const y: bigint = BigInt(a[1]) * whole + BigInt(dy) * middle;
+        return x < BigInt(right) * whole && y < BigInt(top) * whole ? enter : undefined;
+    }
+
+    private framed(point: Point, turned: boolean): Point {
+        // A quarter turn clockwise keeps every winding number and makes a horizontal fragment vertical.
+        return turned ? [point[1], -point[0]] : point;
+    }
+
+    private fragmentBands(fragments: ReadonlyArray<Fragment>, turned: boolean): FragmentBands {
+        // The fragments by horizontal bands of the frame, so that the winding number at a point counts only those of its band.
+        const framed: Array<readonly [Point, Point, Fragment]> = fragments.filter((fragment: Fragment) => fragment.count !== 0)
+            .map((fragment: Fragment): readonly [Point, Point, Fragment] => [this.framed(fragment.from, turned), this.framed(fragment.to, turned), fragment]);
+        let low: number = Number.POSITIVE_INFINITY;
+        let high: number = Number.NEGATIVE_INFINITY;
+        for (const [a, b] of framed) {
+            low = Math.min(low, a[1], b[1]);
+            high = Math.max(high, a[1], b[1]);
+        }
+        const count: number = Math.max(1, Math.ceil(Math.sqrt(framed.length)));
+        const height: number = high > low ? (high - low) / count : 1;
+        const bands: Array<Array<readonly [Point, Point, Fragment]>> = [];
+        for (let index: number = 0; index < count; index++) {
+            bands.push([]);
+        }
+        for (const entry of framed) {
+            const first: number = Math.min(count - 1, Math.floor((Math.min(entry[0][1], entry[1][1]) - low) / height));
+            const last: number = Math.min(count - 1, Math.floor((Math.max(entry[0][1], entry[1][1]) - low) / height));
+            for (let index: number = first; index <= last; index++) {
+                bands[index].push(entry);
+            }
+        }
+        return { low, high, height, bands };
+    }
+
+    private windingAt(bands: FragmentBands, point: Point, without: Fragment): number {
+        // The winding number at the point of a ray along x, each fragment counted as many times as its count, the one given left out.
+        if (point[1] < bands.low || point[1] > bands.high) {
+            return 0;
+        }
+        let winding: number = 0;
+        for (const [start, end, fragment] of bands.bands[Math.min(bands.bands.length - 1, Math.floor((point[1] - bands.low) / bands.height))]) {
+            if (fragment === without) {
+                continue;
+            }
+            const side: number = (end[0] - start[0]) * (point[1] - start[1]) - (point[0] - start[0]) * (end[1] - start[1]);
+            if (start[1] <= point[1] && end[1] > point[1] && side > 0) {
+                winding += fragment.count;
+            } else if (start[1] > point[1] && end[1] <= point[1] && side < 0) {
+                winding -= fragment.count;
+            }
+        }
+        return winding;
+    }
+
 
     outline(path: PathData, width: number, tolerance: number): PathData {
         // The edge of the stroke of smooth open subpaths with butt ends: each side offset by half the width, without the loops
@@ -603,11 +936,8 @@ export class PathGeometry {
 
     private corner(point: Point, incoming: Point, outgoing: Point, vertex: Vertex | undefined, stroke: StrokeStyle, half: number, piece: (points: ReadonlyArray<Point>) => void,
         tolerance: number, homography: Homography): void {
-        // §4.2.2: an inset stroke ignores stroke-linejoin, so its vertices have no join shape at all.
-        if (vertex === undefined) {
-            this.bevel(point, incoming, outgoing, half, piece);
-        } else if (stroke.joins) {
-            this.bevel(point, incoming, outgoing, half, piece);
+        this.bevel(point, incoming, outgoing, half, piece);
+        if (vertex !== undefined) {
             this.join(point, vertex, stroke, half, piece, tolerance, homography);
         }
     }
@@ -887,27 +1217,33 @@ export class PathGeometry {
     }
 
     private untangled(points: ReadonlyArray<Point>, half: number): Array<Point> {
-        // A loop of an offset is cut out where its two ends cross; it is no longer than a turn round a circle of the distance.
-        const result: Array<Point> = [];
+        // A loop of an offset is cut out where its two ends cross; it is no longer than a turn round a circle of the distance. After
+        // a cut the offset goes on from the crossing along the rest of the part it crossed, which can cross the offset again.
+        if (points.length === 0) {
+            return [];
+        }
+        const result: Array<Point> = [points[0]];
         const reach: number = 2 * Math.PI * half;
         let index: number = 0;
-        while (index < points.length) {
-            result.push(points[index]);
+        let from: Point = points[0];
+        while (index + 1 < points.length) {
             let crossing: readonly [number, Point] | undefined;
             let travelled: number = 0;
             for (let other: number = index + 2; other + 1 < points.length && travelled <= reach; other++) {
                 travelled += Math.hypot(points[other][0] - points[other - 1][0], points[other][1] - points[other - 1][1]);
-                const hit: Point | undefined = index + 1 < points.length ? this.crossing(points[index], points[index + 1], points[other], points[other + 1]) : undefined;
+                const hit: Point | undefined = this.crossing(from, points[index + 1], points[other], points[other + 1]);
                 if (hit !== undefined) {
                     crossing = [other, hit];
                 }
             }
             if (crossing === undefined) {
                 index++;
+                from = points[index];
             } else {
-                result.push(crossing[1]);
-                index = crossing[0] + 1;
+                index = crossing[0];
+                from = crossing[1];
             }
+            result.push(from);
         }
         return result;
     }

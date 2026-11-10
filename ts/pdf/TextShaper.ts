@@ -327,11 +327,10 @@ export class TextShaper {
             const features: Map<string, number> = new Map<string, number>(tags).set(position, 0);
             const plain: Array<GlyphInfo> = this.shaper.shape(codes, { ...request, features }, run.font);
             if (!this.allVariants(infos, plain, codes)) {
-                // The reduced size is that of font-size: smaller, and the shifts are the defaults that CSS Inline 3
-                // §4.2.3 gives for sub and super: one fifth of the font size down, one third up.
                 infos = plain;
-                shift = position === "sups" ? base * FontSynthesis.SUPERSCRIPT_RISE : -base * FontSynthesis.SUBSCRIPT_DROP;
-                size = base / FontSynthesis.POSITION_RATIO;
+                const form: readonly [number, number] = this.synthesis.scriptForm(run.font, position, run.upright, base);
+                shift = form[0];
+                size = form[1];
             }
         }
         const shaping: Shaping = { infos, codes, added, count, shift, size };

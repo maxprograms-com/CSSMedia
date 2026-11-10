@@ -101,9 +101,11 @@ export class PdfPage {
         return this.state("<< /Type /ExtGState /ca " + this.syntax.number(fillAlpha) + " /CA " + this.syntax.number(strokeAlpha) + " /BM " + this.syntax.name(blend) + " >>");
     }
 
-    useMask(group: number, luminosity: boolean): string {
-        // §11.6.5.2: a soft mask from the luminosity or the alpha of a transparency group, whose backdrop is black.
-        return this.state("<< /Type /ExtGState /SMask << /Type /Mask /S " + (luminosity ? "/Luminosity" : "/Alpha") + " /G " + this.syntax.reference(group) + " >> >>");
+    useMask(group: number, luminosity: boolean, inverted: boolean = false): string {
+        // §11.6.5.2: a soft mask from the luminosity or the alpha of a transparency group, whose backdrop is black; an inverted
+        // mask has the transfer function 1 - x (Table 142, TR).
+        return this.state("<< /Type /ExtGState /SMask << /Type /Mask /S " + (luminosity ? "/Luminosity" : "/Alpha") + " /G " + this.syntax.reference(group)
+            + (inverted ? " /TR << /FunctionType 2 /Domain [0 1] /C0 [1] /C1 [0] /N 1 >>" : "") + " >> >>");
     }
 
     private state(entries: string): string {

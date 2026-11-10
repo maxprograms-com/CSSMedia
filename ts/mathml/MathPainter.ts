@@ -26,6 +26,7 @@ import type { BoxFragment, LineFragment, TextPiece } from "../layout/Fragment.js
 import { BackgroundPainter } from "../paint/BackgroundPainter.js";
 import type { CornerRadii, PhysicalSides } from "../paint/BorderPainter.js";
 import { BorderPainter } from "../paint/BorderPainter.js";
+import type { PaletteRule } from "../paint/ColorGlyphPainter.js";
 import type { ColorOutput } from "../paint/ColorOutput.js";
 import { ImagePainter } from "../paint/ImagePainter.js";
 import { PagePainter } from "../paint/PagePainter.js";
@@ -61,9 +62,9 @@ export class MathPainter {
     private links: Array<readonly [PageRectangle, string, boolean]> = [];
     private ink?: Area;
 
-    constructor(document: PdfDocument, colors: ColorOutput, metrics: FontMetrics, viewport: Size, images: ImageFormats) {
+    constructor(document: PdfDocument, colors: ColorOutput, metrics: FontMetrics, viewport: Size, images: ImageFormats, palettes: ReadonlyArray<PaletteRule>) {
         this.colors = colors;
-        this.text = new TextPainter(document, colors, this.sizes, metrics, viewport);
+        this.text = new TextPainter(document, colors, this.sizes, metrics, viewport, palettes, images);
         this.borders = new BorderPainter(colors);
         this.backgrounds = new BackgroundPainter(colors, this.borders);
         this.images = new ImagePainter(images, this.sizes);

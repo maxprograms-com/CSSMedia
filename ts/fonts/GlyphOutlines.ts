@@ -18,7 +18,7 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
-import type { PathData, Point } from "../geometry/PathGeometry.js";
+import type { PathData, Point, StrokeStyle } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
 import { ByteCursor } from "./ByteCursor.js";
 import type { OutlineBounds } from "./CompactOutlines.js";
@@ -53,12 +53,17 @@ const ARGS_ARE_XY_VALUES: number = 0x0002;
 const SCALED_COMPONENT_OFFSET: number = 0x0800;
 const UNSCALED_COMPONENT_OFFSET: number = 0x1000;
 const MAXIMUM_DEPTH: number = 16;
+const MITER_LIMIT: number = 4;
+const WHOLE_UNIT: number = 0.5;
+const GRID: number = 1 / 64;
 
 export class GlyphOutlines {
 
     private static readonly compact: WeakMap<FontInstance, CompactOutlines | null> = new WeakMap<FontInstance, CompactOutlines | null>();
+    private static readonly grown: WeakMap<FontInstance, Map<number, PathData | null>> = new WeakMap<FontInstance, Map<number, PathData | null>>();
 
     private readonly variations: PhantomPointVariations = new PhantomPointVariations();
+    private readonly geometry: PathGeometry = new PathGeometry();
 
     points(tables: Readonly<Record<string, Buffer>>, glyph: number, coordinates: Float64Array): OutlinePoints | undefined {
         // OpenType glyf: the control points of a glyph at a variation instance, those of a composite glyph being the points
@@ -69,6 +74,20 @@ export class GlyphOutlines {
     bounds(instance: FontInstance, glyph: number): OutlineBounds | undefined {
         // The bounding box of a glyph's outline at the instance, in font units: the glyf header, which the glyph's points
         // give at a variation instance, the CharString of CFF and CFF2, or the character box of the AFM file.
+        if (instance.emboldening !== undefined) {
+            const path: PathData | undefined = this.path(instance, glyph);
+            if (path === undefined || path.points.length === 0) {
+                return undefined;
+            }
+            const bounds: OutlineBounds = { xMin: path.points[0], yMin: path.points[1], xMax: path.points[0], yMax: path.points[1] };
+            for (let index: number = 2; index < path.points.length; index += 2) {
+                bounds.xMin = Math.min(bounds.xMin, path.points[index]);
+                bounds.yMin = Math.min(bounds.yMin, path.points[index + 1]);
+                bounds.xMax = Math.max(bounds.xMax, path.points[index]);
+                bounds.yMax = Math.max(bounds.yMax, path.points[index + 1]);
+            }
+            return bounds;
+        }
         const typeface: Typeface = instance.typeface;
         const boxes: Int16Array | undefined = typeface.glyphs.bounds;
         if (boxes !== undefined) {
@@ -100,12 +119,83 @@ export class GlyphOutlines {
     path(instance: FontInstance, glyph: number): PathData | undefined {
         // The outline at the instance in font units, from glyf or from the CharStrings of CFF and CFF2; the standard fonts have
         // only the metrics of their AFM files.
+        if (instance.emboldening !== undefined) {
+            return this.grownPath(instance, instance.emboldening, glyph);
+        }
+        return this.designed(instance, glyph);
+    }
+
+    programPoints(instance: FontInstance, glyph: number): OutlinePoints | undefined {
+        // The curves of a synthesized bold glyph are quadratic ones raised to cubic ones, so each gives back its one control point.
+        if (instance.emboldening === undefined) {
+            return this.points(instance.typeface.tables, glyph, instance.coordinates);
+        }
+        const path: PathData | undefined = this.path(instance, glyph);
+        if (path === undefined) {
+            return undefined;
+        }
+        const xs: Array<number> = [];
+        const ys: Array<number> = [];
+        const flags: Array<number> = [];
+        const ends: Array<number> = [];
+        const add: (x: number, y: number, on: boolean) => void = (x: number, y: number, on: boolean): void => {
+            xs.push(x);
+            ys.push(y);
+            flags.push(on ? ON_CURVE : 0);
+        };
+        let first: number = 0;
+        let index: number = 0;
+        for (const verb of path.verbs) {
+            if (verb === PathGeometry.CLOSE) {
+                // A contour ends at its start, which TrueType does not repeat.
+                const last: number = xs.length - 1;
+                if (last > first && xs[last] === xs[first] && ys[last] === ys[first]) {
+                    xs.pop();
+                    ys.pop();
+                    flags.pop();
+                }
+                ends.push(xs.length - 1);
+                first = xs.length;
+                continue;
+            }
+            if (verb === PathGeometry.CURVE) {
+                const x: number = xs[xs.length - 1];
+                const y: number = ys[ys.length - 1];
+                add(x + 3 * (path.points[index] - x) / 2, y + 3 * (path.points[index + 1] - y) / 2, false);
+                index += 4;
+            }
+            add(path.points[index], path.points[index + 1], true);
+            index += 2;
+        }
+        return { xs: Float64Array.from(xs), ys: Float64Array.from(ys), ends, onCurve: Uint8Array.from(flags) };
+    }
+
+    private designed(instance: FontInstance, glyph: number): PathData | undefined {
         const tables: Readonly<Record<string, Buffer>> = instance.typeface.tables;
         if (tables["glyf"] !== undefined) {
             const outline: OutlinePoints | undefined = this.points(tables, glyph, instance.coordinates);
             return outline === undefined ? undefined : this.contours(outline);
         }
         return this.compactOf(instance)?.outline(glyph);
+    }
+
+    private grownPath(instance: FontInstance, stroke: number, glyph: number): PathData | undefined {
+        // CSS Fonts 4 §2.8: the glyph with "a thin stroke around" it, miter joined with the limit of 4 (Fill and Stroke 3 §4.2.5); its
+        // program holds whole font units, below which the flattening stays, and the grid is a power of two, so cell centres are exact.
+        let glyphs: Map<number, PathData | null> | undefined = GlyphOutlines.grown.get(instance);
+        if (glyphs === undefined) {
+            glyphs = new Map<number, PathData | null>();
+            GlyphOutlines.grown.set(instance, glyphs);
+        }
+        const known: PathData | null | undefined = glyphs.get(glyph);
+        if (known !== undefined) {
+            return known ?? undefined;
+        }
+        const designed: PathData | undefined = this.designed(instance, glyph);
+        const thin: StrokeStyle = { width: stroke, cap: "butt", extension: "miter", shape: "fallback", limit: MITER_LIMIT };
+        const path: PathData | null = designed === undefined ? null : this.geometry.outlineOf(this.geometry.thickened(designed, thin, WHOLE_UNIT), WHOLE_UNIT, GRID);
+        glyphs.set(glyph, path);
+        return path ?? undefined;
     }
 
     private compactOf(instance: FontInstance): CompactOutlines | undefined {

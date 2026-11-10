@@ -249,10 +249,28 @@ export interface CatalogFace {
     standard?: string;
 }
 
+export type MetricOverride = number | "from-font";
+
+export type AxisOverrides = readonly [MetricOverride | undefined, MetricOverride | undefined];
+
+export interface FaceOverrides {
+    sizeAdjust: number;
+    ascent: AxisOverrides;
+    descent: AxisOverrides;
+    lineGap: AxisOverrides;
+    superscriptPosition: AxisOverrides;
+    subscriptPosition: AxisOverrides;
+    superscriptSize: AxisOverrides;
+    subscriptSize: AxisOverrides;
+}
+
 export interface FontInstance {
     typeface: Typeface;
     coordinates: Float64Array;
     advances: Float64Array;
     verticalAdvances?: Float64Array;
     metrics: FaceMetrics;
+    overrides?: FaceOverrides;
+    emboldening?: number;
+    skew?: number;
 }

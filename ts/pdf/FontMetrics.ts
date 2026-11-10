@@ -22,7 +22,7 @@ import type { CssValue } from "../css/values/CssValue.js";
 import { CharacterMapLookup } from "../fonts/CharacterMapLookup.js";
 import { FontCatalog } from "../fonts/FontCatalog.js";
 import { InstanceBuilder } from "../fonts/InstanceBuilder.js";
-import type { BaseCoordinate, BaselineAxis, FaceMetrics, FontBaselines, FontInstance, LineMetrics, ScriptBaselines } from "../fonts/Typeface.js";
+import type { BaseCoordinate, BaselineAxis, FaceMetrics, FaceOverrides, FontBaselines, FontInstance, LineMetrics, MetricOverride, ScriptBaselines } from "../fonts/Typeface.js";
 import { VerticalMetrics } from "../fonts/VerticalMetrics.js";
 import { MathTable } from "../mathml/MathTable.js";
 import type { FamilyReference, FontMatcher, FontRequest } from "./FontMatcher.js";
@@ -36,7 +36,7 @@ const DECORATION_OFFSET: number = 10;
 
 export class FontMetrics {
 
-    private readonly matcher: FontMatcher;
+    readonly matcher: FontMatcher;
     private readonly lookup: CharacterMapLookup = new CharacterMapLookup();
     private readonly verticalMetrics: VerticalMetrics = new VerticalMetrics();
     private readonly instances: InstanceBuilder = new InstanceBuilder();
@@ -47,6 +47,10 @@ export class FontMetrics {
 
     constructor(matcher: FontMatcher) {
         this.matcher = matcher;
+    }
+
+    emboldening(font: FontInstance, size: number): number {
+        return font.emboldening === undefined ? 0 : font.emboldening * size / font.metrics.unitsPerEm;
     }
 
     unsettled(values: Readonly<Record<string, CssValue>>): void {
@@ -60,7 +64,7 @@ export class FontMetrics {
         if (key === undefined) {
             key = JSON.stringify([values["font-family"], values["font-size"], values["font-weight"], values["font-width"],
             values["font-style"], values["font-optical-sizing"], values["font-variation-settings"], values["font-size-adjust"], values["writing-mode"],
-            values["text-orientation"]]);
+            values["text-orientation"], values["font-synthesis-weight"], values["font-synthesis-style"]]);
             if (!this.changing.has(values)) {
                 // Many styles have the same key, and each of them would keep its own copy of the text.
                 const shared: string | undefined = this.interned.get(key);
@@ -97,14 +101,14 @@ export class FontMetrics {
                 return this.fontSize(values);
             }
             const height: number | undefined = instance.metrics.capHeight;
-            return this.scaled(instance, height !== undefined && height > 0 ? height : this.ascentMetrics(instance.metrics).ascender, values);
+            return this.scaled(instance, height !== undefined && height > 0 ? height : this.lines(instance, this.upright(values)).ascender, values);
         });
     }
 
     zeroAdvance(values: Readonly<Record<string, CssValue>>): number {
         // CSS Values 4 §6.1.1: the advance of "0" in the font used to render it; otherwise 0.5em, or 1em when typeset upright.
         return this.cached("ch", values, () => {
-            const upright: boolean = this.vertical(values) && this.keyword(values, "text-orientation") === "upright";
+            const upright: boolean = this.upright(values);
             const advance: number | undefined = this.advance(values, ZERO, upright);
             return advance ?? (upright ? this.fontSize(values) : this.fontSize(values) / 2);
         });
@@ -138,9 +142,10 @@ export class FontMetrics {
                 return this.fontSize(values);
             }
             // CSS Inline 3 §3.2.2: the ascent and descent metrics, and the line gap floored at zero, which normal may include.
-            // CSS Fonts 5 §3.4: font-size-adjust "does not affect the used value of line-height".
-            const metrics: LineMetrics = this.ascentMetrics(instance.metrics);
-            return (metrics.ascender - metrics.descender + Math.max(0, metrics.lineGap)) * this.fontSize(values) / instance.metrics.unitsPerEm;
+            // CSS Fonts 5 §3.4: font-size-adjust "does not affect the used value of line-height"; §4.4: size-adjust scales the metrics.
+            const metrics: LineMetrics = this.lines(instance, this.upright(values));
+            return (metrics.ascender - metrics.descender + Math.max(0, metrics.lineGap)) * this.fontSize(values) * (instance.overrides?.sizeAdjust ?? 1)
+                / instance.metrics.unitsPerEm;
         });
     }
 
@@ -184,7 +189,7 @@ export class FontMetrics {
         // CSS Inline 3 §3.2.2: the ascent metric of the first available font; without a font, the font size.
         return this.cached("ascent", values, () => {
             const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            return instance === undefined ? this.fontSize(values) : this.scaled(instance, this.ascentMetrics(instance.metrics).ascender, values);
+            return instance === undefined ? this.fontSize(values) : this.scaled(instance, this.lines(instance, this.upright(values)).ascender, values);
         });
     }
 
@@ -192,7 +197,7 @@ export class FontMetrics {
         // CSS Inline 3 §3.2.2: the descent metric of the first available font, as a distance below the baseline.
         return this.cached("descent", values, () => {
             const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            return instance === undefined ? 0 : -this.scaled(instance, this.ascentMetrics(instance.metrics).descender, values);
+            return instance === undefined ? 0 : -this.scaled(instance, this.lines(instance, this.upright(values)).descender, values);
         });
     }
 
@@ -203,18 +208,18 @@ export class FontMetrics {
             return 0;
         }
         // §4.1: under text-orientation: upright, middle uses the central baseline.
-        const upright: boolean = this.vertical(values) && this.keyword(values, "text-orientation") === "upright";
+        const upright: boolean = this.upright(values);
         const used: string = type === "middle" && upright ? "central" : type;
         const vertical: boolean = this.vertical(values);
         return this.cached("baseline-" + used + (vertical ? "-vertical" : ""), values, () => {
             const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            return instance === undefined ? 0 : this.fontBaseline(instance, this.usedSize(values, instance), used, vertical);
+            return instance === undefined ? 0 : this.fontBaseline(instance, this.usedSize(values, instance), used, vertical, upright);
         });
     }
 
-    fontBaseline(instance: FontInstance, size: number, type: string, vertical: boolean): number {
+    fontBaseline(instance: FontInstance, size: number, type: string, vertical: boolean, upright: boolean): number {
         const metrics: FaceMetrics = instance.metrics;
-        const line: LineMetrics = this.ascentMetrics(metrics);
+        const line: LineMetrics = this.lines(instance, upright);
         const under: number | undefined = this.tableBaseline(instance, "ideo", vertical);
         const over: number | undefined = this.tableBaseline(instance, "idtp", vertical);
         let units: number = 0;
@@ -267,10 +272,10 @@ export class FontMetrics {
         return units * size / metrics.unitsPerEm;
     }
 
-    fontExtent(instance: FontInstance, size: number): readonly [number, number] {
+    fontExtent(instance: FontInstance, size: number, upright: boolean): readonly [number, number] {
         // CSS Inline 3 §5.3: with line-height: normal the ascent and descent of each font that gives glyphs count, and "the
         // font's line gap metric may also be incorporated into A and D by adding half to each side".
-        const line: LineMetrics = this.ascentMetrics(instance.metrics);
+        const line: LineMetrics = this.lines(instance, upright);
         const scale: number = size / instance.metrics.unitsPerEm;
         const half: number = Math.max(0, line.lineGap) / 2;
         return [(line.ascender + half) * scale, (half - line.descender) * scale];
@@ -338,6 +343,8 @@ export class FontMetrics {
         const keyword: string = items !== undefined && items.length > 0 && items[0].kind === "ident" ? items[0].lower : "normal";
         const angle: CssValue | undefined = items?.[1];
         const optical: CssValue | undefined = values["font-optical-sizing"];
+        const synthesisWeight: CssValue | undefined = values["font-synthesis-weight"];
+        const synthesisStyle: CssValue | undefined = values["font-synthesis-style"];
         const request: FontRequest = {
             families: this.families(values["font-family"]),
             weight: weight !== undefined && weight.kind === "number" ? weight.value : 400,
@@ -345,7 +352,10 @@ export class FontMetrics {
             style: keyword === "normal" || keyword === "left" || keyword === "right" || keyword === "oblique" ? keyword : "italic",
             angle: angle !== undefined && angle.kind === "dimension" ? angle.value : 0,
             size: this.fontSize(values),
-            opticalSizing: !(optical !== undefined && optical.kind === "ident" && optical.lower === "none")
+            opticalSizing: !(optical !== undefined && optical.kind === "ident" && optical.lower === "none"),
+            boldSynthesis: !(synthesisWeight !== undefined && synthesisWeight.kind === "ident" && synthesisWeight.lower === "none"),
+            styleSynthesis: synthesisStyle !== undefined && synthesisStyle.kind === "ident" && (synthesisStyle.lower === "none" || synthesisStyle.lower === "oblique-only")
+                ? synthesisStyle.lower as "none" | "oblique-only" : "auto"
         };
         const variations: CssValue | undefined = values["font-variation-settings"];
         if (variations !== undefined) {
@@ -387,9 +397,24 @@ export class FontMetrics {
         return advances === undefined || glyph >= advances.length ? undefined : this.scaled(instance, advances[glyph], values);
     }
 
-    private ascentMetrics(metrics: FaceMetrics): LineMetrics {
-        // CSS Inline 3 §3.2.2 recommends sTypoAscender and sTypoDescender, and the hhea metrics in their absence.
-        return metrics.typographic ?? metrics.horizontal;
+    private lines(instance: FontInstance, upright: boolean): LineMetrics {
+        // CSS Inline 3 §3.2.1 recommends sTypoAscender and sTypoDescender, and the hhea metrics in their absence. CSS Fonts 5 §4.5:
+        // an override replaces a metric by a share of the font size, with its y axis value "when typesetting upright".
+        const metrics: LineMetrics = instance.metrics.typographic ?? instance.metrics.horizontal;
+        const overrides: FaceOverrides | undefined = instance.overrides;
+        if (overrides === undefined) {
+            return metrics;
+        }
+        const axis: number = upright ? 1 : 0;
+        const ascent: MetricOverride | undefined = overrides.ascent[axis];
+        const descent: MetricOverride | undefined = overrides.descent[axis];
+        const lineGap: MetricOverride | undefined = overrides.lineGap[axis];
+        const em: number = instance.metrics.unitsPerEm;
+        return {
+            ascender: typeof ascent === "number" ? ascent * em : metrics.ascender,
+            descender: typeof descent === "number" ? -descent * em : metrics.descender,
+            lineGap: typeof lineGap === "number" ? lineGap * em : metrics.lineGap
+        };
     }
 
     private scaled(instance: FontInstance, units: number, values: Readonly<Record<string, CssValue>>): number {
@@ -397,17 +422,18 @@ export class FontMetrics {
     }
 
     usedSize(values: Readonly<Record<string, CssValue>>, instance: FontInstance): number {
-        // CSS Fonts 5 §3.4: "the adjusted font size to use u is calculated as: u = ( m / m′ ) s", for each font that is used;
-        // a font that does not have the metric keeps the computed size.
+        // CSS Fonts 5 §3.4: "u = ( m / m′ ) s" for each font that is used, a font without the metric keeping the computed size;
+        // §4.4: size-adjust scales the glyphs of its font, and font-size-adjust "is applied after" it.
         const size: number = this.fontSize(values);
+        const sizeAdjust: number = instance.overrides?.sizeAdjust ?? 1;
         const adjust: CssValue | undefined = values["font-size-adjust"];
         if (adjust === undefined || adjust.kind !== "list" || adjust.items.length !== 2) {
-            return size;
+            return size * sizeAdjust;
         }
         const metric: CssValue = adjust.items[0];
         const wanted: CssValue = adjust.items[1];
         const own: number | undefined = metric.kind === "ident" && wanted.kind === "number" ? this.aspect(instance, metric.lower) : undefined;
-        return own === undefined || wanted.kind !== "number" ? size : size * wanted.value / own;
+        return own === undefined || wanted.kind !== "number" ? size * sizeAdjust : size * wanted.value / own * sizeAdjust;
     }
 
     firstAspect(values: Readonly<Record<string, CssValue>>, metric: string): number | undefined {
@@ -417,7 +443,7 @@ export class FontMetrics {
 
     private aspect(instance: FontInstance, metric: string): number | undefined {
         // CSS Fonts 5 §3.4: the x-height, the cap-height, the advance width of "0", or the advance width or height of "水",
-        // each "divided by the font size".
+        // each "divided by the font size"; §4.4: size-adjust scales "all metrics associated with this font".
         const metrics: FaceMetrics = instance.metrics;
         let units: number | undefined;
         switch (metric) {
@@ -439,7 +465,7 @@ export class FontMetrics {
             default:
                 units = undefined;
         }
-        return units === undefined || units <= 0 ? undefined : units / metrics.unitsPerEm;
+        return units === undefined || units <= 0 ? undefined : units * (instance.overrides?.sizeAdjust ?? 1) / metrics.unitsPerEm;
     }
 
     private glyphAdvance(instance: FontInstance, code: number, vertical: boolean): number | undefined {
@@ -453,6 +479,10 @@ export class FontMetrics {
     vertical(values: Readonly<Record<string, CssValue>>): boolean {
         const mode: string | undefined = this.keyword(values, "writing-mode");
         return mode === "vertical-rl" || mode === "vertical-lr";
+    }
+
+    private upright(values: Readonly<Record<string, CssValue>>): boolean {
+        return this.vertical(values) && this.keyword(values, "text-orientation") === "upright";
     }
 
     private keyword(values: Readonly<Record<string, CssValue>>, property: string): string | undefined {

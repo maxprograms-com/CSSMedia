@@ -41,15 +41,15 @@ export class PdfFonts {
     }
 
     font(instance: FontInstance, vertical: boolean): PdfFont {
-        // One PDF font for each typeface, variation instance and writing direction; a standard font has no vertical
-        // metrics in PDF, so its upright glyphs are turned by whoever paints them.
+        // One PDF font for each typeface, variation instance, synthesized bold face and writing direction; a standard font has
+        // no vertical metrics in PDF, so its upright glyphs are turned by whoever paints them.
         const standard: boolean = instance.typeface.standardFont !== undefined;
         let identity: number | undefined = this.typefaces.get(instance.typeface);
         if (identity === undefined) {
             identity = this.typefaces.size;
             this.typefaces.set(instance.typeface, identity);
         }
-        const key: string = identity + "|" + Array.from(instance.coordinates).join(",") + (vertical && !standard ? "|V" : "|H");
+        const key: string = identity + "|" + Array.from(instance.coordinates).join(",") + "|" + (instance.emboldening ?? 0) + (vertical && !standard ? "|V" : "|H");
         let font: PdfFont | undefined = this.fonts.get(key);
         if (font === undefined) {
             font = standard ? new StandardPdfFont(this.file, instance) : new EmbeddedPdfFont(this.file, instance, vertical, this.tag(key + instance.typeface.source));
