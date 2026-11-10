@@ -47,6 +47,8 @@ interface Shaping {
     sources?: Array<number>;
     shift: number;
     size: number;
+    form?: string;
+    synthesized: boolean;
 }
 
 const ZERO_WIDTH_JOINER: number = 0x200D;
@@ -93,6 +95,9 @@ export class TextShaper {
     shape(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, runs: Array<TextRun>,
         combinations: ReadonlyArray<Combination>): Array<ShapedRun> {
         const sizes: Map<TextRun, number> = new Map<TextRun, number>();
+        const shapings: Array<Shaping> = [];
+        const nodes: Array<TextSequence> = [];
+        const narrows: Array<boolean> = [];
         let item: number = 0;
         let combination: number = 0;
         for (const [index, run] of runs.entries()) {
@@ -108,7 +113,31 @@ export class TextShaper {
             if (run.combined) {
                 sizes.set(run, run.size);
             }
-            this.store(run, this.glyphsOf(codepoints, runs, index, items[item].node as TextSequence, run.size, narrow));
+            const node: TextSequence = items[item].node as TextSequence;
+            nodes.push(node);
+            narrows.push(narrow);
+            shapings.push(this.glyphsOf(codepoints, runs, index, node, run.size, narrow));
+        }
+        // CSS Fonts 4 §6.5: synthesis is decided "for a given contiguous run of text" in sub or super, which can span several
+        // fonts and elements, "to avoid a mixture of variant glyphs and synthesized ones".
+        let first: number = 0;
+        while (first < runs.length) {
+            const form: string | undefined = shapings[first].form;
+            let last: number = first + 1;
+            let synthesized: boolean = shapings[first].synthesized;
+            while (form !== undefined && last < runs.length && shapings[last].form === form) {
+                synthesized = synthesized || shapings[last].synthesized;
+                last++;
+            }
+            for (let index: number = first; synthesized && index < last; index++) {
+                if (!shapings[index].synthesized) {
+                    shapings[index] = this.glyphsOf(codepoints, runs, index, nodes[index], runs[index].size, narrows[index], undefined, true);
+                }
+            }
+            first = last;
+        }
+        for (const [index, run] of runs.entries()) {
+            this.store(run, shapings[index]);
         }
         // Every run has its glyphs now.
         const shaped: Array<ShapedRun> = runs as Array<ShapedRun>;
@@ -276,7 +305,7 @@ export class TextShaper {
     }
 
     private glyphsOf(codepoints: ReadonlyArray<number>, runs: ReadonlyArray<TextRun>, index: number, node: TextSequence, base: number, narrow: boolean,
-        extra?: string): Shaping {
+        extra?: string, synthesize?: boolean): Shaping {
         const run: TextRun = runs[index];
         const rightToLeft: boolean = (run.level & 1) === 1;
         // CSS Writing Modes 4 §5.1.1: "characters from horizontal cursive scripts (such as Arabic) are shaped in their
@@ -288,9 +317,19 @@ export class TextShaper {
         const before: boolean = joins && run.contextBefore && JOINS_NEXT.has(this.joining.joiningTypeOf(codepoints[run.start - 1]));
         const after: boolean = joins && next !== undefined && next.contextBefore && next.start === run.end && JOINS_PREVIOUS.has(this.joining.joiningTypeOf(codepoints[run.end]));
         const codes: Array<number> = before ? [ZERO_WIDTH_JOINER] : [];
-        const sources: Array<number> | undefined = run.capitals ? [] : undefined;
+        // §5.1.1: upright typesetting uses "vertical font metrics" and the vertical font features; sideways typesetting
+        // uses "horizontal metrics and composition".
+        const set: FontFeatureSet = this.featureSet(node.style.values, run.font, run.upright);
+        let tags: ReadonlyMap<string, number> = set.tags;
+        // CSS Fonts 4 §6.6: unicase without unic in a font that has small capitals lowercases the uppercase letters for
+        // smcp; with smcp turned off by font-feature-settings they stay as they are, "without any small-caps".
+        const native: boolean = run.capitals && this.synthesis.capitals(node.style.values, run.font) === "native";
+        const sources: Array<number> | undefined = run.capitals && !(native && set.tags.get("smcp") === 0) ? [] : undefined;
+        if (native && sources !== undefined) {
+            tags = new Map<string, number>(tags).set("smcp", 1);
+        }
         if (sources !== undefined) {
-            this.capitalize(codepoints, run, codes, sources, node.language);
+            this.recase(codepoints, run, codes, sources, !native, node.language);
         }
         for (let position: number = run.start; sources === undefined && position < run.end; position++) {
             // UAX #9 rule L4: a character with the Bidi_Mirrored property is shown by its mirrored glyph when its
@@ -303,12 +342,8 @@ export class TextShaper {
         if (after) {
             codes.push(ZERO_WIDTH_JOINER);
         }
-        // §5.1.1: upright typesetting uses "vertical font metrics" and the vertical font features; sideways typesetting
-        // uses "horizontal metrics and composition".
-        const set: FontFeatureSet = this.featureSet(node.style.values, run.font, run.upright);
-        let tags: ReadonlyMap<string, number> = set.tags;
         if (extra !== undefined) {
-            tags = new Map<string, number>(set.tags).set(extra, 1);
+            tags = new Map<string, number>(tags).set(extra, 1);
         }
         const request: ShapeRequest = {
             rtl: rightToLeft, scriptTags: this.scripts.openTypeTagsOf(run.script), features: tags, joining: joins, vertical: run.upright
@@ -320,34 +355,40 @@ export class TextShaper {
         let infos: Array<GlyphInfo> = this.shaper.shape(codes, request, run.font);
         let size: number = base;
         let shift: number = 0;
+        let synthesized: boolean = false;
         const position: string | undefined = this.synthesis.position(node.style.values, tags);
         if (position !== undefined) {
             // CSS Fonts 4 §6.5: "if a variant glyph is not available for all the characters in the run, simulated glyphs
             // should be synthesized for all characters using reduced forms of the glyphs" used without the feature.
             const features: Map<string, number> = new Map<string, number>(tags).set(position, 0);
             const plain: Array<GlyphInfo> = this.shaper.shape(codes, { ...request, features }, run.font);
-            if (!this.allVariants(infos, plain, codes)) {
+            if (synthesize === true || !this.allVariants(infos, plain, codes)) {
                 infos = plain;
                 const form: readonly [number, number] = this.synthesis.scriptForm(run.font, position, run.upright, base);
                 shift = form[0];
                 size = form[1];
+                synthesized = true;
             }
         }
-        const shaping: Shaping = { infos, codes, added, count, shift, size };
+        const shaping: Shaping = { infos, codes, added, count, shift, size, synthesized };
+        if (position !== undefined) {
+            shaping.form = position;
+        }
         if (sources !== undefined) {
             shaping.sources = sources;
         }
         return shaping;
     }
 
-    private capitalize(codepoints: ReadonlyArray<number>, run: TextRun, codes: Array<number>, sources: Array<number>, language?: string): void {
-        // CSS Fonts 4 §6.6: simulated small capitals show the uppercase of the text. Where uppercase changes the number of
-        // characters, each cluster is converted by itself, so that every glyph is traced to the character it comes from.
+    private recase(codepoints: ReadonlyArray<number>, run: TextRun, codes: Array<number>, sources: Array<number>, upper: boolean, language?: string): void {
+        // CSS Fonts 4 §6.6: simulated small capitals show the uppercase of the text, and unicase through smcp the lowercase.
+        // Where the case change alters the number of characters, each cluster is converted by itself, so that every glyph is
+        // traced to the character it comes from.
         let text: string = "";
         for (let position: number = run.start; position < run.end; position++) {
             text += String.fromCodePoint(codepoints[position]);
         }
-        const whole: Array<string> = Array.from(this.synthesis.uppercase(text, language));
+        const whole: Array<string> = Array.from(this.synthesis.recase(text, upper, language));
         if (whole.length === run.end - run.start) {
             for (const [index, character] of whole.entries()) {
                 codes.push(character.codePointAt(0) as number);
@@ -357,7 +398,7 @@ export class TextShaper {
         }
         let offset: number = 0;
         for (const cluster of this.graphemes.segment(text)) {
-            for (const character of this.synthesis.uppercase(cluster.segment, language)) {
+            for (const character of this.synthesis.recase(cluster.segment, upper, language)) {
                 codes.push(character.codePointAt(0) as number);
                 sources.push(offset);
             }

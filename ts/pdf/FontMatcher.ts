@@ -21,6 +21,7 @@
 import type { CssValue } from "../css/values/CssValue.js";
 import { CssUnits } from "../css/values/CssUnits.js";
 import { CharacterMapLookup } from "../fonts/CharacterMapLookup.js";
+import { ColorFont } from "../fonts/ColorFont.js";
 import { FontCatalog } from "../fonts/FontCatalog.js";
 import { InstanceBuilder } from "../fonts/InstanceBuilder.js";
 import { STANDARD_FONTS } from "../fonts/generated/StandardFonts.js";
@@ -110,6 +111,8 @@ const REGULAR: number = 400;
 const STANDARD_UNITS: number = 1000;
 const SHEARING: Segment = { attribute: "oblique", from: 0, to: 0, excludeTo: false, synthetic: true };
 const SPACE: number = 0x20;
+const TEXT_SELECTOR: number = 0xFE0E;
+const EMOJI_SELECTOR: number = 0xFE0F;
 const DEFAULT_IGNORABLE: RegExp = /^\p{Default_Ignorable_Code_Point}$/u;
 const DEFAULT_FONT: FamilyReference = { name: "sans-serif", generic: true };
 const FALLBACK_FONTS: ReadonlyArray<FamilyReference> = [DEFAULT_FONT, { name: "Symbol", generic: false }, { name: "ZapfDingbats", generic: false }];
@@ -202,6 +205,13 @@ export class FontMatcher {
             return only === undefined ? undefined : new Array<FontInstance>(codes.length).fill(only);
         }
         if (bases.length < codes.length) {
+            // §9.3: fallback "must take the presentation preference" of VS16 and VS15 "into account": with no font listing the
+            // sequence, a font with color glyph tables answers VS16 and one without them VS15, as the note there suggests.
+            const color: boolean | undefined = codes.includes(EMOJI_SELECTOR) ? true : (codes.includes(TEXT_SELECTOR) ? false : undefined);
+            const presented: FontInstance | undefined = color === undefined ? undefined : this.listed(request, bases, color) ?? this.installed(request, bases, color);
+            if (presented !== undefined) {
+                return new Array<FontInstance>(codes.length).fill(presented);
+            }
             // "match the single character b using the normal procedure for matching single characters and ignore the
             // variation selector": the cluster is matched without its selectors, and each one goes with its character.
             const fonts: Array<FontInstance> | undefined = this.clusterFonts(request, bases);
@@ -239,12 +249,12 @@ export class FontMatcher {
         return fonts;
     }
 
-    private listed(request: FontRequest, codes: ReadonlyArray<number>): FontInstance | undefined {
+    private listed(request: FontRequest, codes: ReadonlyArray<number>, color?: boolean): FontInstance | undefined {
         // CSS Fonts 4 §5.4: for a Private-Use Area code point "user agents must only match font families named in the
         // font-family list that are not generic families".
         const privateUse: boolean = codes.some((code: number) => this.isPrivateUse(code));
         for (const family of request.families) {
-            const found: FontInstance | undefined = privateUse && family.generic ? undefined : this.withCharacters(request, codes, this.match(family, request));
+            const found: FontInstance | undefined = privateUse && family.generic ? undefined : this.withCharacters(request, codes, this.match(family, request), color);
             if (found !== undefined) {
                 return found;
             }
@@ -252,13 +262,13 @@ export class FontMatcher {
         return undefined;
     }
 
-    private installed(request: FontRequest, codes: ReadonlyArray<number>): FontInstance | undefined {
+    private installed(request: FontRequest, codes: ReadonlyArray<number>, color?: boolean): FontInstance | undefined {
         // CSS Fonts 4 §5.2: after the list, the default font and the standard symbol fonts; §5.4 forbids it for private use.
         if (codes.some((code: number) => this.isPrivateUse(code))) {
             return undefined;
         }
         for (const family of FALLBACK_FONTS) {
-            const found: FontInstance | undefined = this.withCharacters(request, codes, this.match(family, request));
+            const found: FontInstance | undefined = this.withCharacters(request, codes, this.match(family, request), color);
             if (found !== undefined) {
                 return found;
             }
@@ -266,14 +276,14 @@ export class FontMatcher {
         return undefined;
     }
 
-    private withCharacters(request: FontRequest, codes: ReadonlyArray<number>, chosen?: Chosen): FontInstance | undefined {
+    private withCharacters(request: FontRequest, codes: ReadonlyArray<number>, chosen?: Chosen, color?: boolean): FontInstance | undefined {
         if (chosen === undefined) {
             return undefined;
         }
         // A composite face is tried in reverse order of its @font-face rules.
         for (const candidate of chosen.ordered) {
             const typeface: Typeface | undefined = codes.every((code: number) => this.inRanges(code, candidate.unicode)) ? this.catalog.typeface(candidate.face) : undefined;
-            if (typeface !== undefined && this.supports(typeface, codes)) {
+            if (typeface !== undefined && this.supports(typeface, codes) && (color === undefined || (ColorFont.of(typeface) !== undefined) === color)) {
                 return this.instance(candidate, chosen, request);
             }
         }

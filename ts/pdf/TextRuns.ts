@@ -24,7 +24,7 @@ import type { Combination, ElementBox, InlineItem, TextRun, TextSequence } from 
 import { DisplayTypes } from "./DisplayTypes.js";
 import type { FamilyReference, FontMatcher, FontRequest } from "./FontMatcher.js";
 import type { FontMetrics } from "./FontMetrics.js";
-import type { FontSynthesis } from "./FontSynthesis.js";
+import type { CapitalSynthesis, FontSynthesis } from "./FontSynthesis.js";
 import type { TextOrientation } from "./VerticalOrientation.js";
 import { VerticalOrientation } from "./VerticalOrientation.js";
 
@@ -237,12 +237,13 @@ export class TextRuns {
                 const level: number = levels[position];
                 // CSS Fonts 4 §6.6: simulated small capitals are the uppercase glyphs at a smaller size, so the letters that
                 // take them make runs of their own.
-                const capitals: boolean = capitalizes && this.synthesis.reduces(this.synthesis.capitals(values, font), cluster.segment, node.language);
+                const mode: CapitalSynthesis = capitalizes ? this.synthesis.capitals(values, font) : "none";
+                const capitals: boolean = this.synthesis.reduces(mode, cluster.segment, node.language);
                 if (run !== undefined && run.font === font && run.script === script && run.level === level && run.upright === upright && run.capitals === capitals) {
                     run.end = position + offset + 1;
                 } else {
                     // CSS Fonts 5 §3.4: font-size-adjust gives each font its own used size.
-                    const size: number = this.metrics.usedSize(values, font) * (capitals ? this.synthesis.capitalScale(font) : 1);
+                    const size: number = this.metrics.usedSize(values, font) * (capitals && mode !== "native" ? this.synthesis.capitalScale(font) : 1);
                     run = {
                         start: position + offset, end: position + offset + 1, script, level, font, upright, capitals, combined, contextBefore, size, glyphStart: 0,
                         glyphEnd: 0

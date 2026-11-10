@@ -26,7 +26,7 @@ import { TextTransformer } from "./TextTransformer.js";
 
 type Values = Readonly<Record<string, CssValue>>;
 
-type CapitalSynthesis = "none" | "lower" | "all" | "upper";
+export type CapitalSynthesis = "none" | "lower" | "all" | "upper" | "native";
 
 const UPPERCASE: CssValue = { kind: "ident", name: "uppercase", lower: "uppercase" };
 const LOWERCASE: CssValue = { kind: "ident", name: "lowercase", lower: "lowercase" };
@@ -78,7 +78,8 @@ export class FontSynthesis {
             case "all-petite-caps":
                 return smallFromCapitals || (this.hasFeature(font, "pcap") && this.hasFeature(font, "c2pc")) ? "none" : "all";
             case "unicase":
-                return this.hasFeature(font, "unic") ? "none" : "upper";
+                // "as if small-caps was applied only to lowercased uppercase letters": the font's own small capitals when it has them.
+                return this.hasFeature(font, "unic") ? "none" : (small ? "native" : "upper");
             default:
                 return "none";
         }
@@ -90,16 +91,16 @@ export class FontSynthesis {
         if (mode === "none") {
             return false;
         }
-        const lowercase: boolean = this.uppercase(cluster, language) !== cluster;
+        const lowercase: boolean = this.recase(cluster, true, language) !== cluster;
         if (mode === "lower") {
             return lowercase;
         }
-        const uppercase: boolean = this.transformer.apply(cluster, "", LOWERCASE, language) !== cluster;
-        return mode === "upper" ? uppercase : lowercase || uppercase;
+        const uppercase: boolean = this.recase(cluster, false, language) !== cluster;
+        return mode === "upper" || mode === "native" ? uppercase : lowercase || uppercase;
     }
 
-    uppercase(text: string, language?: string): string {
-        return this.transformer.apply(text, "", UPPERCASE, language);
+    recase(text: string, upper: boolean, language?: string): string {
+        return this.transformer.apply(text, "", upper ? UPPERCASE : LOWERCASE, language);
     }
 
     capitalScale(font: FontInstance): number {
