@@ -833,7 +833,7 @@ export class MathLayout {
     private outOfFlow(box: ElementBox): BoxFragment {
         // §3.1.2: absolutely and fixed positioned boxes are laid out "as described by" CSS Position 3, from where the math
         // content box starts.
-        return box.placement === "running" ? this.host.runningPlace(box, 0) : this.host.placeholder(box);
+        return box.placement === "running" ? this.host.emptyPlace(box, 0) : this.host.placeholder(box);
     }
 
     private layoutOf(box: ElementBox, children: ReadonlyArray<ElementBox>, stretch?: Stretch): MathContent {

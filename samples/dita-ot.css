@@ -656,20 +656,53 @@ ot-placeholder|glossarylist::before {
     vertical-align: super;
 }
 
-/* footnotes are not floated to the page bottom (no reliable general
-   CSS mechanism for that in this pipeline yet); shown inline instead,
-   set off from the surrounding sentence */
+/* footnotes go to the footnote area at the bottom of the page, numbered
+   through the whole book; a footnote with a callout shows it instead of
+   a number, and one with an id has no call of its own: the xref elements
+   of type fn that point to it show its number */
+@page {
+    @footnote {
+        border-top: 0.5pt solid #808080;
+        margin-top: 12pt;
+        padding-top: 4pt;
+    }
+}
+
 *[class~="topic/fn"] {
-    font-size: 0.85em;
-    color: #404040;
+    float: footnote;
+    font-size: 8pt;
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1.3;
+    text-align: start;
+    color: black;
 }
 
-*[class~="topic/fn"]::before {
-    content: " (";
+*[class~="topic/fn"]::footnote-call,
+*[class~="topic/xref"][type="fn"] {
+    font-size: 0.7em;
+    font-variant-position: normal;
+    vertical-align: super;
 }
 
-*[class~="topic/fn"]::after {
-    content: ")";
+*[class~="topic/fn"][id]::footnote-call {
+    content: none;
+}
+
+*[class~="topic/fn"][callout] {
+    counter-increment: footnote -1;
+}
+
+*[class~="topic/fn"][callout]::footnote-call {
+    content: attr(callout);
+}
+
+*[class~="topic/fn"][callout]::footnote-marker {
+    content: attr(callout) ". ";
+}
+
+*[class~="topic/xref"][type="fn"] {
+    content: -cssmedia-link-counter(footnote);
 }
 
 /* equations and inline SVG figures: no attempt to render the math or

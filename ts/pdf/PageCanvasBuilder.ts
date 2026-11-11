@@ -162,6 +162,13 @@ export class PageCanvasBuilder {
         };
     }
 
+    footnoteStyle(canvas: PageCanvas, root: ComputedStyle, viewport: Size): ComputedStyle {
+        // GCPM 3 §2.4: the footnote area "is described in the page context using an @footnote rule", so it inherits from the
+        // page context as a page-margin box does.
+        const cascaded: Map<string, DeclaredValue> = this.cascade.footnote(canvas.context, this.rules, this.userAgentRules);
+        return this.computer.compute(StyleComputer.input(cascaded, viewport, StyleComputer.NO_CONTAINERS, canvas.style, root));
+    }
+
     private marginBoxes(context: PageContext, page: ComputedStyle, root: ComputedStyle, viewport: Size, rules: ReadonlyArray<PageRule>): Array<PageMarginBox> {
         // CSS Paged Media 3 §6: "page-margin boxes inherit from the page context"; §5.2: content: normal computes to none, and
         // "A page-margin box is generated if and only if the computed value of its content property is not none."

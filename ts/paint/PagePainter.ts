@@ -119,11 +119,15 @@ export class PagePainter {
         this.backgrounds.paint(canvas.borderBox, pageBorders, pagePadding, this.setup.root, pdf);
         this.borders.paint(canvas.borderBox, pageBorders, PHYSICAL_NAMES.map((side: string) => this.keyword(canvas.style.values["border-" + side + "-style"])),
             PHYSICAL_NAMES.map((side: string) => canvas.style.values["border-" + side + "-color"]), canvas.style, pdf);
-        if (page.content !== undefined) {
+        // GCPM 3 §2.4.1: the footnote area is placed in the page area, in the same coordinates as the content.
+        for (const fragment of [page.content, page.footnotes]) {
+            if (fragment === undefined) {
+                continue;
+            }
             const area: Rectangle = canvas.pageArea;
-            const frame: number = this.sizes.frame(page.content.box.style);
+            const frame: number = this.sizes.frame((page.content ?? fragment).box.style);
             const transform: Transform = this.sizes.compose([1, 0, 0, 1, area.x, area.y], this.sizes.between(frame, PHYSICAL, area.width, area.height));
-            this.context({ fragment: page.content, transform, frame, z: 0, context: true, clips: [] }, pdf, true);
+            this.context({ fragment, transform, frame, z: 0, context: true, clips: [] }, pdf, fragment === page.content);
         }
         for (const layer of margins.filter((candidate: Layer) => candidate.z >= 0).sort(this.order)) {
             this.context(layer, pdf, false);
@@ -402,7 +406,7 @@ export class PagePainter {
     private box(fragment: BoxFragment, transform: Transform, pdf: PdfPage, root: boolean): void {
         const box: ElementBox = fragment.box;
         const style: ComputedStyle = box.style;
-        if (box.placement === "running") {
+        if (box.placement === "running" || box.placement === "footnote") {
             return;
         }
         this.supported(fragment);

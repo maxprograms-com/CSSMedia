@@ -60,6 +60,12 @@
         font-size: 8pt;
         color: #5B5B5B;
     }
+
+    @footnote {
+        border-top: 0.5pt solid #5B5B5B;
+        margin-top: 12pt;
+        padding-top: 4pt;
+    }
 }
 
 * {
@@ -167,6 +173,54 @@ itemizedlist {
 listitem {
     display: list-item;
     margin: 0 0 8pt 0;
+}
+
+/* footnotes go to the footnote area at the bottom of the page; a label
+   replaces the number, and a footnoteref shows the mark of the footnote
+   it points to */
+footnote {
+    float: footnote;
+    font-size: 8.5pt;
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1.4;
+}
+
+footnote::footnote-call,
+footnoteref {
+    font-size: 0.7em;
+    font-variant-position: normal;
+    vertical-align: super;
+}
+
+footnote[label] {
+    counter-increment: footnote -1;
+}
+
+footnote[label]::footnote-call {
+    content: attr(label);
+}
+
+footnote[label]::footnote-marker {
+    content: attr(label) ". ";
+}
+
+/* the mark starts the first paragraph of the footnote */
+footnote > para {
+    margin: 0 0 4pt 0;
+}
+
+footnote > para:first-child {
+    display: inline;
+}
+
+footnoteref {
+    content: -cssmedia-link-counter(footnote);
+    -cssmedia-link: "#" attr(linkend);
+}
+
+footnoteref[label] {
+    content: attr(label);
 }
 
 ulink {

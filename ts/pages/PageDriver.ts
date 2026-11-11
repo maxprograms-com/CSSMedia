@@ -20,12 +20,14 @@
 
 import type { CssValue } from "../css/values/CssValue.js";
 import type { BlockLayout, Candidate } from "../layout/BlockLayout.js";
-import type { BoxFragment, BreakToken, LineFragment } from "../layout/Fragment.js";
+import { BoxSizes } from "../layout/BoxSizes.js";
+import type { BoxFragment, BreakToken, LineFragment, Margins } from "../layout/Fragment.js";
 import { PagePainter } from "../paint/PagePainter.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import type { PageSetup } from "../PdfGenerator.js";
-import type { BoxNode, ElementBox, InlineSequence, InlineText, NamedString, TextSequence } from "../pdf/BoxTree.js";
+import type { BoxNode, ElementBox, InlineItem, InlineSequence, InlineText, NamedString, TextSequence } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
+import type { DisplayType } from "../pdf/DisplayTypes.js";
 import type { Counter, CounterChange, CounterSet } from "../pdf/CounterScopes.js";
 import type { CrossReferences } from "../pdf/CrossReferences.js";
 import { CounterScopes } from "../pdf/CounterScopes.js";
@@ -43,8 +45,27 @@ export interface MarginForms {
 export interface PageLayout {
     canvas: PageCanvas;
     content?: BoxFragment;
+    footnotes?: BoxFragment;
     margins?: Array<BoxFragment>;
     forms?: MarginForms;
+}
+
+interface Carry {
+    nodes: ReadonlyArray<ElementBox>;
+    token?: BreakToken;
+}
+
+interface Placed {
+    fragment: BoxFragment;
+    extent: number;
+    fits: boolean;
+    carry?: Carry;
+}
+
+interface Laid {
+    content?: BoxFragment;
+    footnotes?: BoxFragment;
+    carry?: Carry;
 }
 
 interface LaterMargins {
@@ -74,6 +95,12 @@ const POINTS_PER_PIXEL: number = 0.75;
 const GROUP_BREAKS: ReadonlySet<string> = new Set<string>(["always", "all", "page", "left", "right", "recto", "verso"]);
 const PAGE: string = "page";
 const PAGES: string = "pages";
+const TOLERANCE: number = 0.001;
+const NO_CALLS: ReadonlySet<ElementBox> = new Set<ElementBox>();
+const AREA_DISPLAY: DisplayType = { outer: "block", inner: "flow-root", listItem: false };
+const RUN_DISPLAY: DisplayType = { outer: "block", inner: "flow", listItem: false };
+const INLINE_DISPLAY: DisplayType = { outer: "inline", inner: "flow", listItem: false };
+const NONE: CssValue = { kind: "ident", name: "none", lower: "none" };
 
 export class PageDriver {
 
@@ -92,6 +119,10 @@ export class PageDriver {
     readonly earlier: Array<Candidate | undefined> = [];
     readonly diagnostics: Array<string> = [];
     private readonly movedLabels: Set<SourceElement | ElementBox> = new Set<SourceElement | ElementBox>();
+    private readonly built: Array<readonly [ReadonlyArray<ElementBox>, ComputedStyle, ReadonlyArray<ElementBox>]> = [];
+    private carry?: Carry;
+    private nextCarry?: Carry;
+    private order?: Map<ElementBox, number>;
 
     constructor(setup: PageSetup, document: PdfDocument, ends: ReadonlyMap<number, Candidate>) {
         this.setup = setup;
@@ -117,10 +148,13 @@ export class PageDriver {
         let token: BreakToken | undefined;
         let side: "left" | "right" = this.setup.firstSide;
         let position: number = 1;
+        let ended: boolean = false;
+        let last: string = root.startPage;
+        delete this.carry;
         do {
             // CSS Paged Media 3 §8.1: "The first printed page's type is the start page value of the root", and content after a
-            // break "resumes on a page box of the named type".
-            const name: string = token === undefined ? root.startPage : this.setup.layout.resumedPage(token);
+            // break "resumes on a page box of the named type"; footnotes that go on after the content keep the last type.
+            const name: string = token === undefined ? (ended ? last : root.startPage) : this.setup.layout.resumedPage(token);
             const wanted: "left" | "right" | undefined = token === undefined ? undefined : this.wantedSide(token);
             if (wanted !== undefined && wanted !== side) {
                 // CSS Fragmentation 4 §3.1: left, right, recto and verso force "one or two page breaks" so that the next page
@@ -129,18 +163,29 @@ export class PageDriver {
                 side = this.opposite(side);
                 position++;
             }
-            const page: PageLayout = this.lay(root, name, side, position, state, token);
-            this.breaks[position] = this.setup.layout.pageBreak;
-            this.earlier[position] = this.setup.layout.pageEarlier;
+            this.built.length = 0;
+            const page: PageLayout = this.lay(root, name, side, position, state, ended, token);
+            this.breaks[position] = page.content === undefined ? undefined : this.setup.layout.pageBreak;
+            this.earlier[position] = page.content === undefined ? undefined : this.setup.layout.pageEarlier;
             this.finish(page, token, state);
-            token = page.content?.token;
+            if (this.nextCarry === undefined) {
+                delete this.carry;
+            } else {
+                this.carry = this.nextCarry;
+            }
+            if (page.content !== undefined) {
+                token = page.content.token;
+                ended = token === undefined;
+            }
+            last = name;
             side = this.opposite(side);
             position++;
             // The pages already painted are thrown away, and the rest of this layout gives the pages of the later targets.
             if (state.painting && comparing && (references.moved || this.movedLabels.size > 0)) {
                 state.painting = false;
             }
-        } while (token !== undefined);
+        } while (token !== undefined || this.carry !== undefined);
+        this.built.length = 0;
         if (painting && !comparing) {
             references.reportUnsettled();
             for (const key of this.movedLabels) {
@@ -180,6 +225,9 @@ export class PageDriver {
         state.seen = false;
         if (page.content !== undefined) {
             this.assignments(page.content, state);
+        }
+        if (page.footnotes !== undefined) {
+            this.assignments(page.footnotes, state);
         }
         if (state.labels.length > 0) {
             // CSS Content 3 §3.2: a bookmark label reads the named strings of the page where its element starts, all of them.
@@ -242,6 +290,10 @@ export class PageDriver {
             }
             return;
         }
+        if (box.placement === "footnote") {
+            // GCPM 3 §2.2: the footnote element is in the footnote area, where its body is assigned; this is only its place.
+            return;
+        }
         if (fragment.resumed !== true) {
             this.assign(box.namedStrings, state);
             if (!state.trial && this.setup.references.recording) {
@@ -255,7 +307,7 @@ export class PageDriver {
         for (const child of fragment.children ?? []) {
             if (child.kind === "box") {
                 this.assignments(child, state);
-                state.seen = state.seen || child.box.placement !== "running";
+                state.seen = state.seen || (child.box.placement !== "running" && child.box.placement !== "footnote");
                 continue;
             }
             this.lineAssignments(child, state);
@@ -315,19 +367,24 @@ export class PageDriver {
         }
     }
 
-    private lay(root: ElementBox, name: string, side: "left" | "right", position: number, state: Pass, token?: BreakToken): PageLayout {
+    private lay(root: ElementBox, name: string, side: "left" | "right", position: number, state: Pass, ended: boolean, token?: BreakToken): PageLayout {
         // GCPM 3 §3.2: the page groups of a page are known from the boxes laid out on it, and they can change the page area
         // through :nth(); the page is laid out again in the new area until the groups no longer change it.
         let groups: Array<ElementBox> = this.continuing(token);
         let canvas: PageCanvas = this.canvas(name, side, position, false, groups);
         let end: Candidate | undefined = this.ends.get(position);
-        let content: BoxFragment = this.content(root, canvas, token, end);
+        let laid: Laid = this.laid(root, canvas, ended, token, end);
         const tried: Array<Rectangle> = [canvas.pageArea];
         const filled: Set<string> = new Set<string>();
         let previous: Candidate | undefined;
         for (;;) {
+            const content: BoxFragment | undefined = laid.content;
             const found: Array<ElementBox> = [];
-            this.groupsIn(content, found);
+            if (content !== undefined) {
+                this.groupsIn(content, found);
+            } else {
+                found.push(...groups);
+            }
             let again: boolean = false;
             if (found.length !== groups.length || found.some((box: ElementBox, index: number) => box !== groups[index])) {
                 const next: PageCanvas = this.canvas(name, side, position, false, found);
@@ -343,7 +400,8 @@ export class PageDriver {
                     tried.push(canvas.pageArea);
                 }
             }
-            const filling: readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined = this.fillStrings(content, state);
+            const filling: readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined = content === undefined ? undefined
+                : this.fillStrings(content, state);
             if (filling !== undefined) {
                 // Texts whose values move the content that assigns them, back and forth, end the page at the earlier break.
                 const layout: BlockLayout = this.setup.layout;
@@ -365,10 +423,358 @@ export class PageDriver {
                 break;
             }
             previous = this.setup.layout.pageBreak;
-            content = this.content(root, canvas, token, end);
+            laid = this.laid(root, canvas, ended, token, end);
         }
         this.count(groups);
-        return { canvas, content };
+        if (laid.carry === undefined) {
+            delete this.nextCarry;
+        } else {
+            this.nextCarry = laid.carry;
+        }
+        const page: PageLayout = { canvas };
+        if (laid.content !== undefined) {
+            page.content = laid.content;
+        }
+        if (laid.footnotes !== undefined) {
+            page.footnotes = laid.footnotes;
+        }
+        return page;
+    }
+
+    private laid(root: ElementBox, canvas: PageCanvas, ended: boolean, token?: BreakToken, end?: Candidate): Laid {
+        const area: Rectangle = canvas.pageArea;
+        const inline: number = this.horizontal ? area.width : area.height;
+        const extent: number = this.horizontal ? area.height : area.width;
+        if (!this.setup.builder.footnotes) {
+            return { content: this.content(root, inline, extent, NO_CALLS, token, end) };
+        }
+        const layout: BlockLayout = this.setup.layout;
+        const style: ComputedStyle = this.setup.canvases.footnoteStyle(canvas, this.setup.root, this.setup.viewport);
+        // GCPM 3 §2.4.2: max-height limits the area "unless the page contains only footnotes"; the room the page gives the
+        // area is the limit, so the area itself is laid out without it.
+        const limit: number = Math.min(extent, layout.footnoteLimit(style, inline, extent));
+        const unlimited: ComputedStyle = { ...style, values: Object.assign(Object.create(style.values) as Record<string, CssValue>, { "max-block-size": NONE }) };
+        const carry: Carry | undefined = this.carry;
+        if (ended) {
+            return this.result(undefined, carry === undefined ? undefined : this.place(unlimited, carry, [], inline, extent, extent), extent);
+        }
+        let placed: Placed | undefined;
+        let reserve: number = 0;
+        if (carry !== undefined) {
+            // XSL 1.1 §6.12.3: the rest of a footnote body goes on the next pages "before any other content is placed".
+            placed = this.place(unlimited, carry, [], inline, extent, limit);
+            if (placed.carry !== undefined && limit >= extent) {
+                return this.result(undefined, placed, extent);
+            }
+            reserve = placed.extent;
+        }
+        const pushed: Set<ElementBox> = new Set<ElementBox>();
+        let content: BoxFragment = this.content(root, inline, extent - reserve, pushed, token, end);
+        // §2.4.2: "it is undesirable for a page to consist only of footnotes", which max-height prevents by keeping room for
+        // the content; on the page where the content ends no content needs it, so the area takes the room the content leaves.
+        const cap: number = content.token === undefined ? extent : limit;
+        if (placed?.carry !== undefined && cap > limit) {
+            placed = this.place(unlimited, carry, [], inline, extent, extent - this.used(content));
+        }
+        if (placed?.carry !== undefined) {
+            // Footnotes keep their order, so those called on a page that still continues earlier ones start on a later page.
+            return this.result(content, this.deferring(placed, this.calls(content, placed), style, inline), extent);
+        }
+        const accepted: Array<ElementBox> = [];
+        for (;;) {
+            const anchors: Array<ElementBox> = this.calls(content, placed);
+            if (anchors.length <= accepted.length) {
+                break;
+            }
+            const next: ElementBox = anchors[accepted.length];
+            const room: number = Math.min(cap, extent - this.used(content));
+            // GCPM 3 §2.2: the body goes in the footnote area of the page of its call, in the room the content leaves or in
+            // the room it leaves once laid out again above a larger area.
+            const trial: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, room);
+            if (trial.carry === undefined && trial.fits) {
+                accepted.push(next);
+                placed = trial;
+                continue;
+            }
+            const whole: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, cap);
+            if (whole.carry === undefined && whole.fits) {
+                const above: BoxFragment = this.content(root, inline, extent - whole.extent, pushed, token, end);
+                if (this.calls(above, whole)[accepted.length] === next) {
+                    accepted.push(next);
+                    placed = whole;
+                    reserve = whole.extent;
+                    content = above;
+                    continue;
+                }
+            }
+            // §2.8: with line or block the call goes to the next page with its body, unless nothing comes before it here.
+            const policy: CssValue | undefined = next.style.values["footnote-policy"];
+            if (policy !== undefined && policy.kind === "ident" && policy.lower !== "auto" && !pushed.has(next)) {
+                pushed.add(next);
+                content = this.content(root, inline, extent - reserve, pushed, token, end);
+                continue;
+            }
+            // With auto, XSL 1.1 §6.12.3: a body starts on the page of its call or a later one, and goes on in the next pages.
+            const rest: ReadonlyArray<ElementBox> = anchors.slice(accepted.length);
+            const split: Placed = this.place(unlimited, carry, [...accepted, ...rest], inline, extent, room);
+            if (split.fits) {
+                placed = split;
+            } else if (placed === undefined) {
+                const waiting: Carry | undefined = this.deferred(undefined, rest, style, inline);
+                return waiting === undefined ? { content } : { content, carry: waiting };
+            } else {
+                placed = this.deferring(placed, rest, style, inline);
+            }
+            break;
+        }
+        if (placed !== undefined && Math.abs(placed.extent - reserve) > TOLERANCE) {
+            // The boxes that break at the end of the content reach the area, which the room left gives exactly.
+            const fitted: BoxFragment = this.content(root, inline, extent - placed.extent, pushed, token, end);
+            const before: ReadonlyArray<ElementBox> = this.anchors(content);
+            const after: ReadonlyArray<ElementBox> = this.anchors(fitted);
+            if (before.length === after.length && before.every((box: ElementBox, index: number) => box === after[index])) {
+                content = fitted;
+            }
+        }
+        return this.result(content, placed, extent);
+    }
+
+    private result(content: BoxFragment | undefined, placed: Placed | undefined, extent: number): Laid {
+        // GCPM 3 §2.4.1: "The bottom margin edge of the footnote area is positioned so that it touches the bottom of the page area."
+        const laid: Laid = {};
+        if (content !== undefined) {
+            laid.content = content;
+        }
+        if (placed !== undefined) {
+            placed.fragment.block = extent - placed.extent + this.sum(placed.fragment.marginBefore);
+            laid.footnotes = placed.fragment;
+            if (placed.carry !== undefined) {
+                laid.carry = placed.carry;
+            }
+        }
+        return laid;
+    }
+
+    private place(style: ComputedStyle, carry: Carry | undefined, bodies: ReadonlyArray<ElementBox>, inline: number, extent: number, space: number): Placed {
+        const nodes: Array<ElementBox> = [...(carry?.nodes ?? []), ...this.nodes(bodies, style, inline)];
+        const area: ElementBox = {
+            kind: "box", style, display: AREA_DISPLAY, placement: "in-flow", replaced: false, hasStartEdge: true, hasEndEdge: true, usedPage: "", startPage: "", endPage: "",
+            children: nodes
+        };
+        // The area of each page is a box of its own, which only resumes the footnote that the area of the page before broke.
+        const previous: BreakToken | undefined = carry?.token;
+        let incoming: BreakToken | undefined;
+        if (previous !== undefined && (previous.inner !== undefined || previous.parallel !== undefined)) {
+            incoming = { box: previous.box, consumed: 0, child: 0, sequence: 0 };
+            if (previous.inner !== undefined) {
+                incoming.inner = previous.inner;
+            }
+            if (previous.parallel !== undefined) {
+                incoming.parallel = previous.parallel;
+            }
+        }
+        const fragment: BoxFragment = this.setup.layout.footnoteArea(area, inline, extent, space, incoming);
+        const size: number = this.sum(fragment.marginBefore) + fragment.blockSize + this.sum(fragment.marginAfter);
+        const placed: Placed = { fragment, extent: size, fits: size <= space + TOLERANCE };
+        const token: BreakToken | undefined = fragment.token;
+        const rest: ReadonlyArray<ElementBox> = token === undefined ? [] : nodes.slice(token.child);
+        if (token !== undefined && (rest.length > 0 || token.parallel !== undefined)) {
+            placed.carry = { nodes: rest, token };
+        }
+        return placed;
+    }
+
+    private deferring(placed: Placed, bodies: ReadonlyArray<ElementBox>, style: ComputedStyle, inline: number): Placed {
+        const result: Placed = { fragment: placed.fragment, extent: placed.extent, fits: placed.fits };
+        const carry: Carry | undefined = this.deferred(placed.carry, bodies, style, inline);
+        if (carry !== undefined) {
+            result.carry = carry;
+        }
+        return result;
+    }
+
+    private deferred(carry: Carry | undefined, bodies: ReadonlyArray<ElementBox>, style: ComputedStyle, inline: number): Carry | undefined {
+        const nodes: ReadonlyArray<ElementBox> = this.nodes(bodies, style, inline);
+        if (nodes.length === 0) {
+            return carry;
+        }
+        return carry === undefined ? { nodes } : { ...carry, nodes: [...carry.nodes, ...nodes] };
+    }
+
+    private nodes(bodies: ReadonlyArray<ElementBox>, style: ComputedStyle, inline: number): ReadonlyArray<ElementBox> {
+        // GCPM 3 §2.3: footnote-display places a footnote in the area "as a block element" or "as an inline element"; with
+        // compact "the user agent determines" it, and "If two or more footnotes could fit on the same line" they are inline.
+        if (bodies.length === 0) {
+            return [];
+        }
+        for (const [kept, keptStyle, nodes] of this.built) {
+            if (keptStyle === style && kept.length === bodies.length && kept.every((body: ElementBox, index: number) => body === bodies[index])) {
+                return nodes;
+            }
+        }
+        const kinds: Array<string> = bodies.map((body: ElementBox): string => {
+            const value: CssValue | undefined = body.style.values["footnote-display"];
+            return value !== undefined && value.kind === "ident" ? value.lower : "block";
+        });
+        const line: number = kinds.includes("compact") ? this.setup.layout.lineSize(style, inline) : 0;
+        const widths: Array<number> = bodies.map((body: ElementBox, index: number): number => kinds[index] === "compact" ? this.setup.layout.intrinsic(body)[1] : 0);
+        const shares: (index: number, other: number) => boolean = (index: number, other: number): boolean => other >= 0 && other < bodies.length
+            && kinds[other] !== "block" && widths[index] + (kinds[other] === "compact" ? widths[other] : 0) <= line + TOLERANCE;
+        const nodes: Array<ElementBox> = [];
+        let parts: Array<ElementBox> = [];
+        let items: Array<InlineItem> = [];
+        const flush: () => void = (): void => {
+            if (items.length > 0) {
+                nodes.push(this.shared(parts, items, style));
+            }
+            parts = [];
+            items = [];
+        };
+        for (const [index, body] of bodies.entries()) {
+            const inlined: boolean = kinds[index] === "inline" || (kinds[index] === "compact" && (shares(index, index - 1) || shares(index, index + 1)));
+            if (!inlined) {
+                flush();
+                nodes.push({ ...body, placement: "in-flow", startPage: "", endPage: "" });
+                continue;
+            }
+            // CSS 2 §9.2.1.1: an inline box that holds block-level boxes is broken around them.
+            const segments: Array<ReadonlyArray<InlineItem> | ElementBox> = [];
+            if (body.inline !== undefined && !body.children.some((child: BoxNode) => this.isBlock(child))) {
+                segments.push(body.inline[0].items);
+            } else {
+                for (const child of body.children) {
+                    if (child.kind !== "box") {
+                        continue;
+                    }
+                    if (!this.isBlock(child)) {
+                        segments.push([{ kind: "out-of-flow", node: child }]);
+                    } else if (child.element === undefined && child.inline?.length === 1 && !child.children.some((node: BoxNode) => this.isBlock(node))) {
+                        segments.push(child.inline[0].items);
+                    } else {
+                        segments.push(child);
+                    }
+                }
+            }
+            const count: number = segments.filter((segment: ReadonlyArray<InlineItem> | ElementBox) => Array.isArray(segment)).length;
+            let seen: number = 0;
+            for (const segment of segments) {
+                if (!Array.isArray(segment)) {
+                    flush();
+                    nodes.push(segment as ElementBox);
+                    continue;
+                }
+                const part: ElementBox = {
+                    ...body, display: INLINE_DISPLAY, placement: "in-flow", hasStartEdge: seen === 0, hasEndEdge: seen === count - 1, startPage: "", endPage: "", children: []
+                };
+                seen++;
+                parts.push(part);
+                items.push({ kind: "open", node: part }, ...(segment as ReadonlyArray<InlineItem>), { kind: "close", node: part });
+            }
+        }
+        flush();
+        this.built.push([bodies, style, nodes]);
+        return nodes;
+    }
+
+    private shared(parts: ReadonlyArray<ElementBox>, items: Array<InlineItem>, style: ComputedStyle): ElementBox {
+        // The inline footnotes of a page share the lines of an anonymous block box, whose text is prepared for them.
+        const anonymous: ComputedStyle = { values: style.inherited, inherited: style.inherited, custom: style.custom };
+        if (style.zoom !== undefined) {
+            anonymous.zoom = style.zoom;
+        }
+        const sequence: InlineSequence = { style: anonymous, items };
+        this.setup.text.prepare([sequence]);
+        return {
+            kind: "box", style: anonymous, display: RUN_DISPLAY, placement: "in-flow", replaced: false, hasStartEdge: true, hasEndEdge: true, usedPage: "", startPage: "",
+            endPage: "", children: [...parts], inline: [sequence]
+        };
+    }
+
+    private isBlock(node: BoxNode): boolean {
+        return node.kind === "box" && node.placement === "in-flow" && node.display.outer === "block";
+    }
+
+    private calls(content: BoxFragment, placed?: Placed): Array<ElementBox> {
+        // GCPM 3 §2.2: any element with float: footnote is a footnote, so the calls in the footnote bodies on the page add
+        // theirs after the calls of the content.
+        const found: Array<ElementBox> = this.anchors(content);
+        if (placed !== undefined) {
+            this.anchors(placed.fragment, found);
+        }
+        // §2.2: "Footnote elements from a given page are placed in the footnote area of that page in document order."
+        if (this.order === undefined) {
+            this.order = new Map<ElementBox, number>();
+            this.number(this.setup.boxes, this.order);
+        }
+        const order: Map<ElementBox, number> = this.order;
+        return found.sort((first: ElementBox, second: ElementBox) => (order.get(first) ?? 0) - (order.get(second) ?? 0));
+    }
+
+    private number(box: ElementBox, order: Map<ElementBox, number>): void {
+        for (const child of box.children) {
+            if (child.kind === "box") {
+                if (child.placement === "footnote") {
+                    order.set(child, order.size);
+                }
+                this.number(child, order);
+            }
+        }
+    }
+
+    private anchors(fragment: BoxFragment, found: Array<ElementBox> = []): Array<ElementBox> {
+        // The calls laid out on the page, in the order of their places.
+        for (const child of fragment.children ?? []) {
+            for (const piece of child.kind === "line" ? child.pieces : [child]) {
+                if (piece.kind !== "box") {
+                    continue;
+                }
+                if (piece.box.placement === "running") {
+                    // GCPM 3 §1.2.1: a running element is "removed from the normal flow", and a footnote in it leaves its
+                    // body where the element would have been, once, whatever the page-margin boxes repeat.
+                    this.inside(piece.box, found);
+                } else if (piece.box.placement !== "footnote") {
+                    this.anchors(piece, found);
+                } else if (!found.includes(piece.box)) {
+                    found.push(piece.box);
+                }
+            }
+        }
+        return found;
+    }
+
+    private inside(box: ElementBox, found: Array<ElementBox>): void {
+        for (const child of box.children) {
+            if (child.kind !== "box") {
+                continue;
+            }
+            if (child.placement !== "footnote") {
+                this.inside(child, found);
+            } else if (!found.includes(child)) {
+                found.push(child);
+            }
+        }
+    }
+
+    private used(fragment: BoxFragment): number {
+        // CSS Fragmentation 4 §5.3: a box that breaks fills the fragmentainer, so the room its content leaves is measured on
+        // what it holds.
+        return fragment.block + this.reach(fragment);
+    }
+
+    private reach(fragment: BoxFragment): number {
+        if (fragment.token === undefined) {
+            return fragment.blockSize;
+        }
+        const start: number = (fragment.border?.[BoxSizes.BLOCK_START] ?? 0) + (fragment.padding?.[BoxSizes.BLOCK_START] ?? 0);
+        let bottom: number = 0;
+        for (const child of fragment.children ?? []) {
+            bottom = Math.max(bottom, child.block + (child.kind === "line" ? child.blockSize : this.reach(child)));
+        }
+        return start + bottom;
+    }
+
+    private sum(margins?: Margins): number {
+        return margins === undefined ? 0 : margins[0] + margins[1];
     }
 
     private fillStrings(content: BoxFragment, state: Pass): readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined {
@@ -464,7 +870,7 @@ export class PageDriver {
         // A sequence whose only text is still empty has no lines to place its texts by, so they take the page that holds
         // the whole box.
         const box: ElementBox = fragment.box;
-        if (box.placement === "running") {
+        if (box.placement === "running" || box.placement === "footnote") {
             return;
         }
         for (const sequence of box.inline ?? []) {
@@ -520,9 +926,12 @@ export class PageDriver {
         return { canvas };
     }
 
-    private content(root: ElementBox, canvas: PageCanvas, token?: BreakToken, end?: Candidate): BoxFragment {
-        const area: Rectangle = canvas.pageArea;
-        return this.setup.layout.page(root, this.horizontal ? area.width : area.height, this.horizontal ? area.height : area.width, token, end);
+    private content(root: ElementBox, inline: number, extent: number, pushed: ReadonlySet<ElementBox>, token?: BreakToken, end?: Candidate): BoxFragment {
+        const layout: BlockLayout = this.setup.layout;
+        layout.pushCalls(pushed);
+        const fragment: BoxFragment = layout.page(root, inline, extent, token, end);
+        layout.pushCalls(NO_CALLS);
+        return fragment;
     }
 
     private canvas(name: string, side: "left" | "right", position: number, blank: boolean, groups: ReadonlyArray<ElementBox>): PageCanvas {

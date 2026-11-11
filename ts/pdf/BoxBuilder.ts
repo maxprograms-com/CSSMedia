@@ -171,12 +171,14 @@ export class BoxBuilder {
     private readonly bookmarks: Map<SourceElement | ElementBox, Bookmark | null> = new Map<SourceElement | ElementBox, Bookmark | null>();
     private readonly tocRules: ReadonlyArray<TocRule>;
     private readonly tocs: Array<TocPlaceholder> = [];
+    private readonly calls: Array<readonly [ElementBox, SourceElement]> = [];
     readonly targets: Map<TextSequence, string> = new Map<TextSequence, string>();
     readonly namedTexts: Map<readonly [string, string], [TextSequence, string]> = new Map<readonly [string, string], [TextSequence, string]>();
     stringLabels?: Set<SourceElement | ElementBox>;
     labelStrings?: ReadonlyMap<SourceElement | ElementBox, NamedValues<string>>;
     private tocLabels?: Map<SourceElement, Array<TextSequence>>;
     rootStyle?: ComputedStyle;
+    footnotes: boolean = false;
     readonly diagnostics: Array<string> = [];
 
     constructor(cascade: Cascade, computer: StyleComputer, images: ImageFormats, viewport: Size, counterStyles: CounterStyles, quoteSystems: QuoteSystems,
@@ -204,6 +206,7 @@ export class BoxBuilder {
         this.rootStyle = style;
         const built: Built = this.element(root, style);
         this.expandTocs();
+        this.linkCalls();
         return built.nodes.length === 1 && built.nodes[0].kind === "box" ? built.nodes[0] : undefined;
     }
 
@@ -271,6 +274,7 @@ export class BoxBuilder {
             this.applyCounters(counters, node, style, display.listItem, parent?.scope);
             if (placement === "footnote") {
                 this.scopes.apply(counters, node, undefined, FOOTNOTE_STEP, undefined, parent?.scope);
+                this.footnotes = true;
             }
         }
         this.previous = counters;
@@ -415,6 +419,7 @@ export class BoxBuilder {
         this.previous = previous;
         this.pendingStrings = pending;
         this.content.quoteDepth = depth;
+        this.linkCalls();
         return true;
     }
 
@@ -655,7 +660,26 @@ export class BoxBuilder {
         // GCPM 3 §2.2: "The footnote element is removed from the flow, and a ::footnote-call pseudo-element is inserted in
         // its place", so its box is held by the box that holds the element's.
         const call: PseudoElement | undefined = this.pseudoElement(context, FOOTNOTE_CALL);
-        return call === undefined ? undefined : this.pseudoBoxes(context, call, false, context.parent).nodes;
+        if (call === undefined) {
+            return undefined;
+        }
+        const nodes: Array<BoxNode> = this.pseudoBoxes(context, call, false, context.parent).nodes;
+        for (const node of nodes) {
+            if (node.kind === "box" && node.linkUri === undefined && node.linkDestination === undefined) {
+                this.calls.push([node, context.element]);
+            }
+        }
+        return nodes;
+    }
+
+    private linkCalls(): void {
+        // GCPM 3 §2.2: the call "serves as a reference to the footnote", and XSL 1.1 §6.12.1.3 lets a user agent "create hot
+        // links to the footnotes from the footnote-citation"; the name is given once the build has met every link.
+        for (const [box, element] of this.calls) {
+            this.references.bookmark(element);
+            box.linkDestination = this.references.anchorName(element);
+        }
+        this.calls.length = 0;
     }
 
     private registerFirstLine(box: ElementBox, context: Context): void {

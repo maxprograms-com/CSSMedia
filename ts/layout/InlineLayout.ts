@@ -26,8 +26,7 @@ import type { InlineTextBuilder } from "../pdf/InlineTextBuilder.js";
 import { LineBreaker } from "../pdf/LineBreaker.js";
 import { TextAutospace } from "../pdf/TextAutospace.js";
 import { TextSpacingTrim } from "../pdf/TextSpacingTrim.js";
-import type { Snapshot } from "./BlockLayout.js";
-import { BlockLayout } from "./BlockLayout.js";
+import type { BlockLayout, Snapshot } from "./BlockLayout.js";
 import type { UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
 import type { BoxFragment, LineFragment, Margins, TextPiece } from "./Fragment.js";
@@ -53,7 +52,7 @@ interface Measured {
     sizes?: Map<ElementBox, UsedSizes>;
     floats?: Array<number>;
     absolutes?: Array<number>;
-    running?: Array<number>;
+    places?: Array<number>;
 }
 
 interface Group {
@@ -212,8 +211,8 @@ export class InlineLayout {
                     out.push(placeholder);
                 }
             }
-            for (const index of measured.running ?? []) {
-                out.push(this.host.runningPlace(lined.items[index].node as ElementBox, top));
+            for (const index of measured.places ?? []) {
+                out.push(this.host.emptyPlace(lined.items[index].node as ElementBox, top));
             }
             return undefined;
         }
@@ -647,11 +646,9 @@ export class InlineLayout {
             } else if (item.kind === "out-of-flow" && item.node.kind === "box" && (item.node.placement === "absolute" || item.node.placement === "fixed")) {
                 measured.absolutes = measured.absolutes ?? [];
                 measured.absolutes.push(index);
-            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && item.node.placement === "footnote") {
-                throw new Error(BlockLayout.FOOTNOTES);
-            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && item.node.placement === "running") {
-                measured.running = measured.running ?? [];
-                measured.running.push(index);
+            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && (item.node.placement === "running" || item.node.placement === "footnote")) {
+                measured.places = measured.places ?? [];
+                measured.places.push(index);
             } else if (item.kind === "object" && item.node.kind === "deferred") {
                 const value: CssValue = item.node.value;
                 throw new Error("The content value " + (value.kind === "function" ? value.name + "()" : value.kind === "url" ? "url()" : "image") + " is not implemented");
@@ -1314,10 +1311,10 @@ export class InlineLayout {
                     kind: "space", from: position, to: position, level: state.level, group: state.root.group, block: 0, width: 0, origin: 0, left: 0, expands: false,
                     piece: this.host.placeholder(item.node)
                 }, chain));
-            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && item.node.placement === "running") {
+            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && (item.node.placement === "running" || item.node.placement === "footnote")) {
                 state.units.push(this.chained({
                     kind: "space", from: position, to: position, level: state.level, group: state.root.group, block: 0, width: 0, origin: 0, left: 0, expands: false,
-                    piece: this.host.runningPlace(item.node, 0)
+                    piece: this.host.emptyPlace(item.node, 0)
                 }, chain));
             } else if (item.kind === "text") {
                 this.textUnits(state, position, starts[index + 1], item.node.kind === "text" && item.node.leader === true, chain);

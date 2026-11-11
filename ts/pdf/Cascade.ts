@@ -285,6 +285,10 @@ export class Cascade {
             rule.marginRules.filter((marginRule: MarginRule) => marginRule.name === name).flatMap((marginRule: MarginRule) => marginRule.declarations));
     }
 
+    footnote(context: PageContext, rules: ReadonlyArray<PageRule>, userAgentRules: ReadonlyArray<PageRule>): Map<string, DeclaredValue> {
+        return this.pageDeclarations(context, rules, userAgentRules, (rule: PageRule) => rule.footnote);
+    }
+
     private pageDeclarations(context: PageContext, rules: ReadonlyArray<PageRule>, userAgentRules: ReadonlyArray<PageRule>,
         declarationsOf: (rule: PageRule) => ReadonlyArray<Declaration>): Map<string, DeclaredValue> {
         // CSS Paged Media 3 §4.4: "Declarations in page and margin contexts cascade just like declarations in style rule for

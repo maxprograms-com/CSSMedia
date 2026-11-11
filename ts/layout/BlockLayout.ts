@@ -21,6 +21,7 @@
 import type { CalcAnchor, CalcNode, CssValue } from "../css/values/CssValue.js";
 import type { ImageFormats, ImageSize } from "../images/ImageFormats.js";
 import type { BoxNode, ElementBox, InlineSequence, InlineText } from "../pdf/BoxTree.js";
+import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import type { DisplayType } from "../pdf/DisplayTypes.js";
 import { DisplayTypes } from "../pdf/DisplayTypes.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
@@ -111,10 +112,10 @@ const APPEAL_PERFECT: number = 3;
 const PAGE_BREAKS: ReadonlySet<string> = new Set<string>(["page", "left", "right", "recto", "verso"]);
 const MINIMUM_FRAGMENTAINER: number = 1;
 const PAGE_CONTEXT: ReadonlyArray<string> = ["page"];
+const NO_CALLS: ReadonlySet<ElementBox> = new Set<ElementBox>();
 
 export class BlockLayout {
 
-    static readonly FOOTNOTES: string = "Footnotes (float: footnote) are not implemented";
     static readonly EDGE_FIELDS: number = 5;
 
     readonly diagnostics: Array<string> = [];
@@ -146,6 +147,8 @@ export class BlockLayout {
     private rootBox?: ElementBox;
     private anchorNames?: Map<string, Array<ReadonlyArray<ElementBox>>>;
     private readonly anchoring: Array<readonly [number, ElementBox, BoxFragment]> = [];
+    private pushed: ReadonlySet<ElementBox> = NO_CALLS;
+
     constructor(metrics: FontMetrics, text: InlineTextBuilder, images: ImageFormats, contents?: ContainerContents) {
         this.images = images;
         this.inline = new InlineLayout(metrics, this.sizes, text, this);
@@ -248,6 +251,50 @@ export class BlockLayout {
         this.frame = this.sizes.frame(box.style);
         this.sign = 1;
         return this.contentSizes(box);
+    }
+
+    pushCalls(calls: ReadonlySet<ElementBox>): void {
+        this.pushed = calls;
+    }
+
+    footnoteArea(area: ElementBox, inlineSize: number, blockSize: number, space: number, token?: BreakToken): BoxFragment {
+        // GCPM 3 §2.4: the footnote area is a page area of its own below the content, and XSL 1.1 §6.12.3 lets a footnote body
+        // break across pages; it is laid out without changing what the layout of the content left for the page driver.
+        const state: Fragmentation | undefined = this.pageState;
+        const appeal: number = this.flowAppeal;
+        this.frame = this.sizes.frame(area.style);
+        this.sign = 1;
+        // The space is the margin box of the area, whose block-start margin comes before the fragmentainer that it breaks in.
+        const before: number = this.sizes.margin(this.sizes.of(area.style, inlineSize, blockSize), BoxSizes.BLOCK_START) ?? 0;
+        const room: number = Math.max(MINIMUM_FRAGMENTAINER, space - before);
+        const fragment: BoxFragment = this.fragmented(PAGE_CONTEXT, room, inlineSize, token,
+            (): BoxFragment => this.block(area, inlineSize, true, 0, 0, blockSize, undefined, 0, room, token, false));
+        this.positioned(fragment, true);
+        if (state === undefined) {
+            delete this.pageState;
+        } else {
+            this.pageState = state;
+        }
+        this.flowAppeal = appeal;
+        return fragment;
+    }
+
+    footnoteLimit(style: ComputedStyle, inlineSize: number, blockSize: number): number {
+        // GCPM 3 §2.4.2: "The max-height property on the footnote area limits the size of this area", whose margin box is
+        // what the page gives it.
+        const sizes: UsedSizes = this.sizes.of(style, inlineSize, blockSize);
+        if (sizes.maxBlockSize === undefined) {
+            return Number.POSITIVE_INFINITY;
+        }
+        return Math.max(sizes.maxBlockSize, sizes.minBlockSize ?? 0) + this.sizes.edges(sizes, BoxSizes.BLOCK_START) + this.sizes.edges(sizes, BoxSizes.BLOCK_END)
+            + (this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0) + (this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0);
+    }
+
+    lineSize(style: ComputedStyle, inlineSize: number): number {
+        // CSS 2 §10.3.3: the content width of a block-level box in normal flow, with auto margins as zero.
+        const sizes: UsedSizes = this.sizes.of(style, inlineSize);
+        const margins: number = (this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0) + (this.sizes.margin(sizes, BoxSizes.INLINE_END) ?? 0);
+        return this.clamped(sizes.inlineSize ?? Math.max(0, inlineSize - margins - this.inlineEdges(sizes)), sizes.minInlineSize, sizes.maxInlineSize);
     }
 
     firstSide(box: ElementBox, recto: "left" | "right"): "left" | "right" {
@@ -1099,7 +1146,8 @@ export class BlockLayout {
         // CSS Fragmentation 4 §5.4: with box-decoration-break: slice "no border and no padding are inserted at a break",
         // and with clone each fragment has them; §5.2: "Cloned margins are always truncated to zero".
         const clone: boolean = this.keyword(box.style.values["box-decoration-break"]) === "clone";
-        const resumed: boolean = incoming !== undefined;
+        // A token of another box only resumes the children, as in the footnote area of a new page, which starts there itself.
+        const resumed: boolean = incoming !== undefined && incoming.box === box;
         // CSS 2 §8.3.1: margins adjoin when no line box, clearance, padding or border separates them and the box is no block
         // formatting context root; adjoining margins are kept as their largest positive and their most negative member.
         const startEdge: number = resumed && !clone ? 0 : this.sizes.edges(sizes, BoxSizes.BLOCK_START);
@@ -1263,6 +1311,11 @@ export class BlockLayout {
                         this.record(fragmenting, point[0], undefined);
                     }
                 }
+                if (fragmenting !== undefined && fragmenting.filled && this.pushed.has(outside)) {
+                    // GCPM 3 §2.8: a footnote whose body does not fit with its call goes to the next page with the call.
+                    token = this.token(box, index, sequence, undefined, undefined, undefined);
+                    break;
+                }
                 // The run is one inline sequence, counted where it starts.
                 sequence += index === 0 || this.isBlockLevel(nodes[index - 1]) ? 1 : 0;
                 const top: number = offset + (empty && adjoinsStart ? 0 : pending[0] + pending[1]);
@@ -1273,10 +1326,8 @@ export class BlockLayout {
                     const placeholder: BoxFragment = this.placeholder(outside);
                     placeholder.block = top;
                     children.push(placeholder);
-                } else if (outside.placement === "footnote") {
-                    throw new Error(BlockLayout.FOOTNOTES);
-                } else if (outside.placement === "running") {
-                    children.push(this.runningPlace(outside, top));
+                } else if (outside.placement === "running" || outside.placement === "footnote") {
+                    children.push(this.emptyPlace(outside, top));
                 }
                 if (fragmenting !== undefined && floated && children.length > placed) {
                     fragmenting.filled = true;
@@ -1939,6 +1990,10 @@ export class BlockLayout {
         const total: number = lines.length;
         for (let index: number = 0; index < total; index++) {
             const line: LineFragment = lines[index];
+            const call: ElementBox | undefined = this.pushed.size > 0 && fragmenting.filled ? this.pushedCall(line) : undefined;
+            if (call !== undefined) {
+                return this.callBreak(lines, index, orphans, widows, this.keyword(call.style.values["footnote-policy"]) === "block", fragmenting);
+            }
             let local: Candidate | undefined;
             // The line boxes of the parts of one line of text are side by side, so no break falls between them.
             if (index > 0 && line.block !== lines[index - 1].block) {
@@ -1965,6 +2020,41 @@ export class BlockLayout {
         return total;
     }
 
+    private pushedCall(line: LineFragment): ElementBox | undefined {
+        for (const piece of line.pieces) {
+            if (piece.kind === "box" && piece.box.placement === "footnote" && this.pushed.has(piece.box)) {
+                return piece.box;
+            }
+        }
+        return undefined;
+    }
+
+    private callBreak(lines: ReadonlyArray<LineFragment>, index: number, orphans: number, widows: number, paragraph: boolean, fragmenting: Fragmentation): number {
+        // GCPM 3 §2.8: line puts "a forced page break at the start of the line containing the footnote reference", where "the
+        // user agent must honor widow and orphan settings" "and so may need to insert the page break on an earlier line"; block
+        // puts it "before the paragraph that contains the footnote".
+        const total: number = lines.length;
+        let kept: number = paragraph ? 0 : index;
+        while (kept > 0 && (kept < orphans || total - kept < widows || lines[kept].block === lines[kept - 1].block)) {
+            kept--;
+        }
+        if (kept > 0) {
+            return kept;
+        }
+        // The paragraph goes whole to the next page from the latest break point between boxes that comes before it.
+        const path: Array<readonly [ElementBox, number]> = fragmenting.path.slice(0, -1).map((step: [ElementBox, number]): readonly [ElementBox, number] => [step[0], step[1]]);
+        while (path.length > 0) {
+            const last: readonly [ElementBox, number] = path[path.length - 1];
+            if (this.previousSibling(last[0].children, last[1]) !== undefined) {
+                fragmenting.early = { appeal: APPEAL_PERFECT, path };
+                fragmenting.restart = true;
+                return total;
+            }
+            path.pop();
+        }
+        return total;
+    }
+
     private count(value?: CssValue): number {
         // CSS Fragmentation 4 §3.3: orphans and widows are positive integers, 2 initially.
         return value !== undefined && value.kind === "number" ? Math.max(1, value.value) : 2;
@@ -1974,9 +2064,9 @@ export class BlockLayout {
         return [opens ? 0 : sides[BoxSizes.BLOCK_START], sides[BoxSizes.INLINE_END], closes ? 0 : sides[BoxSizes.BLOCK_END], sides[BoxSizes.INLINE_START]];
     }
 
-    runningPlace(box: ElementBox, block: number): BoxFragment {
-        // GCPM 3 §1.2.1: a running element is out of the flow, and element() takes it from the page where it would have been,
-        // so it leaves an empty fragment there.
+    emptyPlace(box: ElementBox, block: number): BoxFragment {
+        // GCPM 3 §1.2.1 and §2.2: running and footnote elements are out of the flow, and element() and the footnote area take
+        // them from the page where they would have been, so they leave an empty fragment there.
         return { kind: "box", box, inline: 0, block, inlineSize: 0, blockSize: 0 };
     }
 
