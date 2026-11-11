@@ -117,6 +117,7 @@ export interface Input {
     marginTargets: boolean;
     targetCounters: boolean;
     linkCounters: boolean;
+    pageFootnotes: boolean;
     tocRules: ReadonlyArray<TocRule>;
     fontPalettes: ReadonlyArray<DescriptorRule>;
     reports: Array<ReadonlyArray<string>>;
@@ -130,6 +131,9 @@ const LINK_COUNTERS: RegExp = new RegExp(PropertyTable.LINK_COUNTER + "\\(\\s*(?
 const TARGET_FUNCTIONS: RegExp = /target-(?:counters?|text)\(/i;
 const COUNTS_PAGES: RegExp = /counters?\(\s*pages\s*[,)]/i;
 const VARIABLE: RegExp = /var\(/i;
+const FOOTNOTE: string = "footnote";
+const FOOTNOTE_NAME: RegExp = /(^|[^-\w])footnote([^-\w]|$)/;
+const COUNTER_PROPERTIES: ReadonlySet<string> = new Set<string>(["counter-reset", "counter-increment", "counter-set"]);
 
 export class PdfGenerator {
 
@@ -172,14 +176,14 @@ export class PdfGenerator {
             // CSS Content 3 §2.6: the page of a target is known only from a layout, so the layout that shows it comes after.
             const ends: Map<number, Candidate> = new Map<number, Candidate>();
             let previous: PageDriver | undefined;
-            if (references.showsPages) {
+            if (references.showsPages || input.pageFootnotes) {
                 previous = new PageDriver(setup, document, ends);
                 previous.run(false, false);
                 setup.builder.labelStrings = previous.labelStrings;
                 this.settleTexts(setup);
             }
             let driver: PageDriver = new PageDriver(setup, document, ends);
-            const shown: Set<string> = new Set<string>([JSON.stringify([[...references.shown], setup.builder.labelTexts()])]);
+            const shown: Set<string> = new Set<string>([JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()]])]);
             let comparing: boolean = true;
             while (!driver.run(true, comparing)) {
                 document.restart();
@@ -187,7 +191,7 @@ export class PdfGenerator {
                 images.restart();
                 setup.builder.labelStrings = driver.labelStrings;
                 this.settleTexts(setup);
-                const key: string = JSON.stringify([[...references.shown], setup.builder.labelTexts()]);
+                const key: string = JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()]]);
                 if (shown.has(key) && previous !== undefined) {
                     // With no page that can end earlier, the pages are single pieces that allow no other layout.
                     comparing = this.endEarlier(setup.layout, ends, previous, driver);
@@ -303,10 +307,31 @@ export class PdfGenerator {
             marginTargets: this.marginContent(stylesheet, (value: FunctionValue): boolean => value.name.startsWith(TARGET), TARGET_FUNCTIONS),
             targetCounters: this.usesFunction(stylesheet, TARGET_COUNTERS, (found: FunctionValue): boolean => found.name === "target-counter" || found.name === "target-counters"),
             linkCounters: this.usesFunction(stylesheet, LINK_COUNTERS, (found: FunctionValue): boolean => found.name === PropertyTable.LINK_COUNTER && this.firstName(found) !== PAGE),
+            pageFootnotes: this.pageFootnotes(stylesheet),
             tocRules: stylesheet.tocRules,
             fontPalettes: stylesheet.fontPalettes,
             reports: [stylesheet.diagnostics, fonts.diagnostics, profiles.diagnostics, computer.diagnostics]
         };
+    }
+
+    private pageFootnotes(stylesheet: Stylesheet): boolean {
+        // GCPM 3 §2.5.2: a page context that changes the footnote counter numbers the footnotes by the pages of their calls.
+        return stylesheet.pageRules.some((rule: PageRule) => rule.declarations.some((declaration: Declaration) => COUNTER_PROPERTIES.has(declaration.property)
+            && this.names(declaration.value, FOOTNOTE)));
+    }
+
+    private names(value: DeclaredValue, name: string): boolean {
+        if (value.kind === "pending") {
+            return FOOTNOTE_NAME.test(value.text);
+        }
+        if (value.kind === "toggle") {
+            return value.values.some((item: DeclaredValue) => this.names(item, name));
+        }
+        if (value.kind !== "value") {
+            return false;
+        }
+        const items: ReadonlyArray<CssValue> = value.value.kind === "list" ? value.value.items : [value.value];
+        return items.some((item: CssValue) => item.kind === "ident" && item.name === name);
     }
 
     private fontsOf(catalog: FontCatalog, features: ReadonlyArray<FontFeatureValuesRule>): DocumentFonts {
@@ -402,7 +427,7 @@ export class PdfGenerator {
         const whiteSpace: WhiteSpaceProcessor = new WhiteSpaceProcessor();
         let quoteSystems: QuoteSystems = new QuoteSystems();
         let boxBuilder: BoxBuilder = new BoxBuilder(input.cascade, input.computer, images, assumed, input.counterStyles, quoteSystems,
-            input.marginBoxes || input.linkCounters, input.targetCounters, references, input.tocRules);
+            input.marginBoxes || input.linkCounters, input.targetCounters, references, input.tocRules, input.pageFootnotes);
         let letters: FirstLetterBoxes | undefined;
         const layout: BlockLayout = new BlockLayout(input.metrics, text, images, (box: ElementBox, inlineSize: number, blockSize?: number): boolean =>
             this.containerContents(boxBuilder, whiteSpace, letters as FirstLetterBoxes, text, box, inlineSize, blockSize));
@@ -420,7 +445,7 @@ export class PdfGenerator {
         if (usedViewport && (viewport.width !== assumed.width || viewport.height !== assumed.height)) {
             quoteSystems = new QuoteSystems();
             boxBuilder = new BoxBuilder(input.cascade, input.computer, images, viewport, input.counterStyles, quoteSystems, input.marginBoxes || input.linkCounters,
-                input.targetCounters, references, input.tocRules);
+                input.targetCounters, references, input.tocRules, input.pageFootnotes);
             boxes = boxBuilder.build(input.root) ?? boxes;
         }
         letters = new FirstLetterBoxes(boxBuilder, whiteSpace);

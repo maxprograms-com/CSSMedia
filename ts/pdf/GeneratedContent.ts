@@ -41,6 +41,7 @@ export interface ContentState {
     references?: CrossReferences;
     targets?: Map<TextSequence, string>;
     named?: Map<readonly [string, string], [TextSequence, string]>;
+    footnote?: SourceElement;
 }
 
 const TARGETS: ReadonlySet<string> = new Set<string>(["target-counter", "target-counters", "target-text"]);
@@ -99,7 +100,20 @@ export class GeneratedContent {
                     }
                     break;
                 case "function":
-                    if (item.name === "counter" || item.name === "counters") {
+                    if (item.name === "counter" && state.footnote !== undefined && state.targets !== undefined && this.isFootnote(item)) {
+                        // GCPM 3 §2.5.2: "The footnote counter may be reset on each page", so its value in a call or a marker is
+                        // known once the page of the call is.
+                        let value: string = "";
+                        for (const symbol of this.counter(item.name, item.args, state, rightToLeft)) {
+                            value += typeof symbol === "string" ? symbol : "";
+                        }
+                        const node: TextSequence = { kind: "text", text: value, style: text, target: item, footnote: state.footnote };
+                        if (state.language !== undefined) {
+                            node.language = state.language;
+                        }
+                        nodes.push(node);
+                        state.targets.set(node, value);
+                    } else if (item.name === "counter" || item.name === "counters") {
                         this.addSymbols(nodes, this.counter(item.name, item.args, state, rightToLeft), text, state.language);
                     } else if (item.name === "leader") {
                         this.addLeader(nodes, item.args[0], text, state.language);
@@ -399,6 +413,22 @@ export class GeneratedContent {
             }
             nodes.push(node);
         }
+    }
+
+    footnoteText(value: FunctionValue, style: ComputedStyle, shown: string, number?: number): string {
+        if (number === undefined) {
+            return shown;
+        }
+        let text: string = "";
+        for (const symbol of this.counterStyles.representation(number, this.isRightToLeft(style), value.args[1])) {
+            text += typeof symbol === "string" ? symbol : "";
+        }
+        return text;
+    }
+
+    private isFootnote(value: FunctionValue): boolean {
+        const name: CssValue | undefined = value.args[0];
+        return name !== undefined && name.kind === "ident" && name.name === "footnote";
     }
 
     targetText(value: FunctionValue, style: ComputedStyle, references: CrossReferences): string {

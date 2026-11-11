@@ -53,6 +53,9 @@ export class CrossReferences {
     readonly shown: Map<string, number> = new Map<string, number>();
     private readonly found: Map<string, number> = new Map<string, number>();
     private readonly moves: Set<string> = new Set<string>();
+    readonly footnotesShown: Map<SourceElement, number> = new Map<SourceElement, number>();
+    private readonly footnotesFound: Map<SourceElement, number> = new Map<SourceElement, number>();
+    private footnotesMoved: boolean = false;
     private root?: ElementBox;
     private whiteSpace?: WhiteSpaceProcessor;
 
@@ -71,7 +74,19 @@ export class CrossReferences {
     }
 
     get moved(): boolean {
-        return this.moves.size > 0;
+        return this.moves.size > 0 || this.footnotesMoved;
+    }
+
+    recordFootnote(element: SourceElement, value: number): void {
+        // GCPM 3 §2.5.2: the number of a footnote whose counter the page context changes is that of the page of its call.
+        this.footnotesFound.set(element, value);
+        if (this.footnotesShown.get(element) !== value) {
+            this.footnotesMoved = true;
+        }
+    }
+
+    footnoteNumber(element: SourceElement): number | undefined {
+        return this.footnotesShown.get(element);
     }
 
     target(value?: CssValue): string | undefined {
@@ -205,6 +220,8 @@ export class CrossReferences {
     startLayout(): void {
         this.found.clear();
         this.moves.clear();
+        this.footnotesFound.clear();
+        this.footnotesMoved = false;
     }
 
     recordPage(box: ElementBox, page: number): void {
@@ -248,6 +265,9 @@ export class CrossReferences {
                 changed = changed || this.pageIds.has(id);
                 this.shown.set(id, page);
             }
+        }
+        for (const [element, value] of this.footnotesFound) {
+            this.footnotesShown.set(element, value);
         }
         return changed;
     }

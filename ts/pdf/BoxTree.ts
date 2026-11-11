@@ -41,6 +41,7 @@ export interface TextSequence {
     target?: FunctionValue;
     named?: readonly [string, string];
     bookmark?: readonly [SourceElement, boolean];
+    footnote?: SourceElement;
     style: ComputedStyle;
 }
 

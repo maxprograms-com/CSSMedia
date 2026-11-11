@@ -128,8 +128,9 @@ const ANONYMOUS_CELL: DisplayType = { internal: "table-cell", outer: "block", in
 const INLINE: DisplayType = { outer: "inline", inner: "flow", listItem: false };
 const FOOTNOTE_CALL: string = "footnote-call";
 const FOOTNOTE_MARKER: string = "footnote-marker";
-const FOOTNOTE_START: ReadonlyArray<CounterChange> = [["footnote", 0]];
-const FOOTNOTE_STEP: ReadonlyArray<CounterChange> = [["footnote", 1]];
+const FOOTNOTE_COUNTER: string = "footnote";
+const FOOTNOTE_START: ReadonlyArray<CounterChange> = [[FOOTNOTE_COUNTER, 0]];
+const FOOTNOTE_STEP: ReadonlyArray<CounterChange> = [[FOOTNOTE_COUNTER, 1]];
 const SAME_CONTEXT: ReadonlyArray<readonly [string, ReadonlyArray<string>]> = [
     ["overflow-x", ["visible", "clip"]], ["overflow-y", ["visible", "clip"]], ["column-count", ["auto"]], ["column-width", ["auto"]]
 ];
@@ -179,11 +180,15 @@ export class BoxBuilder {
     private tocLabels?: Map<SourceElement, Array<TextSequence>>;
     rootStyle?: ComputedStyle;
     footnotes: boolean = false;
+    readonly pageFootnotes: boolean;
+    readonly footnoteNumbers: Map<SourceElement, readonly [number, number]> = new Map<SourceElement, readonly [number, number]>();
+    footnoteStart: readonly [number, number] = [0, -1];
     readonly diagnostics: Array<string> = [];
 
     constructor(cascade: Cascade, computer: StyleComputer, images: ImageFormats, viewport: Size, counterStyles: CounterStyles, quoteSystems: QuoteSystems,
-        keepCounters: boolean, idCounters: boolean, references: CrossReferences, tocRules: ReadonlyArray<TocRule>) {
+        keepCounters: boolean, idCounters: boolean, references: CrossReferences, tocRules: ReadonlyArray<TocRule>, pageFootnotes: boolean) {
         this.cascade = cascade;
+        this.pageFootnotes = pageFootnotes;
         this.tocRules = tocRules;
         this.computer = computer;
         this.images = images;
@@ -266,6 +271,7 @@ export class BoxBuilder {
         if (parent === undefined) {
             // GCPM 3 §2.5: the footnote counter is "a predefined counter", so it exists from the root for every footnote.
             this.scopes.apply(counters, node, FOOTNOTE_START);
+            this.footnoteStart = [0, node];
         }
         const start: CounterSet | undefined = this.keepCounters || (this.idCounters && this.hasId(element)) ? this.copied(counters) : undefined;
         if (display.box === undefined) {
@@ -275,6 +281,16 @@ export class BoxBuilder {
             if (placement === "footnote") {
                 this.scopes.apply(counters, node, undefined, FOOTNOTE_STEP, undefined, parent?.scope);
                 this.footnotes = true;
+                if (this.pageFootnotes) {
+                    // The page driver numbers the footnotes again when the page context changes the counter, from these values
+                    // and the counter instance that holds them.
+                    for (let index: number = counters.length - 1; index >= 0; index--) {
+                        if (counters[index].name === FOOTNOTE_COUNTER) {
+                            this.footnoteNumbers.set(element, [counters[index].value, counters[index].creator]);
+                            break;
+                        }
+                    }
+                }
             }
         }
         this.previous = counters;
@@ -450,6 +466,9 @@ export class BoxBuilder {
     targetText(node: TextSequence): string {
         if (node.bookmark !== undefined) {
             return this.labelText(node.bookmark[0], node.bookmark[1], this.labelStrings?.get(node.bookmark[0]));
+        }
+        if (node.target !== undefined && node.footnote !== undefined) {
+            return this.content.footnoteText(node.target, node.style, node.text, this.references.footnoteNumber(node.footnote));
         }
         return node.target === undefined ? node.text : this.content.targetText(node.target, node.style, this.references);
     }
@@ -961,6 +980,9 @@ export class BoxBuilder {
         const contents: (() => Array<BoxNode>) | undefined = takesContents ? this.once((): Array<BoxNode> => this.childBoxes(pseudoContext).nodes) : undefined;
         const state: ContentState = this.contentState(counters, node, context.element,
             (): ReadonlyArray<QuotePair> => this.quoteSystem(context.element, pseudo.style.values["quotes"], context), contents);
+        if (this.pageFootnotes && (pseudo.name === FOOTNOTE_CALL || pseudo.name === FOOTNOTE_MARKER)) {
+            state.footnote = context.element;
+        }
         const leading: Array<NamedString> | undefined = pseudo.display.box === "contents" ? undefined : this.takeStrings();
         const generated: Array<BoxNode> = [];
         if (pseudo.display.listItem && pseudo.display.box === undefined) {

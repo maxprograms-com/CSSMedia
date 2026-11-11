@@ -95,6 +95,7 @@ const POINTS_PER_PIXEL: number = 0.75;
 const GROUP_BREAKS: ReadonlySet<string> = new Set<string>(["always", "all", "page", "left", "right", "recto", "verso"]);
 const PAGE: string = "page";
 const PAGES: string = "pages";
+const FOOTNOTE: string = "footnote";
 const TOLERANCE: number = 0.001;
 const NO_CALLS: ReadonlySet<ElementBox> = new Set<ElementBox>();
 const AREA_DISPLAY: DisplayType = { outer: "block", inner: "flow-root", listItem: false };
@@ -123,6 +124,7 @@ export class PageDriver {
     private carry?: Carry;
     private nextCarry?: Carry;
     private order?: Map<ElementBox, number>;
+    private numbered: readonly [number, number, number] = [0, 0, -1];
 
     constructor(setup: PageSetup, document: PdfDocument, ends: ReadonlyMap<number, Candidate>) {
         this.setup = setup;
@@ -151,6 +153,7 @@ export class PageDriver {
         let ended: boolean = false;
         let last: string = root.startPage;
         delete this.carry;
+        this.numbered = [this.setup.builder.footnoteStart[0], this.setup.builder.footnoteStart[0], this.setup.builder.footnoteStart[1]];
         do {
             // CSS Paged Media 3 §8.1: "The first printed page's type is the start page value of the root", and content after a
             // break "resumes on a page box of the named type"; footnotes that go on after the content keep the last type.
@@ -229,6 +232,9 @@ export class PageDriver {
         if (page.footnotes !== undefined) {
             this.assignments(page.footnotes, state);
         }
+        if (this.setup.builder.pageFootnotes) {
+            this.renumber(page, values);
+        }
         if (state.labels.length > 0) {
             // CSS Content 3 §3.2: a bookmark label reads the named strings of the page where its element starts, all of them.
             const strings: NamedValues<string> = state.strings.copy();
@@ -261,6 +267,32 @@ export class PageDriver {
         if (state.painting) {
             this.emit(page, later);
         }
+    }
+
+    private renumber(page: PageLayout, values: Readonly<Record<string, CssValue>>): void {
+        // GCPM 3 §2.5.2: "The footnote counter may be reset on each page", and §2.5: "It should be incremented for each footnote";
+        // the steps between two footnotes in the same counter instance are those of the document, and a reset in the document
+        // between them starts from the document's value.
+        let [shown, build, creator]: readonly [number, number, number] = this.numbered;
+        for (const [property, initial] of [["counter-reset", 0], ["counter-increment", 1], ["counter-set", 0]] as ReadonlyArray<readonly [string, number]>) {
+            for (const [name, value] of this.scopes.changes(initial, values[property]) ?? []) {
+                if (name === FOOTNOTE) {
+                    shown = property === "counter-increment" ? shown + value : value;
+                }
+            }
+        }
+        const boxes: Array<ElementBox> = page.content === undefined ? [] : this.calls(page.content, page.footnotes);
+        for (const box of boxes) {
+            const known: readonly [number, number] | undefined = box.element === undefined ? undefined : this.setup.builder.footnoteNumbers.get(box.element);
+            if (known === undefined || box.element === undefined) {
+                continue;
+            }
+            shown = known[1] === creator ? shown + known[0] - build : known[0];
+            build = known[0];
+            creator = known[1];
+            this.setup.references.recordFootnote(box.element, shown);
+        }
+        this.numbered = [shown, build, creator];
     }
 
     private zIndex(style: ComputedStyle): number {
@@ -478,11 +510,11 @@ export class PageDriver {
         }
         if (placed?.carry !== undefined) {
             // Footnotes keep their order, so those called on a page that still continues earlier ones start on a later page.
-            return this.result(content, this.deferring(placed, this.calls(content, placed), style, inline), extent);
+            return this.result(content, this.deferring(placed, this.calls(content, placed.fragment), style, inline), extent);
         }
         const accepted: Array<ElementBox> = [];
         for (;;) {
-            const anchors: Array<ElementBox> = this.calls(content, placed);
+            const anchors: Array<ElementBox> = this.calls(content, placed?.fragment);
             if (anchors.length <= accepted.length) {
                 break;
             }
@@ -499,7 +531,7 @@ export class PageDriver {
             const whole: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, cap);
             if (whole.carry === undefined && whole.fits) {
                 const above: BoxFragment = this.content(root, inline, extent - whole.extent, pushed, token, end);
-                if (this.calls(above, whole)[accepted.length] === next) {
+                if (this.calls(above, whole.fragment)[accepted.length] === next) {
                     accepted.push(next);
                     placed = whole;
                     reserve = whole.extent;
@@ -694,12 +726,12 @@ export class PageDriver {
         return node.kind === "box" && node.placement === "in-flow" && node.display.outer === "block";
     }
 
-    private calls(content: BoxFragment, placed?: Placed): Array<ElementBox> {
+    private calls(content: BoxFragment, area?: BoxFragment): Array<ElementBox> {
         // GCPM 3 §2.2: any element with float: footnote is a footnote, so the calls in the footnote bodies on the page add
         // theirs after the calls of the content.
         const found: Array<ElementBox> = this.anchors(content);
-        if (placed !== undefined) {
-            this.anchors(placed.fragment, found);
+        if (area !== undefined) {
+            this.anchors(area, found);
         }
         // §2.2: "Footnote elements from a given page are placed in the footnote area of that page in document order."
         if (this.order === undefined) {
