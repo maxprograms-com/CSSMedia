@@ -212,7 +212,7 @@ export class PdfGenerator {
             // The classes keep adding the minor problems they find while the run goes on, so they are read when it ends.
             const reports: Array<ReadonlyArray<string>> = [...input.reports, references.diagnostics, images.diagnostics];
             if (setup !== undefined) {
-                reports.push(...setup.reports, setup.layout.diagnostics);
+                reports.push(...setup.reports);
             }
             for (const report of reports) {
                 this.warnings.push(...report);
@@ -310,7 +310,7 @@ export class PdfGenerator {
             pageFootnotes: this.pageFootnotes(stylesheet),
             tocRules: stylesheet.tocRules,
             fontPalettes: stylesheet.fontPalettes,
-            reports: [stylesheet.diagnostics, fonts.diagnostics, profiles.diagnostics, computer.diagnostics]
+            reports: [stylesheet.diagnostics, fonts.diagnostics, profiles.diagnostics]
         };
     }
 
@@ -475,7 +475,7 @@ export class PdfGenerator {
             whiteSpace,
             letters,
             palettes: input.fontPalettes.map((rule: DescriptorRule) => ColorGlyphPainter.fromRule(rule, input.computer, rootStyle, viewport)),
-            reports: [boxBuilder.diagnostics, quoteSystems.diagnostics]
+            reports: []
         };
     }
 

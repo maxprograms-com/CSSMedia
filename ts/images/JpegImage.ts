@@ -32,7 +32,6 @@ interface JpegInfo {
     components: number;
     adobe: boolean;
     profile: Array<Buffer>;
-    brokenProfile: boolean;
     density?: readonly [number, number];
     exif?: ReadonlyMap<number, number>;
 }
@@ -95,9 +94,6 @@ export class JpegImage implements ImageFormat {
         if (!DCT_FRAMES.has(info.frame) || info.precision !== DCT_PRECISION || !DCT_COMPONENTS.has(info.components)) {
             throw this.images.missing(request.href, "JPEG decoding");
         }
-        if (info.brokenProfile) {
-            this.images.report(request.href, "has an incomplete ICC profile, which is ignored");
-        }
         const space: ColorSpaceResource = info.profile.length > 0 ? this.images.document.colors.icc(Buffer.concat(info.profile), info.components)
             : (info.components === 1 ? PdfColorSpaces.GRAY : (info.components === 4 ? PdfColorSpaces.CMYK : PdfColorSpaces.RGB));
         const decode: string = info.components === 4 && info.adobe ? " /Decode [1 0 1 0 1 0 1 0]" : "";
@@ -150,7 +146,7 @@ export class JpegImage implements ImageFormat {
                 const whole: boolean = chunks.every((chunk: readonly [number, number, Buffer], index: number) => chunk[0] === index + 1 && chunk[1] === chunks.length);
                 const info: JpegInfo = {
                     height: segment.readUInt16BE(5), width: segment.readUInt16BE(7), frame: marker, precision: segment[4], components: segment[9], adobe,
-                    profile: whole ? chunks.map((chunk: readonly [number, number, Buffer]) => chunk[2]) : [], brokenProfile: !whole
+                    profile: whole ? chunks.map((chunk: readonly [number, number, Buffer]) => chunk[2]) : []
                 };
                 if (density !== undefined) {
                     info.density = density;

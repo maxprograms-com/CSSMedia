@@ -183,7 +183,6 @@ export class BoxBuilder {
     readonly pageFootnotes: boolean;
     readonly footnoteNumbers: Map<SourceElement, readonly [number, number]> = new Map<SourceElement, readonly [number, number]>();
     footnoteStart: readonly [number, number] = [0, -1];
-    readonly diagnostics: Array<string> = [];
 
     constructor(cascade: Cascade, computer: StyleComputer, images: ImageFormats, viewport: Size, counterStyles: CounterStyles, quoteSystems: QuoteSystems,
         keepCounters: boolean, idCounters: boolean, references: CrossReferences, tocRules: ReadonlyArray<TocRule>, pageFootnotes: boolean) {
@@ -584,12 +583,7 @@ export class BoxBuilder {
                     entries.push([key, bookmark]);
                 }
             }
-            if (title === undefined) {
-                this.diagnostics.push("A table of contents (content: " + PropertyTable.TOC + "()) has no " + PropertyTable.TOC_TITLE + ", so it is not generated");
-                continue;
-            }
-            if (entries.length === 0) {
-                this.diagnostics.push("A table of contents (content: " + PropertyTable.TOC + "()) has no entries, since no element has a bookmark-level");
+            if (title === undefined || entries.length === 0) {
                 continue;
             }
             const titleStyle: ComputedStyle = this.tocStyle(PropertyTable.TOC_TITLE, undefined, toc);

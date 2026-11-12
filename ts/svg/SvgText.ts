@@ -1155,6 +1155,7 @@ export class SvgText {
         let size: number = 0;
         let current: number = mode;
         const stroked: boolean = mode === STROKE && this.painter.isProjected();
+        const areas: Array<readonly [SvgPath, number, ComputedStyle]> = [];
         this.placements(from, to, (instance: FontInstance, glyph: number, glyphSize: number, matrix: Matrix, characters: string, style: ComputedStyle): void => {
             // A font without outlines is written with no font program, so its glyphs are only text, and its color glyphs carry
             // their characters themselves.
@@ -1163,7 +1164,20 @@ export class SvgText {
             if (!outlined && (colored || !asText)) {
                 return;
             }
-            const target: number = colored || !outlined ? INVISIBLE : mode;
+            // §11.9: a glyph's subpath goes around its shape, and PDF strokes the contours as they are, so a glyph whose contours
+            // overlap has the outline of its area stroked after the text, and stays text only for its characters.
+            const overlap: SvgPath | undefined = mode === STROKE && outlined && !colored ? this.outlines.overlapping(instance, glyph) : undefined;
+            if (overlap !== undefined) {
+                const area: readonly [Matrix, number] | undefined = this.painter.placed(matrix);
+                if (area === undefined) {
+                    return;
+                }
+                areas.push([this.glyphPath(overlap, instance, glyphSize, matrix), area[1], style]);
+                if (!asText) {
+                    return;
+                }
+            }
+            const target: number = colored || !outlined || overlap !== undefined ? INVISIBLE : mode;
             if (target !== current) {
                 content.textRenderingMode(target);
                 current = target;
@@ -1187,6 +1201,24 @@ export class SvgText {
             content.showText(codes);
         });
         content.endText();
+        for (const [path, scale, style] of areas) {
+            if (stroked) {
+                this.painter.scaledStroke(style, scale);
+            }
+            if (this.painter.outline(path)) {
+                content.stroke();
+            }
+        }
+    }
+
+    private glyphPath(outline: SvgPath, instance: FontInstance, size: number, matrix: Matrix): SvgPath {
+        const scale: number = size / instance.metrics.unitsPerEm;
+        const points: Array<number> = [];
+        for (let index: number = 0; index < outline.points.length; index += 2) {
+            const point: readonly [number, number] = this.geometry.point(matrix, outline.points[index] * scale, outline.points[index + 1] * scale);
+            points.push(point[0], point[1]);
+        }
+        return { verbs: outline.verbs, points };
     }
 
     private paintColored(from: number, to: number, opacity: number): void {

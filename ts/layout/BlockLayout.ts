@@ -117,7 +117,6 @@ export class BlockLayout {
 
     static readonly EDGE_FIELDS: number = 5;
 
-    readonly diagnostics: Array<string> = [];
     pageBreak?: Candidate;
     pageEarlier?: Candidate;
     private bandOffset: number = 0;

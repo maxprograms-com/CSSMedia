@@ -1389,10 +1389,6 @@ export class MathLayout {
         // a font without a construction for it gives the glyph as it is.
         const found: readonly [FontInstance, number] | undefined = this.glyphFor(RADICAL, box);
         if (found === undefined) {
-            const message: string = "The first available font of a radical has no glyph for U+221A, so no radical sign is drawn";
-            if (!this.host.diagnostics.includes(message)) {
-                this.host.diagnostics.push(message);
-            }
             return undefined;
         }
         const size: number = this.metrics.usedSize(box.style.values, found[0]);

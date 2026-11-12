@@ -104,6 +104,11 @@ interface FragmentBands {
     bands: Array<Array<readonly [Point, Point, Fragment]>>;
 }
 
+interface ShapePiece {
+    points: Array<Point>;
+    count: number;
+}
+
 const STRAIGHT: number = 1e-12;
 const W_LIMIT: number = 1e-6;
 const SUBDIVISION: number = 16;
@@ -596,6 +601,394 @@ export class PathGeometry {
                     });
                     result.verbs.push(CLOSE);
                 }
+            }
+        }
+        return result;
+    }
+
+    shapeOf(path: PathData, precision: number): PathData | undefined {
+        const pieces: Array<Array<Point>> = this.shapePieces(path, precision);
+        const splits: Array<Array<readonly [number, Point]>> = pieces.map((): Array<readonly [number, Point]> => []);
+        for (let first: number = 0; first < pieces.length; first++) {
+            for (let second: number = first + 1; second < pieces.length; second++) {
+                this.crossPieces(pieces, first, second, precision, splits);
+            }
+        }
+        let changed: boolean = false;
+        const groups: Map<string, ShapePiece> = new Map<string, ShapePiece>();
+        pieces.forEach((piece: Array<Point>, index: number) => {
+            const parts: Array<Array<Point>> = this.splitAt(piece, splits[index], precision);
+            changed = changed || parts.length > 1;
+            for (const part of parts) {
+                // Pieces lying on each other are counted as one, or each would be kept as an edge of the area.
+                const forward: string = this.pieceKey(part, precision);
+                const backward: string = this.pieceKey([...part].reverse(), precision);
+                const same: ShapePiece | undefined = groups.get(forward);
+                const reverse: ShapePiece | undefined = same === undefined ? groups.get(backward) : undefined;
+                if (same !== undefined) {
+                    same.count++;
+                    changed = true;
+                } else if (reverse !== undefined) {
+                    reverse.count--;
+                    changed = true;
+                } else {
+                    groups.set(forward, { points: part, count: 1 });
+                }
+            }
+        });
+        const kept: Array<ShapePiece> = [...groups.values()].filter((piece: ShapePiece) => piece.count !== 0);
+        const following: Map<string, Array<Array<Point>>> = new Map<string, Array<Array<Point>>>();
+        for (const piece of kept) {
+            const [left, right]: readonly [number, number] = this.sides(piece, kept);
+            if ((left !== 0) === (right !== 0)) {
+                changed = true;
+                continue;
+            }
+            const part: Array<Point> = left !== 0 ? piece.points : [...piece.points].reverse();
+            const list: Array<Array<Point>> | undefined = following.get(this.key(part[0]));
+            if (list === undefined) {
+                following.set(this.key(part[0]), [part]);
+            } else {
+                list.push(part);
+            }
+        }
+        return changed ? this.linked(following) : undefined;
+    }
+
+    private shapePieces(path: PathData, precision: number): Array<Array<Point>> {
+        // A curve cut where it turns in x or in y cannot cross itself, and a ray along an axis meets it once at most.
+        const pieces: Array<Array<Point>> = [];
+        let start: Point = [0, 0];
+        let current: Point = [0, 0];
+        const add: (points: Array<Point>) => void = (points: Array<Point>): void => {
+            const line: Array<Point> = points.length === 4 && this.onChord(points, precision) ? [points[0], points[3]] : points;
+            for (const part of line.length === 4 ? this.monotonic(line) : [line]) {
+                if (part.some((point: Point) => !this.same(point, part[0]))) {
+                    pieces.push(part);
+                }
+            }
+        };
+        this.segments(path, (verb: number, from: Point, points: ReadonlyArray<number>) => {
+            if (verb === MOVE) {
+                if (!this.same(current, start)) {
+                    add([current, start]);
+                }
+                start = [points[0], points[1]];
+                current = start;
+                return;
+            }
+            if (verb === CLOSE) {
+                if (!this.same(from, start)) {
+                    add([from, start]);
+                }
+                current = start;
+                return;
+            }
+            const end: Point = [points[points.length - 2], points[points.length - 1]];
+            add(verb === LINE ? [from, end] : [from, [points[0], points[1]], [points[2], points[3]], end]);
+            current = end;
+        });
+        if (!this.same(current, start)) {
+            add([current, start]);
+        }
+        return pieces;
+    }
+
+    private onChord(points: ReadonlyArray<Point>, precision: number): boolean {
+        const [p0, p1, p2, p3]: ReadonlyArray<Point> = points;
+        const dx: number = p3[0] - p0[0];
+        const dy: number = p3[1] - p0[1];
+        const length: number = Math.hypot(dx, dy);
+        if (length === 0) {
+            return false;
+        }
+        return [p1, p2].every((point: Point) => {
+            const along: number = ((point[0] - p0[0]) * dx + (point[1] - p0[1]) * dy) / (length * length);
+            return along >= 0 && along <= 1 && Math.abs((point[0] - p0[0]) * dy - (point[1] - p0[1]) * dx) / length <= precision;
+        });
+    }
+
+    private monotonic(points: Array<Point>): Array<Array<Point>> {
+        const roots: Array<number> = [];
+        for (const axis of [0, 1]) {
+            const [q0, q1, q2, q3]: ReadonlyArray<number> = points.map((point: Point) => point[axis]);
+            const a: number = -q0 + 3 * q1 - 3 * q2 + q3;
+            const b: number = 2 * (q0 - 2 * q1 + q2);
+            const c: number = q1 - q0;
+            if (a === 0) {
+                if (b !== 0) {
+                    roots.push(-c / b);
+                }
+                continue;
+            }
+            const discriminant: number = b * b - 4 * a * c;
+            if (discriminant >= 0) {
+                const root: number = Math.sqrt(discriminant);
+                roots.push((-b - root) / (2 * a), (-b + root) / (2 * a));
+            }
+        }
+        const cuts: Array<number> = roots.filter((t: number) => t > 0 && t < 1).sort((first: number, second: number) => first - second);
+        const parts: Array<Array<Point>> = [];
+        let rest: Array<Point> = points;
+        let done: number = 0;
+        for (const cut of cuts) {
+            const local: number = (cut - done) / (1 - done);
+            if (local <= 0 || local >= 1) {
+                continue;
+            }
+            const [left, right]: readonly [Array<Point>, Array<Point>] = this.bezierSplit(rest, local);
+            parts.push(left);
+            rest = right;
+            done = cut;
+        }
+        parts.push(rest);
+        return parts;
+    }
+
+    private bezierAt(points: ReadonlyArray<Point>, t: number): Point {
+        if (points.length === 2) {
+            return [points[0][0] + (points[1][0] - points[0][0]) * t, points[0][1] + (points[1][1] - points[0][1]) * t];
+        }
+        const u: number = 1 - t;
+        const [p0, p1, p2, p3]: ReadonlyArray<Point> = points;
+        return [u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
+            u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]];
+    }
+
+    private bezierDerivative(points: ReadonlyArray<Point>, t: number): Point {
+        if (points.length === 2) {
+            return [points[1][0] - points[0][0], points[1][1] - points[0][1]];
+        }
+        const u: number = 1 - t;
+        const [p0, p1, p2, p3]: ReadonlyArray<Point> = points;
+        return [3 * (u * u * (p1[0] - p0[0]) + 2 * u * t * (p2[0] - p1[0]) + t * t * (p3[0] - p2[0])),
+            3 * (u * u * (p1[1] - p0[1]) + 2 * u * t * (p2[1] - p1[1]) + t * t * (p3[1] - p2[1]))];
+    }
+
+    private bezierSplit(points: ReadonlyArray<Point>, t: number): readonly [Array<Point>, Array<Point>] {
+        const at: (a: Point, b: Point) => Point = (a: Point, b: Point): Point => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+        if (points.length === 2) {
+            const middle: Point = at(points[0], points[1]);
+            return [[points[0], middle], [middle, points[1]]];
+        }
+        const [p0, p1, p2, p3]: ReadonlyArray<Point> = points;
+        const q0: Point = at(p0, p1);
+        const q1: Point = at(p1, p2);
+        const q2: Point = at(p2, p3);
+        const r0: Point = at(q0, q1);
+        const r1: Point = at(q1, q2);
+        const middle: Point = at(r0, r1);
+        return [[p0, q0, r0, middle], [middle, r1, q2, p3]];
+    }
+
+    private controlBox(points: ReadonlyArray<Point>): readonly [number, number, number, number] {
+        let left: number = Number.POSITIVE_INFINITY;
+        let bottom: number = Number.POSITIVE_INFINITY;
+        let right: number = Number.NEGATIVE_INFINITY;
+        let top: number = Number.NEGATIVE_INFINITY;
+        for (const point of points) {
+            left = Math.min(left, point[0]);
+            bottom = Math.min(bottom, point[1]);
+            right = Math.max(right, point[0]);
+            top = Math.max(top, point[1]);
+        }
+        return [left, bottom, right, top];
+    }
+
+    private crossPieces(pieces: ReadonlyArray<Array<Point>>, first: number, second: number, precision: number, splits: Array<Array<readonly [number, Point]>>): void {
+        const a: Array<Point> = pieces[first];
+        const b: Array<Point> = pieces[second];
+        const boxA: readonly [number, number, number, number] = this.controlBox(a);
+        const boxB: readonly [number, number, number, number] = this.controlBox(b);
+        if (boxA[0] > boxB[2] + precision || boxB[0] > boxA[2] + precision || boxA[1] > boxB[3] + precision || boxB[1] > boxA[3] + precision
+            || this.pieceKey(a, precision) === this.pieceKey(b, precision) || this.pieceKey(a, precision) === this.pieceKey([...b].reverse(), precision)) {
+            return;
+        }
+        const hits: Array<readonly [number, number]> = [];
+        const line: (points: ReadonlyArray<Point>, point: Point) => number = (points: ReadonlyArray<Point>, point: Point): number => {
+            const dx: number = points[1][0] - points[0][0];
+            const dy: number = points[1][1] - points[0][1];
+            return ((point[0] - points[0][0]) * dx + (point[1] - points[0][1]) * dy) / (dx * dx + dy * dy);
+        };
+        const reach: number = precision * Math.hypot(a[1][0] - a[0][0], a[1][1] - a[0][1]);
+        if (a.length === 2 && b.length === 2 && Math.abs(this.turn(a[0], a[1], b[0])) <= reach && Math.abs(this.turn(a[0], a[1], b[1])) <= reach) {
+            // Subdividing lines that lie on each other would find a meeting at every point they share.
+            for (const end of [0, 1]) {
+                hits.push([line(a, b[end]), end], [end, line(b, a[end])]);
+            }
+        } else {
+            this.subdivided(a, b, [0, 1, 0, 1], precision, hits);
+        }
+        const found: Array<Point> = [];
+        for (const hit of hits) {
+            const [s, t, distance]: readonly [number, number, number] = this.refined(a, b, Math.min(1, Math.max(0, hit[0])), Math.min(1, Math.max(0, hit[1])));
+            const pa: Point = this.bezierAt(a, s);
+            const pb: Point = this.bezierAt(b, t);
+            if (distance > precision || found.some((point: Point) => Math.hypot(point[0] - pa[0], point[1] - pa[1]) <= precision)) {
+                continue;
+            }
+            found.push(pa);
+            const endA: Point | undefined = [a[0], a[a.length - 1]].find((end: Point) => Math.hypot(end[0] - pa[0], end[1] - pa[1]) <= precision);
+            const endB: Point | undefined = [b[0], b[b.length - 1]].find((end: Point) => Math.hypot(end[0] - pb[0], end[1] - pb[1]) <= precision);
+            if (endA !== undefined && endB !== undefined) {
+                continue;
+            }
+            const node: Point = endA ?? endB ?? [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2];
+            if (endA === undefined) {
+                splits[first].push([s, node]);
+            }
+            if (endB === undefined) {
+                splits[second].push([t, node]);
+            }
+        }
+    }
+
+    private subdivided(a: ReadonlyArray<Point>, b: ReadonlyArray<Point>, range: readonly [number, number, number, number], precision: number,
+        hits: Array<readonly [number, number]>): void {
+        const boxA: readonly [number, number, number, number] = this.controlBox(a);
+        const boxB: readonly [number, number, number, number] = this.controlBox(b);
+        if (boxA[0] > boxB[2] + precision || boxB[0] > boxA[2] + precision || boxA[1] > boxB[3] + precision || boxB[1] > boxA[3] + precision) {
+            return;
+        }
+        const sizeA: number = Math.max(boxA[2] - boxA[0], boxA[3] - boxA[1]);
+        const sizeB: number = Math.max(boxB[2] - boxB[0], boxB[3] - boxB[1]);
+        if (sizeA <= precision && sizeB <= precision) {
+            hits.push([(range[0] + range[1]) / 2, (range[2] + range[3]) / 2]);
+            return;
+        }
+        if (sizeA >= sizeB) {
+            const middle: number = (range[0] + range[1]) / 2;
+            const [left, right]: readonly [Array<Point>, Array<Point>] = this.bezierSplit(a, 0.5);
+            this.subdivided(left, b, [range[0], middle, range[2], range[3]], precision, hits);
+            this.subdivided(right, b, [middle, range[1], range[2], range[3]], precision, hits);
+            return;
+        }
+        const middle: number = (range[2] + range[3]) / 2;
+        const [left, right]: readonly [Array<Point>, Array<Point>] = this.bezierSplit(b, 0.5);
+        this.subdivided(a, left, [range[0], range[1], range[2], middle], precision, hits);
+        this.subdivided(a, right, [range[0], range[1], middle, range[3]], precision, hits);
+    }
+
+    private refined(a: ReadonlyArray<Point>, b: ReadonlyArray<Point>, s: number, t: number): readonly [number, number, number] {
+        // Where two pieces touch, Newton's method can move away from the meeting, so a step counts only if it brings them closer.
+        let pa: Point = this.bezierAt(a, s);
+        let pb: Point = this.bezierAt(b, t);
+        let distance: number = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]);
+        while (distance > 0) {
+            const da: Point = this.bezierDerivative(a, s);
+            const db: Point = this.bezierDerivative(b, t);
+            const determinant: number = db[0] * da[1] - da[0] * db[1];
+            if (determinant === 0) {
+                break;
+            }
+            const rx: number = pb[0] - pa[0];
+            const ry: number = pb[1] - pa[1];
+            const nextS: number = Math.min(1, Math.max(0, s + (db[0] * ry - rx * db[1]) / determinant));
+            const nextT: number = Math.min(1, Math.max(0, t + (da[0] * ry - da[1] * rx) / determinant));
+            const nextA: Point = this.bezierAt(a, nextS);
+            const nextB: Point = this.bezierAt(b, nextT);
+            const next: number = Math.hypot(nextA[0] - nextB[0], nextA[1] - nextB[1]);
+            if (!(next < distance)) {
+                break;
+            }
+            [s, t, pa, pb, distance] = [nextS, nextT, nextA, nextB, next];
+        }
+        return [s, t, distance];
+    }
+
+    private splitAt(piece: Array<Point>, cuts: Array<readonly [number, Point]>, precision: number): Array<Array<Point>> {
+        // The parts are linked by their exact ends, so a cut ends one part and starts the next at the same point.
+        const ordered: Array<readonly [number, Point]> = [...cuts].sort((first: readonly [number, Point], second: readonly [number, Point]) => first[0] - second[0]);
+        const parts: Array<Array<Point>> = [];
+        let rest: Array<Point> = piece;
+        let done: number = 0;
+        let last: Point = piece[0];
+        for (const [t, node] of ordered) {
+            const local: number = (t - done) / (1 - done);
+            if (local <= 0 || local >= 1 || Math.hypot(node[0] - last[0], node[1] - last[1]) <= precision
+                || Math.hypot(node[0] - piece[piece.length - 1][0], node[1] - piece[piece.length - 1][1]) <= precision) {
+                continue;
+            }
+            const [left, right]: readonly [Array<Point>, Array<Point>] = this.bezierSplit(rest, local);
+            left[left.length - 1] = node;
+            right[0] = node;
+            parts.push(left);
+            rest = right;
+            done = t;
+            last = node;
+        }
+        parts.push(rest);
+        return parts;
+    }
+
+    private pieceKey(points: ReadonlyArray<Point>, precision: number): string {
+        return points.map((point: Point) => Math.round(point[0] / precision) + "," + Math.round(point[1] / precision)).join(";");
+    }
+
+    private sides(piece: ShapePiece, pieces: ReadonlyArray<ShapePiece>): readonly [number, number] {
+        // The windings on the two sides differ by the piece's count; a ray from its middle across it, along x or along y after a
+        // quarter turn, which keeps every winding, gives the one of the side it leaves into.
+        const middle: Point = this.bezierAt(piece.points, 0.5);
+        const derivative: Point = this.bezierDerivative(piece.points, 0.5);
+        const end: Point = piece.points[piece.points.length - 1];
+        const tangent: Point = derivative[0] === 0 && derivative[1] === 0 ? [end[0] - piece.points[0][0], end[1] - piece.points[0][1]] : derivative;
+        const turned: boolean = Math.abs(tangent[0]) > Math.abs(tangent[1]);
+        const framed: (point: Point) => Point = (point: Point): Point => turned ? [point[1], -point[0]] : point;
+        const origin: Point = framed(middle);
+        let winding: number = 0;
+        for (const other of pieces) {
+            if (other !== piece) {
+                winding += other.count * this.rayCrossing(other.points.map(framed), origin);
+            }
+        }
+        const up: boolean = (turned ? -tangent[0] : tangent[1]) > 0;
+        return up ? [winding + piece.count, winding] : [winding, winding - piece.count];
+    }
+
+    private rayCrossing(points: ReadonlyArray<Point>, origin: Point): number {
+        // Half open at its ends, so a ray through the point where two pieces meet counts it once.
+        const start: Point = points[0];
+        const end: Point = points[points.length - 1];
+        if (origin[1] < Math.min(start[1], end[1]) || origin[1] >= Math.max(start[1], end[1]) || Math.max(start[0], end[0]) <= origin[0]) {
+            return 0;
+        }
+        const rising: boolean = end[1] > start[1];
+        let low: number = 0;
+        let high: number = 1;
+        for (let middle: number = 0.5; middle !== low && middle !== high; middle = (low + high) / 2) {
+            if ((this.bezierAt(points, middle)[1] < origin[1]) === rising) {
+                low = middle;
+            } else {
+                high = middle;
+            }
+        }
+        return this.bezierAt(points, low)[0] > origin[0] ? (rising ? 1 : -1) : 0;
+    }
+
+    private linked(following: Map<string, Array<Array<Point>>>): PathData {
+        const result: PathData = { verbs: [], points: [] };
+        for (const list of following.values()) {
+            while (list.length > 0) {
+                const first: Array<Point> = list.pop() as Array<Point>;
+                const contour: Array<Array<Point>> = [first];
+                let next: Array<Point> | undefined = following.get(this.key(first[first.length - 1]))?.pop();
+                while (next !== undefined) {
+                    contour.push(next);
+                    next = this.same(next[next.length - 1], first[0]) ? undefined : following.get(this.key(next[next.length - 1]))?.pop();
+                }
+                const closing: Array<Point> = contour[contour.length - 1];
+                if (!this.same(closing[closing.length - 1], first[0])) {
+                    continue;
+                }
+                result.verbs.push(MOVE);
+                result.points.push(first[0][0], first[0][1]);
+                for (const part of contour) {
+                    result.verbs.push(part.length === 2 ? LINE : CURVE);
+                    for (const point of part.slice(1)) {
+                        result.points.push(point[0], point[1]);
+                    }
+                }
+                result.verbs.push(CLOSE);
             }
         }
         return result;

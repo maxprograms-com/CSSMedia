@@ -736,8 +736,6 @@ export class StylesheetReader {
                 const read: Array<Declaration> | undefined = this.declarations.read(child, context.baseUrl, context.namespaces);
                 if (read !== undefined) {
                     pending.push(...read);
-                } else {
-                    this.reportInvalid(child);
                 }
                 continue;
             }
@@ -1039,8 +1037,6 @@ export class StylesheetReader {
                 const read: Array<Declaration> | undefined = this.declarations.readDescriptor("page", child, context.baseUrl) ?? this.declarations.read(child, context.baseUrl, context.namespaces);
                 if (read !== undefined && read.length > 0) {
                     declarations.push(...read.filter((declaration: Declaration) => !(context.pageSizeConditional && declaration.property === "size")));
-                } else {
-                    this.reportInvalid(child);
                 }
                 continue;
             }
@@ -1065,22 +1061,9 @@ export class StylesheetReader {
             const read: Array<Declaration> | undefined = item.type === "Declaration" ? this.declarations.read(item, context.baseUrl, context.namespaces) : undefined;
             if (read !== undefined) {
                 declarations.push(...read);
-            } else if (item.type === "Declaration") {
-                this.reportInvalid(item);
             }
         }
         return declarations;
-    }
-
-    private reportInvalid(declaration: CssTreeDeclaration): void {
-        if (this.declarations.ignores(declaration)) {
-            return;
-        }
-        const value: string = (declaration.value.type === "Raw" ? declaration.value.value : generate(declaration.value)).trim();
-        const message: string = "The declaration " + declaration.property + ": " + value + (declaration.important !== false ? " !important" : "") + " is not valid, so it is ignored";
-        if (!this.diagnostics.includes(message)) {
-            this.diagnostics.push(message);
-        }
     }
 
     private pageSelector(selector: Selector): PageSelector | undefined {
@@ -1382,8 +1365,6 @@ export class StylesheetReader {
             const read: Array<Declaration> | undefined = child.important !== false ? undefined : this.declarations.read(child, context.baseUrl, context.namespaces);
             if (read !== undefined && read.every((declaration: Declaration) => POSITION_TRY_PROPERTIES.test(declaration.property))) {
                 declarations.push(...read);
-            } else {
-                this.reportInvalid(child);
             }
         }
         this.positionTries.push({ rule: { kind: "position-try", name: first.name, declarations, layer: 0, order: this.order++ }, layer: context.layer });

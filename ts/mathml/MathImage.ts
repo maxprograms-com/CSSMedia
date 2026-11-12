@@ -143,9 +143,7 @@ export class MathImage implements ImageFormat {
         const [, cascade, computer]: Language = this.documentLanguage();
         const cascaded: Map<string, DeclaredValue> = cascade.element(element, (queries: ReadonlyArray<ContainerQuery>) =>
             computer.containersHold(queries, containers, viewport));
-        const style: ComputedStyle = computer.compute(StyleComputer.input(cascaded, viewport, containers, parent, root, element));
-        this.keep(computer.diagnostics);
-        return style;
+        return computer.compute(StyleComputer.input(cascaded, viewport, containers, parent, root, element));
     }
 
     viewportUsed(): boolean {
@@ -296,8 +294,6 @@ export class MathImage implements ImageFormat {
         const host: BlockLayout = new BlockLayout(metrics, text, this.images);
         const layout: MathLayout = new MathLayout(host, new BoxSizes((): number | undefined => undefined), metrics, boxes.elements);
         const fragment: BoxFragment = layout.formula(box, {}, available);
-        this.keep(host.diagnostics);
-        this.keep(computer.diagnostics);
         this.last = { key, fragment, layout, metrics, palettes, kept };
         return this.last;
     }

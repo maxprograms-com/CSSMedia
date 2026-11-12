@@ -194,7 +194,6 @@ export class StyleComputer {
     private readonly colorProperties: Map<string, boolean> = new Map<string, boolean>();
     private readonly cycleKeys: Map<string, string> = new Map<string, string>();
     private readonly sharesCustom: boolean;
-    readonly diagnostics: Array<string> = [];
     viewportUsed: boolean = false;
     private initialStyle?: ComputedStyle;
     private initialResolution?: Resolution;
@@ -1339,12 +1338,6 @@ export class StyleComputer {
     private color(value: CssValue): CssValue {
         // CSS Color 4 §15.5: currentcolor computes to itself, and a system color to the color it stands for.
         const parsed: ParsedColor | undefined = this.colors.parse(value, this.simplifier.specifiedContext());
-        if (parsed === undefined && value.kind === "function") {
-            const message: string = "The color " + this.serializer.serialize(value) + " cannot be computed, so nothing is painted with it";
-            if (!this.diagnostics.includes(message)) {
-                this.diagnostics.push(message);
-            }
-        }
         if (parsed === undefined || parsed === "unresolved") {
             return value;
         }

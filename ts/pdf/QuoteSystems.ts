@@ -29,7 +29,6 @@ export class QuoteSystems {
 
     private readonly marks: Map<string, ReadonlyArray<QuotePair>> = new Map<string, ReadonlyArray<QuotePair>>();
     private readonly resolved: Map<string, ReadonlyArray<QuotePair>> = new Map<string, ReadonlyArray<QuotePair>>();
-    readonly diagnostics: Array<string> = [];
 
     constructor() {
         for (const [locale, start, end, alternateStart, alternateEnd] of QUOTE_MARKS) {
@@ -44,9 +43,6 @@ export class QuoteSystems {
             const code: string | undefined = language.length === 0 ? undefined : LanguageUtils.normalizeCode(language);
             marks = code === undefined ? undefined : this.marks.get(code);
             if (marks === undefined) {
-                if (language.length > 0) {
-                    this.diagnostics.push("Language \"" + language + "\" is not in the list of supported languages, so quotes: auto uses the default quotation marks");
-                }
                 marks = this.marks.get(ROOT_LOCALE);
                 if (marks === undefined) {
                     throw new Error("The quotation marks data has no root locale");

@@ -311,10 +311,6 @@ export class DeclarationReader {
         return value === undefined || this.values.anchored(value) ? undefined : { kind: "value", value };
     }
 
-    ignores(declaration: CssTreeDeclaration): boolean {
-        return this.expander.isIgnored(this.table.canonicalName(this.asciiCase.foldLower(declaration.property)));
-    }
-
     isValid(declaration: CssTreeDeclaration): boolean {
         // CSS Conditional 3 §6.1: a declaration is supported when the UA would accept it.
         return this.read(declaration, "about:blank", DeclarationReader.NO_NAMESPACES) !== undefined;

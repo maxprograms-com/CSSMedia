@@ -78,6 +78,7 @@ const SPAN: string = "Span";
 const FILL: number = 0;
 const STROKE: number = 1;
 const INVISIBLE: number = 3;
+const CLIP: number = 7;
 const CAPS: Readonly<Record<string, number>> = { "butt": 0, "round": 1, "square": 2 };
 const MITER_JOIN: number = 0;
 const ROUND_JOIN: number = 1;
@@ -234,13 +235,18 @@ export class TextPainter {
     }
 
     private line(owner: ComputedStyle, left: number, right: number, top: number, thickness: number, outward: number, pdf: PdfPage): void {
-        // CSS Fill and Stroke 3 §5: a line decoration is filled and stroked by the text-decoration-* fill and stroke properties,
-        // whose match-text takes the text's value; the wavy line is a band along a curve, filled by stroking the curve.
+        // The wavy line is a band along a curve, filled by stroking the curve.
         const kind: string = this.keywords(owner.values["text-decoration-style"])[0] ?? "solid";
         if (!this.isNone(this.paintValue(owner, DECORATION, "fill-image"))) {
             throw new Error("The painting of " + DECORATION + "fill-image is not implemented");
         }
-        const color: CssValue | undefined = this.paintValue(owner, DECORATION, "fill-color");
+        // Text Decoration 4 §2.3: text-decoration-color "sets the color of underlines, overlines, and line-throughs"; at its
+        // initial currentcolor, match-text takes fill-color as Fill and Stroke 3 §5 says.
+        const own: CssValue | undefined = owner.values[DECORATION + "fill-color"];
+        const decoration: CssValue | undefined = owner.values["text-decoration-color"];
+        const given: boolean = decoration !== undefined && !(decoration.kind === "ident" && decoration.lower === "currentcolor");
+        const color: CssValue | undefined = own !== undefined && !(own.kind === "ident" && own.lower === MATCH_TEXT) ? own
+            : (given ? decoration : owner.values["fill-color"]);
         const opacity: number = this.opacity(this.paintValue(owner, DECORATION, "fill-opacity"));
         const path: PathData = { verbs: [], points: [] };
         const bounds: Box = this.decorationPath(kind, left, right, top, thickness, outward, path);
@@ -547,6 +553,19 @@ export class TextPainter {
         const align: string = this.keywords(style.values["stroke-align"])[0] ?? "center";
         const stroke: StrokeStyle = this.strokeOf(style, "", layer, align === "center" ? width : 2 * width, align === "inset");
         if (align !== "inset" && this.drawable(stroke)) {
+            // SVG 2 §11.9: the equivalent path of text has "one subpath per glyph" around its shape, and PDF strokes a glyph's
+            // contours as they are, so a run with a glyph whose contours overlap is stroked as a path.
+            const path: PathData | undefined = glyphs.some((placed: PlacedGlyph) => this.outlines.overlapping(placed.font, placed.glyph) !== undefined)
+                ? this.glyphPaths(glyphs) : undefined;
+            const draw: (target: PdfPage) => boolean = (target: PdfPage): boolean => {
+                if (path === undefined) {
+                    this.show(glyphs, target, STROKE, shown);
+                    return true;
+                }
+                this.geometry.trace(path, target.content);
+                target.content.stroke();
+                return false;
+            };
             const alpha: number = (this.colors.color(color, style)?.[2] ?? 0) * opacity;
             const area: Box | undefined = alpha > 0 && alpha < 1 && glyphs.length > 1 ? this.ink(glyphs, this.reach(stroke)) : undefined;
             if (area !== undefined) {
@@ -558,10 +577,10 @@ export class TextPainter {
                 if (align === "outset") {
                     this.exclude(glyphs, this.reach(stroke), form);
                 }
-                this.show(glyphs, form, STROKE, shown);
+                const text: boolean = draw(form);
                 pdf.content.graphicsState(pdf.useState(alpha, 1, "Normal"));
                 pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, PathGeometry.IDENTITY)));
-                return true;
+                return text;
             }
             if (!this.colors.stroke(color, style, pdf, opacity)) {
                 return false;
@@ -570,10 +589,12 @@ export class TextPainter {
             if (align === "outset") {
                 this.exclude(glyphs, this.reach(stroke), pdf);
             }
-            this.show(glyphs, pdf, STROKE, shown);
-            return true;
+            return draw(pdf);
         }
-        const path: PathData = this.glyphPaths(glyphs, align === "inset" ? "stroke-align: inset" : this.feature(stroke));
+        const path: PathData | undefined = this.glyphPaths(glyphs);
+        if (path === undefined) {
+            return this.viewerStroke(glyphs, align, stroke, style, color, opacity, shown, pdf);
+        }
         if (!this.colors.fill(color, style, pdf, opacity)) {
             return false;
         }
@@ -588,13 +609,34 @@ export class TextPainter {
         return false;
     }
 
-    private glyphPaths(glyphs: ReadonlyArray<PlacedGlyph>, feature: string): PathData {
-        // The outlines of the glyphs where they are drawn, from font units to the font size and with y going down.
+    private viewerStroke(glyphs: ReadonlyArray<PlacedGlyph>, align: string, stroke: StrokeStyle, style: ComputedStyle, color: CssValue, opacity: number, shown: boolean,
+        pdf: PdfPage): boolean {
+        // A standard font has only metrics and its glyphs are the viewer's, so only the viewer can clip to them or stroke them.
+        if (!this.colors.stroke(color, style, pdf, opacity)) {
+            return false;
+        }
+        if (align === "inset") {
+            this.show(glyphs, pdf, CLIP, true);
+        } else if (align === "outset") {
+            this.exclude(glyphs, this.reach(stroke), pdf);
+        }
+        const nearest: StrokeStyle = align === "inset" ? { width: stroke.width, cap: stroke.cap, extension: stroke.extension, shape: stroke.shape, limit: stroke.limit }
+            : { width: stroke.width, cap: stroke.cap, extension: "miter", shape: "fallback", limit: stroke.limit };
+        if (stroke.dashes !== undefined) {
+            nearest.dashes = stroke.dashes;
+        }
+        this.pdfStroke(nearest, pdf);
+        this.show(glyphs, pdf, STROKE, shown);
+        return true;
+    }
+
+    private glyphPaths(glyphs: ReadonlyArray<PlacedGlyph>): PathData | undefined {
+        // A glyph's stroke follows the outline of its area, which differs from its contours where they overlap.
         const path: PathData = { verbs: [], points: [] };
         for (const placed of glyphs) {
-            const outline: PathData | undefined = this.outlines.path(placed.font, placed.glyph);
+            const outline: PathData | undefined = this.outlines.overlapping(placed.font, placed.glyph) ?? this.outlines.path(placed.font, placed.glyph);
             if (outline === undefined) {
-                throw new Error("The painting of " + feature + " with the font " + placed.font.typeface.names.postScriptName + " is not implemented");
+                return undefined;
             }
             const scale: number = placed.size / placed.font.metrics.unitsPerEm;
             const skew: number = Math.tan((placed.font.skew ?? 0) * Math.PI / 180);
@@ -604,13 +646,6 @@ export class TextPainter {
             }
         }
         return path;
-    }
-
-    private feature(stroke: StrokeStyle): string {
-        if (stroke.corner !== undefined) {
-            return "stroke-dash-corner";
-        }
-        return stroke.justify !== undefined ? "stroke-dash-justify" : "stroke-linejoin: " + stroke.extension + " " + stroke.shape;
     }
 
     private strokeOf(style: ComputedStyle, prefix: string, layer: number, width: number, inset: boolean): StrokeStyle {

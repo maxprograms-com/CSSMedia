@@ -61,6 +61,7 @@ export class GlyphOutlines {
 
     private static readonly compact: WeakMap<FontInstance, CompactOutlines | null> = new WeakMap<FontInstance, CompactOutlines | null>();
     private static readonly grown: WeakMap<FontInstance, Map<number, PathData | null>> = new WeakMap<FontInstance, Map<number, PathData | null>>();
+    private static readonly overlaps: WeakMap<FontInstance, Map<number, PathData | null>> = new WeakMap<FontInstance, Map<number, PathData | null>>();
 
     private readonly variations: PhantomPointVariations = new PhantomPointVariations();
     private readonly geometry: PathGeometry = new PathGeometry();
@@ -123,6 +124,26 @@ export class GlyphOutlines {
             return this.grownPath(instance, instance.emboldening, glyph);
         }
         return this.designed(instance, glyph);
+    }
+
+    overlapping(instance: FontInstance, glyph: number): PathData | undefined {
+        // A synthesized bold glyph is built as the outline of its area, so it has no overlaps left.
+        if (instance.emboldening !== undefined) {
+            return undefined;
+        }
+        let glyphs: Map<number, PathData | null> | undefined = GlyphOutlines.overlaps.get(instance);
+        if (glyphs === undefined) {
+            glyphs = new Map<number, PathData | null>();
+            GlyphOutlines.overlaps.set(instance, glyphs);
+        }
+        const known: PathData | null | undefined = glyphs.get(glyph);
+        if (known !== undefined) {
+            return known ?? undefined;
+        }
+        const designed: PathData | undefined = this.designed(instance, glyph);
+        const outline: PathData | null = designed === undefined ? null : this.geometry.shapeOf(designed, GRID) ?? null;
+        glyphs.set(glyph, outline);
+        return outline ?? undefined;
     }
 
     programPoints(instance: FontInstance, glyph: number): OutlinePoints | undefined {
