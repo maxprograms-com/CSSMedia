@@ -25,6 +25,7 @@ import { PdfSyntax } from "./PdfSyntax.js";
 export interface ColorStop {
     offset: number;
     components: ReadonlyArray<number>;
+    exponent?: number;
 }
 
 export interface ShadingResource {
@@ -37,11 +38,20 @@ export interface PatternResource {
     object: number;
 }
 
+export interface CoonsPatch {
+    points: ReadonlyArray<readonly [number, number]>;
+    colors: ReadonlyArray<ReadonlyArray<number>>;
+}
+
 export interface ShadingRepeat {
     from: number;
     to: number;
     reflect: boolean;
 }
+
+const SMALLEST: number = 1e-9;
+const PARALLEL: number = 1e-9;
+const DIGITS: number = 12;
 
 export class PdfShadings {
 
@@ -68,20 +78,171 @@ export class PdfShadings {
     calculated(space: ColorSpaceResource, domain: readonly [number, number, number, number], program: string): ShadingResource {
         // §8.7.4.5.2: a type 1 shading gives each point (x, y) of its Domain [xmin xmax ymin ymax] the color of a function,
         // here a type 4 function (§7.10.5), whose PostScript calculator program takes x and y and leaves the components.
+        const bounds: string = "[" + this.syntax.numbers(domain) + "]";
+        const object: number = this.file.add("<< /ShadingType 1 /ColorSpace " + space.value + " /Domain " + bounds + " /Function "
+            + this.syntax.reference(this.program(space, bounds, program)) + " >>");
+        return { key: "Sh" + object, object };
+    }
+
+    meshed(space: ColorSpaceResource, patches: ReadonlyArray<CoonsPatch>): ShadingResource {
+        // §8.7.4.5.7: a type 6 shading of Coons patches, each its flag, its 12 boundary points from p00 up the u = 0 edge and
+        // round, and the colors of its corners p00, p03, p33 and p30, from 0 to 1; Quartz draws no patches with a function.
+        let low: [number, number] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+        let high: [number, number] = [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY];
+        for (const patch of patches) {
+            for (const [x, y] of patch.points) {
+                low = [Math.min(low[0], x), Math.min(low[1], y)];
+                high = [Math.max(high[0], x), Math.max(high[1], y)];
+            }
+        }
+        const span: (value: number, from: number, to: number, levels: number) => number = (value: number, from: number, to: number, levels: number): number =>
+            to > from ? Math.round(Math.min(1, Math.max(0, (value - from) / (to - from))) * levels) : 0;
+        const components: number = space.components;
+        const data: Buffer = Buffer.alloc(patches.length * (1 + 12 * 8 + 4 * components * 2));
+        let at: number = 0;
+        for (const patch of patches) {
+            data[at++] = 0;
+            for (const [x, y] of patch.points) {
+                data.writeUInt32BE(span(x, low[0], high[0], 0xFFFFFFFF), at);
+                data.writeUInt32BE(span(y, low[1], high[1], 0xFFFFFFFF), at + 4);
+                at += 8;
+            }
+            for (const color of patch.colors) {
+                for (let channel: number = 0; channel < components; channel++) {
+                    data.writeUInt16BE(span(color[channel] ?? 0, 0, 1, 0xFFFF), at);
+                    at += 2;
+                }
+            }
+        }
+        const decode: Array<number> = [low[0], high[0], low[1], high[1]];
+        for (let channel: number = 0; channel < components; channel++) {
+            decode.push(0, 1);
+        }
+        const object: number = this.file.addStream("/ShadingType 6 /ColorSpace " + space.value + " /BitsPerCoordinate 32 /BitsPerComponent 16 /BitsPerFlag 8 /Decode ["
+            + this.syntax.numbers(decode) + "]", data, true);
+        return { key: "Sh" + object, object };
+    }
+
+    private program(space: ColorSpaceResource, bounds: string, program: string): number {
         const range: Array<number> = [];
         for (let component: number = 0; component < space.components; component++) {
             range.push(0, 1);
         }
-        const bounds: string = "[" + this.syntax.numbers(domain) + "]";
-        const code: number = this.file.addStream("/FunctionType 4 /Domain " + bounds + " /Range [" + this.syntax.numbers(range) + "]", Buffer.from("{" + program + "}", "latin1"), true);
-        const object: number = this.file.add("<< /ShadingType 1 /ColorSpace " + space.value + " /Domain " + bounds + " /Function " + this.syntax.reference(code) + " >>");
-        return { key: "Sh" + object, object };
+        return this.file.addStream("/FunctionType 4 /Domain " + bounds + " /Range [" + this.syntax.numbers(range) + "]", Buffer.from("{" + program + "}", "latin1"), true);
+    }
+
+    operand(value: number): string {
+        // §7.10.5: the operands of a calculator function are PDF numbers, which have no exponent.
+        if (Math.abs(value) < SMALLEST) {
+            return "0";
+        }
+        const text: string = value.toFixed(DIGITS).replace(/0+$/, "").replace(/\.$/, "");
+        return text === "-0" ? "0" : text;
+    }
+
+    along(x0: number, y0: number, dx: number, dy: number): string {
+        const length: number = dx * dx + dy * dy;
+        return this.operand(y0) + " sub " + this.operand(dy / length) + " mul exch " + this.operand(x0) + " sub " + this.operand(dx / length) + " mul add";
+    }
+
+    betweenCircles(circles: readonly [number, number, number, number, number, number]): string | undefined {
+        // The largest root of (p - c(ω))² = r(ω)² with r(ω) ≥ 0 is the circle drawn last, the one that is seen.
+        const [x0, y0, r0, x1, y1, r1] = circles;
+        const cx: number = x1 - x0;
+        const cy: number = y1 - y0;
+        const dr: number = r1 - r0;
+        if (cx === 0 && cy === 0 && dr === 0) {
+            return undefined;
+        }
+        const a: number = cx * cx + cy * cy - dr * dr;
+        const radius: string = this.operand(dr) + " mul " + this.operand(r0) + " add 0 ge";
+        const start: string = this.operand(y0) + " sub exch " + this.operand(x0) + " sub 2 copy " + this.operand(cx) + " mul exch " + this.operand(cy) + " mul add "
+            + this.operand(r0 * dr) + " add 3 1 roll dup mul exch dup mul add " + this.operand(r0 * r0) + " sub ";
+        if (Math.abs(a) < PARALLEL * (cx * cx + cy * cy + dr * dr)) {
+            // Quartz misreads eq, so zero is the value whose absolute value is not above it.
+            return start + "exch dup abs 0 le { pop pop 0 false } { 2 mul div dup " + radius + " } ifelse";
+        }
+        return start + this.operand(a) + " mul 1 index dup mul exch sub dup 0 lt { pop pop 0 false } { sqrt 2 copy add " + this.operand(1 / a) + " mul 3 1 roll sub "
+            + this.operand(1 / a) + " mul 2 copy gt { exch } if dup " + radius + " { exch pop true } { pop dup " + radius + " } ifelse } ifelse";
+    }
+
+    colorLine(stops: ReadonlyArray<ColorStop>, alphas?: ReadonlyArray<number>, repeat?: ShadingRepeat, plain?: number): string | undefined {
+        const constant: (stop: ColorStop) => string = (stop: ColorStop): string => stop.components.map((channel: number) => this.operand(channel)).join(" ");
+        const first: ColorStop = stops[0];
+        const last: ColorStop = stops[stops.length - 1];
+        if (stops.length === 1) {
+            return "pop " + constant(first);
+        }
+        let mapped: string = "";
+        if (repeat !== undefined) {
+            if (repeat.to <= repeat.from) {
+                return undefined;
+            }
+            const length: string = this.operand(repeat.to - repeat.from);
+            const start: string = this.operand(repeat.from);
+            mapped = repeat.reflect ? start + " sub " + length + " div dup floor dup 2 div dup floor sub 0 gt { sub 1 exch sub } { sub } ifelse " + length + " mul " + start
+                + " add " : start + " sub " + length + " div dup floor sub " + length + " mul " + start + " add ";
+        }
+        if (last.offset <= first.offset) {
+            return mapped + this.operand(first.offset) + " lt { " + constant(first) + " } { " + constant(last) + " } ifelse";
+        }
+        return mapped + "dup " + this.operand(first.offset) + " lt { pop " + constant(first) + " } { dup " + this.operand(last.offset) + " ge { pop " + constant(last)
+            + " } { " + this.segments(stops, alphas, plain) + " } ifelse } ifelse";
     }
 
     pattern(shading: ShadingResource, matrix: ReadonlyArray<number>): PatternResource {
         // §8.7.3.3: a shading pattern, whose matrix maps the shading space to the default space of the content that uses it.
         const object: number = this.file.add("<< /Type /Pattern /PatternType 2 /Shading " + this.syntax.reference(shading.object) + " /Matrix [" + this.syntax.numbers(matrix) + "] >>");
         return { key: "P" + object, object };
+    }
+
+    private segments(stops: ReadonlyArray<ColorStop>, alphas?: ReadonlyArray<number>, plain?: number): string {
+        // Of two stops at one offset the later one takes over there, so the earlier one starts no segment.
+        const pieces: Array<number> = [];
+        for (let index: number = 1; index < stops.length; index++) {
+            if (stops[index].offset > stops[index - 1].offset) {
+                pieces.push(index);
+            }
+        }
+        let code: string = this.segment(stops, pieces[pieces.length - 1], alphas, plain);
+        for (let index: number = pieces.length - 2; index >= 0; index--) {
+            code = "dup " + this.operand(stops[pieces[index]].offset) + " lt { " + this.segment(stops, pieces[index], alphas, plain) + " } { " + code + " } ifelse";
+        }
+        return code;
+    }
+
+    private segment(stops: ReadonlyArray<ColorStop>, end: number, alphas?: ReadonlyArray<number>, plain?: number): string {
+        // A plain channel, such as a hue, is interpolated without the alphas.
+        const from: ColorStop = stops[end - 1];
+        const to: ColorStop = stops[end];
+        const count: number = from.components.length;
+        let fraction: string = this.operand(from.offset) + " sub " + this.operand(1 / (to.offset - from.offset)) + " mul";
+        const exponent: number | undefined = from.exponent;
+        if (exponent !== undefined && exponent !== 1) {
+            fraction += exponent === Number.POSITIVE_INFINITY ? " pop 0" : (exponent === 0 ? " pop 1" : " " + this.operand(exponent) + " exp");
+        }
+        const start: number = alphas === undefined ? 1 : alphas[end - 1];
+        const stop: number = alphas === undefined ? 1 : alphas[end];
+        if (start === stop) {
+            let code: string = fraction;
+            for (let channel: number = 0; channel < count; channel++) {
+                code += " dup " + this.operand(to.components[channel] - from.components[channel]) + " mul " + this.operand(from.components[channel]) + " add exch";
+            }
+            return code + " pop";
+        }
+        let code: string = fraction + " dup " + this.operand(stop - start) + " mul " + this.operand(start) + " add dup " + this.operand(SMALLEST) + " lt { pop "
+            + this.operand(SMALLEST) + " } if";
+        for (let channel: number = 0; channel < count; channel++) {
+            if (channel === plain) {
+                code += " " + (channel + 1) + " index " + this.operand(to.components[channel] - from.components[channel]) + " mul " + this.operand(from.components[channel])
+                    + " add";
+                continue;
+            }
+            const premultiplied: number = from.components[channel] * start;
+            code += " " + (channel + 1) + " index " + this.operand(to.components[channel] * stop - premultiplied) + " mul " + this.operand(premultiplied) + " add "
+                + (channel + 1) + " index div";
+        }
+        return code + " " + (count + 2) + " " + count + " roll pop pop";
     }
 
     private shading(type: number, space: ColorSpaceResource, coordinates: ReadonlyArray<number>, stops: ReadonlyArray<ColorStop>,

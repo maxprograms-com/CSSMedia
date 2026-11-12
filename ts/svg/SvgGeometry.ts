@@ -19,17 +19,11 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
-import type { Homography, PathData } from "../geometry/PathGeometry.js";
+import type { Box, Homography, Matrix, PathData } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
-import type { RelativeUnits } from "../pdf/LengthResolver.js";
-import { LengthResolver } from "../pdf/LengthResolver.js";
 import type { ContentStream } from "../writer/ContentStream.js";
 
-export type { Homography };
-
-export type Matrix = readonly [number, number, number, number, number, number];
-
-export type Box = readonly [number, number, number, number];
+export type { Box, Homography, Matrix };
 
 export type Matrix4 = ReadonlyArray<number>;
 
@@ -46,72 +40,16 @@ const WHITE_SPACE: string = "\t\n\f\r ";
 const COMMANDS: string = "MmZzLlHhVvCcSsQqTtAa";
 const PARAMETERS: Readonly<Record<string, number>> = { m: 2, l: 2, h: 1, v: 1, c: 6, s: 4, q: 4, t: 2, a: 7 };
 const ALIGNMENTS: ReadonlySet<string> = new Set<string>(["none", "xMinYMin", "xMidYMin", "xMaxYMin", "xMinYMid", "xMidYMid", "xMaxYMid", "xMinYMax", "xMidYMax", "xMaxYMax"]);
-const NO_UNITS: RelativeUnits = { size: (): number | undefined => undefined };
 const DEGREES: Readonly<Record<string, number>> = { deg: 1, grad: 0.9, rad: 180 / Math.PI, turn: 360 };
 const EPSILON: number = 1e-12;
 const W_LIMIT: number = PathGeometry.W_LIMIT;
 
 export class SvgGeometry extends PathGeometry {
 
-    static readonly IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
     static readonly IDENTITY4: Matrix4 = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
 
-    private readonly lengths: LengthResolver = new LengthResolver();
     private text: string = "";
     private index: number = 0;
-
-    concat(outer: Matrix, inner: Matrix): Matrix {
-        // The matrix that applies inner first and outer after, as cm does with the current matrix.
-        return [
-            inner[0] * outer[0] + inner[1] * outer[2], inner[0] * outer[1] + inner[1] * outer[3],
-            inner[2] * outer[0] + inner[3] * outer[2], inner[2] * outer[1] + inner[3] * outer[3],
-            inner[4] * outer[0] + inner[5] * outer[2] + outer[4], inner[4] * outer[1] + inner[5] * outer[3] + outer[5]
-        ];
-    }
-
-    point(matrix: Matrix, x: number, y: number): readonly [number, number] {
-        return [matrix[0] * x + matrix[2] * y + matrix[4], matrix[1] * x + matrix[3] * y + matrix[5]];
-    }
-
-    invert(matrix: Matrix): Matrix | undefined {
-        const determinant: number = matrix[0] * matrix[3] - matrix[1] * matrix[2];
-        if (determinant === 0 || !Number.isFinite(determinant)) {
-            return undefined;
-        }
-        return [
-            matrix[3] / determinant, -matrix[1] / determinant, -matrix[2] / determinant, matrix[0] / determinant,
-            (matrix[2] * matrix[5] - matrix[3] * matrix[4]) / determinant, (matrix[1] * matrix[4] - matrix[0] * matrix[5]) / determinant
-        ];
-    }
-
-    translation(x: number, y: number): Matrix {
-        return [1, 0, 0, 1, x, y];
-    }
-
-    rotation(degrees: number): Matrix {
-        const radians: number = degrees * Math.PI / 180;
-        return [Math.cos(radians), Math.sin(radians), -Math.sin(radians), Math.cos(radians), 0, 0];
-    }
-
-    transformBox(matrix: Matrix, box: Box): Box {
-        const xs: Array<number> = [];
-        const ys: Array<number> = [];
-        for (const [x, y] of [[box[0], box[1]], [box[0] + box[2], box[1]], [box[0], box[1] + box[3]], [box[0] + box[2], box[1] + box[3]]]) {
-            const point: readonly [number, number] = this.point(matrix, x, y);
-            xs.push(point[0]);
-            ys.push(point[1]);
-        }
-        return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
-    }
-
-    union(first: Box | undefined, second: Box | undefined): Box | undefined {
-        if (first === undefined || second === undefined) {
-            return first ?? second;
-        }
-        const left: number = Math.min(first[0], second[0]);
-        const top: number = Math.min(first[1], second[1]);
-        return [left, top, Math.max(first[0] + first[2], second[0] + second[2]) - left, Math.max(first[1] + first[3], second[1] + second[3]) - top];
-    }
 
     viewBox(text: string | undefined): Box | undefined {
         // SVG 2 §8.6: a negative width or height makes the attribute invalid.
@@ -269,10 +207,6 @@ export class SvgGeometry extends PathGeometry {
             return [];
         }
         return value.kind === "list" && value.separator === "space" ? value.items : [value];
-    }
-
-    private isKeyword(value: CssValue | undefined, keyword: string): boolean {
-        return value !== undefined && value.kind === "ident" && value.lower === keyword;
     }
 
     private radii(size: ReadonlyArray<CssValue>, center: readonly [number, number], width: number, height: number, circle: boolean): readonly [number, number] {
@@ -532,84 +466,10 @@ export class SvgGeometry extends PathGeometry {
 
     private edge(value: CssValue | undefined, size: number, horizontal: boolean, rtl: boolean): number {
         if (value !== undefined && value.kind === "ident") {
-            const at: readonly [string, number] | undefined = this.keywordAt(value.lower, rtl);
+            const at: readonly [string, number] | undefined = this.keywordAt(value.lower, rtl, false, false);
             return at === undefined || (at[0] !== "both" && (at[0] === "x") !== horizontal) ? 0 : at[1] * size;
         }
         return this.pixels(value, size);
-    }
-
-    private keywordAt(keyword: string, rtl: boolean): readonly [string, number] | undefined {
-        // CSS Values 4 §7.6: the axis and the fraction of the box each position keyword stands for; x-start, inline-start
-        // and start follow the direction in the horizontal writing mode of SVG.
-        switch (keyword) {
-            case "left":
-                return ["x", 0];
-            case "right":
-                return ["x", 1];
-            case "x-start":
-            case "inline-start":
-                return ["x", rtl ? 1 : 0];
-            case "x-end":
-            case "inline-end":
-                return ["x", rtl ? 0 : 1];
-            case "top":
-            case "y-start":
-            case "block-start":
-                return ["y", 0];
-            case "bottom":
-            case "y-end":
-            case "block-end":
-                return ["y", 1];
-            case "center":
-                return ["both", 0.5];
-            default:
-                return undefined;
-        }
-    }
-
-    position(tokens: ReadonlyArray<CssValue>, width: number, height: number, rtl: boolean): readonly [number, number] {
-        // CSS Values 4 §7.6: one value with the other centered, two values with keywords in either order (start and end
-        // naming the block axis first), or four values that offset from the named edges.
-        const sizes: Readonly<Record<string, number>> = { x: width, y: height };
-        if (tokens.length === 4) {
-            const result: Record<string, number> = { x: width / 2, y: height / 2 };
-            for (const index of [0, 2]) {
-                const keyword: CssValue = tokens[index];
-                const at: readonly [string, number] | undefined = keyword.kind === "ident" ? this.keywordAt(keyword.lower, rtl) : undefined;
-                if (at !== undefined && at[0] !== "both") {
-                    const offset: number = this.pixels(tokens[index + 1], sizes[at[0]]);
-                    result[at[0]] = at[1] === 0 ? offset : sizes[at[0]] - offset;
-                }
-            }
-            return [result["x"], result["y"]];
-        }
-        if (tokens.length === 0) {
-            return [width / 2, height / 2];
-        }
-        if (tokens.length === 1) {
-            const token: CssValue = tokens[0];
-            const at: readonly [string, number] | undefined = token.kind === "ident" ? this.keywordAt(token.lower, rtl) : undefined;
-            if (at === undefined) {
-                return [this.pixels(token, width), height / 2];
-            }
-            return at[0] === "y" ? [width / 2, at[1] * height] : (at[0] === "x" ? [at[1] * width, height / 2] : [width / 2, height / 2]);
-        }
-        let [first, second]: readonly [CssValue, CssValue] = [tokens[0], tokens[1]];
-        if ([first, second].some((token: CssValue) => this.isKeyword(token, "start") || this.isKeyword(token, "end"))) {
-            const block: number = this.isKeyword(first, "end") ? 1 : (this.isKeyword(first, "center") ? 0.5 : 0);
-            const inline: number = this.isKeyword(second, "end") ? (rtl ? 0 : 1) : (this.isKeyword(second, "center") ? 0.5 : (rtl ? 1 : 0));
-            return [inline * width, block * height];
-        }
-        const axisOf: (token: CssValue) => string | undefined = (token: CssValue): string | undefined =>
-            token.kind === "ident" ? this.keywordAt(token.lower, rtl)?.[0] : undefined;
-        if (axisOf(first) === "y" || axisOf(second) === "x") {
-            [first, second] = [second, first];
-        }
-        const resolve: (token: CssValue, size: number) => number = (token: CssValue, size: number): number => {
-            const at: readonly [string, number] | undefined = token.kind === "ident" ? this.keywordAt(token.lower, rtl) : undefined;
-            return at === undefined ? this.pixels(token, size) : at[1] * size;
-        };
-        return [resolve(first, width), resolve(second, height)];
     }
 
     edges(path: SvgPath, matrix: Matrix, tolerance: number): Array<number> {
@@ -1594,10 +1454,4 @@ export class SvgGeometry extends PathGeometry {
         return value.kind === "dimension" ? value.value * (DEGREES[value.unit.toLowerCase()] ?? 1) : 0;
     }
 
-    private pixels(value: CssValue | undefined, basis: number): number {
-        if (value === undefined) {
-            return 0;
-        }
-        return value.kind === "number" ? value.value : this.lengths.pixelsOf(value, NO_UNITS, basis) ?? 0;
-    }
 }

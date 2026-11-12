@@ -356,7 +356,7 @@ export class Vp8Decoder {
                 yModes[index] = yMode;
                 segments[index] = segment;
                 filtered[index] = nonZero || yMode === B_PRED ? 1 : 0;
-                this.reconstructed(image, row, column, columns, yMode, uvMode, modes, coefficients);
+                this.reconstructed(image, row, column, yMode, uvMode, modes, coefficients);
             }
             // §20.14: the four pixels right of the last macroblock of the row repeat its last pixel, for the above-right
             // subblocks of the row below.
@@ -453,7 +453,7 @@ export class Vp8Decoder {
         return CATEGORY_MINIMUMS[category] + value;
     }
 
-    private reconstructed(image: LossyImage, row: number, column: number, columns: number, yMode: number, uvMode: number, modes: Uint8Array, coefficients: Int16Array): void {
+    private reconstructed(image: LossyImage, row: number, column: number, yMode: number, uvMode: number, modes: Uint8Array, coefficients: Int16Array): void {
         // §12 and §20.14: the edges outside the frame are 127 above and 129 on the left, except that DC prediction on the
         // top row or the left column averages only the edge inside the frame.
         const y: Uint8Array = image.y;

@@ -42,6 +42,7 @@ const POSITION_TRY_PROPERTIES: ReadonlySet<string> = new Set<string>(["justify-s
 export class DeclarationReader {
 
     static readonly CSS_WIDE_KEYWORDS: ReadonlySet<string> = new Set<string>(["initial", "inherit", "unset", "revert", "revert-layer"]);
+    static readonly RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set<string>([...DeclarationReader.CSS_WIDE_KEYWORDS, "default"]);
     static readonly NO_NAMESPACES: ReadonlyMap<string, string> = new Map<string, string>();
 
     private readonly table: PropertyTable;

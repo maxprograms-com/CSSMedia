@@ -481,7 +481,12 @@ export class SvgText {
         if (shape === undefined || grown <= 0) {
             return shape;
         }
-        const plain: Array<number> = shape[0].filter((value: number, index: number) => index % BlockLayout.EDGE_FIELDS !== 4);
+        const plain: Array<number> = [];
+        for (let index: number = 0; index < shape[0].length; index++) {
+            if (index % BlockLayout.EDGE_FIELDS !== 4) {
+                plain.push(shape[0][index]);
+            }
+        }
         return [[...shape[0], ...this.tagged(this.geometry.grown(plain, grown, this.painter.tolerance()), shape[1].length)], [...shape[1], false], true];
     }
 
@@ -786,7 +791,7 @@ export class SvgText {
 
     private visualOrder(levels: Uint8Array, start: number): Array<number> {
         // UAX #9 L2: from the highest level down to the lowest odd one, each sequence at that level or above is reversed.
-        const order: Array<number> = Array.from({ length: levels.length }, (item: unknown, index: number) => start + index);
+        const order: Array<number> = Array.from(levels.keys(), (index: number) => start + index);
         const highest: number = Math.max(0, ...levels);
         const lowest: number = Math.min(...levels);
         for (let level: number = highest; level >= (lowest % 2 === 1 ? lowest : lowest + 1) && level >= 1; level--) {

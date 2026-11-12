@@ -30,6 +30,11 @@ export interface ColorSpaceResource {
 
 const DEVICE_SPACES: ReadonlyArray<string> = ["", "DeviceGray", "", "DeviceRGB", "DeviceCMYK"];
 const D50_WHITE: ReadonlyArray<number> = [0.9642, 1, 0.8249];
+const D65_WHITE: ReadonlyArray<number> = [0.3127 / 0.329, 1, (1 - 0.3127 - 0.329) / 0.329];
+const SRGB_PRIMARIES: ReadonlyArray<number> = [
+    0.41239079926595934, 0.21263900587151027, 0.01933081871559182, 0.357584339383878, 0.715168678767756, 0.11919477979462598,
+    0.1804807884018343, 0.07219231536073371, 0.9505321522496607
+];
 const LAB_RANGE: ReadonlyArray<number> = [-128, 127, -128, 127];
 const TINT_BITS: number = 16;
 const PROCESS_INKS: ReadonlySet<string> = new Set<string>(["Cyan", "Magenta", "Yellow", "Black"]);
@@ -44,6 +49,7 @@ export class PdfColorSpaces {
     private readonly syntax: PdfSyntax = new PdfSyntax();
     private readonly profiles: Map<string, ColorSpaceResource> = new Map<string, ColorSpaceResource>();
     private lab?: ColorSpaceResource;
+    private linear?: ColorSpaceResource;
 
     constructor(file: PdfFile) {
         this.file = file;
@@ -52,6 +58,13 @@ export class PdfColorSpaces {
     restart(): void {
         this.profiles.clear();
         delete this.lab;
+        delete this.linear;
+    }
+
+    linearRgb(): ColorSpaceResource {
+        // CSS Color 4 §10.2: sRGB without its transfer function, the D65 white and the primaries in CIE XYZ.
+        this.linear = this.linear ?? this.calibrated([1, 1, 1], D65_WHITE, SRGB_PRIMARIES);
+        return this.linear;
     }
 
     deviceN(names: ReadonlyArray<string>, sizes: ReadonlyArray<number>, samples: Uint8Array, alone: ReadonlyArray<Uint8Array>): ColorSpaceResource {

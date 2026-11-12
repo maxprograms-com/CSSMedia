@@ -18,6 +18,7 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
+import type { Matrix } from "../geometry/PathGeometry.js";
 import { InstanceBuilder } from "./InstanceBuilder.js";
 import type { DeltaSetIndexMap, ItemVariationStore, Typeface } from "./Typeface.js";
 import { VariationReader } from "./VariationReader.js";
@@ -32,8 +33,6 @@ export interface ColorLine {
     extend: number;
     stops: ReadonlyArray<ColorStop>;
 }
-
-export type Matrix = readonly [number, number, number, number, number, number];
 
 export interface Bitmap {
     table: string;

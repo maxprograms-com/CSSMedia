@@ -19,6 +19,8 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
+import type { Matrix } from "../geometry/PathGeometry.js";
+import { PathGeometry } from "../geometry/PathGeometry.js";
 import type { Transform } from "../layout/BoxSizes.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
 import type { BoxFragment, CollapsedBorders, EdgeSource, LineFragment, TextPiece } from "../layout/Fragment.js";
@@ -67,7 +69,8 @@ const RADII: ReadonlyArray<string> = ["border-top-left-radius", "border-top-righ
 const NO_SIDES: PhysicalSides = [0, 0, 0, 0];
 const NO_RADII: CornerRadii = [0, 0, 0, 0, 0, 0, 0, 0];
 const CLIPPING: ReadonlySet<string> = new Set<string>(["hidden", "clip", "scroll", "auto"]);
-const UNSCALED: ReadonlyArray<number> = [1, 0, 0, 1, 0, 0];
+const OPAQUE: CssValue = { kind: "color", space: "srgb", components: [0, 0, 0], alpha: 1, legacy: false };
+const OPAQUE_SIDES: ReadonlyArray<CssValue> = [OPAQUE, OPAQUE, OPAQUE, OPAQUE];
 
 export class PagePainter {
 
@@ -81,6 +84,8 @@ export class PagePainter {
     private readonly images: ImagePainter;
     private annotated?: PdfPage;
     private sheet: Size = { width: 0, height: 0 };
+    private base: Matrix = PathGeometry.IDENTITY;
+    private page: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
     constructor(setup: PageSetup, document: PdfDocument) {
         this.setup = setup;
@@ -88,8 +93,8 @@ export class PagePainter {
         const colors: ColorOutput = setup.colors;
         this.text = new TextPainter(document, colors, this.sizes, setup.metrics, setup.viewport, setup.palettes, setup.images);
         this.borders = new BorderPainter(colors);
-        this.backgrounds = new BackgroundPainter(colors, this.borders);
-        this.images = new ImagePainter(setup.images, this.sizes);
+        this.images = new ImagePainter(setup.images, this.sizes, document, colors);
+        this.backgrounds = new BackgroundPainter(colors, this.borders, this.images, document);
     }
 
     paint(page: PageLayout, pdf: PdfPage): void {
@@ -99,9 +104,16 @@ export class PagePainter {
         this.annotated = pdf;
         this.sheet = canvas.sheet;
         pdf.content.transform(POINTS_PER_PIXEL, 0, 0, POINTS_PER_PIXEL, 0, 0);
+        // The default space of the page has its origin at the bottom left in points; a pattern is placed in it.
+        this.base = [POINTS_PER_PIXEL, 0, 0, -POINTS_PER_PIXEL, 0, pdf.height];
+        const sheet: Rectangle = { x: 0, y: 0, width: canvas.sheet.width, height: canvas.sheet.height };
+        this.page = sheet;
+        const pageBorders: PhysicalSides = [canvas.borders.top, canvas.borders.right, canvas.borders.bottom, canvas.borders.left];
+        const pagePadding: PhysicalSides = [canvas.padding.top, canvas.padding.right, canvas.padding.bottom, canvas.padding.left];
         // "its background painting area is the bleed area, which covers the entire page box, including its margins
-        // (regardless of background-clip)".
-        this.backgrounds.paint({ x: 0, y: 0, width: canvas.sheet.width, height: canvas.sheet.height }, NO_SIDES, NO_SIDES, canvas.style, pdf, "border-box");
+        // (regardless of background-clip)"; "Page backgrounds are anchored within the page box's padding area by default".
+        this.backgrounds.paint(sheet, NO_SIDES, NO_SIDES, canvas.style, pdf, "border-box", NO_RADII,
+            { base: this.base, page: sheet, whole: [canvas.borderBox, pageBorders, pagePadding] });
         // "the page-margin boxes never interleave with parts of the document content", which is one stacking context of
         // z-index 0 above the page background; each margin box makes a stacking context and takes z-index as if positioned.
         const margins: Array<Layer> = this.marginLayers(page.margins ?? []);
@@ -112,11 +124,11 @@ export class PagePainter {
         for (const layer of margins.filter((candidate: Layer) => candidate.z < 0).sort(this.order)) {
             this.context(layer, pdf, false);
         }
-        const pageBorders: PhysicalSides = [canvas.borders.top, canvas.borders.right, canvas.borders.bottom, canvas.borders.left];
-        const pagePadding: PhysicalSides = [canvas.padding.top, canvas.padding.right, canvas.padding.bottom, canvas.padding.left];
         // "The document canvas background is drawn as the page box's background", in its border box with the
-        // background-clip of the root element; CSS Backgrounds 3 §2.11.1: the root element does not paint it again.
-        this.backgrounds.paint(canvas.borderBox, pageBorders, pagePadding, this.setup.root, pdf);
+        // background-clip of the root element, "positioned with respect to the root element or page area as usual";
+        // CSS Backgrounds 4 §4.1: the root element does not paint it again.
+        this.backgrounds.paint(canvas.borderBox, pageBorders, pagePadding, this.setup.root, pdf, undefined, NO_RADII,
+            { base: this.base, page: sheet, whole: this.rootArea(page) });
         this.borders.paint(canvas.borderBox, pageBorders, PHYSICAL_NAMES.map((side: string) => this.keyword(canvas.style.values["border-" + side + "-style"])),
             PHYSICAL_NAMES.map((side: string) => canvas.style.values["border-" + side + "-color"]), canvas.style, pdf);
         // GCPM 3 §2.4.1: the footnote area is placed in the page area, in the same coordinates as the content.
@@ -137,7 +149,23 @@ export class PagePainter {
         }
     }
 
+    private rootArea(page: PageLayout): readonly [Rectangle, PhysicalSides, PhysicalSides] {
+        // The box of the root element on the page, or the page area when the page holds none of it.
+        const area: Rectangle = page.canvas.pageArea;
+        const fragment: BoxFragment | undefined = page.content;
+        if (fragment === undefined) {
+            return [area, NO_SIDES, NO_SIDES];
+        }
+        const transform: Transform = this.sizes.compose([1, 0, 0, 1, area.x, area.y], this.sizes.between(this.sizes.frame(fragment.box.style), PHYSICAL, area.width, area.height));
+        const box: readonly [number, number, number, number] = this.sizes.mapped(transform, fragment.inline, fragment.block, fragment.inlineSize, fragment.blockSize);
+        const [borders, padding]: readonly [PhysicalSides, PhysicalSides] = this.edges(fragment);
+        return [{ x: box[0], y: box[1], width: box[2], height: box[3] }, borders, padding];
+    }
+
     margins(fragments: ReadonlyArray<BoxFragment>, forms: MarginForms, document: PdfDocument, page: PdfPage): void {
+        // The margin boxes are painted in forms whose own space is the page in pixels.
+        this.base = PathGeometry.IDENTITY;
+        this.page = { x: 0, y: 0, width: forms.above.width, height: forms.above.height };
         this.annotated = page;
         this.sheet = forms.above;
         const layers: Array<Layer> = this.marginLayers(fragments);
@@ -152,7 +180,7 @@ export class PagePainter {
         for (const layer of layers.sort(this.order)) {
             this.context(layer, form, false);
         }
-        document.finishForm(form, [0, 0, reserved.width, reserved.height], UNSCALED);
+        document.finishForm(form, [0, 0, reserved.width, reserved.height], PathGeometry.IDENTITY);
     }
 
     private marginLayers(fragments: ReadonlyArray<BoxFragment>): Array<Layer> {
@@ -177,7 +205,7 @@ export class PagePainter {
         const layers: Array<Layer> = [];
         this.collect(entry.fragment, entry.transform, entry.frame, layers, true, []);
         this.enter(entry.clips, pdf);
-        this.box(entry.fragment, entry.transform, pdf, root);
+        this.box(entry.fragment, entry.transform, entry.frame, pdf, root);
         const order: (first: Layer, second: Layer) => number = (first: Layer, second: Layer): number => first.z - second.z;
         for (const layer of layers.filter((candidate: Layer) => candidate.context && candidate.z < 0).sort(order)) {
             this.context(layer, pdf, false);
@@ -200,7 +228,7 @@ export class PagePainter {
         // Appendix E.2: floats, atomic inlines and positioned boxes with z-index auto paint "as if it created a new stacking
         // context", their positioned and stacking descendants staying in the parent stacking context.
         this.enter(entry.clips, pdf);
-        this.box(entry.fragment, entry.transform, pdf, false);
+        this.box(entry.fragment, entry.transform, entry.frame, pdf, false);
         this.content(entry, pdf);
         this.leave(entry.clips, pdf);
     }
@@ -330,7 +358,7 @@ export class PagePainter {
     private blocks(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage): void {
         for (const child of fragment.children ?? []) {
             if (child.kind === "box" && !this.isPositioned(child.box) && child.box.placement !== "float") {
-                this.box(child, transform, pdf, false);
+                this.box(child, transform, frame, pdf, false);
                 const clipped: boolean = this.clip(child, transform, pdf);
                 this.blocks(child, this.sizes.compose(transform, this.sizes.inside(child, frame)), this.sizes.frame(child.box.style), pdf);
                 if (clipped) {
@@ -389,7 +417,7 @@ export class PagePainter {
                 this.text.runs(line, texts, runs, transform, decorators, pdf);
                 runs = [];
                 if (!piece.box.replaced && this.displays.isInlineBox(piece.box.display)) {
-                    this.box(piece, local, pdf, false);
+                    this.box(piece, local, frame, pdf, false);
                 } else {
                     this.atomically({ fragment: piece, transform: local, frame, z: 0, context: false, clips: [] }, pdf);
                 }
@@ -403,7 +431,7 @@ export class PagePainter {
         return this.sizes.compose(transform, [1, 0, 0, 1, line.inline ?? 0, line.block]);
     }
 
-    private box(fragment: BoxFragment, transform: Transform, pdf: PdfPage, root: boolean): void {
+    private box(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage, root: boolean): void {
         const box: ElementBox = fragment.box;
         const style: ComputedStyle = box.style;
         if (box.placement === "running" || box.placement === "footnote") {
@@ -428,7 +456,15 @@ export class PagePainter {
         }
         const radii: CornerRadii = this.radii(style, rectangle);
         if (!root) {
-            this.backgrounds.paint(rectangle, borders, padding, style, pdf, undefined, radii);
+            const shapes: (form: PdfPage, text: boolean, border: boolean) => void = (form: PdfPage, text: boolean, border: boolean): void => {
+                if (border) {
+                    this.borders.paint(rectangle, borders, styles, OPAQUE_SIDES, style, form, radii);
+                }
+                if (text) {
+                    this.textShapes(fragment, transform, frame, form);
+                }
+            };
+            this.backgrounds.paint(rectangle, borders, padding, style, pdf, undefined, radii, { base: this.base, page: this.page, shapes });
         }
         if (fragment.collapsed !== undefined) {
             this.collapsed(fragment.collapsed, rectangle, own, pdf);
@@ -436,6 +472,33 @@ export class PagePainter {
             // CSS 2 §17.6.2: in the collapsing model the borders of the table are those of its cells at its edges.
             this.borders.paint(rectangle, borders, styles, colors, style, pdf, radii);
         }
+    }
+
+    private textShapes(fragment: BoxFragment, transform: Transform, frame: number, form: PdfPage): void {
+        // CSS Backgrounds 4 §2.8: the text "in the element and its in-flow and floated descendants", with their decorations.
+        const walk: (box: BoxFragment, outer: Transform, frame: number, decorators: ReadonlyArray<ComputedStyle>) => void =
+            (box: BoxFragment, outer: Transform, frame: number, decorators: ReadonlyArray<ComputedStyle>): void => {
+                const inner: Transform = this.sizes.compose(outer, this.sizes.inside(box, frame));
+                const own: number = this.sizes.frame(box.box.style);
+                const decorating: ReadonlyArray<ComputedStyle> = this.decorated(decorators, box.box.style);
+                for (const child of box.children ?? []) {
+                    if (child.kind === "box") {
+                        if (!this.isPositioned(child.box) && !child.box.replaced) {
+                            walk(child, inner, own, decorating);
+                        }
+                        continue;
+                    }
+                    const local: Transform = this.lineTransform(inner, child);
+                    for (const piece of child.pieces) {
+                        if (piece.kind === "text") {
+                            this.text.shapes(child, piece, inner, decorating, form);
+                        } else if (!this.isPositioned(piece.box) && !piece.box.replaced && !this.displays.isInlineBox(piece.box.display)) {
+                            walk(piece, local, own, []);
+                        }
+                    }
+                }
+            };
+        walk(fragment, transform, frame, []);
     }
 
     private anchor(fragment: BoxFragment, rectangle: Rectangle, hidden: boolean): void {

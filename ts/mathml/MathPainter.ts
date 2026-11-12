@@ -66,8 +66,8 @@ export class MathPainter {
         this.colors = colors;
         this.text = new TextPainter(document, colors, this.sizes, metrics, viewport, palettes, images);
         this.borders = new BorderPainter(colors);
-        this.backgrounds = new BackgroundPainter(colors, this.borders);
-        this.images = new ImagePainter(images, this.sizes);
+        this.images = new ImagePainter(images, this.sizes, document, colors);
+        this.backgrounds = new BackgroundPainter(colors, this.borders, this.images, document);
     }
 
     paint(formula: BoxFragment, graphics: WeakMap<BoxFragment, MathGraphics>, transform: Transform, pdf: PdfPage): ReadonlyArray<readonly [PageRectangle, string, boolean]> {

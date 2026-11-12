@@ -40,7 +40,6 @@ const VISIBLE_OVERFLOW: ReadonlyArray<string> = ["visible", "clip"];
 const TOLERANCE: number = 0.001;
 const FLOAT_FIELDS: number = 4;
 const INLINE_FLOATS: ReadonlySet<string> = new Set<string>(["left", "right", "inline-start", "inline-end"]);
-const RESOLUTION_UNITS: ReadonlyMap<string, number> = new Map<string, number>([["dppx", 1], ["x", 1], ["dpi", 1 / 96], ["dpcm", 2.54 / 96]]);
 const KEYWORD_ORDER: ReadonlyArray<number> = [BoxSizes.MINIMUM_INLINE, BoxSizes.MAXIMUM_INLINE, BoxSizes.MINIMUM_BLOCK, BoxSizes.MAXIMUM_BLOCK, BoxSizes.PREFERRED_INLINE,
     BoxSizes.PREFERRED_BLOCK];
 const CONTENT_SIZES: ReadonlySet<string> = new Set<string>(["min-content", "max-content", "fit-content", BoxSizes.FIT_FUNCTION]);
@@ -2757,54 +2756,18 @@ export class BlockLayout {
     }
 
     private imageSizes(box: ElementBox, available?: number): NaturalSizes {
-        const image: ImageSize | undefined = this.imageOf(box, available);
-        if (image === undefined) {
+        const content: BoxNode | undefined = box.children.find((node: BoxNode) => node.kind === "deferred");
+        if (content === undefined || content.kind !== "deferred" || content.value.kind !== "url") {
             return NO_NATURAL_SIZES;
         }
         const values: Readonly<Record<string, CssValue>> = box.style.values;
-        let width: number | undefined = image.width;
-        let height: number | undefined = image.height;
-        if (image.raster && width !== undefined && height !== undefined) {
-            // CSS Images 4 §4.1: image-resolution gives the density of a raster image, from-image the one that the image
-            // itself tells, and 1dppx is the initial value.
-            const resolution: CssValue | undefined = values["image-resolution"];
-            let density: number = 1;
-            let fromImage: boolean = false;
-            if (resolution !== undefined) {
-                for (const item of resolution.kind === "list" ? resolution.items : [resolution]) {
-                    fromImage = fromImage || (item.kind === "ident" && item.lower === "from-image");
-                    density = item.kind === "dimension" ? item.value * (RESOLUTION_UNITS.get(item.unit.toLowerCase()) ?? 1) : density;
-                }
-            }
-            width /= fromImage && image.density !== undefined ? image.density[0] : density;
-            height /= fromImage && image.density !== undefined ? image.density[1] : density;
+        const natural: readonly [number | undefined, number | undefined, number | undefined] | undefined = this.images.natural(content.value.href, values,
+            box.style.zoom ?? 1, false, available);
+        if (natural === undefined) {
+            return NO_NATURAL_SIZES;
         }
-        // CSS Viewport 1 (Editor's Draft) §4: zoom "multiplies the natural size of all replaced elements".
-        const zoom: number = box.style.zoom ?? 1;
-        if (zoom !== 1) {
-            width = width === undefined ? undefined : width * zoom;
-            height = height === undefined ? undefined : height * zoom;
-        }
-        // CSS Images 3 §6.2: from-image, the initial value, turns the image as its metadata says; a quarter turn swaps
-        // the two dimensions.
-        const orientation: CssValue | undefined = values["image-orientation"];
-        const angle: CssValue | undefined = orientation === undefined ? undefined : (orientation.kind === "list" ? orientation.items[0] : orientation);
-        const quarter: boolean = angle !== undefined && angle.kind === "dimension" && Math.round(angle.value / 90) % 2 !== 0;
-        const turned: boolean = angle === undefined || (angle.kind === "ident" && angle.lower === "from-image") ? image.turned : quarter;
-        // An image that gives no ratio has none, such as a formula, whose size is not a shape to keep; the others keep the ratio
-        // of the sizes above, which the densities of its two axes can change.
-        let ratio: number | undefined = image.ratio !== undefined && width !== undefined && height !== undefined && height > 0 ? width / height : image.ratio;
-        if (turned) {
-            const swapped: number | undefined = width;
-            width = height;
-            height = swapped;
-            ratio = ratio === undefined || ratio === 0 ? undefined : 1 / ratio;
-        }
-        // CSS Images 3 §4.1: an object with "a degenerate natural aspect ratio" "is treated as having no natural aspect
-        // ratio"; CSS Writing Modes 4 §6.1: the width is the inline size in a horizontal writing mode only.
-        if (ratio !== undefined && (!(ratio > 0) || !Number.isFinite(ratio))) {
-            ratio = undefined;
-        }
+        const [width, height, ratio] = natural;
+        // CSS Writing Modes 4 §6.1: the width is the inline size in a horizontal writing mode only.
         const mode: CssValue | undefined = values["writing-mode"];
         if (mode === undefined || (mode.kind === "ident" && mode.lower === "horizontal-tb")) {
             return [width, height, ratio];

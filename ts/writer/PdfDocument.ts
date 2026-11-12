@@ -24,7 +24,7 @@ import { PdfFile } from "./PdfFile.js";
 import { PdfFonts } from "./PdfFonts.js";
 import type { ImageResource, PageRectangle } from "./PdfPage.js";
 import { PdfPage } from "./PdfPage.js";
-import type { PatternResource } from "./PdfShadings.js";
+import type { PatternResource, ShadingResource } from "./PdfShadings.js";
 import { PdfShadings } from "./PdfShadings.js";
 import { PdfSyntax } from "./PdfSyntax.js";
 
@@ -121,12 +121,39 @@ export class PdfDocument {
         return new PdfPage(reserved?.object ?? this.file.reserve(), width, height, turned);
     }
 
-    finishForm(form: PdfPage, box: readonly [number, number, number, number], matrix: ReadonlyArray<number>, space: ColorSpaceResource = PdfColorSpaces.RGB): ImageResource {
+    finishForm(form: PdfPage, box: readonly [number, number, number, number], matrix: ReadonlyArray<number>, space: ColorSpaceResource = PdfColorSpaces.RGB,
+        knockout: boolean = false): ImageResource {
         // §8.10.1 and §11.6.6: a form XObject that is an isolated transparency group, blended in DeviceRGB unless another space is given.
         this.file.setStream(form.object, "/Type /XObject /Subtype /Form /BBox [" + this.syntax.numbers([box[0], box[1], box[0] + box[2], box[1] + box[3]])
-            + "] /Matrix [" + this.syntax.numbers(matrix) + "] /Resources " + form.resources() + " /Group << /Type /Group /S /Transparency /I true /CS " + space.value + " >>",
-            form.content.bytes(), true);
+            + "] /Matrix [" + this.syntax.numbers(matrix) + "] /Resources " + form.resources() + " /Group << /Type /Group /S /Transparency /I true"
+            + (knockout ? " /K true" : "") + " /CS " + space.value + " >>", form.content.bytes(), true);
         return { key: "Fm" + form.object, object: form.object, width: box[2], height: box[3] };
+    }
+
+    applyMask(page: PdfPage, form: PdfPage, box: readonly [number, number, number, number], luminosity: boolean, space: ColorSpaceResource = PdfColorSpaces.RGB,
+        inverted: boolean = false): void {
+        // §11.6.5.2: the group is drawn in the space current at gs; Quartz cuts it at the page width in that space's units and
+        // Cairo ignores its matrix, so for the gs the box goes into the unit square, by a power of ten that writes exactly.
+        const scale: number = Math.pow(10, Math.ceil(Math.log10(Math.max(1, box[2], box[3]))));
+        const into: string = "q " + this.syntax.numbers([1 / scale, 0, 0, 1 / scale, 0, 0]) + " cm " + this.syntax.numbers([1, 0, 0, 1, -box[0], -box[1]]) + " cm\n";
+        this.file.setStream(form.object, "/Type /XObject /Subtype /Form /BBox [0 0 1 1] /Matrix [1 0 0 1 0 0] /Resources " + form.resources()
+            + " /Group << /Type /Group /S /Transparency /I true /CS " + space.value + " >>",
+        Buffer.concat([Buffer.from(into, "latin1"), form.content.bytes(), Buffer.from("\nQ", "latin1")]), true);
+        page.content.transform(1, 0, 0, 1, box[0], box[1]);
+        page.content.transform(scale, 0, 0, scale, 0, 0);
+        page.content.graphicsState(page.useMask(form.object, luminosity, inverted));
+        page.content.transform(1 / scale, 0, 0, 1 / scale, 0, 0);
+        page.content.transform(1, 0, 0, 1, -box[0], -box[1]);
+    }
+
+    shadedMask(page: PdfPage, area: readonly [number, number, number, number], shading: ShadingResource, matrix?: ReadonlyArray<number>): void {
+        // PDF shadings have no alpha, so an alpha shaded in gray becomes the luminosity soft mask of what the page paints next.
+        const form: PdfPage = this.startForm(area[2], area[3], false);
+        if (matrix !== undefined) {
+            form.content.transform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+        }
+        form.content.shade(form.useShading(shading));
+        this.applyMask(page, form, area, true, PdfColorSpaces.GRAY);
     }
 
     finishPattern(form: PdfPage, box: readonly [number, number, number, number], matrix: ReadonlyArray<number>): PatternResource {

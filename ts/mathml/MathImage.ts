@@ -133,10 +133,10 @@ export class MathImage implements ImageFormat {
         return this.noSheet;
     }
 
-    replaces(style: ComputedStyle): boolean {
+    replaces(source: ElementSource): boolean {
         // MathML Core §4.1: MathML elements with display math "control box generation and layout according to their tag
         // name", inside math or not; the first one met outside a formula is drawn as one image with its subtree.
-        return this.displays.parse(style.values["display"]).inner === MATH_INNER;
+        return this.displays.parse(source.style.values["display"]).inner === MATH_INNER;
     }
 
     style(element: SourceElement, parent: ComputedStyle | undefined, root: ComputedStyle | undefined, viewport: Size, containers: () => Iterable<QueryContainer>): ComputedStyle {

@@ -964,7 +964,7 @@ export class ShorthandExpander {
         if (only !== undefined && only.type === "String" && [...only.value].length !== 1) {
             return undefined;
         }
-        const all: Longhand | undefined = this.longhandOf("text-align-all", top.map((node: CssNode, index: number) => index), top);
+        const all: Longhand | undefined = this.longhandOf("text-align-all", Array.from(top.keys()), top);
         return all === undefined ? undefined : [all, this.keyword("text-align-last", "auto")];
     }
 
@@ -1024,7 +1024,7 @@ export class ShorthandExpander {
             return [this.keyword("max-lines", "none"), this.keyword("block-ellipsis", "none"), this.keyword("continue", "auto")];
         }
         const lines: Longhand | undefined = this.longhandOf("max-lines", [0], top);
-        const ellipsis: Longhand | undefined = top.length > 1 ? this.longhandOf("block-ellipsis", top.slice(1).map((node: CssNode, index: number) => index + 1), top) : this.keyword("block-ellipsis", "auto");
+        const ellipsis: Longhand | undefined = top.length > 1 ? this.longhandOf("block-ellipsis", Array.from(top.slice(1).keys(), (index: number) => index + 1), top) : this.keyword("block-ellipsis", "auto");
         return lines === undefined || ellipsis === undefined ? undefined : [lines, ellipsis, this.keyword("continue", "discard")];
     }
 
@@ -1120,8 +1120,8 @@ export class ShorthandExpander {
         // and an omitted end copies its start.
         const targets: ReadonlyArray<string> = this.targets(property);
         const slash: number = top.findIndex((node: CssNode) => node.type === "Operator" && node.value === "/");
-        const cap: Array<number> = (slash === -1 ? top : top.slice(0, slash)).map((node: CssNode, index: number) => index);
-        const junction: Array<number> = slash === -1 ? cap : top.slice(slash + 1).map((node: CssNode, index: number) => index + slash + 1);
+        const cap: Array<number> = Array.from((slash === -1 ? top : top.slice(0, slash)).keys());
+        const junction: Array<number> = slash === -1 ? cap : Array.from(top.slice(slash + 1).keys(), (index: number) => index + slash + 1);
         if (cap.length < 1 || cap.length > 2 || junction.length < 1 || junction.length > 2) {
             return undefined;
         }
@@ -1167,12 +1167,12 @@ export class ShorthandExpander {
         }
         const slash: number = top.findIndex((node: CssNode) => node.type === "Operator" && node.value === "/");
         const before: ReadonlyArray<CssNode> = slash === -1 ? top : top.slice(0, slash);
-        const afterIndices: Array<number> | undefined = slash === -1 ? undefined : top.slice(slash + 1).map((node: CssNode, index: number) => index + slash + 1);
+        const afterIndices: Array<number> | undefined = slash === -1 ? undefined : Array.from(top.slice(slash + 1).keys(), (index: number) => index + slash + 1);
         if (!before.some((node: CssNode) => node.type === "String")) {
             if (afterIndices === undefined) {
                 return undefined;
             }
-            const rows: Longhand | undefined = this.longhandOf("grid-template-rows", before.map((node: CssNode, index: number) => index), top);
+            const rows: Longhand | undefined = this.longhandOf("grid-template-rows", Array.from(before.keys()), top);
             const columns: Longhand | undefined = this.longhandOf("grid-template-columns", afterIndices, top);
             return rows === undefined || columns === undefined ? undefined : [rows, columns, this.keyword("grid-template-areas", "none")];
         }
@@ -1224,8 +1224,8 @@ export class ShorthandExpander {
         // explicitly, the other axis to none, and the auto tracks and flow direction of the other.
         const slash: number = top.findIndex((node: CssNode) => node.type === "Operator" && node.value === "/");
         const isFlow: (node: CssNode) => boolean = (node: CssNode): boolean => node.type === "Identifier" && ["auto-flow", "dense"].includes(node.name.toLowerCase());
-        const left: Array<number> = (slash === -1 ? top : top.slice(0, slash)).map((node: CssNode, index: number) => index);
-        const right: Array<number> | undefined = slash === -1 ? undefined : top.slice(slash + 1).map((node: CssNode, index: number) => index + slash + 1);
+        const left: Array<number> = Array.from((slash === -1 ? top : top.slice(0, slash)).keys());
+        const right: Array<number> | undefined = slash === -1 ? undefined : Array.from(top.slice(slash + 1).keys(), (index: number) => index + slash + 1);
         const leftFlow: boolean = left.some((index: number) => isFlow(top[index]));
         const rightFlow: boolean = right?.some((index: number) => isFlow(top[index])) === true;
         if (!leftFlow && !rightFlow) {
@@ -1326,7 +1326,7 @@ export class ShorthandExpander {
     private items(matched: MatchNode, indexOf: Map<CssNode, number>, top: ReadonlyArray<CssNode>, terms?: ReadonlyArray<string>): Array<Array<number>> {
         // Without named terms every top-level component of the value is one item.
         if (terms === undefined) {
-            return top.map((node: CssNode, index: number) => [index]);
+            return Array.from(top.keys(), (index: number) => [index]);
         }
         return this.segments(matched, new Set<string>(terms), indexOf).map((segment: Segment) => segment.indices);
     }

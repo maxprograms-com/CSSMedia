@@ -230,8 +230,7 @@ const LCH_POWERLESS: number = 0.0015;
 const OKLCH_POWERLESS: number = 0.000004;
 const HSL_POWERLESS: number = 0.001;
 const HWB_POWERLESS: number = 99.999;
-const JND: number = 0.02;
-const GAMUT_EPSILON: number = 0.0001;
+const RAY_EPSILON: number = 1e-12;
 
 export class ColorSpaces {
 
@@ -270,54 +269,87 @@ export class ColorSpaces {
     }
 
     gamutMap(origin: ColorValue, destination: ColorSpace): ColorValue {
-        // CSS Color 4 §14.2.2, binary search gamut mapping with local MINDE, for an RGB destination.
-        if (!RGB_SPACES.has(destination)) {
+        // CSS Color 4 §14.2.6, ray trace gamut mapping: of the algorithms of §14.2 the one with a fixed number of steps, which
+        // a PDF calculator function, having no loops, also runs, so solid colors and gradients are mapped alike.
+        const rgb: RgbSpace | undefined = RGB_SPACES.get(destination);
+        if (rgb === undefined || this.isInGamut(origin, destination)) {
             return this.convert(origin, destination);
         }
-        if (this.isInGamut(origin, destination)) {
-            // Relative colorimetric intent: a color inside the destination gamut is unchanged, so it skips the round trip through OkLCh.
-            return this.convert(origin, destination);
+        const oklab: Components = this.convert(origin, "oklab").components;
+        const lightness: number = oklab[0] ?? 0;
+        if (lightness >= 1 || lightness <= 0) {
+            return this.convert({ kind: "color", space: "oklab", components: [lightness >= 1 ? 1 : 0, 0, 0], alpha: origin.alpha, legacy: false }, destination);
         }
-        const originOklch: ColorValue = this.convert(origin, "oklch");
-        const lightness: number = originOklch.components[0] ?? 0;
-        if (lightness >= 1) {
-            return this.convert({ kind: "color", space: "oklab", components: [1, 0, 0], alpha: origin.alpha, legacy: false }, destination);
-        }
-        if (lightness <= 0) {
-            return this.convert({ kind: "color", space: "oklab", components: [0, 0, 0], alpha: origin.alpha, legacy: false }, destination);
-        }
-        if (this.isInGamut(originOklch, destination)) {
-            return this.convert(originOklch, destination);
-        }
-        let current: ColorValue = originOklch;
-        let clipped: ColorValue = this.clip(current, destination);
-        let difference: number = this.deltaEOK(clipped, current);
-        if (difference < JND) {
-            return clipped;
-        }
-        let min: number = 0;
-        let max: number = originOklch.components[1] ?? 0;
-        let minInGamut: boolean = true;
-        while (max - min > GAMUT_EPSILON) {
-            const chroma: number = (min + max) / 2;
-            current = { kind: "color", space: "oklch", components: [lightness, chroma, originOklch.components[2]], alpha: origin.alpha, legacy: false };
-            if (minInGamut && this.isInGamut(current, destination)) {
-                min = chroma;
-                continue;
+        const mapped: Triple = this.fromLinear(rgb.transfer, this.rayTrace([lightness, oklab[1] ?? 0, oklab[2] ?? 0], rgb));
+        const clamp: (value: number) => number = (value: number): number => Math.min(1, Math.max(0, value));
+        return { kind: "color", space: destination, components: [clamp(mapped[0]), clamp(mapped[1]), clamp(mapped[2])], alpha: origin.alpha, legacy: false };
+    }
+
+    private rayTrace(origin: Triple, rgb: RgbSpace): Triple {
+        // §14.2.6: a ray from the achromatic anchor to the color meets the cube of the linear-light space, the crossing is put
+        // back on the line of the origin's lightness and hue, and the ray is cast again, four times at most.
+        const [lightness, a, b]: Triple = origin;
+        const chroma: number = Math.hypot(a, b);
+        let anchor: Triple = this.oklabToLinear([lightness, 0, 0], rgb);
+        let current: Triple = this.oklabToLinear(origin, rgb);
+        let last: Triple = current;
+        for (let step: number = 0; step < 4; step++) {
+            if (step > 0) {
+                const corrected: Triple = this.linearToOklab(current, rgb);
+                const scale: number = chroma > 0 ? Math.hypot(corrected[1], corrected[2]) / chroma : 0;
+                current = this.oklabToLinear([lightness, a * scale, b * scale], rgb);
             }
-            clipped = this.clip(current, destination);
-            difference = this.deltaEOK(clipped, current);
-            if (difference < JND) {
-                if (JND - difference < GAMUT_EPSILON) {
-                    return clipped;
-                }
-                minInGamut = false;
-                min = chroma;
-            } else {
-                max = chroma;
+            const intersection: Triple | undefined = this.castRay(anchor, current);
+            if (intersection === undefined) {
+                current = last;
+                break;
+            }
+            if (step > 0 && current.every((value: number) => value > RAY_EPSILON && value < 1 - RAY_EPSILON)) {
+                anchor = current;
+            }
+            current = intersection;
+            last = intersection;
+        }
+        return current;
+    }
+
+    private castRay(start: Triple, end: Triple): Triple | undefined {
+        // §14.2.6, "cast a ray" through the cube from 0 to 1, the first crossing in the direction from start to end.
+        let near: number = Number.NEGATIVE_INFINITY;
+        let far: number = Number.POSITIVE_INFINITY;
+        const direction: Triple = [end[0] - start[0], end[1] - start[1], end[2] - start[2]];
+        for (let channel: number = 0; channel < 3; channel++) {
+            const from: number = start[channel];
+            const d: number = direction[channel];
+            if (Math.abs(d) > RAY_EPSILON) {
+                const first: number = -from / d;
+                const second: number = (1 - from) / d;
+                near = Math.max(Math.min(first, second), near);
+                far = Math.min(Math.max(first, second), far);
+            } else if (from < 0 || from > 1) {
+                return undefined;
             }
         }
-        return clipped;
+        if (near > far || far < 0) {
+            return undefined;
+        }
+        if (near < 0) {
+            near = far;
+        }
+        if (!Number.isFinite(near)) {
+            return undefined;
+        }
+        return [start[0] + direction[0] * near, start[1] + direction[1] * near, start[2] + direction[2] * near];
+    }
+
+    private oklabToLinear(oklab: Triple, rgb: RgbSpace): Triple {
+        const xyz: Triple = this.oklabToXyz(oklab);
+        return this.multiply(rgb.fromXyz, rgb.white === "d50" ? this.multiply(D65_TO_D50, xyz) : xyz);
+    }
+
+    private linearToOklab(linear: Triple, rgb: RgbSpace): Triple {
+        const xyz: Triple = this.multiply(rgb.toXyz, linear);
+        return this.xyzToOklab(rgb.white === "d50" ? this.multiply(D50_TO_D65, xyz) : xyz);
     }
 
     interpolate(first: ColorValue, second: ColorValue, space: ColorSpace, hueMethod: string, progress: number): ColorValue {
@@ -398,7 +430,11 @@ export class ColorSpaces {
         return { kind: "color", space, components: [component(0), component(1), component(2)], alpha: color.alpha, legacy: false };
     }
 
-    private fixedUpHues(first: number, second: number, method: string): [number, number] {
+    hueIndex(space: ColorSpace): number | undefined {
+        return HUE_INDEXES.get(space);
+    }
+
+    fixedUpHues(first: number, second: number, method: string): [number, number] {
         // CSS Color 4 §13.5.1 to §13.5.4.
         const difference: number = second - first;
         switch (method) {
@@ -417,16 +453,6 @@ export class ColorSpaces {
                 }
                 return difference < -180 ? [first, second + 360] : [first, second];
         }
-    }
-
-    private deltaEOK(first: ColorValue, second: ColorValue): number {
-        // CSS Color 4 §20.3: the Euclidean distance in Oklab.
-        const one: Components = this.convert(first, "oklab").components;
-        const two: Components = this.convert(second, "oklab").components;
-        const dl: number = (one[0] ?? 0) - (two[0] ?? 0);
-        const da: number = (one[1] ?? 0) - (two[1] ?? 0);
-        const db: number = (one[2] ?? 0) - (two[2] ?? 0);
-        return Math.sqrt(dl * dl + da * da + db * db);
     }
 
     private withPowerlessMissing(color: ColorValue): ColorValue {
@@ -470,12 +496,6 @@ export class ColorSpaces {
         }
         const rgb: Triple = this.hslToSrgb(hue, 100, 50);
         return [rgb[0] * (1 - w - b) + w, rgb[1] * (1 - w - b) + w, rgb[2] * (1 - w - b) + w];
-    }
-
-    private clip(color: ColorValue, destination: ColorSpace): ColorValue {
-        const converted: ColorValue = this.convert(color, destination);
-        const clamp: (value: number | null) => number = (value: number | null): number => Math.min(1, Math.max(0, value ?? 0));
-        return { ...converted, components: [clamp(converted.components[0]), clamp(converted.components[1]), clamp(converted.components[2])] };
     }
 
     private prepare(color: ColorValue): { space: ColorSpace; components: Components } {

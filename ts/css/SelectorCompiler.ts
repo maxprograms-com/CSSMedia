@@ -27,6 +27,7 @@ import type {
     RelativeSelector, StructuralPseudoClass, TypeMatcher
 } from "./CompiledSelector.js";
 import { CssIdentifierEscaping } from "./CssIdentifierEscaping.js";
+import { DeclarationReader } from "./DeclarationReader.js";
 import type { AnPlusB } from "./Stylesheet.js";
 
 type Specificity = [number, number, number];
@@ -94,7 +95,6 @@ const SUB_PSEUDO_ELEMENTS: ReadonlyMap<string, ReadonlySet<string>> = new Map<st
     ["before", new Set<string>(["marker"])], ["after", new Set<string>(["marker"])], ["first-letter", new Set<string>(["prefix", "suffix"])]
 ]);
 
-const RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set<string>(["initial", "inherit", "unset", "revert", "revert-layer", "default"]);
 
 const ATTRIBUTE_OPERATORS: ReadonlySet<string> = new Set<string>(["=", "~=", "|=", "^=", "$=", "*="]);
 
@@ -634,7 +634,7 @@ export class SelectorCompiler {
             return undefined;
         }
         const name: string = this.escaping.unescape(tokens[0].text);
-        return RESERVED_IDENTIFIERS.has(this.asciiCase.foldLower(name)) ? undefined : name;
+        return DeclarationReader.RESERVED_IDENTIFIERS.has(this.asciiCase.foldLower(name)) ? undefined : name;
     }
 
     private isLevelList(text: string): boolean {

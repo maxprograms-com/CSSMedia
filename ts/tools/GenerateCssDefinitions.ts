@@ -102,8 +102,6 @@ const PROSE_ALIASES: ReadonlyArray<readonly [string, string, string]> = [["-webk
 
 const SCREEN_ONLY_DESCRIPTORS: ReadonlySet<string> = new Set<string>(["@font-face font-display", "@font-feature-values font-display"]);
 
-const PDF_INITIALS: ReadonlyMap<string, string> = new Map<string, string>([["background-attachment", "fixed"]]);
-
 const PROSE_GRAMMARS: ReadonlyMap<string, readonly [string, string]> = new Map<string, readonly [string, string]>([
     ["css-content-3 string-set", ["none | [ <custom-ident> <string>+ ]#",
         "none | [ <custom-ident> [ <string> | <counter()> | <counters()> | <content()> | <attr()> | contents ]+ ]#"]],
@@ -646,8 +644,7 @@ class CssDefinitionsGenerator {
     private propertyEntry(name: string, chosen: Candidate<WebrefProperty>, all: ReadonlyMap<string, Candidate<WebrefProperty>>): string {
         const property: WebrefProperty = chosen.item;
         const value: string = this.withAlternatives(this.proseGrammar(name, chosen.source.shortname, chosen.grammar as string), this.extensionsOf(name, chosen, all));
-        // A background in a PDF is attached to the page box, so background-attachment starts as fixed and not as scroll.
-        return "    { name: " + this.literal(name) + ", value: " + this.literal(value) + this.field("initial", PDF_INITIALS.get(name) ?? property.initial)
+        return "    { name: " + this.literal(name) + ", value: " + this.literal(value) + this.field("initial", property.initial)
             + this.field("appliesTo", property.appliesTo) + this.field("inherited", property.inherited) + this.field("percentages", property.percentages)
             + this.field("computedValue", property.computedValue) + this.field("logicalPropertyGroup", property.logicalPropertyGroup)
             + ", spec: " + this.literal(chosen.source.shortname) + " }";

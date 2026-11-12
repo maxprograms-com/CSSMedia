@@ -18,9 +18,16 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
+import type { CssValue } from "../css/values/CssValue.js";
+import type { RelativeUnits } from "../pdf/LengthResolver.js";
+import { LengthResolver } from "../pdf/LengthResolver.js";
 import type { ContentStream } from "../writer/ContentStream.js";
 
 export type Homography = ReadonlyArray<number>;
+
+export type Matrix = readonly [number, number, number, number, number, number];
+
+export type Box = readonly [number, number, number, number];
 
 export type Point = readonly [number, number];
 
@@ -105,16 +112,164 @@ const LINE: number = 1;
 const CURVE: number = 2;
 const CLOSE: number = 3;
 const ARC_PART: number = 4;
+const NO_UNITS: RelativeUnits = { size: (): number | undefined => undefined };
 
 export class PathGeometry {
+
+    private readonly resolver: LengthResolver = new LengthResolver();
 
     static readonly MOVE: number = MOVE;
     static readonly LINE: number = LINE;
     static readonly CURVE: number = CURVE;
     static readonly CLOSE: number = CLOSE;
     static readonly ARC_PART: number = ARC_PART;
+    static readonly IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
     static readonly IDENTITY3: Homography = [1, 0, 0, 0, 1, 0, 0, 0, 1];
     static readonly W_LIMIT: number = W_LIMIT;
+
+    concat(outer: Matrix, inner: Matrix): Matrix {
+        return [
+            inner[0] * outer[0] + inner[1] * outer[2], inner[0] * outer[1] + inner[1] * outer[3],
+            inner[2] * outer[0] + inner[3] * outer[2], inner[2] * outer[1] + inner[3] * outer[3],
+            inner[4] * outer[0] + inner[5] * outer[2] + outer[4], inner[4] * outer[1] + inner[5] * outer[3] + outer[5]
+        ];
+    }
+
+    point(matrix: Matrix, x: number, y: number): readonly [number, number] {
+        return [matrix[0] * x + matrix[2] * y + matrix[4], matrix[1] * x + matrix[3] * y + matrix[5]];
+    }
+
+    invert(matrix: Matrix): Matrix | undefined {
+        const determinant: number = matrix[0] * matrix[3] - matrix[1] * matrix[2];
+        if (determinant === 0 || !Number.isFinite(determinant)) {
+            return undefined;
+        }
+        return [
+            matrix[3] / determinant, -matrix[1] / determinant, -matrix[2] / determinant, matrix[0] / determinant,
+            (matrix[2] * matrix[5] - matrix[3] * matrix[4]) / determinant, (matrix[1] * matrix[4] - matrix[0] * matrix[5]) / determinant
+        ];
+    }
+
+    translation(x: number, y: number): Matrix {
+        return [1, 0, 0, 1, x, y];
+    }
+
+    rotation(degrees: number): Matrix {
+        const radians: number = degrees * Math.PI / 180;
+        return [Math.cos(radians), Math.sin(radians), -Math.sin(radians), Math.cos(radians), 0, 0];
+    }
+
+    transformBox(matrix: Matrix, box: Box): Box {
+        const xs: Array<number> = [];
+        const ys: Array<number> = [];
+        for (const [x, y] of [[box[0], box[1]], [box[0] + box[2], box[1]], [box[0], box[1] + box[3]], [box[0] + box[2], box[1] + box[3]]]) {
+            const point: readonly [number, number] = this.point(matrix, x, y);
+            xs.push(point[0]);
+            ys.push(point[1]);
+        }
+        return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+    }
+
+    pixels(value: CssValue | undefined, basis: number): number {
+        if (value === undefined) {
+            return 0;
+        }
+        return value.kind === "number" ? value.value : this.resolver.pixelsOf(value, NO_UNITS, basis) ?? 0;
+    }
+
+    protected isKeyword(value: CssValue | undefined, keyword: string): boolean {
+        return value !== undefined && value.kind === "ident" && value.lower === keyword;
+    }
+
+    protected keywordAt(keyword: string, rtl: boolean, vertical: boolean, flipped: boolean): readonly [string, number] | undefined {
+        // CSS Values 5 §4.2: the axis and the fraction of the box each position keyword stands for; the inline axis is
+        // vertical in a vertical writing mode, rtl reverses it, and flipped puts the block start on the right.
+        const inline: string = vertical ? "y" : "x";
+        const block: string = vertical ? "x" : "y";
+        switch (keyword) {
+            case "left":
+                return ["x", 0];
+            case "right":
+                return ["x", 1];
+            case "top":
+                return ["y", 0];
+            case "bottom":
+                return ["y", 1];
+            case "inline-start":
+            case "inline-end":
+                return [inline, (keyword === "inline-start") === rtl ? 1 : 0];
+            case "block-start":
+            case "block-end":
+                return [block, (keyword === "block-start") === (vertical && flipped) ? 1 : 0];
+            case "x-start":
+            case "x-end":
+                return ["x", (keyword === "x-start") === (vertical ? flipped : rtl) ? 1 : 0];
+            case "y-start":
+            case "y-end":
+                return ["y", (keyword === "y-start") === (vertical && rtl) ? 1 : 0];
+            case "center":
+                return ["both", 0.5];
+            default:
+                return undefined;
+        }
+    }
+
+    position(tokens: ReadonlyArray<CssValue>, width: number, height: number, rtl: boolean, vertical: boolean = false, flipped: boolean = false): readonly [number, number] {
+        // CSS Values 5 §4.2: one value with the other centered, two values with keywords in either order (start and end
+        // naming the block axis first), or four values that offset from the named edges.
+        const sizes: Readonly<Record<string, number>> = { x: width, y: height };
+        const keywordAt: (token: CssValue) => readonly [string, number] | undefined = (token: CssValue): readonly [string, number] | undefined =>
+            token.kind === "ident" ? this.keywordAt(token.lower, rtl, vertical, flipped) : undefined;
+        if (tokens.length === 4) {
+            const result: Record<string, number> = { x: width / 2, y: height / 2 };
+            for (const index of [0, 2]) {
+                const at: readonly [string, number] | undefined = keywordAt(tokens[index]);
+                if (at !== undefined && at[0] !== "both") {
+                    const offset: number = this.pixels(tokens[index + 1], sizes[at[0]]);
+                    result[at[0]] = at[1] === 0 ? offset : sizes[at[0]] - offset;
+                }
+            }
+            return [result["x"], result["y"]];
+        }
+        if (tokens.length === 0) {
+            return [width / 2, height / 2];
+        }
+        if (tokens.length === 1) {
+            const token: CssValue = tokens[0];
+            const at: readonly [string, number] | undefined = keywordAt(token);
+            if (at === undefined) {
+                return [this.pixels(token, width), height / 2];
+            }
+            return at[0] === "y" ? [width / 2, at[1] * height] : (at[0] === "x" ? [at[1] * width, height / 2] : [width / 2, height / 2]);
+        }
+        let [first, second]: readonly [CssValue, CssValue] = [tokens[0], tokens[1]];
+        if ([first, second].some((token: CssValue) => this.isKeyword(token, "start") || this.isKeyword(token, "end"))) {
+            const blockAt: readonly [string, number] = keywordAt({ kind: "ident", name: "", lower: this.isKeyword(first, "end") ? "block-end" : "block-start" }) as readonly [string, number];
+            const inlineAt: readonly [string, number] = keywordAt({ kind: "ident", name: "", lower: this.isKeyword(second, "end") ? "inline-end" : "inline-start" }) as readonly [string, number];
+            const result: Record<string, number> = { x: 0, y: 0 };
+            result[blockAt[0]] = (this.isKeyword(first, "center") ? 0.5 : blockAt[1]) * sizes[blockAt[0]];
+            result[inlineAt[0]] = (this.isKeyword(second, "center") ? 0.5 : inlineAt[1]) * sizes[inlineAt[0]];
+            return [result["x"], result["y"]];
+        }
+        const axisOf: (token: CssValue) => string | undefined = (token: CssValue): string | undefined => keywordAt(token)?.[0];
+        if (axisOf(first) === "y" || axisOf(second) === "x") {
+            [first, second] = [second, first];
+        }
+        const resolve: (token: CssValue, size: number) => number = (token: CssValue, size: number): number => {
+            const at: readonly [string, number] | undefined = keywordAt(token);
+            return at === undefined ? this.pixels(token, size) : at[1] * size;
+        };
+        return [resolve(first, width), resolve(second, height)];
+    }
+
+    union(first: Box | undefined, second: Box | undefined): Box | undefined {
+        if (first === undefined || second === undefined) {
+            return first ?? second;
+        }
+        const left: number = Math.min(first[0], second[0]);
+        const top: number = Math.min(first[1], second[1]);
+        return [left, top, Math.max(first[0] + first[2], second[0] + second[2]) - left, Math.max(first[1] + first[3], second[1] + second[3]) - top];
+    }
 
     protected mapped(homography: Homography, x: number, y: number): readonly [number, number, number] {
         return [homography[0] * x + homography[1] * y + homography[2], homography[3] * x + homography[4] * y + homography[5], homography[6] * x + homography[7] * y + homography[8]];
@@ -453,7 +608,7 @@ export class PathGeometry {
     private crossings(edges: ReadonlyArray<readonly [Point, Point]>, mark: (column: number, row: number) => void): void {
         // The edges are taken in the order of their left ends, so each meets only those that start before it ends. Where two cross
         // away from their ends, the crossing has rational coordinates, and its cell is the floor of their quotients.
-        const order: Array<number> = edges.map((edge: readonly [Point, Point], index: number) => index)
+        const order: Array<number> = Array.from(edges.keys())
             .sort((first: number, second: number) => Math.min(edges[first][0][0], edges[first][1][0]) - Math.min(edges[second][0][0], edges[second][1][0]));
         for (let first: number = 0; first < order.length; first++) {
             const [a, b]: readonly [Point, Point] = edges[order[first]];

@@ -15,7 +15,9 @@
         "strict": true,
         "types": [
             "node"
-        ]
+        ],
+        "noUnusedLocals": true,
+        "noUnusedParameters": true
     },
     "include": [
         "ts/**/*"

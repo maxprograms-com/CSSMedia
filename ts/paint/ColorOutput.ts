@@ -20,7 +20,7 @@
 
 import { ColorParser } from "../css/values/ColorParser.js";
 import { ColorSpaces } from "../css/values/ColorSpaces.js";
-import type { ColorValue, CssValue, DeviceCmykValue, ProfileColorValue } from "../css/values/CssValue.js";
+import type { ColorSpace, ColorValue, CssValue, DeviceCmykValue, ProfileColorValue } from "../css/values/CssValue.js";
 import type { ColorProfile } from "../pdf/ColorProfiles.js";
 import { ColorProfiles } from "../pdf/ColorProfiles.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
@@ -70,6 +70,27 @@ export class ColorOutput {
         return this.apply(value, style, pdf, stroking, 1, false);
     }
 
+    colorValue(value: CssValue | undefined, style: ComputedStyle): ColorValue | undefined {
+        const resolved: ColorValue | DeviceCmykValue | ProfileColorValue | undefined = this.resolve(value, style);
+        return resolved === undefined ? undefined : (resolved.kind === "color" ? resolved : this.currentColor(resolved));
+    }
+
+    interpolation(method: CssValue): readonly [ColorSpace, string] | undefined {
+        return this.parser.interpolationMethod(method);
+    }
+
+    labSpace(): ColorSpaceResource {
+        this.lab = this.lab ?? this.document.colors.labSpace();
+        return this.lab;
+    }
+
+    profileOutput(name: string, color: ColorValue): readonly [ColorSpaceResource, ReadonlyArray<number>] | undefined {
+        // CSS Color 5 §9.1: a custom color space is that of its profile, whose components are interpolated as they are.
+        const profile: ColorProfile | undefined = this.profiles.profile(name);
+        const components: Array<number> | undefined = profile === undefined ? undefined : this.profiles.fromColor(name, color);
+        return profile === undefined || components === undefined ? undefined : [this.profileSpace(profile), components];
+    }
+
     color(value: CssValue | undefined, style: ComputedStyle): PdfColor | undefined {
         return this.pdfColor(this.resolve(value, style));
     }
@@ -83,6 +104,11 @@ export class ColorOutput {
         const srgb: ColorValue = this.spaces.isInGamut(color, "srgb") ? this.spaces.convert(color, "srgb") : this.spaces.gamutMap(color, "srgb");
         const channels: Array<number> = srgb.components.map((channel: number | null) => Math.min(1, Math.max(0, channel ?? 0)));
         return [channels[0], channels[1], channels[2], Math.min(1, Math.max(0, color.alpha ?? 0))];
+    }
+
+    linearized(channels: readonly [number, number, number]): readonly [number, number, number] {
+        const linear: ColorValue = this.spaces.convert({ kind: "color", space: "srgb", components: channels, alpha: 1, legacy: false }, "srgb-linear");
+        return [linear.components[0] ?? 0, linear.components[1] ?? 0, linear.components[2] ?? 0];
     }
 
     shaded(value: CssValue | undefined, style: ComputedStyle, lighter: boolean): CssValue | undefined {
@@ -172,8 +198,7 @@ export class ColorOutput {
             const lightness: number = Math.min(100, Math.max(0, lab.components[0] ?? 0));
             const a: number = Math.min(LAB_RANGE - 1, Math.max(-LAB_RANGE, lab.components[1] ?? 0));
             const b: number = Math.min(LAB_RANGE - 1, Math.max(-LAB_RANGE, lab.components[2] ?? 0));
-            this.lab = this.lab ?? this.document.colors.labSpace();
-            return [this.lab, [lightness, a, b], alpha];
+            return [this.labSpace(), [lightness, a, b], alpha];
         }
         // CSS Color 4 §14: a color outside the sRGB gamut is mapped into it with the gamut mapping algorithm.
         const srgb: ColorValue = this.spaces.isInGamut(color, "srgb") ? this.spaces.convert(color, "srgb") : this.spaces.gamutMap(color, "srgb");
@@ -204,7 +229,7 @@ export class ColorOutput {
             });
         });
         const alone: Array<Buffer> = sizes.map((size: number, channel: number) => this.labSamples(profile.name, size, (index: number): Array<number> =>
-            sizes.map((other: number, position: number) => position === channel ? index / (size - 1) : 0)));
+            Array.from(sizes.keys(), (position: number) => position === channel ? index / (size - 1) : 0)));
         return this.document.colors.deviceN(this.profiles.colorants(profile.name), sizes, samples, alone);
     }
 

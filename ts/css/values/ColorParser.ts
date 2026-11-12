@@ -604,7 +604,7 @@ export class ColorParser {
         return components === undefined ? undefined : { kind: "profile-color", profile: name, components, alpha: alpha === null ? null : alpha * alphaMultiplier };
     }
 
-    private interpolationMethod(value: CssValue): [ColorSpace, string] | undefined {
+    interpolationMethod(value: CssValue): [ColorSpace, string] | undefined {
         // CSS Color 4 §13.2: in [ <rectangular-color-space> | <polar-color-space> <hue-interpolation-method>? ], where the hue
         // method is [ shorter | longer | increasing | decreasing ] hue and defaults to shorter.
         if (value.kind !== "list") {

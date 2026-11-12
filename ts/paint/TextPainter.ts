@@ -83,7 +83,6 @@ const MITER_JOIN: number = 0;
 const ROUND_JOIN: number = 1;
 const BEVEL_JOIN: number = 2;
 const MITER_LIMIT: number = 4;
-const UNSCALED: ReadonlyArray<number> = [1, 0, 0, 1, 0, 0];
 const FLATNESS: number = 0.05;
 const KAPPA: number = 4 / 3 * (Math.SQRT2 - 1);
 
@@ -392,6 +391,22 @@ export class TextPainter {
         this.strokeText(glyphs, style, this.fillText(glyphs, style, pdf), pdf);
     }
 
+    shapes(line: LineFragment, piece: TextPiece, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage): void {
+        // CSS Backgrounds 4 §2.8: the geometry of the text and its decorations, whatever their color, for background-clip: text.
+        const text: InlineText = line.sequence.text as InlineText;
+        if (this.hidden(line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style)) {
+            return;
+        }
+        const glyphs: Array<PlacedGlyph> = this.pieceGlyphs(line, piece, transform);
+        pdf.content.save();
+        this.decorate(line, [piece], [piece], transform, decorators, pdf, false);
+        this.decorate(line, [piece], [piece], transform, decorators, pdf, true);
+        if (glyphs.length > 0) {
+            this.show(glyphs, pdf, FILL, true);
+        }
+        pdf.content.restore();
+    }
+
     private pieceGlyphs(line: LineFragment, piece: TextPiece, transform: Transform): Array<PlacedGlyph> {
         const text: InlineText = line.sequence.text as InlineText;
         const inline: number = (line.inline ?? 0) + piece.inline;
@@ -545,7 +560,7 @@ export class TextPainter {
                 }
                 this.show(glyphs, form, STROKE, shown);
                 pdf.content.graphicsState(pdf.useState(alpha, 1, "Normal"));
-                pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, UNSCALED)));
+                pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, PathGeometry.IDENTITY)));
                 return true;
             }
             if (!this.colors.stroke(color, style, pdf, opacity)) {
@@ -694,7 +709,7 @@ export class TextPainter {
         form.content.fill(false);
         form.content.fillColor([0]);
         this.show(glyphs, form, FILL, true);
-        pdf.content.graphicsState(pdf.useMask(this.document.finishForm(form, area, UNSCALED).object, true));
+        this.document.applyMask(pdf, form, area, true);
     }
 
     private ink(glyphs: ReadonlyArray<PlacedGlyph>, reach: number): Box | undefined {

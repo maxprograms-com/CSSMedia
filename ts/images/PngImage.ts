@@ -169,9 +169,10 @@ export class PngImage implements ImageFormat {
         const header: PngHeader = png.header;
         const gray: boolean = header.colorType === 0 || header.colorType === 4;
         const space: ColorSpaceResource = this.space(png, gray ? 1 : 3);
-        // §8.9.6.4 allows a colour key at 16 bits, but Acrobat ignores it, and a soft mask says the same.
-        const keyed16: boolean = header.bitDepth === 16 && png.transparency.length > 0;
-        const passThrough: boolean = header.interlace === 0 && !keyed16 && (header.colorType === 0 || header.colorType === 2 || (header.colorType === 3 && png.transparency.length === 0));
+        // §8.9.6.4 allows a colour key at 16 bits, but Acrobat ignores it, and a soft mask says the same. A smoothed image
+        // no longer has the key's exact values where it was transparent, so its transparency is a soft mask too.
+        const softKey: boolean = png.transparency.length > 0 && (header.bitDepth === 16 || interpolate);
+        const passThrough: boolean = header.interlace === 0 && !softKey && (header.colorType === 0 || header.colorType === 2 || (header.colorType === 3 && png.transparency.length === 0));
         if (!passThrough) {
             return this.images.write(this.decode(png), space, interpolate);
         }

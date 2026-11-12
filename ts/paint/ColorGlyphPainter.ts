@@ -24,11 +24,11 @@ import type { ColorValue, CssValue } from "../css/values/CssValue.js";
 import { CssValueSerializer } from "../css/values/CssValueSerializer.js";
 import { CaseFolder } from "../fonts/CaseFolder.js";
 import type { OutlineBounds } from "../fonts/CompactOutlines.js";
-import type { Bitmap, ColorStop, Matrix, Paint } from "../fonts/ColorFont.js";
+import type { Bitmap, ColorStop, Paint } from "../fonts/ColorFont.js";
 import { ColorFont } from "../fonts/ColorFont.js";
 import { GlyphOutlines } from "../fonts/GlyphOutlines.js";
 import type { CatalogFace, FontInstance } from "../fonts/Typeface.js";
-import type { PathData } from "../geometry/PathGeometry.js";
+import type { Matrix, PathData } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
 import type { ImageFormats, ImageSamples, ImageSize } from "../images/ImageFormats.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
@@ -40,6 +40,7 @@ import type { ColorSpaceResource } from "../writer/PdfColorSpaces.js";
 import { PdfColorSpaces } from "../writer/PdfColorSpaces.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { ImageResource, PdfPage } from "../writer/PdfPage.js";
+import type { ColorStop as LineStop, PdfShadings, ShadingRepeat } from "../writer/PdfShadings.js";
 import { PdfSyntax } from "../writer/PdfSyntax.js";
 import type { ColorOutput } from "./ColorOutput.js";
 
@@ -72,25 +73,10 @@ interface PaintState {
     path: ReadonlySet<number>;
 }
 
-interface LineStop {
-    offset: number;
-    color: readonly [number, number, number];
-    alpha: number;
-}
-
-const UNSCALED: ReadonlyArray<number> = [1, 0, 0, 1, 0, 0];
-const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
 const REPEAT: number = 1;
 const REFLECT: number = 2;
 const PARALLEL: number = 1e-9;
-const SMALLEST: number = 1e-9;
 const FAR: number = 1e9;
-const DIGITS: number = 12;
-const D65_WHITE: ReadonlyArray<number> = [0.3127 / 0.329, 1, (1 - 0.3127 - 0.329) / 0.329];
-const SRGB_PRIMARIES: ReadonlyArray<number> = [
-    0.41239079926595934, 0.21263900587151027, 0.01933081871559182, 0.357584339383878, 0.715168678767756, 0.11919477979462598,
-    0.1804807884018343, 0.07219231536073371, 0.9505321522496607
-];
 const COMPOSITE_NAMES: ReadonlyArray<string> = ["SRC_ATOP", "DEST_ATOP", "XOR", "PLUS"];
 const PALETTE_DESCRIPTORS: ReadonlyArray<string> = ["font-family", "base-palette", "override-colors"];
 const BLEND_MODES: ReadonlyMap<number, string> = new Map<number, string>([
@@ -110,7 +96,7 @@ export class ColorGlyphPainter {
     private readonly outlines: GlyphOutlines = new GlyphOutlines();
     private readonly geometry: PathGeometry = new PathGeometry();
     private readonly caseFolder: CaseFolder = new CaseFolder();
-    private readonly palettes: Map<FontInstance, Map<string, ReadonlyArray<CssValue>>> = new Map<FontInstance, Map<string, ReadonlyArray<CssValue>>>();    private linearSpace?: ColorSpaceResource;
+    private readonly palettes: Map<FontInstance, Map<string, ReadonlyArray<CssValue>>> = new Map<FontInstance, Map<string, ReadonlyArray<CssValue>>>();
 
     constructor(document: PdfDocument, colors: ColorOutput, metrics: FontMetrics, rules: ReadonlyArray<PaletteRule>, images: ImageFormats) {
         this.document = document;
@@ -194,7 +180,7 @@ export class ColorGlyphPainter {
         const ink: readonly [number, number, number, number] | undefined = this.images.glyph(href, "glyph" + placed.glyph, font.metrics.unitsPerEm, scale,
             this.host(font, color, style), form, matrix, font.emboldening ?? 0);
         const area: Box = ink === undefined ? [placed.x, placed.y, 0, 0] : [placed.x + ink[0] * scale, placed.y + ink[1] * scale, ink[2] * scale, ink[3] * scale];
-        const resource: ImageResource = this.document.finishForm(form, area, UNSCALED);
+        const resource: ImageResource = this.document.finishForm(form, area, PathGeometry.IDENTITY);
         if (area[2] > 0 && area[3] > 0) {
             pdf.content.paintXObject(pdf.useImage(resource));
         }
@@ -369,7 +355,7 @@ export class ColorGlyphPainter {
         }
         pdf.content.save();
         pdf.content.graphicsState(pdf.useState(opacity, 1, "Normal"));
-        pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, UNSCALED)));
+        pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, PathGeometry.IDENTITY)));
         pdf.content.restore();
     }
 
@@ -404,7 +390,7 @@ export class ColorGlyphPainter {
             form.content.clip(false);
         }
         const state: PaintState = {
-            color, font, palette: this.palette(font, color, style), style, matrix: IDENTITY, bounds: [box[0], box[1], box[2], box[3]], path: new Set<number>()
+            color, font, palette: this.palette(font, color, style), style, matrix: PathGeometry.IDENTITY, bounds: [box[0], box[1], box[2], box[3]], path: new Set<number>()
         };
         if (scalars !== undefined) {
             state.scalars = scalars;
@@ -415,7 +401,7 @@ export class ColorGlyphPainter {
         if (opacity < 1) {
             pdf.content.graphicsState(pdf.useState(opacity, 1, "Normal"));
         }
-        pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, UNSCALED, this.linear())));
+        pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, PathGeometry.IDENTITY, this.document.colors.linearRgb())));
         pdf.content.restore();
     }
 
@@ -455,7 +441,7 @@ export class ColorGlyphPainter {
                 const m: Matrix = paint.matrix;
                 pdf.content.save();
                 pdf.content.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
-                this.render(paint.child, { ...inner, matrix: this.multiply(state.matrix, m) }, pdf);
+                this.render(paint.child, { ...inner, matrix: this.geometry.concat(state.matrix, m) }, pdf);
                 pdf.content.restore();
                 return;
             }
@@ -476,7 +462,7 @@ export class ColorGlyphPainter {
             return;
         }
         const box: ReadonlyArray<readonly [number, number]> = [[bounds.xMin, bounds.yMin], [bounds.xMax, bounds.yMin], [bounds.xMin, bounds.yMax], [bounds.xMax, bounds.yMax]];
-        const corners: Array<readonly [number, number]> = box.map((corner: readonly [number, number]) => this.apply(state.matrix, corner[0], corner[1]));
+        const corners: Array<readonly [number, number]> = box.map((corner: readonly [number, number]) => this.geometry.point(state.matrix, corner[0], corner[1]));
         const xs: Array<number> = corners.map((corner: readonly [number, number]) => corner[0]);
         const ys: Array<number> = corners.map((corner: readonly [number, number]) => corner[1]);
         const area: readonly [number, number, number, number] = [
@@ -500,7 +486,7 @@ export class ColorGlyphPainter {
             return;
         }
         pdf.content.save();
-        pdf.content.fillSpace(pdf.useColorSpace(this.linear()));
+        pdf.content.fillSpace(pdf.useColorSpace(this.document.colors.linearRgb()));
         pdf.content.fillColor([color[0], color[1], color[2]]);
         if (color[3] < 1) {
             pdf.content.graphicsState(pdf.useState(color[3], 1, "Normal"));
@@ -517,27 +503,34 @@ export class ColorGlyphPainter {
     private gradient(paint: Extract<Paint, { kind: "linear" | "radial" | "sweep" }>, state: PaintState, pdf: PdfPage): void {
         // Each point of the region takes the color of its position on the color line, which a calculator function finds by the
         // algorithm of its gradient; the alpha, interpolated with the colors premultiplied, is a soft mask of the same function.
+        const shadings: PdfShadings = this.document.shadings;
         const domain: readonly [number, number, number, number] | undefined = this.domain(state);
         const position: string | undefined = paint.kind === "linear" ? this.linearPosition(paint.points)
-            : (paint.kind === "radial" ? this.radialPosition(paint.circles) : this.sweepPosition(paint.center, paint.start, paint.end, paint.line.extend));
-        const stops: Array<LineStop> = [];
+            : (paint.kind === "radial" ? shadings.betweenCircles(paint.circles) : this.sweepPosition(paint.center, paint.start, paint.end, paint.line.extend));
+        const colors: Array<LineStop> = [];
+        const alphas: Array<LineStop> = [];
         for (const stop of [...paint.line.stops].sort((first: ColorStop, second: ColorStop) => first.offset - second.offset)) {
             const color: readonly [number, number, number, number] = this.linearColor(stop.entry, stop.alpha, state) ?? [0, 0, 0, 0];
-            stops.push({ offset: stop.offset, color: [color[0], color[1], color[2]], alpha: color[3] });
+            colors.push({ offset: stop.offset, components: [color[0], color[1], color[2]] });
+            alphas.push({ offset: stop.offset, components: [color[3]] });
         }
-        const colors: string | undefined = this.lineProgram(stops, paint.line.extend, false);
-        const alphas: string | undefined = this.lineProgram(stops, paint.line.extend, true);
-        if (domain === undefined || position === undefined || colors === undefined || alphas === undefined) {
+        // "If all color stops have the same offset ... if the extend mode is repeat or reflect, the color line is ill-formed".
+        const extend: number = paint.line.extend;
+        const repeat: ShadingRepeat | undefined = colors.length === 0 || (extend !== REPEAT && extend !== REFLECT) ? undefined
+            : { from: colors[0].offset, to: colors[colors.length - 1].offset, reflect: extend === REFLECT };
+        // CPAL, "Interpolation of colors": the alpha is "pre-multiplied into each" component; a color line without stops is
+        // transparent black.
+        const colorCode: string | undefined = colors.length === 0 ? "pop 0 0 0" : shadings.colorLine(colors, alphas.map((stop: LineStop) => stop.components[0]), repeat);
+        const alphaCode: string | undefined = colors.length === 0 ? "pop 0" : shadings.colorLine(alphas, undefined, repeat);
+        if (domain === undefined || position === undefined || colorCode === undefined || alphaCode === undefined) {
             return;
         }
         const area: Box = [domain[0], domain[2], domain[1] - domain[0], domain[3] - domain[2]];
         pdf.content.save();
-        if (paint.kind === "radial" || stops.some((stop: LineStop) => stop.alpha < 1)) {
-            const mask: PdfPage = this.document.startForm(area[2], area[3], false);
-            mask.content.shade(mask.useShading(this.document.shadings.calculated(PdfColorSpaces.GRAY, domain, position + " { " + alphas + " } { pop 0 } ifelse")));
-            pdf.content.graphicsState(pdf.useMask(this.document.finishForm(mask, area, UNSCALED, PdfColorSpaces.GRAY).object, true));
+        if (paint.kind === "radial" || alphas.some((stop: LineStop) => stop.components[0] < 1)) {
+            this.document.shadedMask(pdf, area, shadings.calculated(PdfColorSpaces.GRAY, domain, position + " { " + alphaCode + " } { pop 0 } ifelse"));
         }
-        pdf.content.shade(pdf.useShading(this.document.shadings.calculated(this.linear(), domain, position + " { " + colors + " } { pop 0 0 0 } ifelse")));
+        pdf.content.shade(pdf.useShading(shadings.calculated(this.document.colors.linearRgb(), domain, position + " { " + colorCode + " } { pop 0 0 0 } ifelse")));
         pdf.content.restore();
     }
 
@@ -560,109 +553,18 @@ export class ColorGlyphPainter {
         if (length <= PARALLEL * (vx * vx + vy * vy)) {
             return undefined;
         }
-        return this.number(y0) + " sub " + this.number(wy / length) + " mul exch " + this.number(x0) + " sub " + this.number(wx / length) + " mul add true";
-    }
-
-    private radialPosition(circles: readonly [number, number, number, number, number, number]): string | undefined {
-        // "If c₀ = c₁ and r₀ = r₁ then paint nothing"; otherwise the largest ω for which the point is on the circle of center
-        // c(ω) and radius r(ω) > 0, from (p - c(ω))² = r(ω)², which is A ω² - 2 B ω + C = 0; no such ω leaves the point unpainted.
-        const [x0, y0, r0, x1, y1, r1] = circles;
-        const cx: number = x1 - x0;
-        const cy: number = y1 - y0;
-        const dr: number = r1 - r0;
-        if (cx === 0 && cy === 0 && dr === 0) {
-            return undefined;
-        }
-        const a: number = cx * cx + cy * cy - dr * dr;
-        const radius: string = this.number(dr) + " mul " + this.number(r0) + " add 0 ge";
-        const start: string = this.number(y0) + " sub exch " + this.number(x0) + " sub 2 copy " + this.number(cx) + " mul exch " + this.number(cy) + " mul add "
-            + this.number(r0 * dr) + " add 3 1 roll dup mul exch dup mul add " + this.number(r0 * r0) + " sub ";
-        if (Math.abs(a) < PARALLEL * (cx * cx + cy * cy + dr * dr)) {
-            return start + "exch dup 0 eq { pop pop 0 false } { 2 mul div dup " + radius + " } ifelse";
-        }
-        return start + this.number(a) + " mul 1 index dup mul exch sub dup 0 lt { pop pop 0 false } { sqrt 2 copy add " + this.number(1 / a) + " mul 3 1 roll sub "
-            + this.number(1 / a) + " mul 2 copy gt { exch } if dup " + radius + " { exch pop true } { pop dup " + radius + " } ifelse } ifelse";
+        return this.document.shadings.along(x0, y0, wx, wy) + " true";
     }
 
     private sweepPosition(center: readonly [number, number], start: number, end: number, extend: number): string | undefined {
         // Angles are "counter-clockwise degrees from the direction of the positive x-axis", sampled from 0° up to 360°; with equal
         // angles the pad mode gives the first stop below and the last at and above, and the other modes draw nothing.
-        const angle: string = this.number(center[1]) + " sub exch " + this.number(center[0]) + " sub 2 copy 0 eq exch 0 eq and { pop pop 0 } { atan } ifelse ";
+        const n: (value: number) => string = (value: number): string => this.document.shadings.operand(value);
+        const angle: string = n(center[1]) + " sub exch " + n(center[0]) + " sub 2 copy abs exch abs add 0 le { pop pop 0 } { atan } ifelse ";
         if (start === end) {
-            return extend === REPEAT || extend === REFLECT ? undefined : angle + this.number(start) + " lt { " + this.number(-FAR) + " } { " + this.number(FAR) + " } ifelse true";
+            return extend === REPEAT || extend === REFLECT ? undefined : angle + n(start) + " lt { " + n(-FAR) + " } { " + n(FAR) + " } ifelse true";
         }
-        return angle + this.number(start) + " sub " + this.number(1 / (end - start)) + " mul true";
-    }
-
-    private lineProgram(stops: ReadonlyArray<LineStop>, extend: number, alpha: boolean): string | undefined {
-        // Color lines: no stop is transparent black, one stop is its color; colors are interpolated between the stops in order
-        // of offset, the first of stops at one offset below it and the last at and above it, and the extend mode fills the rest.
-        const constant: (stop: LineStop) => string = (stop: LineStop): string =>
-            alpha ? this.number(stop.alpha) : stop.color.map((channel: number) => this.number(channel)).join(" ");
-        if (stops.length === 0) {
-            return alpha ? "pop 0" : "pop 0 0 0";
-        }
-        const first: LineStop = stops[0];
-        const last: LineStop = stops[stops.length - 1];
-        if (stops.length === 1) {
-            return "pop " + constant(first);
-        }
-        const low: number = first.offset;
-        const high: number = last.offset;
-        if (low === high) {
-            // "If all color stops have the same offset ... if the extend mode is repeat or reflect, the color line is ill-formed".
-            return extend === REPEAT || extend === REFLECT ? undefined : this.number(low) + " lt { " + constant(first) + " } { " + constant(last) + " } ifelse";
-        }
-        const length: string = this.number(high - low);
-        const segments: string = this.segments(stops, alpha);
-        if (extend === REPEAT) {
-            return this.number(low) + " sub " + length + " div dup floor sub " + length + " mul " + this.number(low) + " add " + segments;
-        }
-        if (extend === REFLECT) {
-            return this.number(low) + " sub " + length + " div dup floor dup 2 div dup floor sub 0 ne { sub 1 exch sub } { sub } ifelse " + length + " mul "
-                + this.number(low) + " add " + segments;
-        }
-        // "If a ColorLine in a font has an unrecognized extend value, applications should use EXTEND_PAD".
-        return "dup " + this.number(low) + " lt { pop " + constant(first) + " } { dup " + this.number(high) + " ge { pop " + constant(last) + " } { " + segments
-            + " } ifelse } ifelse";
-    }
-
-    private segments(stops: ReadonlyArray<LineStop>, alpha: boolean): string {
-        // A stop at the offset of the one before starts no segment, so a position at that offset falls in the segment that
-        // the later stop starts.
-        const pieces: Array<readonly [LineStop, LineStop]> = [];
-        for (let index: number = 1; index < stops.length; index++) {
-            if (stops[index].offset > stops[index - 1].offset) {
-                pieces.push([stops[index - 1], stops[index]]);
-            }
-        }
-        let code: string = this.segment(pieces[pieces.length - 1], alpha);
-        for (let index: number = pieces.length - 2; index >= 0; index--) {
-            code = "dup " + this.number(pieces[index][1].offset) + " lt { " + this.segment(pieces[index], alpha) + " } { " + code + " } ifelse";
-        }
-        return code;
-    }
-
-    private segment(piece: readonly [LineStop, LineStop], alpha: boolean): string {
-        // CPAL, "Interpolation of colors": linear-light values with the alpha "pre-multiplied into each" component, interpolated,
-        // and then "un-pre-multiplied by dividing each interpolated value by the corresponding interpolated alpha".
-        const [from, to] = piece;
-        const fraction: string = this.number(from.offset) + " sub " + this.number(1 / (to.offset - from.offset)) + " mul ";
-        if (alpha) {
-            return fraction + this.number(to.alpha - from.alpha) + " mul " + this.number(from.alpha) + " add";
-        }
-        if (from.alpha === to.alpha) {
-            return fraction + "dup " + this.number(to.color[0] - from.color[0]) + " mul " + this.number(from.color[0]) + " add exch dup "
-                + this.number(to.color[1] - from.color[1]) + " mul " + this.number(from.color[1]) + " add exch " + this.number(to.color[2] - from.color[2]) + " mul "
-                + this.number(from.color[2]) + " add";
-        }
-        let code: string = fraction + "dup " + this.number(to.alpha - from.alpha) + " mul " + this.number(from.alpha) + " add dup " + this.number(SMALLEST)
-            + " lt { pop " + this.number(SMALLEST) + " } if ";
-        for (let channel: number = 0; channel < 3; channel++) {
-            const start: number = from.color[channel] * from.alpha;
-            code += (channel + 1) + " index " + this.number(to.color[channel] * to.alpha - start) + " mul " + this.number(start) + " add " + (channel + 1) + " index div ";
-        }
-        return code + "5 3 roll pop pop";
+        return angle + n(start) + " sub " + n(1 / (end - start)) + " mul true";
     }
 
     private composite(mode: number, source: number, backdrop: number, state: PaintState, pdf: PdfPage): void {
@@ -701,8 +603,8 @@ export class ColorGlyphPainter {
                 const kept: PdfPage = group(mode === 5 || mode === 7 ? source : backdrop);
                 const mask: PdfPage = group(mode === 5 || mode === 7 ? backdrop : source);
                 pdf.content.save();
-                pdf.content.graphicsState(pdf.useMask(this.document.finishForm(mask, area, UNSCALED, this.linear()).object, false, mode >= 7));
-                pdf.content.paintXObject(pdf.useImage(this.document.finishForm(kept, area, UNSCALED, this.linear())));
+                this.document.applyMask(pdf, mask, area, false, this.document.colors.linearRgb(), mode >= 7);
+                pdf.content.paintXObject(pdf.useImage(this.document.finishForm(kept, area, PathGeometry.IDENTITY, this.document.colors.linearRgb())));
                 pdf.content.restore();
                 return;
             }
@@ -721,7 +623,7 @@ export class ColorGlyphPainter {
                 this.render(backdrop, state, form);
                 form.content.graphicsState(form.useState(1, 1, blend));
                 this.render(source, state, form);
-                pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, UNSCALED, this.linear())));
+                pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, PathGeometry.IDENTITY, this.document.colors.linearRgb())));
             }
         }
     }
@@ -734,14 +636,15 @@ export class ColorGlyphPainter {
         if (rgba === undefined) {
             return undefined;
         }
-        const linear: (channel: number) => number = (channel: number): number => channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
-        return [linear(rgba[0]), linear(rgba[1]), linear(rgba[2]), rgba[3] * Math.min(1, Math.max(0, alpha))];
+        const linear: readonly [number, number, number] = this.colors.linearized([rgba[0], rgba[1], rgba[2]]);
+        return [linear[0], linear[1], linear[2], rgba[3] * Math.min(1, Math.max(0, alpha))];
     }
 
     private region(state: PaintState): Array<readonly [number, number]> | undefined {
-        const inverse: Matrix | undefined = this.invert(state.matrix);
+        const inverse: Matrix | undefined = this.geometry.invert(state.matrix);
         const [x0, y0, x1, y1] = state.bounds;
-        return inverse === undefined ? undefined : [this.apply(inverse, x0, y0), this.apply(inverse, x1, y0), this.apply(inverse, x1, y1), this.apply(inverse, x0, y1)];
+        return inverse === undefined ? undefined : [this.geometry.point(inverse, x0, y0), this.geometry.point(inverse, x1, y0), this.geometry.point(inverse, x1, y1),
+            this.geometry.point(inverse, x0, y1)];
     }
 
     private domain(state: PaintState): readonly [number, number, number, number] | undefined {
@@ -753,41 +656,6 @@ export class ColorGlyphPainter {
         const ys: Array<number> = corners.map((corner: readonly [number, number]) => corner[1]);
         const domain: readonly [number, number, number, number] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
         return domain[1] > domain[0] && domain[3] > domain[2] ? domain : undefined;
-    }
-
-    private multiply(outer: Matrix, inner: Matrix): Matrix {
-        return [
-            outer[0] * inner[0] + outer[2] * inner[1], outer[1] * inner[0] + outer[3] * inner[1], outer[0] * inner[2] + outer[2] * inner[3],
-            outer[1] * inner[2] + outer[3] * inner[3], outer[0] * inner[4] + outer[2] * inner[5] + outer[4], outer[1] * inner[4] + outer[3] * inner[5] + outer[5]
-        ];
-    }
-
-    private invert(m: Matrix): Matrix | undefined {
-        const determinant: number = m[0] * m[3] - m[1] * m[2];
-        if (Math.abs(determinant) < SMALLEST) {
-            return undefined;
-        }
-        return [m[3] / determinant, -m[1] / determinant, -m[2] / determinant, m[0] / determinant, (m[2] * m[5] - m[3] * m[4]) / determinant,
-            (m[1] * m[4] - m[0] * m[5]) / determinant];
-    }
-
-    private apply(m: Matrix, x: number, y: number): readonly [number, number] {
-        return [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
-    }
-
-    private number(value: number): string {
-        // ISO 32000-2 §7.10.5: the operands of a calculator function are PDF numbers, which have no exponent.
-        if (Math.abs(value) < SMALLEST) {
-            return "0";
-        }
-        const text: string = value.toFixed(DIGITS).replace(/0+$/, "").replace(/\.$/, "");
-        return text === "-0" ? "0" : text;
-    }
-
-    private linear(): ColorSpaceResource {
-        // CSS Color 4 §10.2: sRGB without its transfer function, the D65 white and the primaries in CIE XYZ.
-        this.linearSpace = this.linearSpace ?? this.document.colors.calibrated([1, 1, 1], D65_WHITE, SRGB_PRIMARIES);
-        return this.linearSpace;
     }
 
     private glyph(placed: ColorGlyph, style: ComputedStyle, pdf: PdfPage, sheared: boolean): void {

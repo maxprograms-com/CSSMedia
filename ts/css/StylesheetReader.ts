@@ -20,11 +20,9 @@
 
 import type { Atrule, Block, CssNode, Declaration as CssTreeDeclaration, ListItem, MediaQueryList, Rule, Selector, SelectorList, StyleSheet } from "css-tree";
 import { clone, generate, List, parse, tokenize, tokenTypes, walk } from "css-tree";
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve as resolvePath } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { FileReader } from "typesxml";
 import { FontCatalog } from "../fonts/FontCatalog.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
 import { FontSupport } from "../fonts/FontSupport.js";
@@ -120,7 +118,7 @@ const RELATIVE_UNITS: ReadonlySet<string> = new Set<string>([
     "cqw", "cqh", "cqi", "cqb", "cqmin", "cqmax"
 ]);
 
-const CONTAINER_KEYWORDS: ReadonlySet<string> = new Set<string>(["none", "and", "not", "or", "initial", "inherit", "unset", "revert", "revert-layer", "default"]);
+const CONTAINER_KEYWORDS: ReadonlySet<string> = new Set<string>(["none", "and", "not", "or"]);
 
 const POSITION_TRY_PROPERTIES: RegExp = /^(?:top|right|bottom|left|inset-(?:block|inline)-(?:start|end)|margin-(?:top|right|bottom|left|block-start|block-end|inline-start|inline-end)|(?:min-|max-)?(?:width|height|block-size|inline-size)|align-self|justify-self|position-anchor|position-area)$/;
 
@@ -150,6 +148,7 @@ const UNLAYERED: string = "";
 export class StylesheetReader {
 
     private readonly table: PropertyTable;
+    private readonly load?: (url: string) => Buffer | undefined;
     private readonly diagnostics: Array<string> = [];
     private readonly declarations: DeclarationReader;
     private readonly selectors: SelectorCompiler = new SelectorCompiler();
@@ -184,17 +183,32 @@ export class StylesheetReader {
     private order: number = 0;
     private anonymousLayers: number = 0;
 
-    constructor(table: PropertyTable = new PropertyTable()) {
+    constructor(table: PropertyTable = new PropertyTable(), load?: (url: string) => Buffer | undefined) {
         this.table = table;
+        if (load !== undefined) {
+            this.load = load;
+        }
         this.declarations = new DeclarationReader(table);
         this.supports = new SupportsEvaluator(this.declarations, this.selectors, this.conditions);
     }
 
     read(path: string): Stylesheet {
         const url: string = pathToFileURL(resolvePath(path)).href;
-        this.sheets.set(url, parse(this.readFile(path)) as StyleSheet);
+        this.sheets.set(url, parse(this.decode(readFileSync(path))) as StyleSheet);
         this.defineCustomMedia(url, new Set<string>());
         this.readSheet(url, UNLAYERED);
+        return this.result();
+    }
+
+    readText(text: string, baseUrl: string): Stylesheet {
+        let sheet: StyleSheet;
+        try {
+            sheet = parse(text) as StyleSheet;
+        } catch {
+            return this.result();
+        }
+        this.defineSheetMedia(sheet, baseUrl, new Set<string>());
+        this.readParsed(sheet, baseUrl, UNLAYERED);
         return this.result();
     }
 
@@ -208,18 +222,26 @@ export class StylesheetReader {
             }
             const href: string | undefined = pseudo.get("href");
             const type: string | undefined = pseudo.get("type");
-            if (href === undefined || (type !== undefined && type.trim().toLowerCase() !== "text/css") || pseudo.get("alternate") === "yes" || !this.linkedMedia(pseudo.get("media"))) {
-                continue;
+            if (href !== undefined && (type === undefined || type.trim().toLowerCase() === "text/css") && pseudo.get("alternate") !== "yes" && this.linkedMedia(pseudo.get("media"))) {
+                this.readLinkedSheet(href, baseUrl);
             }
-            const url: string | undefined = URL.canParse(href, baseUrl) ? new URL(href, baseUrl).href : undefined;
-            if (url === undefined || this.sheet(url) === undefined) {
-                this.diagnostics.push("Cannot read the stylesheet " + href + " linked by " + baseUrl + (url === undefined ? "" : this.remote.failure(url)));
-                continue;
-            }
-            this.defineCustomMedia(url, new Set<string>());
-            this.readSheet(url, UNLAYERED);
         }
         return this.result();
+    }
+
+    readLink(href: string, baseUrl: string): Stylesheet {
+        this.readLinkedSheet(href, baseUrl);
+        return this.result();
+    }
+
+    private readLinkedSheet(href: string, baseUrl: string): void {
+        const url: string | undefined = URL.canParse(href, baseUrl) ? new URL(href, baseUrl).href : undefined;
+        if (url === undefined || this.sheet(url) === undefined) {
+            this.diagnostics.push("Cannot read the stylesheet " + href + " linked by " + baseUrl + (url === undefined || this.load !== undefined ? "" : this.remote.failure(url)));
+            return;
+        }
+        this.defineCustomMedia(url, new Set<string>());
+        this.readSheet(url, UNLAYERED);
     }
 
     private linkedMedia(media?: string): boolean {
@@ -237,6 +259,10 @@ export class StylesheetReader {
             return;
         }
         visited.add(url);
+        this.defineSheetMedia(sheet, url, visited);
+    }
+
+    private defineSheetMedia(sheet: StyleSheet, url: string, visited: Set<string>): void {
         for (const node of sheet.children) {
             if (node.type !== "Atrule") {
                 continue;
@@ -278,9 +304,12 @@ export class StylesheetReader {
         // CSS Cascade 5 §2 and §6.4.4.2, Namespaces 3 §3.1, Conditional 5 §8: @import rules, then @namespace rules, then the
         // rest; @layer statements and @supports-condition may come first, and after an @import or @namespace rule they end both.
         const sheet: StyleSheet | undefined = this.sheet(url);
-        if (sheet === undefined) {
-            return;
+        if (sheet !== undefined) {
+            this.readParsed(sheet, url, layer);
         }
+    }
+
+    private readParsed(sheet: StyleSheet, url: string, layer: string): void {
         this.loading.add(url);
         const context: Context = { baseUrl: url, namespaces: new Map<string, string>(), layer, pageSizeConditional: false, containers: [] };
         const nodes: Array<CssNode> = sheet.children.toArray();
@@ -474,7 +503,7 @@ export class StylesheetReader {
         for (const part of this.splitTopLevel(text, ",")) {
             const tokens: Array<Token> = this.substitutionSyntax.trim(this.substitutionSyntax.tokens(part));
             const first: Token | undefined = tokens[0];
-            const named: boolean = first !== undefined && first.type === tokenTypes.Ident && !CONTAINER_KEYWORDS.has(this.asciiCase.foldLower(this.escaping.unescape(first.text)));
+            const named: boolean = first !== undefined && first.type === tokenTypes.Ident && !this.reservedName(this.asciiCase.foldLower(this.escaping.unescape(first.text)));
             const query: Array<Token> = named ? this.substitutionSyntax.trim(tokens.slice(1)) : tokens;
             const start: Token | undefined = query[0];
             const queryStart: boolean = start !== undefined && (start.type === tokenTypes.LeftParenthesis || start.type === tokenTypes.Function
@@ -592,10 +621,10 @@ export class StylesheetReader {
         if (list === null || list.type !== "LayerList") {
             return;
         }
-        for (const layer of list.children) {
-            const name: string | undefined = this.layerName(layer);
-            if (name !== undefined) {
-                this.registerLayer(context.layer, name);
+        const names: Array<string | undefined> = list.children.toArray().map((layer: CssNode) => this.layerName(layer));
+        if (names.every((name: string | undefined): name is string => name !== undefined)) {
+            for (const name of names) {
+                this.registerLayer(context.layer, name as string);
             }
         }
     }
@@ -620,8 +649,17 @@ export class StylesheetReader {
         readChildren(this.blockItems(atrule.block), { ...context, layer });
     }
 
+    private reservedName(name: string): boolean {
+        // CSS Conditional 5 §5.4: a <container-name> is a <custom-ident> other than none, and, not and or.
+        return CONTAINER_KEYWORDS.has(name) || DeclarationReader.RESERVED_IDENTIFIERS.has(name);
+    }
+
     private layerName(node: CssNode | null): string | undefined {
-        return node !== null && node.type === "Layer" ? node.name : undefined;
+        // CSS Cascade 5 §6.4.2: a CSS-wide keyword as an <ident> of a <layer-name> makes the rule invalid.
+        if (node === null || node.type !== "Layer") {
+            return undefined;
+        }
+        return node.name.split(".").some((part: string) => DeclarationReader.CSS_WIDE_KEYWORDS.has(this.asciiCase.foldLower(part))) ? undefined : node.name;
     }
 
     private registerLayer(parent: string, name: string): string {
@@ -870,9 +908,8 @@ export class StylesheetReader {
         // Inside @scope, & stands for :is(<scope-start>), or for :scope when there is no start.
         const copy: SelectorList = clone(list) as SelectorList;
         if (replacement !== undefined) {
-            walk(copy, {
-                visit: "NestingSelector",
-                enter: (node: CssNode, listItem: ListItem<CssNode>, siblings: List<CssNode>) => {
+            walk(copy, (node: CssNode, listItem: ListItem<CssNode>, siblings: List<CssNode>) => {
+                if (node.type === "NestingSelector") {
                     siblings.replace(listItem, siblings.createItem(this.isOf(replacement)));
                 }
             });
@@ -955,9 +992,8 @@ export class StylesheetReader {
                 hasNesting = hasNesting || node.type === "NestingSelector";
             });
             if (hasNesting) {
-                walk(selector, {
-                    visit: "NestingSelector",
-                    enter: (node: CssNode, listItem: ListItem<CssNode>, siblings: List<CssNode>) => {
+                walk(selector, (node: CssNode, listItem: ListItem<CssNode>, siblings: List<CssNode>) => {
+                    if (node.type === "NestingSelector") {
                         siblings.replace(listItem, siblings.createItem(this.isOf(parent)));
                     }
                 });
@@ -1635,38 +1671,36 @@ export class StylesheetReader {
     }
 
     private fetch(url: string): string | undefined {
-        if (url.startsWith("file:")) {
+        let bytes: Buffer | undefined;
+        if (this.load !== undefined) {
+            bytes = this.load(url);
+        } else if (url.startsWith("file:")) {
             const path: string = fileURLToPath(url);
-            return existsSync(path) ? this.readFile(path) : undefined;
+            bytes = existsSync(path) ? readFileSync(path) : undefined;
+        } else {
+            bytes = this.remote.retrieveBytes(url);
         }
-        const bytes: Buffer | undefined = this.remote.retrieveBytes(url);
-        if (bytes === undefined) {
-            return undefined;
-        }
-        const folder: string = mkdtempSync(join(tmpdir(), "cssmedia-"));
-        try {
-            const path: string = join(folder, "stylesheet.css");
-            writeFileSync(path, bytes);
-            return this.readFile(path);
-        } finally {
-            rmSync(folder, { recursive: true, force: true });
-        }
+        return bytes === undefined ? undefined : this.decode(bytes);
     }
 
-    private readFile(path: string): string {
-        // CSS Syntax 3 §3.2: without a byte order mark, an @charset rule at the very start gives the fallback encoding;
-        // a UTF-16 label or an unknown one gives none. A byte order mark stays in the text, and the tokenizer skips it.
-        const text: string = readFileSync(path, FileReader.detectEncoding(path));
-        const charset: RegExpExecArray | null = /^@charset "([\x00-\x21\x23-\x7F]*)";/.exec(text);
+    private decode(bytes: Buffer): string {
+        // CSS Syntax 3 §3.2: a byte order mark gives the encoding; without one, an @charset rule at the very start gives the
+        // fallback encoding, a UTF-16 label or an unknown one gives none, and UTF-8 is used.
+        const mark: string | undefined = bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF ? "utf-8"
+            : (bytes[0] === 0xFE && bytes[1] === 0xFF ? "utf-16be" : (bytes[0] === 0xFF && bytes[1] === 0xFE ? "utf-16le" : undefined));
+        if (mark !== undefined) {
+            return new TextDecoder(mark).decode(bytes);
+        }
+        const charset: RegExpExecArray | null = /^@charset "([\x00-\x21\x23-\x7F]*)";/.exec(bytes.toString("latin1", 0, Math.min(bytes.length, 1024)));
         const label: string | undefined = charset === null ? undefined : charset[1].toLowerCase();
-        if (label === undefined || label === "utf-16be" || label === "utf-16le") {
-            return text;
+        if (label !== undefined && label !== "utf-16be" && label !== "utf-16le") {
+            try {
+                return new TextDecoder(label).decode(bytes);
+            } catch {
+                // do nothing: an unknown label gives no fallback encoding
+            }
         }
-        try {
-            return new TextDecoder(label).decode(readFileSync(path));
-        } catch {
-            return text;
-        }
+        return new TextDecoder("utf-8").decode(bytes);
     }
 
     private result(): Stylesheet {

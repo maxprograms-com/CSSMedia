@@ -20,6 +20,7 @@
 
 import { string as cssString, tokenize, tokenTypes } from "css-tree";
 import { AsciiCase } from "./AsciiCase.js";
+import { DeclarationReader } from "./DeclarationReader.js";
 
 export interface SyntaxComponent {
     name: string;
@@ -33,7 +34,6 @@ const TYPE_NAMES: ReadonlySet<string> = new Set<string>([
     "transform-function", "transform-list"
 ]);
 
-const RESERVED_KEYWORDS: ReadonlySet<string> = new Set<string>(["initial", "inherit", "unset", "revert", "revert-layer", "default"]);
 
 const IDENTIFIER: RegExp = /^(?:--|-?(?:[A-Za-z_]|[^\x00-\x7F]|\\[^\n]))(?:[\w-]|[^\x00-\x7F]|\\[^\n])*$/;
 
@@ -84,7 +84,7 @@ export class SyntaxDefinition {
                     return undefined;
                 }
                 components.push(component);
-            } else if (IDENTIFIER.test(component) && !RESERVED_KEYWORDS.has(this.asciiCase.foldLower(component))) {
+            } else if (IDENTIFIER.test(component) && !DeclarationReader.RESERVED_IDENTIFIERS.has(this.asciiCase.foldLower(component))) {
                 components.push(component);
             } else {
                 return undefined;

@@ -101,6 +101,11 @@ export class PdfPage {
         return this.state("<< /Type /ExtGState /ca " + this.syntax.number(fillAlpha) + " /CA " + this.syntax.number(strokeAlpha) + " /BM " + this.syntax.name(blend) + " >>");
     }
 
+    useShape(shape: number): string {
+        // §11.6.4.3: with AIS true the constant alpha is a shape, which a knockout group mixes by (§11.4.6).
+        return this.state("<< /Type /ExtGState /AIS true /ca " + this.syntax.number(shape) + " /CA " + this.syntax.number(shape) + " >>");
+    }
+
     useMask(group: number, luminosity: boolean, inverted: boolean = false): string {
         // §11.6.5.2: a soft mask from the luminosity or the alpha of a transparency group, whose backdrop is black; an inverted
         // mask has the transfer function 1 - x (Table 142, TR).

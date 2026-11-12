@@ -31,7 +31,7 @@ interface StateTable {
     entries: number;
 }
 
-type Transition = (entry: number, flags: number, index: number) => number;
+type Transition = (flags: number, index: number, entry: number) => number;
 
 const CHAIN_HEADER: number = 16;
 const FEATURE_ENTRY: number = 12;
@@ -180,7 +180,7 @@ export class MetamorphosisApplier {
                 return;
             }
             const flags: number = this.table.readUInt16BE(entry + 2);
-            index += transition(entry, flags, index);
+            index += transition(flags, index, entry);
             state = this.table.readUInt16BE(entry);
             if (atEnd) {
                 return;
@@ -204,7 +204,7 @@ export class MetamorphosisApplier {
         const machine: StateTable = this.stateTable(body);
         let first: number = 0;
         let last: number = 0;
-        this.walk(machine, 4, (entry: number, flags: number, index: number): number => {
+        this.walk(machine, 4, (flags: number, index: number): number => {
             if ((flags & 0x8000) !== 0) {
                 first = index;
             }
@@ -229,7 +229,7 @@ export class MetamorphosisApplier {
         const machine: StateTable = this.stateTable(body);
         const substitutions: number = body + this.table.readUInt32BE(body + STATE_HEADER);
         let mark: number = -1;
-        this.walk(machine, 8, (entry: number, flags: number, index: number): number => {
+        this.walk(machine, 8, (flags: number, index: number, entry: number): number => {
             const markIndex: number = this.table.readUInt16BE(entry + 4);
             const currentIndex: number = this.table.readUInt16BE(entry + 6);
             if (markIndex !== NO_INDEX && mark >= 0 && mark < this.infos.length) {
@@ -267,7 +267,7 @@ export class MetamorphosisApplier {
         const components: number = body + this.table.readUInt32BE(body + STATE_HEADER + 4);
         const ligatures: number = body + this.table.readUInt32BE(body + STATE_HEADER + 8);
         const stack: Array<number> = [];
-        this.walk(machine, 6, (entry: number, flags: number, index: number): number => {
+        this.walk(machine, 6, (flags: number, index: number, entry: number): number => {
             if ((flags & 0x8000) !== 0 && index < this.infos.length) {
                 if (stack.length >= MAX_COMPONENTS) {
                     stack.shift();
@@ -318,7 +318,7 @@ export class MetamorphosisApplier {
         const machine: StateTable = this.stateTable(body);
         const glyphs: number = body + this.table.readUInt32BE(body + STATE_HEADER);
         let mark: number = -1;
-        this.walk(machine, 8, (entry: number, flags: number, index: number): number => {
+        this.walk(machine, 8, (flags: number, index: number, entry: number): number => {
             const currentInsert: number = this.table.readUInt16BE(entry + 4);
             const markedInsert: number = this.table.readUInt16BE(entry + 6);
             const currentCount: number = (flags & 0x03E0) >> 5;

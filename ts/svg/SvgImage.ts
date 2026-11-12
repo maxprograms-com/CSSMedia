@@ -87,9 +87,9 @@ export class SvgImage implements ImageFormat {
         return root.localName() === SVG_ROOT && root.namespace() === SVG_NAMESPACE;
     }
 
-    replaces(style: ComputedStyle, element: SourceElement): boolean {
+    replaces(source: ElementSource): boolean {
         // SVG 2 §8.3: the image is an outermost svg element; another element of the namespace outside one is not drawn by itself.
-        return element.getLocalName() === SVG_ROOT;
+        return source.element.getLocalName() === SVG_ROOT;
     }
 
     style(element: SourceElement, parent: ComputedStyle | undefined, root: ComputedStyle | undefined, viewport: Size, containers: () => Iterable<QueryContainer>): ComputedStyle {

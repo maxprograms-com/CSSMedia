@@ -100,7 +100,7 @@ export class ColorProfiles implements ProfileColors {
             return table as ReadonlyArray<string>;
         }
         const components: ReadonlyArray<string> | undefined = this.components(name);
-        return usable(components) ? components as ReadonlyArray<string> : Array.from({ length: count }, (value: unknown, index: number) => "Channel" + (index + 1));
+        return usable(components) ? components as ReadonlyArray<string> : Array.from(new Array<number>(count).keys(), (index: number) => "Channel" + (index + 1));
     }
 
     grid(name: string): ReadonlyArray<number> | undefined {

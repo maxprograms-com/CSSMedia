@@ -20,6 +20,8 @@
 
 import { closeSync, openSync, readFileSync, readSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { CssUnits } from "../css/values/CssUnits.js";
+import type { CssValue } from "../css/values/CssValue.js";
 import { RemoteResource } from "../net/RemoteResource.js";
 import type { SourceElement } from "../parse/SourceElement.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
@@ -89,7 +91,7 @@ export interface ImageFormat {
     samples(href: string, data: Buffer): readonly [ImageSamples, ColorSpaceResource] | undefined;
     alpha(href: string, data: Buffer): ImageAlpha | undefined;
     style?(element: SourceElement, parent: ComputedStyle | undefined, root: ComputedStyle | undefined, viewport: Size, containers: () => Iterable<QueryContainer>): ComputedStyle;
-    replaces?(style: ComputedStyle, element: SourceElement): boolean;
+    replaces?(source: ElementSource): boolean;
     viewportUsed?(): boolean;
     unclipped?(): boolean;
     glyph?(href: string, data: Buffer, id: string, size: number, scale: number, host: ComputedStyle, pdf: PdfPage, ctm: readonly [number, number, number, number, number, number],
@@ -111,6 +113,7 @@ export class ImageFormats {
     readonly diagnostics: Array<string> = [];
     readonly document: PdfDocument;
     private readonly syntax: PdfSyntax = new PdfSyntax();
+    private readonly units: CssUnits = new CssUnits();
     private readonly remote: RemoteResource = new RemoteResource();
     private readonly formats: Array<Registration> = [];
     private readonly elementFormats: Map<string, Registration> = new Map<string, Registration>();
@@ -197,7 +200,7 @@ export class ImageFormats {
     elementImage(element: SourceElement, style: ComputedStyle): string | undefined {
         // The image is named by an href of its own, so that it is sized, drawn and painted as any other image.
         const registration: Registration | undefined = this.elementRegistration(element);
-        if (registration === undefined || this.instance(registration).replaces?.(style, element) !== true) {
+        if (registration === undefined || this.instance(registration).replaces?.({ element, style }) !== true) {
             return undefined;
         }
         let href: string | undefined = this.hrefs.get(element);
@@ -266,6 +269,58 @@ export class ImageFormats {
         }
         this.sizes.set(href, size ?? null);
         return size;
+    }
+
+    natural(href: string, values: Readonly<Record<string, CssValue>>, zoom: number, decorative: boolean, available?: number,
+        density?: number): readonly [number | undefined, number | undefined, number | undefined] | undefined {
+        // The natural width, height and aspect ratio of the image as it is shown, in CSS pixels.
+        const image: ImageSize | undefined = this.size(href, available);
+        if (image === undefined) {
+            return undefined;
+        }
+        let width: number | undefined = image.width;
+        let height: number | undefined = image.height;
+        if (image.raster && width !== undefined && height !== undefined) {
+            // CSS Images 4 §4.1: image-resolution gives the density of a raster image, from-image the one that the image
+            // itself tells, and 1dppx is the initial value; §2.4: the resolution of an image-set() option overrides them.
+            const resolution: CssValue | undefined = values["image-resolution"];
+            let dots: number = 1;
+            let fromImage: boolean = false;
+            if (resolution !== undefined) {
+                for (const item of resolution.kind === "list" ? resolution.items : [resolution]) {
+                    fromImage = fromImage || (item.kind === "ident" && item.lower === "from-image");
+                    dots = item.kind === "dimension" ? this.units.toCanonical(item.value, item.unit.toLowerCase()) ?? 1 : dots;
+                }
+            }
+            width /= density ?? (fromImage && image.density !== undefined ? image.density[0] : dots);
+            height /= density ?? (fromImage && image.density !== undefined ? image.density[1] : dots);
+        }
+        // CSS Viewport 1 (Editor's Draft) §4: zoom "multiplies the natural size of all replaced elements".
+        if (zoom !== 1) {
+            width = width === undefined ? undefined : width * zoom;
+            height = height === undefined ? undefined : height * zoom;
+        }
+        // CSS Images 3 §5.1: from-image, the initial value, turns the image as its metadata says, a quarter turn swapping the
+        // two dimensions; an angle or flip "only applies to content images" and decorative ones behave as from-image.
+        const orientation: CssValue | undefined = values["image-orientation"];
+        const angle: CssValue | undefined = orientation === undefined ? undefined : (orientation.kind === "list" ? orientation.items[0] : orientation);
+        const quarter: boolean = angle !== undefined && angle.kind === "dimension" && Math.round(angle.value / 90) % 2 !== 0;
+        const turned: boolean = angle === undefined || (angle.kind === "ident" && angle.lower === "from-image") || (decorative && !(angle.kind === "ident" && angle.lower === "none"))
+            ? image.turned : quarter;
+        // An image that gives no ratio has none, such as a formula, whose size is not a shape to keep; the others keep the ratio
+        // of the sizes above, which the densities of its two axes can change.
+        let ratio: number | undefined = image.ratio !== undefined && width !== undefined && height !== undefined && height > 0 ? width / height : image.ratio;
+        if (turned) {
+            const swapped: number | undefined = width;
+            width = height;
+            height = swapped;
+            ratio = ratio === undefined || ratio === 0 ? undefined : 1 / ratio;
+        }
+        // CSS Images 3 §4.1: an object with "a degenerate natural aspect ratio" "is treated as having no natural aspect ratio".
+        if (ratio !== undefined && (!(ratio > 0) || !Number.isFinite(ratio))) {
+            ratio = undefined;
+        }
+        return [width, height, ratio];
     }
 
     unclipped(href: string): boolean {

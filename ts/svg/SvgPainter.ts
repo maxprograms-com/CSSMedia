@@ -31,7 +31,7 @@ import { PdfColorSpaces } from "../writer/PdfColorSpaces.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { ImageResource, PageRectangle } from "../writer/PdfPage.js";
 import { PdfPage } from "../writer/PdfPage.js";
-import type { ColorStop, ShadingRepeat, ShadingResource } from "../writer/PdfShadings.js";
+import type { ColorStop, PdfShadings, ShadingRepeat, ShadingResource } from "../writer/PdfShadings.js";
 import { PdfSyntax } from "../writer/PdfSyntax.js";
 import type { Box, Facet, Homography, Matrix, Matrix4, SvgPath } from "./SvgGeometry.js";
 import { SvgGeometry } from "./SvgGeometry.js";
@@ -53,8 +53,6 @@ const BLEND_MODES: Readonly<Record<string, string>> = {
     saturation: "Saturation", color: "Color", luminosity: "Luminosity"
 };
 const REFERENCE_KEYWORDS: Readonly<Record<string, number>> = { left: 0, top: 0, center: 0.5, right: 1, bottom: 1 };
-const SRGB_WHITE: ReadonlyArray<number> = [0.9505, 1, 1.089];
-const SRGB_MATRIX: ReadonlyArray<number> = [0.4124, 0.2126, 0.0193, 0.3576, 0.7152, 0.1192, 0.1805, 0.0722, 0.9505];
 const FLAT_TRANSFORMS: ReadonlySet<string> = new Set<string>(["clipPath", "linearGradient", "radialGradient", "pattern"]);
 const FLATNESS: number = 0.05;
 const MITER_LIMIT: number = 4;
@@ -62,9 +60,6 @@ const FINEST_PIXEL: number = 96 / 600;
 const LARGEST_IMAGE: number = 4096 * 4096;
 const MAX_TAPS: number = 16;
 const NEAREST_RENDERING: ReadonlySet<string> = new Set<string>(["crisp-edges", "optimizespeed"]);
-const SPREADS: Readonly<Record<string, string>> = {
-    pad: "dup 0 lt { pop 0 } if dup 1 gt { pop 1 } if", repeat: "dup floor sub", reflect: "dup 2 div floor 2 mul sub dup 1 gt { 2 exch sub } if"
-};
 
 type Plane = readonly [() => void, Box, Matrix4];
 
@@ -101,7 +96,6 @@ export class SvgPainter {
     private readonly geometry: SvgGeometry = new SvgGeometry();
     private readonly text: SvgText;
     private readonly active: Set<XMLElement> = new Set<XMLElement>();
-    private linearSpace?: ColorSpaceResource;
 
     constructor(document: PdfDocument, formats: ImageFormats, colors: ColorOutput, images: SvgImage) {
         this.document = document;
@@ -766,7 +760,7 @@ export class SvgPainter {
             this.pdf.content.strokeColor([1]);
             draw();
         });
-        this.pdf.content.graphicsState(this.pdf.useMask(this.document.finishForm(form, area, SvgGeometry.IDENTITY).object, true));
+        this.document.applyMask(this.pdf, form, area, true);
         tiling();
         return true;
     }
@@ -1336,9 +1330,9 @@ export class SvgPainter {
         const spread: string = this.inherited(chain, "spreadMethod")?.[0] ?? "pad";
         // SVG 2 §13.9: linearRGB is sRGB without its transfer function, a CalRGB space with a gamma of one.
         const linearRgb: boolean = this.keyword(styles.placed(element)[1].values["color-interpolation"]) === "linearrgb";
-        const space: ColorSpaceResource = linearRgb ? this.linearSpace = this.linearSpace ?? this.document.colors.calibrated([1, 1, 1], SRGB_WHITE, SRGB_MATRIX) : PdfColorSpaces.RGB;
-        const colors: Array<ColorStop> = linearRgb ? stops.map((stop: ColorStop): ColorStop => ({ offset: stop.offset, components: stop.components.map((channel: number) =>
-            channel <= 0.04045 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4)) })) : stops;
+        const space: ColorSpaceResource = linearRgb ? this.document.colors.linearRgb() : PdfColorSpaces.RGB;
+        const colors: Array<ColorStop> = linearRgb ? stops.map((stop: ColorStop): ColorStop => ({ offset: stop.offset,
+            components: this.colors.linearized([stop.components[0], stop.components[1], stop.components[2]]) })) : stops;
         if (this.projection !== undefined || (cone && spread !== "pad")) {
             return this.projectedGradient(linear, coordinates, local, spread, space, colors, alphas, opacity, stroking);
         }
@@ -1348,12 +1342,7 @@ export class SvgPainter {
         }
         this.usePattern(this.pdf.usePattern(this.document.shadings.pattern(this.shade(linear, space, coordinates, colors, repeat), this.geometry.concat(this.ctm, local))), stroking);
         if (alphas.some((stop: ColorStop) => stop.components[0] < 1)) {
-            // PDF shadings have no alpha, so the alpha of the stops is a luminosity mask shaded the same way in gray.
-            const area: Box = this.localArea() ?? this.area;
-            const form: PdfPage = this.document.startForm(area[2], area[3], false);
-            form.content.transform(local[0], local[1], local[2], local[3], local[4], local[5]);
-            form.content.shade(form.useShading(this.shade(linear, PdfColorSpaces.GRAY, coordinates, alphas, repeat)));
-            this.pdf.content.graphicsState(this.pdf.useMask(this.document.finishForm(form, area, SvgGeometry.IDENTITY).object, true));
+            this.document.shadedMask(this.pdf, this.localArea() ?? this.area, this.shade(linear, PdfColorSpaces.GRAY, coordinates, alphas, repeat), local);
         }
         this.alpha(opacity, stroking);
         return true;
@@ -1383,60 +1372,27 @@ export class SvgPainter {
         let cone: boolean = false;
         if (linear) {
             const [x1, y1, x2, y2]: ReadonlyArray<number> = coordinates;
-            position += n(y1) + " sub " + n(y2 - y1) + " mul exch " + n(x1) + " sub " + n(x2 - x1) + " mul add " + n((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1)) + " div 1";
+            position += this.document.shadings.along(x1, y1, x2 - x1, y2 - y1) + " 1";
         } else {
-            // |P - F - t (C - F)| = fr + t (r - fr) for the focal circle F, fr and the end circle C, r: the larger t whose radius
-            // is not negative.
             const [fx, fy, fr, cx, cy, r]: ReadonlyArray<number> = coordinates;
-            const dr: number = r - fr;
-            const a: number = (cx - fx) * (cx - fx) + (cy - fy) * (cy - fy) - dr * dr;
-            const valid: string = n(dr) + " mul " + n(fr) + " add 0 ge";
+            const circles: string | undefined = this.document.shadings.betweenCircles([fx, fy, fr, cx, cy, r]);
+            if (circles === undefined) {
+                return false;
+            }
             cone = Math.hypot(cx - fx, cy - fy) + fr > r;
-            position += n(fy) + " sub exch " + n(fx) + " sub 2 copy " + n(cx - fx) + " mul exch " + n(cy - fy) + " mul add " + n(fr * dr) + " add 3 1 roll dup mul exch dup mul add "
-                + n(fr * fr) + " sub ";
-            position += Math.abs(a) < 1e-12 ? "exch 2 mul dup 0 eq { pop " + least + " } if div dup " + valid + " { 1 } { 0 } ifelse"
-                : "1 index dup mul exch " + n(a) + " mul sub dup 0 lt { pop pop 0 0 } { sqrt 2 copy add " + n(a) + " div 3 1 roll sub " + n(a) + " div " + (a < 0 ? "exch " : "")
-                + "1 index " + valid + " { pop 1 } { dup " + valid + " { exch pop 1 } { pop pop 0 0 } ifelse } ifelse } ifelse";
+            position += circles + " { 1 } { 0 } ifelse";
         }
-        const spreading: string = SPREADS[spread] ?? SPREADS["pad"];
-        this.usePattern(this.pdf.usePattern(this.document.shadings.pattern(this.calculated(space, position + " pop " + spreading + " " + this.stopCode(colors),
-            colors[0].components.length, area), this.ctm)), stroking);
+        const repeat: ShadingRepeat | undefined = spread === "pad" ? undefined : { from: 0, to: 1, reflect: spread === "reflect" };
+        const domain: readonly [number, number, number, number] = [area[0], area[0] + area[2], area[1], area[1] + area[3]];
+        const shadings: PdfShadings = this.document.shadings;
+        this.usePattern(this.pdf.usePattern(shadings.pattern(shadings.calculated(space, domain, position + " pop " + shadings.colorLine(colors, undefined, repeat)), this.ctm)),
+            stroking);
         if (cone || alphas.some((stop: ColorStop) => stop.components[0] < 1)) {
-            // PDF shadings have no alpha, so the alpha of the stops, nothing outside the cone, is a luminosity mask shaded in gray.
-            const form: PdfPage = this.document.startForm(area[2], area[3], false);
-            form.content.shade(form.useShading(this.calculated(PdfColorSpaces.GRAY, position + " exch " + spreading + " " + this.stopCode(alphas) + " mul", 1, area)));
-            this.pdf.content.graphicsState(this.pdf.useMask(this.document.finishForm(form, area, SvgGeometry.IDENTITY).object, true));
+            // Outside the cone of a radial gradient nothing is painted, which the mask says with the alphas.
+            this.document.shadedMask(this.pdf, area, shadings.calculated(PdfColorSpaces.GRAY, domain, position + " exch " + shadings.colorLine(alphas, undefined, repeat) + " mul"));
         }
         this.alpha(opacity, stroking);
         return true;
-    }
-
-    private calculated(space: ColorSpaceResource, code: string, outputs: number, area: Box): ShadingResource {
-        const domain: string = this.syntax.numbers([area[0], area[0] + area[2], area[1], area[1] + area[3]]);
-        const range: string = this.syntax.numbers(Array.from({ length: outputs * 2 }, (item: unknown, index: number) => index % 2));
-        const program: number = this.document.file.addStream("/FunctionType 4 /Domain [" + domain + "] /Range [" + range + "]", Buffer.from("{ " + code + " }", "latin1"), true);
-        const object: number = this.document.file.add("<< /ShadingType 1 /ColorSpace " + space.value + " /Domain [" + domain + "] /Function " + this.syntax.reference(program) + " >>");
-        return { key: "Sh" + object, object };
-    }
-
-    private stopCode(stops: ReadonlyArray<ColorStop>): string {
-        // SVG 2 §14.2.4: of two stops at one offset, the later takes over there.
-        const n: (value: number) => string = (value: number): string => this.syntax.number(value);
-        const components: (stop: ColorStop) => string = (stop: ColorStop): string => stop.components.map(n).join(" ");
-        let code: string = "pop " + components(stops[stops.length - 1]);
-        for (let index: number = stops.length - 2; index >= 0; index--) {
-            const from: ColorStop = stops[index];
-            const to: ColorStop = stops[index + 1];
-            if (to.offset <= from.offset) {
-                continue;
-            }
-            let segment: string = n(from.offset) + " sub " + n(to.offset - from.offset) + " div";
-            from.components.forEach((channel: number, channelIndex: number) => {
-                segment += " dup " + n(to.components[channelIndex] - channel) + " mul " + n(channel) + " add exch";
-            });
-            code = "dup " + n(to.offset) + " lt { " + segment + " pop } { " + code + " } ifelse";
-        }
-        return "dup " + n(stops[0].offset) + " lt { pop " + components(stops[0]) + " } { " + code + " } ifelse";
     }
 
     private repetition(linear: boolean, coordinates: ReadonlyArray<number>, local: Matrix, reflect: boolean): ShadingRepeat | undefined {

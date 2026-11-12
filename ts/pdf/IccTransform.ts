@@ -102,7 +102,7 @@ export class IccTransform {
             const inputs: number = this.view.getUint8(tag + 8);
             if (this.signature(tag) === "mAB ") {
                 const clut: number = this.view.getUint32(tag + 24);
-                return clut === 0 ? undefined : Array.from({ length: inputs }, (value: unknown, channel: number) => this.view.getUint8(tag + clut + channel));
+                return clut === 0 ? undefined : Array.from(new Array<number>(inputs).keys(), (channel: number) => this.view.getUint8(tag + clut + channel));
             }
             return new Array<number>(inputs).fill(this.view.getUint8(tag + 10));
         } catch {
@@ -275,7 +275,7 @@ export class IccTransform {
     private gridLookup(offset: number, values: ReadonlyArray<number>, outputs: number): Array<number> {
         // ICC.1:2022 §10.12.3: the grid points of each dimension in the first 16 bytes, the precision in bytes at 16,
         // and the data at 20.
-        const grid: Array<number> = values.map((value: number, channel: number) => this.view.getUint8(offset + channel));
+        const grid: Array<number> = Array.from(values.keys(), (channel: number) => this.view.getUint8(offset + channel));
         const bytes: number = this.view.getUint8(offset + 16);
         return this.interpolated(grid, values, outputs, (index: number) =>
             bytes === 2 ? this.view.getUint16(offset + 20 + index * 2) / 65535 : this.view.getUint8(offset + 20 + index) / 255);

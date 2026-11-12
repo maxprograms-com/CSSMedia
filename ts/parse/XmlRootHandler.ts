@@ -18,7 +18,7 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
-import type { Catalog, ContentHandler, Grammar, XMLAttribute } from "typesxml";
+import type { ContentHandler, Grammar, XMLAttribute } from "typesxml";
 
 export class XmlRootHandler implements ContentHandler {
 
@@ -41,7 +41,7 @@ export class XmlRootHandler implements ContentHandler {
         delete this.attributes;
     }
 
-    setCatalog(catalog: Catalog): void {
+    setCatalog(): void {
         // do nothing
     }
 
@@ -53,7 +53,7 @@ export class XmlRootHandler implements ContentHandler {
         // do nothing
     }
 
-    xmlDeclaration(version: string, encoding: string, standalone: string | undefined): void {
+    xmlDeclaration(): void {
         // do nothing
     }
 
@@ -63,27 +63,27 @@ export class XmlRootHandler implements ContentHandler {
         throw new Error("The document element " + name + " has been read");
     }
 
-    endElement(name: string): void {
+    endElement(): void {
         // do nothing
     }
 
-    internalSubset(declaration: string): void {
+    internalSubset(): void {
         // do nothing
     }
 
-    characters(text: string): void {
+    characters(): void {
         // do nothing
     }
 
-    ignorableWhitespace(text: string): void {
+    ignorableWhitespace(): void {
         // do nothing
     }
 
-    comment(text: string): void {
+    comment(): void {
         // do nothing
     }
 
-    processingInstruction(target: string, data: string): void {
+    processingInstruction(): void {
         // do nothing
     }
 
@@ -95,7 +95,7 @@ export class XmlRootHandler implements ContentHandler {
         // do nothing
     }
 
-    startDTD(name: string, publicId: string, systemId: string): void {
+    startDTD(): void {
         // do nothing
     }
 
@@ -103,7 +103,7 @@ export class XmlRootHandler implements ContentHandler {
         // do nothing
     }
 
-    skippedEntity(name: string): void {
+    skippedEntity(): void {
         // do nothing
     }
 
