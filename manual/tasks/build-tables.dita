@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="build-tables">
+    <title>Turn elements into a table</title>
+    <shortdesc>You give each element of your table a display value, and then you add a caption, header rows, footer rows and descriptions of the columns. You also choose how the content of the cells is aligned.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="map-the-elements">
+                <cmd>Give the elements a display value</cmd>
+                <info>
+                    <p>Write the table in your XML with elements of your choice. These are placeholders: use the names of your own document.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;table>
+    &lt;caption>Prices&lt;/caption>
+    &lt;header>
+        &lt;row>&lt;cell>Item&lt;/cell>&lt;cell>Price&lt;/cell>&lt;/row>
+    &lt;/header>
+    &lt;body>
+        &lt;row>&lt;cell>Paper&lt;/cell>&lt;cell>4.00&lt;/cell>&lt;/row>
+        &lt;row>&lt;cell>Ink&lt;/cell>&lt;cell>12.50&lt;/cell>&lt;/row>
+    &lt;/body>
+&lt;/table>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Then write the rules that say what each element is. Without them, the elements are inline and their text runs together:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">table   { display: table; }
+caption { display: table-caption; }
+header  { display: table-header-group; }
+body    { display: table-row-group; }
+row     { display: table-row; }
+cell    { display: table-cell; padding: 2pt 6pt; }
+</pre>
+                </stepxmp>
+            </step>
+            <step id="header-and-footer">
+                <cmd>Put the header and the footer rows in their groups</cmd>
+                <info>
+                    <p>The rows of a <codeph>table-header-group</codeph> are always the first rows of the table, and the rows of a <codeph>table-footer-group</codeph> are always the last, wherever the groups are in your XML. If your XML has the footer before the body, the PDF still shows it at the end. Only the first header group and the first footer group have this role. A second one is an ordinary row group.</p>
+                    <p>To repeat the header or the footer on every page, see <xref href="tables-and-pages.dita#tables-and-pages">Break tables across pages</xref>.</p>
+                </info>
+            </step>
+            <step id="add-a-caption">
+                <cmd>Add a caption</cmd>
+                <info>
+                    <p>An element with <codeph>display: table-caption</codeph> is the caption. It is above the table, wherever you write it in the table. Use <codeph>caption-side: bottom</codeph> to put it below. The caption is as wide as the table and its text wraps to that width, so give the table a width, as <xref href="size-tables.dita#size-tables">Size a table and its columns</xref> explains, if a long caption must not wrap in a narrow table. The text of the caption uses the properties of the text, such as <codeph>text-align</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">caption {
+    display: table-caption;
+    caption-side: bottom;
+    text-align: center;
+    font-style: italic;
+}
+</pre>
+                </stepxmp>
+                <!-- TODO: caption-side: inline-start and inline-end place the caption above the table -->
+            </step>
+            <step id="describe-the-columns">
+                <cmd>Describe the columns</cmd>
+                <info>
+                    <p>Elements with <codeph>display: table-column</codeph> stand for the columns, from left to right, in the order of your XML. They do not have content, and what is inside them is not drawn. Use them to give a column a width, a background or a border, so that you do not need to repeat it in every cell:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;table>
+    &lt;col name="item"/>
+    &lt;col name="price"/>
+    &lt;body>
+        &lt;row>&lt;cell>Paper&lt;/cell>&lt;cell>4.00&lt;/cell>&lt;/row>
+    &lt;/body>
+&lt;/table>
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">col { display: table-column; }
+col[name="item"]  { width: 120pt; }
+col[name="price"] { background-color: #f5f5f5; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>An element with <codeph>display: table-column-group</codeph> that holds <codeph>table-column</codeph> elements groups them, for example to draw a border around several columns. A column group without columns inside stands for one column.</p>
+                </info>
+            </step>
+            <step id="align-the-cells">
+                <cmd>Align the content of the cells</cmd>
+                <info>
+                    <p>The properties of boxes work on cells: <codeph>padding</codeph>, <codeph>border</codeph>, <codeph>background-color</codeph> and <codeph>text-align</codeph>. When the cells of a row have different heights, <codeph>vertical-align</codeph> decides where the content of a cell goes in the height of the row:</p>
+                    <ul>
+                        <li><codeph>baseline</codeph> is the initial value. The first lines of the cells that use it are on one line.</li>
+                        <li><codeph>top</codeph> puts the content at the top of the cell.</li>
+                        <li><codeph>middle</codeph> centers the content in the height of the row.</li>
+                        <li><codeph>bottom</codeph> puts the content at the bottom of the cell.</li>
+                    </ul>
+                    <fig id="table-alignment-figure">
+                        <title>The values of vertical-align</title>
+                        <image href="../images/table-alignment.svg" placement="break" scale="125">
+                            <alt>Four rows of two cells. The first cell has three lines of text. The second cell has one line. With baseline and top, the line is at the top, level with the first line of the other cell. With middle it is in the middle of the row, and with bottom it is at the bottom.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">cell {
+    display: table-cell;
+    vertical-align: top;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="imitate-a-column-span">
+                <cmd>Imitate a cell that covers two columns</cmd>
+                <info>
+                    <p>CSS gives a cell no span, but when your XML marks a cell that covers two columns and leaves out the cell of the second column, you can keep the grid in line. In this XML the first cell has an attribute, <codeph>span</codeph>, and the row has no cell for the second column:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;row>
+    &lt;cell span="2">Spans two columns&lt;/cell>
+    &lt;cell>Third&lt;/cell>
+&lt;/row>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The cell that follows the marked one becomes two cells: an empty cell for the second column, and a cell with its own content for the third. The rule <codeph>display: contents</codeph> removes the box of the element, and the pseudo-elements <codeph>::before</codeph> and <codeph>::after</codeph> become the two cells. The value <codeph>contents</codeph> of <codeph>content</codeph> puts the content of the element in the second one. The style <codeph>hidden</codeph> on the border between the marked cell and the empty one makes them look like one cell, in a table with <codeph>border-collapse: collapse</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">cell[span] {
+    border-right-style: hidden;
+}
+
+cell[span] + cell {
+    display: contents;
+    content: "";
+}
+
+cell[span] + cell::before,
+cell[span] + cell::after {
+    display: table-cell;
+    border: 1pt solid;
+    padding: 2pt 6pt;
+}
+
+cell[span] + cell::before {
+    content: "";
+}
+
+cell[span] + cell::after {
+    content: contents;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The text of the marked cell stays at the start of its cell, over the width of both columns. Give the pseudo-elements the same padding, borders and background as the cells of your table.</p>
+                    <fig id="table-span-figure">
+                        <title>A cell that covers two columns</title>
+                        <image href="../images/table-span.svg" placement="break" scale="125">
+                            <alt>Two tables. The first shows the XML: a first row with a wide cell that covers two columns and a normal cell, and a second row with three cells. The second shows what the stylesheet makes: the wide cell is a cell and an empty cell with a hidden border between them.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <!-- TODO: cells that cover several rows cannot be imitated; a real span needs an extension of the engine -->
+            </step>
+        </steps>
+    </taskbody>
+</task>

@@ -9,6 +9,7 @@
         <section conkeyref="ref-dimensions/preferred-sizes"/>
         <section conkeyref="ref-dimensions/minimum-and-maximum-sizes"/>
         <section conkeyref="ref-dimensions/aspect-ratio-and-intrinsic-sizes"/>
+        <section conkeyref="ref-dimensions/scaling"/>
         <section conkeyref="ref-box-model/box-borders"/>
         <section conkeyref="ref-box-model/box-radii"/>
         <section conkeyref="ref-backgrounds/background-layers"/>

@@ -5,6 +5,7 @@
     <shortdesc>This reference lists the properties, at-rules and descriptors that CSSMedia uses to select, load and shape fonts.</shortdesc>
     <refbody>
         <section conkeyref="ref-fonts/font-selection"/>
+        <section conkeyref="ref-fonts/text-layout"/>
         <section conkeyref="ref-fonts/font-features"/>
         <section conkeyref="ref-fonts/font-variable"/>
         <section conkeyref="ref-fonts/font-face-rule"/>

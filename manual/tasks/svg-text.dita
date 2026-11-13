@@ -50,7 +50,7 @@
                     <p>With the property <codeph>shape-inside</codeph> the text fills a shape. Each line is as long as the shape is wide at that height, and the text goes around the holes. The value is a basic shape, such as <codeph>circle()</codeph>, <codeph>ellipse()</codeph>, <codeph>polygon()</codeph> or <codeph>inset()</codeph>, a reference to a shape of the drawing, such as <codeph>url(#id)</codeph>, or the URL of an image, whose opaque pixels are the area. In a shape, <codeph>text-align</codeph> aligns the lines, and <codeph>text-align: justify</codeph> makes them fill the width.</p>
                     <fig id="svg-text-samples">
                         <title>A line, text on a path and text in a shape</title>
-                        <image href="../images/svg-text.svg" placement="break" scale="75">
+                        <image href="../images/svg-text.svg" placement="break" scale="125">
                             <alt>A line of text with a bold red word and a small raised blue word. Below it, blue text that follows an arch. On the right, a circle with a few lines of text inside it, which are shorter near the top and the bottom.</alt>
                         </image>
                     </fig>

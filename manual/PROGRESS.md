@@ -621,12 +621,12 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### CSS Fragmentation 4 (css-break-4)
 
 - [ ] box-decoration-break
-- [ ] break-after
-- [ ] break-before
-- [ ] break-inside
+- [x] break-after
+- [x] break-before
+- [x] break-inside
 - [x] margin-break
-- [ ] orphans
-- [ ] widows
+- [x] orphans
+- [x] widows
 
 ### CSS Positioned Layout 3 (css-position-3)
 
@@ -721,7 +721,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] text-box
 - [ ] text-box-edge
 - [ ] text-box-trim
-- [ ] vertical-align
+- [~] vertical-align
 
 ### CSS Text 4 (css-text-4)
 
@@ -735,9 +735,9 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] letter-spacing
 - [ ] line-break
 - [ ] line-padding
-- [ ] overflow-wrap
+- [x] overflow-wrap
 - [ ] tab-size
-- [ ] text-align
+- [x] text-align
 - [ ] text-align-all
 - [ ] text-align-last
 - [ ] text-autospace
@@ -746,11 +746,11 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] text-justify
 - [ ] text-spacing
 - [ ] text-spacing-trim
-- [ ] text-transform
+- [x] text-transform
 - [ ] text-wrap
 - [ ] text-wrap-mode
 - [ ] text-wrap-style
-- [ ] white-space
+- [x] white-space
 - [ ] white-space-collapse
 - [ ] white-space-trim
 - [ ] word-break
@@ -762,7 +762,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Text Decoration 4 (css-text-decor-4)
 
-- [ ] text-decoration
+- [x] text-decoration
 - [ ] text-decoration-color
 - [ ] text-decoration-line
 - [ ] text-decoration-skip
@@ -867,7 +867,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Color 4 (css-color-4)
 
-- [ ] color
+- [x] color
 - [~] opacity
 
 ### CSS Color Adjustment 1 (css-color-adjust-1)
@@ -1035,11 +1035,11 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Tables 3 (css-tables-3)
 
-- [ ] border-collapse
-- [ ] border-spacing
-- [ ] caption-side
-- [ ] empty-cells
-- [ ] table-layout
+- [x] border-collapse
+- [x] border-spacing
+- [~] caption-side
+- [~] empty-cells
+- [x] table-layout
 
 ### CSS Multi-column 2 (css-multicol-2)
 
@@ -1286,7 +1286,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Viewport 1 (css-viewport-1)
 
-- [ ] zoom
+- [x] zoom
 
 ### CSS Will Change 1 (css-will-change-1)
 

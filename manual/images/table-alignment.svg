@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="150" viewBox="0 0 460 150" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <g fill="#222222" text-anchor="middle" font-weight="bold">
+        <text x="60" y="16">baseline</text>
+        <text x="170" y="16">top</text>
+        <text x="280" y="16">middle</text>
+        <text x="390" y="16">bottom</text>
+    </g>
+    <g stroke="#1d4f7a" fill="#f1f6fb">
+        <rect x="10" y="28" width="50" height="70"/>
+        <rect x="60" y="28" width="50" height="70"/>
+        <rect x="120" y="28" width="50" height="70"/>
+        <rect x="170" y="28" width="50" height="70"/>
+        <rect x="230" y="28" width="50" height="70"/>
+        <rect x="280" y="28" width="50" height="70"/>
+        <rect x="340" y="28" width="50" height="70"/>
+        <rect x="390" y="28" width="50" height="70"/>
+    </g>
+    <g fill="#222222" font-size="10">
+        <text x="16" y="44">Three</text>
+        <text x="16" y="56">lines</text>
+        <text x="16" y="68">of text</text>
+        <text x="66" y="44">One</text>
+        <text x="126" y="44">Three</text>
+        <text x="126" y="56">lines</text>
+        <text x="126" y="68">of text</text>
+        <text x="176" y="44">One</text>
+        <text x="236" y="44">Three</text>
+        <text x="236" y="56">lines</text>
+        <text x="236" y="68">of text</text>
+        <text x="286" y="66">One</text>
+        <text x="346" y="44">Three</text>
+        <text x="346" y="56">lines</text>
+        <text x="346" y="68">of text</text>
+        <text x="396" y="90">One</text>
+    </g>
+    <text x="230" y="122" font-size="10" fill="#222222" text-anchor="middle">In each table the first cell has three lines, and the title is the vertical-align of the second cell.</text>
+    <text x="230" y="136" font-size="10" fill="#222222" text-anchor="middle">With baseline and top, the first lines of both cells are level.</text>
+</svg>

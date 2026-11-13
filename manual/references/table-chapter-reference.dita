@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="table-chapter-reference">
+    <title>Tables reference</title>
+    <shortdesc>This reference lists the display values that make a table and the properties that style it. The sizes of boxes, the borders and the backgrounds are in the <xref href="box-chapter-reference.dita#box-chapter-reference">boxes reference</xref>, and the breaks of pages are in the <xref href="page-setup-chapter-reference.dita#page-setup-chapter-reference">page setup reference</xref>.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-tables/table-display-values"/>
+        <section conkeyref="ref-tables/table-properties"/>
+    </refbody>
+</reference>

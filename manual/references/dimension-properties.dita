@@ -136,6 +136,23 @@
                 </tgroup>
             </table>
         </section>
+        <section id="scaling">
+            <title>Scaling</title>
+            <table id="scaling__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>zoom</codeph></entry>
+                            <entry>Scales all the lengths of an element, such as its font size, margins and width, by a factor. <codeph>2</codeph> and <codeph>200%</codeph> double them. The property is not inherited.</entry>
+                            <entry>A number or a percentage of 0 or more</entry>
+                            <entry><codeph>1</codeph></entry>
+                            <entry><xref href="https://drafts.csswg.org/css-viewport/#zoom-property" scope="external" format="html">CSS Viewport 1 §4</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
         <section id="aspect-ratio-and-intrinsic-sizes">
             <title>Aspect ratio and intrinsic sizes</title>
             <table id="aspect-ratio-and-intrinsic-sizes__table">

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="190" viewBox="0 0 440 190" font-family="Helvetica, Arial, sans-serif" font-size="10">
+    <g fill="#ffffff" stroke="#555555">
+        <rect x="20" y="10" width="170" height="140"/>
+        <rect x="250" y="10" width="170" height="140"/>
+    </g>
+    <g stroke="#1d4f7a">
+        <rect x="32" y="22" width="146" height="18" fill="#cfe3f5"/>
+        <rect x="32" y="40" width="146" height="18" fill="#f1f6fb"/>
+        <rect x="32" y="58" width="146" height="18" fill="#f1f6fb"/>
+        <rect x="32" y="76" width="146" height="18" fill="#f1f6fb"/>
+        <rect x="32" y="94" width="146" height="18" fill="#f1f6fb"/>
+        <rect x="32" y="112" width="146" height="26" fill="#f1f6fb" stroke-dasharray="4 3"/>
+        <rect x="262" y="22" width="146" height="18" fill="#cfe3f5"/>
+        <rect x="262" y="40" width="146" height="14" fill="#f1f6fb" stroke-dasharray="4 3"/>
+        <rect x="262" y="54" width="146" height="18" fill="#f1f6fb"/>
+        <rect x="262" y="72" width="146" height="18" fill="#f1f6fb"/>
+    </g>
+    <g fill="#222222">
+        <text x="40" y="35" font-weight="bold">Header</text>
+        <text x="40" y="53">Row 1</text>
+        <text x="40" y="71">Row 2</text>
+        <text x="40" y="89">Row 3</text>
+        <text x="40" y="107">Row 4</text>
+        <text x="40" y="129">Row 5, first lines</text>
+        <text x="270" y="35" font-weight="bold">Header</text>
+        <text x="270" y="50">Row 5, last lines</text>
+        <text x="270" y="68">Row 6</text>
+        <text x="270" y="86">Row 7</text>
+    </g>
+    <g fill="#222222" text-anchor="middle">
+        <text x="105" y="166">Page 1</text>
+        <text x="335" y="166">Page 2</text>
+        <text x="220" y="182" font-size="10">The header group repeats on each page. A tall row breaks, and its cells continue.</text>
+    </g>
+</svg>

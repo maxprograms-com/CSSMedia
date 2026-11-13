@@ -49,7 +49,7 @@
                     </table>
                     <fig id="shape-samples">
                         <title>Shapes and paths</title>
-                        <image href="../images/svg-shapes.svg" placement="break" scale="75">
+                        <image href="../images/svg-shapes.svg" placement="break" scale="125">
                             <alt>A rounded rectangle, a circle, an ellipse and a triangle in a row, with a wavy blue curve and a short brown line below them.</alt>
                         </image>
                     </fig>

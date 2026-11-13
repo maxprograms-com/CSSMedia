@@ -112,6 +112,58 @@
                 </tgroup>
             </table>
         </section>
+        <section id="text-layout">
+            <title>Text color, alignment and lines</title>
+            <table id="text-layout__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>color</codeph></entry>
+                            <entry>Sets the color of the text. Borders and other properties that use <codeph>currentcolor</codeph> take it too, and the property is inherited.</entry>
+                            <entry>A color: a keyword, <codeph>#rgb</codeph> or <codeph>#rrggbb</codeph>, <codeph>rgb()</codeph>, <codeph>hsl()</codeph> or another color function, <codeph>currentcolor</codeph> or <codeph>transparent</codeph></entry>
+                            <entry><codeph>CanvasText</codeph>, black</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-color-4/#the-color-property" scope="external" format="html">CSS Color 4 §3.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>text-align</codeph></entry>
+                            <entry>Aligns the lines of a block. <codeph>justify</codeph> stretches every line but the last, and <codeph>justify-all</codeph> stretches the last one too. <codeph>start</codeph> and <codeph>end</codeph> follow the direction of the text.</entry>
+                            <entry><codeph>start</codeph>, <codeph>end</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, <codeph>center</codeph>, <codeph>justify</codeph>, <codeph>justify-all</codeph> or <codeph>match-parent</codeph></entry>
+                            <entry><codeph>start</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#text-align-property" scope="external" format="html">CSS Text 4 §7.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>text-transform</codeph></entry>
+                            <entry>Changes the case of the text when it is drawn, without changing your XML. <codeph>full-width</codeph> replaces the letters and digits by their full-width forms, which CJK text uses.</entry>
+                            <entry><codeph>none</codeph>, or <codeph>capitalize</codeph>, <codeph>uppercase</codeph> or <codeph>lowercase</codeph>, with <codeph>full-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#text-transform-property" scope="external" format="html">CSS Text 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>text-decoration</codeph></entry>
+                            <entry>Draws lines on the text. It is a shorthand for <codeph>text-decoration-line</codeph>, <codeph>text-decoration-style</codeph>, <codeph>text-decoration-color</codeph> and <codeph>text-decoration-thickness</codeph>. The lines run across the text of the children too.</entry>
+                            <entry>A line: <codeph>none</codeph> or one or more of <codeph>underline</codeph>, <codeph>overline</codeph> and <codeph>line-through</codeph>; a style: <codeph>solid</codeph>, <codeph>double</codeph>, <codeph>dotted</codeph>, <codeph>dashed</codeph> or <codeph>wavy</codeph>; a color; a thickness</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#text-decoration-property" scope="external" format="html">CSS Text Decoration 4 §2.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>white-space</codeph></entry>
+                            <entry>Chooses whether spaces and line feeds collapse and whether lines wrap. It is a shorthand for <codeph>white-space-collapse</codeph> and <codeph>text-wrap-mode</codeph>. <codeph>pre</codeph> keeps spaces and line feeds and does not wrap, <codeph>pre-wrap</codeph> keeps them and wraps, <codeph>pre-line</codeph> keeps line feeds only, and <codeph>nowrap</codeph> collapses spaces and does not wrap. <codeph>break-spaces</codeph> keeps spaces and lets a line break after each.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>pre</codeph>, <codeph>nowrap</codeph>, <codeph>pre-wrap</codeph>, <codeph>pre-line</codeph> or <codeph>break-spaces</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#white-space-property" scope="external" format="html">CSS Text 4 §3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>overflow-wrap</codeph></entry>
+                            <entry>Lets a word that is longer than its line break at any letter, so that it does not overflow the box.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>break-word</codeph> or <codeph>anywhere</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#overflow-wrap-property" scope="external" format="html">CSS Text 4 §6.4</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
         <section id="font-features">
             <title>Font variants and features</title>
             <table id="font-features__table">

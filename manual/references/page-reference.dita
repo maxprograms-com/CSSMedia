@@ -310,6 +310,51 @@
                 </tgroup>
             </table>
         </section>
+        <section id="page-breaks">
+            <title>Breaks</title>
+            <table id="page-breaks__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>break-before</codeph></entry>
+                            <entry>Forces or avoids a break before a block, a row or a row group. <codeph>page</codeph>, <codeph>always</codeph> and <codeph>all</codeph> start a new page. <codeph>left</codeph> and <codeph>verso</codeph> start the next left page, and <codeph>right</codeph> and <codeph>recto</codeph> the next right page, with a blank page when needed. <codeph>avoid</codeph> and <codeph>avoid-page</codeph> move the break to an earlier place. <codeph>column</codeph> breaks only in columns.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>avoid</codeph>, <codeph>avoid-page</codeph>, <codeph>page</codeph>, <codeph>always</codeph>, <codeph>all</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, <codeph>recto</codeph>, <codeph>verso</codeph>, <codeph>column</codeph> or <codeph>avoid-column</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-break-4/#break-between" scope="external" format="html">CSS Fragmentation 4 §3.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>break-after</codeph></entry>
+                            <entry>Forces or avoids a break after a block, a row or a row group, with the same values as <codeph>break-before</codeph>.</entry>
+                            <entry>As <codeph>break-before</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-break-4/#break-between" scope="external" format="html">CSS Fragmentation 4 §3.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>break-inside</codeph></entry>
+                            <entry>Avoids a break inside a box, so that it stays on one page when it fits on one. A table header or footer group with <codeph>avoid</codeph> repeats on each page of the table.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>avoid</codeph>, <codeph>avoid-page</codeph> or <codeph>avoid-column</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-break-4/#break-within" scope="external" format="html">CSS Fragmentation 4 §3.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>orphans</codeph></entry>
+                            <entry>Sets how many lines of a paragraph must stay at the bottom of a page. If fewer fit, the whole paragraph goes to the next page.</entry>
+                            <entry>An integer of 1 or more</entry>
+                            <entry><codeph>2</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-break-4/#widows-orphans" scope="external" format="html">CSS Fragmentation 4 §3.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>widows</codeph></entry>
+                            <entry>Sets how many lines of a paragraph must go to the top of the next page. If fewer would, lines from the previous page go with them.</entry>
+                            <entry>An integer of 1 or more</entry>
+                            <entry><codeph>2</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-break-4/#widows-orphans" scope="external" format="html">CSS Fragmentation 4 §3.3</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
         <section id="declarations-in-page-margin-rules">
             <title>Declarations in page-margin rules</title>
             <p>Each page-margin at-rule contains declarations written as <codeph>property: value;</codeph>. Use properties that apply to page-margin boxes, including <codeph>content</codeph>, font and text properties, color, backgrounds, borders, margins, padding, dimensions and <codeph>vertical-align</codeph>. See the <xref href="https://www.w3.org/TR/css-page-3/#margin-property-list" scope="external" format="html">CSS Paged Media page-margin property list</xref>.</p>

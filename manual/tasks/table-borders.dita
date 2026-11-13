@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="table-borders">
+    <title>Draw the borders and backgrounds of a table</title>
+    <shortdesc>You choose between two models for the borders of the cells: separate borders with a gap between the cells, or one shared border between neighbors. You can also paint backgrounds on every part of the table.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="separate-borders">
+                <cmd>Use separate borders for cells that stand apart</cmd>
+                <info>
+                    <p>The initial value of <codeph>border-collapse</codeph> is <codeph>separate</codeph>. Each cell has its own border, and the cells touch each other unless you set <codeph>border-spacing</codeph>, the gap between the borders of neighbors. One length is the gap in both directions, and two lengths are the horizontal gap and the vertical gap. The initial gap is 0. In this model the table can also have padding, and rows, row groups and columns have no border of their own.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">table {
+    display: table;
+    border-spacing: 4pt 2pt;
+}
+
+cell {
+    display: table-cell;
+    border: 1pt solid gray;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="collapsed-borders">
+                <cmd>Use collapsed borders for a grid</cmd>
+                <info>
+                    <p>With <codeph>border-collapse: collapse</codeph> the neighbors share one border, which is centered on the line between them. <codeph>border-spacing</codeph> has no effect, and the table has no padding. The borders of the table, the row groups, the rows, the columns and the cells all take part, because they can meet on the same line.</p>
+                    <fig id="table-border-models">
+                        <title>The two border models</title>
+                        <image href="../images/table-borders.svg" placement="break" scale="125">
+                            <alt>Two tables of four cells. With separate borders each cell has its own border and there is a gap between the cells. With collapsed borders the neighbors share one border and there is no gap.</alt>
+                        </image>
+                    </fig>
+                    <p>When two borders meet at a line, CSSMedia draws only one of them. It is chosen in this order:</p>
+                    <ol>
+                        <li>A border with the style <codeph>hidden</codeph> always wins, and nothing is drawn on that line.</li>
+                        <li>Otherwise the wider border wins, and a border with the style <codeph>none</codeph> counts as having no width.</li>
+                        <li>When the widths are equal, the style decides: <codeph>double</codeph>, then <codeph>solid</codeph>, <codeph>dashed</codeph>, <codeph>dotted</codeph>, <codeph>ridge</codeph>, <codeph>outset</codeph>, <codeph>groove</codeph> and <codeph>inset</codeph>.</li>
+                        <li>When the styles are equal too, the border of the cell wins over the border of the row, then the row group, the column, the column group and, last, the table.</li>
+                    </ol>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">table {
+    display: table;
+    border-collapse: collapse;
+    border: 2pt solid black;
+}
+
+cell {
+    display: table-cell;
+    border: 0.5pt solid gray;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The outer edge of the table takes the width of the widest border along it, and half of it is inside the table.</p>
+                </info>
+            </step>
+            <step id="paint-backgrounds">
+                <cmd>Paint backgrounds</cmd>
+                <info>
+                    <p>Every part of a table can have a background: the table, the column groups, the columns, the row groups, the rows and the cells. They are painted in layers in that order, each one over the one before, so the background of a cell hides the background of its row. Use a background on the header group to set it apart:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">header {
+    display: table-header-group;
+    background-color: #e0e0e0;
+    font-weight: bold;
+}
+
+row:nth-child(even) {
+    background-color: #f5f5f5;
+}
+</pre>
+                </stepxmp>
+                <!-- TODO: empty-cells: hide does not stop the borders and the background of an empty cell from being painted -->
+            </step>
+        </steps>
+    </taskbody>
+</task>

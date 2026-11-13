@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="tables-and-pages">
+    <title>Break tables across pages</title>
+    <shortdesc>A long table continues on the next pages. You can repeat its header and its footer on every page, keep rows whole, and force a page break between rows.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="where-a-table-breaks">
+                <cmd>Know where a table breaks</cmd>
+                <info>
+                    <p>A table breaks between its rows. When a row does not fit in the space that is left on the page, CSSMedia decides by its height:</p>
+                    <ul>
+                        <li>A row that is less than half as high as the page goes whole to the next page.</li>
+                        <li>A taller row breaks inside. Each cell of the row continues on the next page where it stopped, and the cells that have ended stay empty.</li>
+                    </ul>
+                    <p>To keep a row whole in any case, give the rows <codeph>break-inside: avoid</codeph>. A row that is taller than a page cannot be kept whole, and it breaks anyway.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">row {
+    display: table-row;
+    break-inside: avoid;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="repeat-the-header">
+                <cmd>Repeat the header and the footer</cmd>
+                <info>
+                    <p>The rows of a header group or a footer group are repeated on every page that the table uses, when the group has <codeph>break-inside: avoid</codeph>. A group that is taller than a quarter of the page is not repeated, so that the pages keep room for the rows of the body:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">header {
+    display: table-header-group;
+    break-inside: avoid;
+}
+
+footer {
+    display: table-footer-group;
+    break-inside: avoid;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The footer repeats at the end of each page, directly after the last row of the page. Without <codeph>break-inside: avoid</codeph>, the header is only at the top of the table, and the footer is only at its end.</p>
+                    <fig id="table-pages-figure">
+                        <title>A table on two pages</title>
+                        <image href="../images/table-pages.svg" placement="break" scale="125">
+                            <alt>Two pages. The first has a header row, four rows and the first lines of a fifth row that does not fit. The second page has the header row again, the last lines of the fifth row and two more rows.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="force-breaks">
+                <cmd>Force or avoid breaks</cmd>
+                <info>
+                    <p>The properties <codeph>break-before</codeph> and <codeph>break-after</codeph> work on rows and on row groups. With the value <codeph>page</codeph> the table continues on a new page, and with <codeph>avoid</codeph> CSSMedia tries not to break there:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">body[name="appendix"] {
+    break-before: page;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A table is not held back by <codeph>orphans</codeph> and <codeph>widows</codeph>: a single row can be alone on a page. If you do not want that, use <codeph>break-before: avoid</codeph> and <codeph>break-after: avoid</codeph> on the rows that must stay together. The break moves to an earlier place between rows.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="200" viewBox="0 0 480 200" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <defs>
+        <marker id="tip" viewBox="0 0 10 10" markerWidth="6" markerHeight="6" refX="9" refY="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#555555"/>
+        </marker>
+    </defs>
+    <rect x="150" y="8" width="210" height="24" fill="#fdf1d6" stroke="#7a4a10"/>
+    <rect x="150" y="38" width="210" height="28" fill="#cfe3f5" stroke="#1d4f7a"/>
+    <rect x="150" y="66" width="210" height="28" fill="#ffffff" stroke="#1d4f7a"/>
+    <rect x="150" y="94" width="210" height="28" fill="#ffffff" stroke="#1d4f7a"/>
+    <rect x="150" y="122" width="210" height="28" fill="#e3eef8" stroke="#1d4f7a"/>
+    <path d="M220 38 V150 M290 38 V150" stroke="#1d4f7a" fill="none"/>
+    <path d="M150 70 H360" stroke="none" fill="none"/>
+    <g fill="#222222" text-anchor="middle">
+        <text x="255" y="24">table-caption</text>
+        <text x="185" y="56">cell</text>
+        <text x="255" y="56">cell</text>
+        <text x="325" y="56">cell</text>
+        <text x="185" y="84">cell</text>
+        <text x="255" y="84">cell</text>
+        <text x="325" y="84">cell</text>
+        <text x="185" y="112">cell</text>
+        <text x="255" y="112">cell</text>
+        <text x="325" y="112">cell</text>
+        <text x="185" y="140">cell</text>
+        <text x="255" y="140">cell</text>
+        <text x="325" y="140">cell</text>
+    </g>
+    <g fill="#222222" font-size="10" text-anchor="end">
+        <text x="140" y="56">table-header-group</text>
+        <text x="140" y="84">table-row-group</text>
+        <text x="140" y="112">table-row</text>
+        <text x="140" y="140">table-footer-group</text>
+    </g>
+    <g fill="#222222" font-size="10">
+        <text x="372" y="56">table-cell</text>
+        <text x="372" y="84">The grid of a table</text>
+        <text x="372" y="97">has rows and columns.</text>
+        <text x="372" y="140">table-column: the</text>
+        <text x="372" y="153">vertical grid lines</text>
+    </g>
+    <g stroke="#555555" fill="none">
+        <path d="M368 52 H348" marker-end="url(#tip)"/>
+    </g>
+    <text x="255" y="176" font-size="10" fill="#222222" text-anchor="middle">A box with display: table holds the caption, the row groups and the rows.</text>
+    <text x="255" y="190" font-size="10" fill="#222222" text-anchor="middle">The header group is always first and the footer group always last.</text>
+</svg>

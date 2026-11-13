@@ -35,7 +35,7 @@
                     </ul>
                     <fig id="stroke-samples">
                         <title>Caps, joins and dashes</title>
-                        <image href="../images/svg-strokes.svg" placement="break" scale="75">
+                        <image href="../images/svg-strokes.svg" placement="break" scale="125">
                             <alt>Three thick blue lines with butt, round and square ends. Two thick blue angles with a miter and a round corner. Below, three brown lines with long dashes, round dots and a pattern of long and short dashes.</alt>
                         </image>
                     </fig>
@@ -79,7 +79,7 @@
                     <p>A <codeph>pattern</codeph> repeats a small drawing, the tile, to fill a shape. The tile is at <codeph>x</codeph> <codeph>y</codeph> and has the size <codeph>width</codeph> by <codeph>height</codeph>. These numbers are fractions of the box of the shape, unless you set <codeph>patternUnits="userSpaceOnUse"</codeph>. The elements inside the pattern are the drawing of the tile. A <codeph>viewBox</codeph> scales it to the tile, and <codeph>patternTransform</codeph> turns or scales the whole pattern.</p>
                     <fig id="paint-server-samples">
                         <title>A gradient, a radial gradient and a pattern</title>
-                        <image href="../images/svg-paint-servers.svg" placement="break" scale="75">
+                        <image href="../images/svg-paint-servers.svg" placement="break" scale="125">
                             <alt>Three rectangles. The first has a linear gradient from light blue on the left to dark blue on the right. The second has a radial gradient from white in the center to dark green at the edges. The third is filled with a regular grid of red dots.</alt>
                         </image>
                     </fig>
@@ -107,7 +107,7 @@
                     </ul>
                     <fig id="marker-samples">
                         <title>Markers</title>
-                        <image href="../images/svg-markers.svg" placement="break" scale="75">
+                        <image href="../images/svg-markers.svg" placement="break" scale="125">
                             <alt>A zigzag line with red dots at its start and at its two inner corners, and a blue arrow at its end. Next to it, a curve ends with an arrow that points along the curve.</alt>
                         </image>
                     </fig>

@@ -19,7 +19,7 @@ title {
             <p>The title is teal. All the other descendants of the chapter are navy and 11 points large.</p>
             <fig id="inheritance-figure">
                 <title>An inherited and a not inherited property</title>
-                <image href="../images/cascade-inheritance.svg" placement="break" scale="75">
+                <image href="../images/cascade-inheritance.svg" placement="break" scale="125">
                     <alt>A chapter box with a color and a left margin, and two boxes below it, a title and a para. Both children show the color of the chapter, as inherited, and a left margin of 0, the initial value, because the margin is not inherited.</alt>
                 </image>
             </fig>

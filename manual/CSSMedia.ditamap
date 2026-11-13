@@ -76,11 +76,12 @@
         <!-- TODO: placeholder, write this chapter -->
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>Tables</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+    <chapter href="concepts/intro-tables.dita">
+        <topicref href="tasks/build-tables.dita"/>
+        <topicref href="tasks/size-tables.dita"/>
+        <topicref href="tasks/table-borders.dita"/>
+        <topicref href="tasks/tables-and-pages.dita"/>
+        <topicref href="references/table-chapter-reference.dita"/>
     </chapter>
 
     <chapter>

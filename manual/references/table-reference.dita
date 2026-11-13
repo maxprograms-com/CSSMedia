@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="table-reference">
+    <title>Tables</title>
+    <shortdesc>This reference lists the display values that make a table and the properties that style it.</shortdesc>
+    <refbody>
+        <section id="table-display-values">
+            <title>Display values of tables</title>
+            <table id="table-display-values__table">
+                <tgroup cols="3">
+                    <colspec colname="c1" colwidth="2*"/>
+                    <colspec colname="c2" colwidth="4*"/>
+                    <colspec colname="c3" colwidth="2*"/>
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center"><codeph>display</codeph></entry>
+                            <entry align="center">The element is</entry>
+                            <entry align="center">Specification</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><codeph>table</codeph></entry>
+                            <entry>A table, as a block.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>inline-table</codeph></entry>
+                            <entry>A table that sits in a line of text.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-caption</codeph></entry>
+                            <entry>The caption of the table, above it or below it.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-header-group</codeph></entry>
+                            <entry>Rows that are always at the start of the table, and that can repeat on every page.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-row-group</codeph></entry>
+                            <entry>A group of rows.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-footer-group</codeph></entry>
+                            <entry>Rows that are always at the end of the table, and that can repeat on every page.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-row</codeph></entry>
+                            <entry>A row of cells.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-cell</codeph></entry>
+                            <entry>A cell, with the content of the table.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-column</codeph></entry>
+                            <entry>A column. It has no content, and it gives a width, a border or a background to the cells of a column.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>table-column-group</codeph></entry>
+                            <entry>A group of columns.</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#content-model" scope="external" format="html">CSS Tables 3 §2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="table-properties">
+            <title>Table properties</title>
+            <table id="table-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>table-layout</codeph></entry>
+                            <entry>Chooses how the widths of the columns are found: from the content of all the cells, or from the first row and the column elements.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>fixed</codeph>; <codeph>fixed</codeph> needs a width on the table</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#table-layout-property" scope="external" format="html">CSS Tables 3 §3.5.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-collapse</codeph></entry>
+                            <entry>Chooses between a border for each cell and one border shared by neighbors.</entry>
+                            <entry><codeph>separate</codeph> or <codeph>collapse</codeph></entry>
+                            <entry><codeph>separate</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#border-collapse-property" scope="external" format="html">CSS Tables 3 §3.5.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-spacing</codeph></entry>
+                            <entry>Sets the gap between the borders of neighbor cells when the borders are separate.</entry>
+                            <entry>One length for both directions, or two lengths for the horizontal and the vertical gap</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#border-spacing-property" scope="external" format="html">CSS Tables 3 §3.5.2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>caption-side</codeph></entry>
+                            <entry>Puts the caption above or below the table.</entry>
+                            <entry><codeph>top</codeph> or <codeph>bottom</codeph></entry>
+                            <entry><codeph>top</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#caption-side-property" scope="external" format="html">CSS Tables 3 §3.5.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>empty-cells</codeph></entry>
+                            <entry>Chooses whether the borders and the background of a cell without content are shown, when the borders are separate.</entry>
+                            <entry><codeph>show</codeph> or <codeph>hide</codeph></entry>
+                            <entry><codeph>show</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-tables-3/#empty-cell-rendering" scope="external" format="html">CSS Tables 3 §5.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>vertical-align</codeph></entry>
+                            <entry>On a cell, sets where its content goes when the row is taller than the content.</entry>
+                            <entry><codeph>baseline</codeph>, <codeph>top</codeph>, <codeph>middle</codeph> or <codeph>bottom</codeph></entry>
+                            <entry><codeph>baseline</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-inline-3/#propdef-vertical-align" scope="external" format="html">CSS Inline 3</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

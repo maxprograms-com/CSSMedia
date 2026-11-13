@@ -48,7 +48,7 @@
                     <p>The value <codeph>none</codeph> stretches the area to the size of the drawing and ignores the proportions.</p>
                     <fig id="preserve-aspect-ratio-samples">
                         <title>The values of preserveAspectRatio</title>
-                        <image href="../images/svg-viewbox.svg" placement="break" scale="70">
+                        <image href="../images/svg-viewbox.svg" placement="break" scale="125">
                             <alt>Three boxes of the same size that show the same circle. With meet the whole circle is visible and the box has empty space at the sides. With slice the circle fills the box and its top and bottom are cut. With none the circle is stretched into an ellipse that fills the box.</alt>
                         </image>
                     </fig>

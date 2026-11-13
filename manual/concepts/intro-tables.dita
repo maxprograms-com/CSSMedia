@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introTables">
+    <title>Tables</title>
+    <shortdesc>XML has no table element, so your stylesheet decides which elements are a table, its rows and its cells. This chapter explains how to build a table from your elements, how to size it, how to draw its borders and how it breaks across pages. The <xref href="../references/table-chapter-reference.dita#table-chapter-reference">tables reference</xref> at the end lists the properties and display values.</shortdesc>
+    <conbody>
+        <p>A table in the PDF is a grid of cells. Every element that you want in the grid gets a <codeph>display</codeph> value that says what part of a table it is. The element names do not matter: a <codeph>table</codeph> element, a <codeph>list</codeph> of <codeph>item</codeph> elements or any other structure of your XML can be a table.</p>
+        <fig id="table-anatomy-figure">
+            <title>The parts of a table</title>
+            <image href="../images/table-anatomy.svg" placement="break" scale="125">
+                <alt>A table drawn as a grid of three columns and four rows. Above it is the caption. The first row is the header group, the next two rows are in a row group, and the last row is the footer group. Each box of the grid is a cell.</alt>
+            </image>
+        </fig>
+        <p>These are the display values that make a table:</p>
+        <table frame="all">
+            <tgroup cols="2">
+                <colspec colname="c1" colwidth="1*"/>
+                <colspec colname="c2" colwidth="3*"/>
+                <thead>
+                    <row>
+                        <entry>Value</entry>
+                        <entry>The element is</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><codeph>table</codeph></entry>
+                        <entry>The table. It is a block, like a paragraph.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>inline-table</codeph></entry>
+                        <entry>A table that sits on a line of text, like a word.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>table-caption</codeph></entry>
+                        <entry>The title of the table.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>table-header-group</codeph>, <codeph>table-footer-group</codeph></entry>
+                        <entry>The rows that go first and last, and that can repeat on every page.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>table-row-group</codeph></entry>
+                        <entry>A group of rows, such as the body of the table.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>table-row</codeph></entry>
+                        <entry>A row of cells.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>table-cell</codeph></entry>
+                        <entry>A cell. It holds the content of the table.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>table-column-group</codeph>, <codeph>table-column</codeph></entry>
+                        <entry>A description of columns, to give them a width, a border or a background. They hold no content.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <p>You do not need to give a value to every element. CSSMedia adds what is missing. A cell outside a row gets a row around it, text that is directly in a table or in a row gets a cell around it, and rows that are outside a row group are fine. White space between the parts of a table is ignored, so you can indent your XML.</p>
+        <p>Each cell takes the next free column of its row, and a row that has fewer cells than the table has columns is completed with empty cells. CSS gives a cell no span: a stylesheet cannot make one cell cover two columns or two rows.</p>
+        <!-- TODO: cells that span columns or rows are not possible in CSS -->
+        <p>The topics of this chapter follow the steps of the work:</p>
+        <ul>
+            <li><xref href="../tasks/build-tables.dita"/></li>
+            <li><xref href="../tasks/size-tables.dita"/></li>
+            <li><xref href="../tasks/table-borders.dita"/></li>
+            <li><xref href="../tasks/tables-and-pages.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

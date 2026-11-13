@@ -58,5 +58,6 @@
                 </tgroup>
             </table>
         </section>
+        <section conkeyref="ref-page/page-breaks"/>
     </refbody>
 </reference>

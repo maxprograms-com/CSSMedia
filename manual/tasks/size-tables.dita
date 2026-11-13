@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="size-tables">
+    <title>Size a table and its columns</title>
+    <shortdesc>By default a table is as wide as its content needs, up to the width of the page. You can give the table a width, give widths to its columns, and choose between two layouts.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="size-the-table">
+                <cmd>Set the width of the table</cmd>
+                <info>
+                    <p>A table with <codeph>width: auto</codeph>, the initial value, takes the width that its content wants. If the content is wider than the space it has, the table is as wide as the space and the text in the cells wraps. A table with a width has that width, and it can be a length or a percentage. Margins, borders and padding work as for any box, and <codeph>margin-left: auto</codeph> with <codeph>margin-right: auto</codeph> centers the table:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">table {
+    display: table;
+    width: 100%;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="share-the-width">
+                <cmd>Let CSSMedia share the width between the columns</cmd>
+                <info>
+                    <p>With the initial layout, <codeph>table-layout: auto</codeph>, CSSMedia measures the content of all the cells of a column. A column is never narrower than its longest word or other unbreakable content, and it is as wide as its content when there is room. When the table is wider than the content needs, the extra width goes to the columns without a width of their own, in proportion to the width their content asks for. This layout looks at every row, so it gives the best result for most tables, but it must measure all the cells.</p>
+                </info>
+            </step>
+            <step id="set-column-widths">
+                <cmd>Give widths to columns</cmd>
+                <info>
+                    <p>A <codeph>width</codeph> on a cell makes its column that wide, or wider if another cell of the column needs more. You can also set the <codeph>width</codeph> or the <codeph>min-width</codeph> on the <codeph>table-column</codeph> element of the column, as <xref href="build-tables.dita#describe-the-columns">Turn elements into a table</xref> shows. A column with a width does not take part in sharing the extra width of the table:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">cell:first-child {
+    width: 80pt;
+}
+</pre>
+                </stepxmp>
+                <!-- TODO: percentage widths on cells and columns are not used with table-layout: auto -->
+            </step>
+            <step id="fix-the-layout">
+                <cmd>Use a fixed layout when you know the widths</cmd>
+                <info>
+                    <p>With <codeph>table-layout: fixed</codeph> and a table width, CSSMedia does not look at the content to find the widths. A column takes the width of its <codeph>table-column</codeph> element, or else of its cell in the first row. The columns without a width share the rest of the width of the table equally. The result does not change with the content, and a long word in a cell that is too narrow does not make the column wider. If the table has no width, or its width is <codeph>auto</codeph>, the layout is automatic:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">table {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+}
+
+col[name="item"] {
+    width: 120pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Percentages work for the widths of cells and columns in a fixed layout.</p>
+                    <fig id="table-layout-figure">
+                        <title>The two layouts</title>
+                        <image href="../images/table-layouts.svg" placement="break" scale="125">
+                            <alt>Two tables with the same content. In the table with the automatic layout, the middle column is wide, and the first and last columns are narrow. In the table with the fixed layout, the three columns have the same width.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="set-the-heights">
+                <cmd>Set the heights</cmd>
+                <info>
+                    <p>The height of a row is the height of its tallest cell. A <codeph>height</codeph> on a row or on a cell is a minimum: the row is taller if its content needs it. If you give the table a <codeph>height</codeph> that is more than its rows need, the extra height goes to the rows.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

@@ -54,7 +54,7 @@
                     <p>The <codeph>mix-blend-mode</codeph> property chooses how the colors of an element mix with the colors under it. The initial value is <codeph>normal</codeph>. The values such as <codeph>multiply</codeph>, <codeph>screen</codeph>, <codeph>overlay</codeph>, <codeph>darken</codeph> and <codeph>difference</codeph> are the blend modes of the PDF format. The property <codeph>isolation: isolate</codeph> on a group stops its children from blending with what is outside the group.</p>
                     <fig id="clip-mask-samples">
                         <title>A clip, a mask and a blend mode</title>
-                        <image href="../images/svg-clip-mask.svg" placement="break" scale="75">
+                        <image href="../images/svg-clip-mask.svg" placement="break" scale="125">
                             <alt>A light blue disc cut from a rectangle. A dark blue rectangle that fades from opaque on the left to transparent on the right. Two overlapping circles, blue and yellow, whose overlap is green.</alt>
                         </image>
                     </fig>

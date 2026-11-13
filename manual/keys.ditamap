@@ -15,6 +15,7 @@
     <keydef keys="ref-backgrounds" href="references/background-reference.dita"/>
     <keydef keys="ref-images" href="references/image-reference.dita"/>
     <keydef keys="ref-svg" href="references/svg-reference.dita"/>
+    <keydef keys="ref-tables" href="references/table-reference.dita"/>
     <keydef keys="ref-display" href="references/display-and-positioning.dita"/>
     <keydef keys="ref-page" href="references/page-reference.dita"/>
     <keydef keys="ref-content" href="references/content-reference.dita"/>

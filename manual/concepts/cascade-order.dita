@@ -14,7 +14,7 @@
         </ol>
         <fig id="cascade-steps-figure">
             <title>The order of the criteria</title>
-            <image href="../images/cascade-steps.svg" placement="break" scale="75">
+            <image href="../images/cascade-steps.svg" placement="break" scale="125">
                 <alt>Five boxes in a row, joined by arrows: importance, layer, specificity, scope and position. The first criterion in which two declarations differ decides, and the criteria after it are not used.</alt>
             </image>
         </fig>
@@ -58,7 +58,7 @@ title {
             <p>The title is blue.</p>
             <fig id="cascade-layers-figure">
                 <title>The order of layers</title>
-                <image href="../images/cascade-layers.svg" placement="break" scale="75">
+                <image href="../images/cascade-layers.svg" placement="break" scale="125">
                     <alt>Two stacks of three boxes. For normal declarations, the box with no layer is on top and wins, then the layer theme, then the layer base. For important declarations the stack is reversed: the layer base is on top and wins, then the layer theme, then no layer.</alt>
                 </image>
             </fig>
@@ -88,7 +88,7 @@ chapter title {
             <p>This rule colors the titles inside a <codeph>chapter</codeph>, except the titles inside an <codeph>appendix</codeph> that is in the chapter. If you leave out the root, the scope is the whole document.</p>
             <fig id="cascade-scope-figure">
                 <title>A scope with a limit</title>
-                <image href="../images/cascade-scope.svg" placement="break" scale="75">
+                <image href="../images/cascade-scope.svg" placement="break" scale="125">
                     <alt>A chapter drawn as a large dashed box. It holds a title, which is in the scope and is red, and an appendix, the limit, drawn as a dashed box that holds another title, which is outside the scope and is not red.</alt>
                 </image>
             </fig>
