@@ -2,7 +2,7 @@
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="box-model-properties">
     <title>Box model properties</title>
-    <shortdesc>This table lists the box model properties described in <xref href="../concepts/box-sizing-and-spacing.dita#box-sizing-and-spacing">Box sizing, margins and padding</xref>. A length is a number with a unit, such as <codeph>12pt</codeph> or <codeph>1em</codeph>. Margin and padding percentages are relative to the containing block’s logical width, or inline size.</shortdesc>
+    <shortdesc>This table lists the box model properties described in <xref keyref="ch-box-sizing">Box sizing, margins and padding</xref>. A length is a number with a unit, such as <codeph>12pt</codeph> or <codeph>1em</codeph>. Margin and padding percentages are relative to the containing block’s logical width, or inline size.</shortdesc>
     <refbody>
         <section>
             <!-- TODO: fill the Default cells and describe how each property affects layout in the PDF -->

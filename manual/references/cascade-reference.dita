@@ -917,7 +917,7 @@
         </section>
         <section id="container-style-queries">
             <title>Container style queries</title>
-            <p>A container style query uses <codeph>style()</codeph> to test a computed style or custom property on an ancestor. See <xref href="../tasks/conditional-rules.dita#conditional-rules/container-queries-with-container">Conditional rules</xref>.</p>
+            <p>A container style query uses <codeph>style()</codeph> to test a computed style or custom property on an ancestor. See <xref keyref="ch-conditional-rules/container-queries-with-container">Conditional rules</xref>.</p>
         </section>
     </refbody>
 </reference>

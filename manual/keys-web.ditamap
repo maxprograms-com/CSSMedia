@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map processing-role="resource-only">
+    <title translate="no">CSSMedia web help keys</title>
+    <keydef keys="ch-basic-selectors"/>
+    <keydef keys="ch-combinators"/>
+    <keydef keys="ch-pseudo-classes"/>
+    <keydef keys="ch-pseudo-elements"/>
+    <keydef keys="ch-box-sizing"/>
+    <keydef keys="ch-box-dimensions"/>
+    <keydef keys="ch-named-strings"/>
+    <keydef keys="ch-links"/>
+    <keydef keys="ch-conditional-rules"/>
+</map>

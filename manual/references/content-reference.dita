@@ -155,7 +155,7 @@
                 </tgroup>
             </table>
             <ul>
-                <li>A <codeph>&lt;content-list&gt;</codeph> is one or more generated content items, such as strings, quote keywords, counters, images, attribute values, or <codeph>content()</codeph> values. See <xref href="https://www.w3.org/TR/css-content-3/#typedef-content-content-list" scope="external" format="html">CSS Content 3</xref> and <xref href="../tasks/named-strings.dita#named-strings">Named strings</xref>.</li>
+                <li>A <codeph>&lt;content-list&gt;</codeph> is one or more generated content items, such as strings, quote keywords, counters, images, attribute values, or <codeph>content()</codeph> values. See <xref href="https://www.w3.org/TR/css-content-3/#typedef-content-content-list" scope="external" format="html">CSS Content 3</xref> and <xref keyref="ch-named-strings">Named strings</xref>.</li>
                 <li>A <codeph>&lt;content-replacement&gt;</codeph> is one image that replaces the element’s normal contents. See <xref href="https://www.w3.org/TR/css-content-3/#typedef-content-content-replacement" scope="external" format="html">CSS Content 3</xref>.</li>
                 <li>The image form of <codeph>element()</codeph> uses an element ID to produce an image; the running-element form selects a named element for use in page margin boxes. See <xref href="https://www.w3.org/TR/css-images-4/#funcdef-element" scope="external" format="html">CSS Images 4</xref> and <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-element" scope="external" format="html">CSS GCPM 3</xref>.</li>
                 <li>A positive <codeph>&lt;integer&gt;</codeph> for <codeph>bookmark-level</codeph> is a whole number of at least 1. The top level is 1.</li>
@@ -164,7 +164,7 @@
                 <li>
                     <codeph>param()</codeph> takes a dashed parameter name beginning with <codeph>--</codeph> and an optional <codeph>&lt;declaration-value&gt;</codeph>. If omitted, the parameter value is empty. A <codeph>&lt;declaration-value&gt;</codeph> is the sequence of <xref href="../glossaries/CSS.dita">CSS</xref> component values after a declaration’s colon, excluding top-level semicolons and unmatched closing braces. See <xref href="https://www.w3.org/TR/css-link-params-1/#funcdef-param" scope="external" format="html">CSS Link Parameters 1</xref> and <xref href="https://www.w3.org/TR/css-syntax-3/#typedef-declaration-value" scope="external" format="html">CSS Syntax 3</xref>.</li>
             </ul>
-            <p>For examples of destinations, named strings, and generated content, see <xref href="../tasks/links.dita#links">Links</xref> and <xref href="../tasks/named-strings.dita#named-strings">Named strings</xref>.</p>
+            <p>For examples of destinations, named strings, and generated content, see <xref keyref="ch-links">Links</xref> and <xref keyref="ch-named-strings">Named strings</xref>.</p>
         </section>
         <section id="counters-list-markers-and-footnotes">
             <title>Counters, list markers, and footnotes</title>

@@ -12,6 +12,7 @@
     </booktitle>
     <frontmatter>
         <mapref href="keys.ditamap" processing-role="resource-only"/>
+        <mapref href="keys-book.ditamap" processing-role="resource-only"/>
         <booklists>
             <toc/>
         </booklists>
@@ -141,18 +142,7 @@
     </chapter>
 
     <chapter href="concepts/intro-reference.dita">
-        <topicref href="references/selector-reference.dita"/>
-        <topicref href="references/font-reference.dita"/>
-        <topicref href="references/box-model-properties.dita"/>
-        <topicref href="references/dimension-properties.dita"/>
-        <topicref href="references/background-reference.dita"/>
-        <topicref href="references/display-and-positioning.dita"/>
-        <topicref href="references/page-reference.dita"/>
-        <topicref href="references/content-reference.dita"/>
-        <topicref href="references/footnote-reference.dita"/>
-        <topicref href="references/link-reference.dita"/>
-        <topicref href="references/named-strings-reference.dita"/>
-        <topicref href="references/cascade-reference.dita"/>
+        <mapref href="CompleteReference.ditamap"/>
     </chapter>
 
     <chapter href="concepts/licenses.dita"/>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE bookmap PUBLIC "-//OASIS//DTD DITA BookMap//EN" "bookmap.dtd">
+<bookmap>
+    <booktitle>
+        <mainbooktitle>
+            <ph>CSSMedia Complete Reference</ph>
+            <image href="images/CSSMedia-256.svg" placement="break"/>
+        </mainbooktitle>
+        <booktitlealt>
+            <ph>Copyright © 2026 Maxprograms</ph>
+        </booktitlealt>
+    </booktitle>
+    <frontmatter>
+        <mapref href="keys.ditamap" processing-role="resource-only"/>
+        <mapref href="keys-web.ditamap" processing-role="resource-only"/>
+        <booklists>
+            <toc/>
+        </booklists>
+    </frontmatter>
+
+    <chapter href="concepts/intro-reference.dita">
+        <mapref href="CompleteReference.ditamap"/>
+    </chapter>
+
+    <backmatter>
+        <booklists>
+            <glossarylist chunk="to-content">
+                <topicref href="glossaries/CSS.dita" type="glossentry"/>
+                <topicref href="glossaries/DTD.dita" type="glossentry"/>
+                <topicref href="glossaries/MathML.dita" type="glossentry"/>
+                <topicref href="glossaries/XMLNamespace.dita" type="glossentry"/>
+                <topicref href="glossaries/OASISCatalog.dita" type="glossentry"/>
+                <topicref href="glossaries/PDF.dita" type="glossentry"/>
+                <topicref href="glossaries/RelaxNG.dita" type="glossentry"/>
+                <topicref href="glossaries/SVG.dita" type="glossentry"/>
+                <topicref href="glossaries/XML.dita" type="glossentry"/>
+                <topicref href="glossaries/XMLSchema.dita" type="glossentry"/>
+            </glossarylist>
+        </booklists>
+    </backmatter>
+</bookmap>

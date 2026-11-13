@@ -2,7 +2,7 @@
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="dimension-properties">
     <title>Dimension properties</title>
-    <shortdesc>This reference lists the <xref href="../glossaries/CSS.dita">CSS</xref> sizing properties documented in <xref href="../concepts/box-dimensions.dita#box-dimensions">Box dimensions</xref>. The <codeph>Values</codeph> column gives CSS syntax.</shortdesc>
+    <shortdesc>This reference lists the <xref href="../glossaries/CSS.dita">CSS</xref> sizing properties documented in <xref keyref="ch-box-dimensions">Box dimensions</xref>. The <codeph>Values</codeph> column gives CSS syntax.</shortdesc>
     <!-- TODO: fill the Default cells and describe how each property affects layout in the PDF -->
     <refbody>
         <section>

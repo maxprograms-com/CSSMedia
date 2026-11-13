@@ -6,7 +6,7 @@
     <refbody>
         <section id="selector-reference-basic">
             <title>Basic selectors</title>
-            <p>Basic selectors match an element by its name, ID or attributes. See <xref href="../concepts/basic-selectors.dita#basic-selectors">Basic selectors and namespaces</xref>.</p>
+            <p>Basic selectors match an element by its name, ID or attributes. See <xref keyref="ch-basic-selectors">Basic selectors and namespaces</xref>.</p>
             <table id="selector-reference-basic__table">
                 <tgroup cols="5">
                     <thead conkeyref="ref-headers/head-selectors"/>
@@ -108,7 +108,7 @@
         </section>
         <section id="selector-reference-combinators">
             <title>Combinators</title>
-            <p>A combinator relates two selectors. See <xref href="../concepts/combinators.dita#combinators">Combinators</xref>.</p>
+            <p>A combinator relates two selectors. See <xref keyref="ch-combinators">Combinators</xref>.</p>
             <table id="selector-reference-combinators__table">
                 <tgroup cols="5">
                     <thead conkeyref="ref-headers/head-selectors"/>
@@ -161,7 +161,7 @@
         </section>
         <section id="selector-reference-pseudo-classes">
             <title>Pseudo-classes</title>
-            <p>A pseudo-class tests a property of an element other than its name and attributes. See <xref href="../concepts/pseudo-classes.dita#pseudo-classes">Pseudo-classes</xref>.</p>
+            <p>A pseudo-class tests a property of an element other than its name and attributes. See <xref keyref="ch-pseudo-classes">Pseudo-classes</xref>.</p>
             <table id="selector-reference-pseudo-classes__table">
                 <tgroup cols="5">
                     <thead conkeyref="ref-headers/head-selectors"/>
@@ -361,7 +361,7 @@
         </section>
         <section id="selector-reference-pseudo-elements">
             <title>Pseudo-elements</title>
-            <p>A pseudo-element selects a part of an element or generated content. See <xref href="../concepts/pseudo-elements.dita#pseudo-elements">Pseudo-elements</xref>.</p>
+            <p>A pseudo-element selects a part of an element or generated content. See <xref keyref="ch-pseudo-elements">Pseudo-elements</xref>.</p>
             <table id="selector-reference-pseudo-elements__table">
                 <tgroup cols="5">
                     <thead conkeyref="ref-headers/head-selectors"/>

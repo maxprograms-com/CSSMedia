@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map processing-role="resource-only">
+    <title translate="no">CSSMedia book keys</title>
+    <keydef keys="ch-basic-selectors" href="concepts/basic-selectors.dita"/>
+    <keydef keys="ch-combinators" href="concepts/combinators.dita"/>
+    <keydef keys="ch-pseudo-classes" href="concepts/pseudo-classes.dita"/>
+    <keydef keys="ch-pseudo-elements" href="concepts/pseudo-elements.dita"/>
+    <keydef keys="ch-box-sizing" href="concepts/box-sizing-and-spacing.dita"/>
+    <keydef keys="ch-box-dimensions" href="concepts/box-dimensions.dita"/>
+    <keydef keys="ch-named-strings" href="tasks/named-strings.dita"/>
+    <keydef keys="ch-links" href="tasks/links.dita"/>
+    <keydef keys="ch-conditional-rules" href="tasks/conditional-rules.dita"/>
+</map>
