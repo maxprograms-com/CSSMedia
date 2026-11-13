@@ -4,6 +4,8 @@
     <title>Font selection and sizing</title>
     <shortdesc>Choose the font family, the size and the face of your text, and control the height of its lines. Put the declarations in rules that select the <xref href="../glossaries/XML.dita">XML</xref> elements that you want to style.</shortdesc>
     <taskbody>
+        <!-- TODO: fill-image, stroke-image and text-decoration-fill-image (CSS Fill and Stroke 3) are not painted on text; document them with the text color when they are -->
+
         <context>
             <p>The element names in the examples, such as <codeph>chapter</codeph> and <codeph>term</codeph>, are placeholders. Use the names that occur in your XML.</p>
             <pre outputclass="language-css21">chapter {

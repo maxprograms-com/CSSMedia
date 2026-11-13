@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="svg-reference">
+    <title>SVG</title>
+    <shortdesc>This reference lists the elements of SVG that CSSMedia draws and the properties that style them.</shortdesc>
+    <refbody>
+        <section id="svg-elements">
+            <title>SVG elements</title>
+            <table id="svg-elements__table">
+                <tgroup cols="3">
+                    <colspec colname="c1" colwidth="1*"/>
+                    <colspec colname="c2" colwidth="2*"/>
+                    <colspec colname="c3" colwidth="3*"/>
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Element</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Attributes</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/struct.html#SVGElement" scope="external" format="html"><codeph>svg</codeph></xref></entry>
+                            <entry>A drawing, or a nested drawing with its own size and scale.</entry>
+                            <entry><codeph>xmlns</codeph>, <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph>, <codeph>height</codeph>, <codeph>viewBox</codeph>, <codeph>preserveAspectRatio</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/struct.html#GElement" scope="external" format="html"><codeph>g</codeph></xref></entry>
+                            <entry>Groups elements, so that they share styles and a transform.</entry>
+                            <entry><codeph>transform</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/struct.html#DefsElement" scope="external" format="html"><codeph>defs</codeph></xref></entry>
+                            <entry>Holds elements that are defined to be used later and are not drawn.</entry>
+                            <entry>None</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/struct.html#UseElement" scope="external" format="html"><codeph>use</codeph></xref></entry>
+                            <entry>Draws a copy of another element.</entry>
+                            <entry><codeph>href</codeph>, <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph>, <codeph>height</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/struct.html#SymbolElement" scope="external" format="html"><codeph>symbol</codeph></xref></entry>
+                            <entry>A shape with its own <codeph>viewBox</codeph>, drawn by a <codeph>use</codeph> element.</entry>
+                            <entry><codeph>viewBox</codeph>, <codeph>preserveAspectRatio</codeph>, <codeph>refX</codeph>, <codeph>refY</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/struct.html#SwitchElement" scope="external" format="html"><codeph>switch</codeph></xref></entry>
+                            <entry>Draws its first child that has no conditional attributes.</entry>
+                            <entry><codeph>systemLanguage</codeph>, <codeph>requiredExtensions</codeph> on the children</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/shapes.html#RectElement" scope="external" format="html"><codeph>rect</codeph></xref></entry>
+                            <entry>A rectangle, with optional rounded corners.</entry>
+                            <entry><codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph>, <codeph>height</codeph>, <codeph>rx</codeph>, <codeph>ry</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/shapes.html#CircleElement" scope="external" format="html"><codeph>circle</codeph></xref></entry>
+                            <entry>A circle.</entry>
+                            <entry><codeph>cx</codeph>, <codeph>cy</codeph>, <codeph>r</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/shapes.html#EllipseElement" scope="external" format="html"><codeph>ellipse</codeph></xref></entry>
+                            <entry>An ellipse.</entry>
+                            <entry><codeph>cx</codeph>, <codeph>cy</codeph>, <codeph>rx</codeph>, <codeph>ry</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/shapes.html#LineElement" scope="external" format="html"><codeph>line</codeph></xref></entry>
+                            <entry>A straight line.</entry>
+                            <entry><codeph>x1</codeph>, <codeph>y1</codeph>, <codeph>x2</codeph>, <codeph>y2</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/shapes.html#PolylineElement" scope="external" format="html"><codeph>polyline</codeph></xref></entry>
+                            <entry>An open shape made of straight lines.</entry>
+                            <entry><codeph>points</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/shapes.html#PolygonElement" scope="external" format="html"><codeph>polygon</codeph></xref></entry>
+                            <entry>A closed shape made of straight lines.</entry>
+                            <entry><codeph>points</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/paths.html#PathElement" scope="external" format="html"><codeph>path</codeph></xref></entry>
+                            <entry>A shape made of lines, curves and arcs.</entry>
+                            <entry><codeph>d</codeph>, <codeph>pathLength</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/pservers.html#LinearGradientElement" scope="external" format="html"><codeph>linearGradient</codeph></xref></entry>
+                            <entry>A paint that changes color along a line.</entry>
+                            <entry><codeph>x1</codeph>, <codeph>y1</codeph>, <codeph>x2</codeph>, <codeph>y2</codeph>, <codeph>gradientUnits</codeph>, <codeph>gradientTransform</codeph>, <codeph>spreadMethod</codeph>, <codeph>href</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/pservers.html#RadialGradientElement" scope="external" format="html"><codeph>radialGradient</codeph></xref></entry>
+                            <entry>A paint that changes color from a center to a circle.</entry>
+                            <entry><codeph>cx</codeph>, <codeph>cy</codeph>, <codeph>r</codeph>, <codeph>fx</codeph>, <codeph>fy</codeph>, <codeph>gradientUnits</codeph>, <codeph>gradientTransform</codeph>, <codeph>spreadMethod</codeph>, <codeph>href</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/pservers.html#StopElement" scope="external" format="html"><codeph>stop</codeph></xref></entry>
+                            <entry>A color of a gradient, at a position.</entry>
+                            <entry><codeph>offset</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/pservers.html#PatternElement" scope="external" format="html"><codeph>pattern</codeph></xref></entry>
+                            <entry>A paint that repeats a small drawing.</entry>
+                            <entry><codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph>, <codeph>height</codeph>, <codeph>patternUnits</codeph>, <codeph>patternContentUnits</codeph>, <codeph>patternTransform</codeph>, <codeph>viewBox</codeph>, <codeph>preserveAspectRatio</codeph>, <codeph>href</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#MarkerElement" scope="external" format="html"><codeph>marker</codeph></xref></entry>
+                            <entry>A mark that is drawn on the vertices of a shape.</entry>
+                            <entry><codeph>markerWidth</codeph>, <codeph>markerHeight</codeph>, <codeph>refX</codeph>, <codeph>refY</codeph>, <codeph>orient</codeph>, <codeph>markerUnits</codeph>, <codeph>viewBox</codeph>, <codeph>preserveAspectRatio</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#ClipPathElement" scope="external" format="html"><codeph>clipPath</codeph></xref></entry>
+                            <entry>An area that clips other elements.</entry>
+                            <entry><codeph>clipPathUnits</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#MaskElement" scope="external" format="html"><codeph>mask</codeph></xref></entry>
+                            <entry>A drawing whose light or opaque parts show the masked element.</entry>
+                            <entry><codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph>, <codeph>height</codeph>, <codeph>maskUnits</codeph>, <codeph>maskContentUnits</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#TextElement" scope="external" format="html"><codeph>text</codeph></xref></entry>
+                            <entry>Text, in a line, wrapped to a length or inside a shape.</entry>
+                            <entry><codeph>x</codeph>, <codeph>y</codeph>, <codeph>dx</codeph>, <codeph>dy</codeph>, <codeph>rotate</codeph>, <codeph>textLength</codeph>, <codeph>lengthAdjust</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#TSpanElement" scope="external" format="html"><codeph>tspan</codeph></xref></entry>
+                            <entry>A part of a text with its own style or position.</entry>
+                            <entry><codeph>x</codeph>, <codeph>y</codeph>, <codeph>dx</codeph>, <codeph>dy</codeph>, <codeph>rotate</codeph>, <codeph>textLength</codeph>, <codeph>lengthAdjust</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#TextPathElement" scope="external" format="html"><codeph>textPath</codeph></xref></entry>
+                            <entry>Text that follows the outline of a shape.</entry>
+                            <entry><codeph>href</codeph>, <codeph>startOffset</codeph>, <codeph>side</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/embedded.html#ImageElement" scope="external" format="html"><codeph>image</codeph></xref></entry>
+                            <entry>A PNG, JPEG, WebP or SVG file.</entry>
+                            <entry><codeph>href</codeph>, <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph>, <codeph>height</codeph>, <codeph>preserveAspectRatio</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/linking.html#AElement" scope="external" format="html"><codeph>a</codeph></xref></entry>
+                            <entry>A link around the elements or the text it holds.</entry>
+                            <entry><codeph>href</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/styling.html#StyleElement" scope="external" format="html"><codeph>style</codeph></xref></entry>
+                            <entry>A style sheet for the drawing.</entry>
+                            <entry><codeph>type</codeph>, <codeph>media</codeph></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="svg-geometry">
+            <title>Geometry properties</title>
+            <table id="svg-geometry__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>x</codeph>, <codeph>y</codeph></entry>
+                            <entry>Set the position of a <codeph>rect</codeph>, <codeph>image</codeph>, <codeph>svg</codeph>, <codeph>symbol</codeph> or <codeph>use</codeph> element.</entry>
+                            <entry>A length or a percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/geometry.html#XProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>cx</codeph>, <codeph>cy</codeph></entry>
+                            <entry>Set the center of a <codeph>circle</codeph> or an <codeph>ellipse</codeph>.</entry>
+                            <entry>A length or a percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/geometry.html#CxProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>r</codeph></entry>
+                            <entry>Sets the radius of a <codeph>circle</codeph>.</entry>
+                            <entry>A length or a percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/geometry.html#RProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>rx</codeph>, <codeph>ry</codeph></entry>
+                            <entry>Set the radii of an <codeph>ellipse</codeph>, or the rounded corners of a <codeph>rect</codeph>. With <codeph>auto</codeph> the radius takes the value of the other one.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/geometry.html#RxProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>d</codeph></entry>
+                            <entry>Sets the data of a <codeph>path</codeph>.</entry>
+                            <entry><codeph>none</codeph> or a string of path data</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/paths.html#DProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>path-length</codeph></entry>
+                            <entry>Sets the length that a shape counts as having, for the lengths of its dashes.</entry>
+                            <entry><codeph>none</codeph> or a number</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/paths.html#PathLengthCSSProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="svg-paint">
+            <title>Paint properties</title>
+            <table id="svg-paint__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>fill</codeph></entry>
+                            <entry>Sets the paint of the inside of a shape or of the characters of a text.</entry>
+                            <entry>A color, <codeph>none</codeph>, <codeph>currentColor</codeph> or <codeph>url(#id)</codeph>, optionally followed by a color that is used when the reference names nothing</entry>
+                            <entry><codeph>black</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#FillProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>fill-opacity</codeph></entry>
+                            <entry>Sets the opacity of the fill.</entry>
+                            <entry>A number from 0 to 1, or a percentage</entry>
+                            <entry><codeph>1</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#FillOpacityProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>fill-rule</codeph></entry>
+                            <entry>Chooses which areas of a shape are inside it.</entry>
+                            <entry><codeph>nonzero</codeph> or <codeph>evenodd</codeph></entry>
+                            <entry><codeph>nonzero</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#FillRuleProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke</codeph></entry>
+                            <entry>Sets the paint of the outline of a shape or of a text.</entry>
+                            <entry>As <codeph>fill</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke-width</codeph></entry>
+                            <entry>Sets the thickness of the outline.</entry>
+                            <entry>A length, a percentage or a number</entry>
+                            <entry><codeph>1</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeWidthProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke-opacity</codeph></entry>
+                            <entry>Sets the opacity of the outline.</entry>
+                            <entry>A number from 0 to 1, or a percentage</entry>
+                            <entry><codeph>1</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeOpacityProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke-linecap</codeph></entry>
+                            <entry>Sets the shape of the ends of an open line.</entry>
+                            <entry><codeph>butt</codeph>, <codeph>round</codeph> or <codeph>square</codeph></entry>
+                            <entry><codeph>butt</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeLinecapProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke-linejoin</codeph></entry>
+                            <entry>Sets the shape of the corners of the outline.</entry>
+                            <entry><codeph>miter</codeph>, <codeph>round</codeph> or <codeph>bevel</codeph></entry>
+                            <entry><codeph>miter</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeLinejoinProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke-miterlimit</codeph></entry>
+                            <entry>Sets the length at which a sharp corner turns into a bevel, as a multiple of the thickness.</entry>
+                            <entry>A number of 1 or more</entry>
+                            <entry><codeph>4</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeMiterlimitProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke-dasharray</codeph></entry>
+                            <entry>Makes the outline dashed, with a list of lengths for dashes and gaps.</entry>
+                            <entry><codeph>none</codeph> or a list of lengths, percentages or numbers</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeDasharrayProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stroke-dashoffset</codeph></entry>
+                            <entry>Moves the start of the dash pattern along the outline.</entry>
+                            <entry>A length, a percentage or a number</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#StrokeDashoffsetProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>paint-order</codeph></entry>
+                            <entry>Chooses the order in which the fill, the stroke and the markers are painted.</entry>
+                            <entry><codeph>normal</codeph>, or <codeph>fill</codeph>, <codeph>stroke</codeph> and <codeph>markers</codeph> in the order you want</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#PaintOrderProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>vector-effect</codeph></entry>
+                            <entry>With <codeph>non-scaling-stroke</codeph> the outline keeps its thickness when a transform scales the shape.</entry>
+                            <entry><codeph>none</codeph> or <codeph>non-scaling-stroke</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/coords.html#VectorEffectProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>color-interpolation</codeph></entry>
+                            <entry>Chooses the color space in which the colors of a gradient mix.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>sRGB</codeph> or <codeph>linearRGB</codeph></entry>
+                            <entry><codeph>sRGB</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#ColorInterpolationProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stop-color</codeph></entry>
+                            <entry>Sets the color of a <codeph>stop</codeph> of a gradient.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>black</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/pservers.html#StopColorProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>stop-opacity</codeph></entry>
+                            <entry>Sets the opacity of a <codeph>stop</codeph> of a gradient.</entry>
+                            <entry>A number from 0 to 1, or a percentage</entry>
+                            <entry><codeph>1</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/pservers.html#StopOpacityProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>marker</codeph></entry>
+                            <entry>Sets <codeph>marker-start</codeph>, <codeph>marker-mid</codeph> and <codeph>marker-end</codeph> at once.</entry>
+                            <entry><codeph>none</codeph> or <codeph>url(#id)</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#MarkerProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>marker-start</codeph>, <codeph>marker-mid</codeph>, <codeph>marker-end</codeph></entry>
+                            <entry>Name the marker that is drawn on the first vertex, on the vertices between, and on the last vertex of a shape.</entry>
+                            <entry><codeph>none</codeph> or <codeph>url(#id)</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/painting.html#MarkerStartProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="svg-effects">
+            <title>Clipping, masking and transform properties</title>
+            <table id="svg-effects__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>clip-path</codeph></entry>
+                            <entry>Shows only the part of an element inside an area.</entry>
+                            <entry><codeph>none</codeph>, <codeph>url(#id)</codeph> of a <codeph>clipPath</codeph>, or a basic shape, with <codeph>fill-box</codeph>, <codeph>stroke-box</codeph> or <codeph>view-box</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-clip-path" scope="external" format="html">CSS Masking 1 §5.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>clip-rule</codeph></entry>
+                            <entry>Chooses which areas of a shape inside a <codeph>clipPath</codeph> are inside it.</entry>
+                            <entry><codeph>nonzero</codeph> or <codeph>evenodd</codeph></entry>
+                            <entry><codeph>nonzero</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-clip-rule" scope="external" format="html">CSS Masking 1 §6.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask</codeph></entry>
+                            <entry>Makes parts of an element transparent with a <codeph>mask</codeph> element.</entry>
+                            <entry><codeph>none</codeph> or <codeph>url(#id)</codeph> of a <codeph>mask</codeph> element</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask" scope="external" format="html">CSS Masking 1 §7.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-type</codeph></entry>
+                            <entry>Chooses whether a <codeph>mask</codeph> element uses the luminance or the opacity of what it holds.</entry>
+                            <entry><codeph>luminance</codeph> or <codeph>alpha</codeph></entry>
+                            <entry><codeph>luminance</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-type" scope="external" format="html">CSS Masking 1 §9.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>opacity</codeph></entry>
+                            <entry>Makes an element and its children transparent as a group.</entry>
+                            <entry>A number from 0 to 1, or a percentage</entry>
+                            <entry><codeph>1</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-color-4/#transparency" scope="external" format="html">CSS Color 4 §3.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>transform</codeph></entry>
+                            <entry>Moves, turns, scales or skews an element and its children.</entry>
+                            <entry><codeph>none</codeph> or a list of transform functions, 2D or 3D</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-1/#transform-property" scope="external" format="html">CSS Transforms 1 §4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>transform-origin</codeph></entry>
+                            <entry>Sets the point that <codeph>transform</codeph> turns and scales around. In a drawing it is the origin of the drawing.</entry>
+                            <entry>One to three lengths, percentages or keywords</entry>
+                            <entry><codeph>0 0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-1/#transform-origin-property" scope="external" format="html">CSS Transforms 1 §5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>translate</codeph>, <codeph>rotate</codeph>, <codeph>scale</codeph></entry>
+                            <entry>Move, turn or scale an element, each in a property of its own.</entry>
+                            <entry><codeph>none</codeph> or the arguments of the function of the same name</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-2/#individual-transforms" scope="external" format="html">CSS Transforms 2 §5</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="svg-text-properties">
+            <title>Text properties of a drawing</title>
+            <table id="svg-text-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>text-anchor</codeph></entry>
+                            <entry>Chooses which part of a line of text is at its x position.</entry>
+                            <entry><codeph>start</codeph>, <codeph>middle</codeph> or <codeph>end</codeph></entry>
+                            <entry><codeph>start</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#TextAnchorProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>dominant-baseline</codeph></entry>
+                            <entry>Chooses the baseline of the text that is placed at its y position.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>alphabetic</codeph>, <codeph>middle</codeph>, <codeph>central</codeph>, <codeph>hanging</codeph>, <codeph>ideographic</codeph>, <codeph>mathematical</codeph>, <codeph>text-top</codeph> or <codeph>text-bottom</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#DominantBaselineProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>baseline-shift</codeph></entry>
+                            <entry>Raises or lowers a part of a line of text.</entry>
+                            <entry><codeph>super</codeph>, <codeph>sub</codeph>, a length or a percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#BaselineShiftProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>inline-size</codeph></entry>
+                            <entry>On a <codeph>text</codeph> element, sets the length of its lines, and the text wraps to it.</entry>
+                            <entry><codeph>auto</codeph>, a length or a percentage</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#InlineSizeProperty" scope="external" format="html">SVG 2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>shape-inside</codeph></entry>
+                            <entry>On a <codeph>text</codeph> element, pours the text into a shape.</entry>
+                            <entry><codeph>auto</codeph>, a basic shape, <codeph>url(#id)</codeph> of a shape, or the URL of an image</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-shapes-2/#shape-inside-property" scope="external" format="html">CSS Shapes 2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

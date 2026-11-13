@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="place-svg">
+    <title>Put a drawing in your document</title>
+    <shortdesc>You write a drawing in your XML, or you show a drawing from a file. Then you set its size and its scale, and you place it in the text.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="write-the-drawing">
+                <cmd>Write the drawing in your XML</cmd>
+                <info>
+                    <p>Add an <codeph>svg</codeph> element in the SVG namespace where the drawing must appear. CSSMedia draws it as a replaced element on the line of the text that surrounds it.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;para>The mark &lt;svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">
+    &lt;circle cx="12" cy="12" r="10" fill="#cfe3f5" stroke="#1d4f7a" stroke-width="2"/>
+&lt;/svg> stays on its line.&lt;/para>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>You can declare the namespace with a prefix instead, as in <codeph>&lt;s:svg xmlns:s="http://www.w3.org/2000/svg"></codeph>. An <codeph>svg</codeph> element in another namespace is an ordinary element of your XML, and CSSMedia does not draw it.</p>
+                </info>
+            </step>
+            <step id="set-the-size">
+                <cmd>Set the size</cmd>
+                <info>
+                    <p>The <codeph>width</codeph> and <codeph>height</codeph> attributes of the <codeph>svg</codeph> element give the size of the drawing. A number is a length in pixels, and you can use units, such as <codeph>5cm</codeph> or <codeph>1in</codeph>. A rule of your style sheet with <codeph>width</codeph> or <codeph>height</codeph> wins over the attributes:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">svg {
+    width: 4cm;
+    height: 2cm;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A drawing without a size is 300 pixels wide and 150 pixels high. When it has a <codeph>viewBox</codeph> and you set only the width or only the height, CSSMedia takes the other size from the proportion of the <codeph>viewBox</codeph>.</p>
+                </info>
+            </step>
+            <step id="scale-the-drawing">
+                <cmd>Scale the drawing with a viewBox</cmd>
+                <info>
+                    <p>The <codeph>viewBox</codeph> attribute holds four numbers: the x and y of the top left corner of the area you draw in, and its width and height. CSSMedia scales that area to fill the size of the drawing, so you can draw with the numbers that suit the picture, whatever size it has on the page.</p>
+                    <p>When the area and the drawing have different proportions, <codeph>preserveAspectRatio</codeph> decides what happens. It has an alignment, from <codeph>xMinYMin</codeph> to <codeph>xMaxYMax</codeph>, and one of these words:</p>
+                    <ul>
+                        <li><codeph>meet</codeph> is the default. The whole area is visible, and part of the drawing stays empty.</li>
+                        <li><codeph>slice</codeph> fills the drawing, and the parts of the area outside it are cut.</li>
+                    </ul>
+                    <p>The value <codeph>none</codeph> stretches the area to the size of the drawing and ignores the proportions.</p>
+                    <fig id="preserve-aspect-ratio-samples">
+                        <title>The values of preserveAspectRatio</title>
+                        <image href="../images/svg-viewbox.svg" placement="break" scale="70">
+                            <alt>Three boxes of the same size that show the same circle. With meet the whole circle is visible and the box has empty space at the sides. With slice the circle fills the box and its top and bottom are cut. With none the circle is stretched into an ellipse that fills the box.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;svg xmlns="http://www.w3.org/2000/svg" width="100" height="60"
+     viewBox="0 0 50 50" preserveAspectRatio="xMidYMid slice">
+    &lt;circle cx="25" cy="25" r="25" fill="#cfe3f5" stroke="#1d4f7a"/>
+&lt;/svg>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="place-the-drawing">
+                <cmd>Place the drawing</cmd>
+                <info>
+                    <p>An <codeph>svg</codeph> element is inline, like a word. Set <codeph>display: block</codeph> to put the drawing on a line of its own. A drawing has margins, padding and borders like any other box:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">svg {
+    display: block;
+    margin: 6pt auto;
+    border: 0.5pt solid gray;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="show-a-file">
+                <cmd>Show a drawing from a file</cmd>
+                <info>
+                    <p>Give an element the file as its <codeph>content</codeph>, as <xref href="place-images.dita#place-images">Place an image</xref> explains for every image. The size of the file is the one in its <codeph>svg</codeph> element, and you can set another size with <codeph>width</codeph> and <codeph>height</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chart {
+    display: block;
+    content: attr(src url);
+    width: 8cm;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A file is a document of its own. It has its own styles: <codeph>style</codeph> elements, <codeph>style</codeph> attributes and style sheets linked with an <codeph>xml-stylesheet</codeph> processing instruction. The style sheet of your document does not reach it.</p>
+                    <p>If CSSMedia cannot read a file, or the file is not an SVG document, it does not draw it and names the file in the messages at the end of the run. An image that contains itself is reported in the same way.</p>
+                    <p>Inside a drawing, the <codeph>image</codeph> element shows a file with the <codeph>href</codeph> attribute, and it can be a PNG, JPEG or WebP image, or another SVG file. Its <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph> and <codeph>height</codeph> give the area it fills, and <codeph>preserveAspectRatio</codeph> fits the image in that area as it does for a <codeph>viewBox</codeph>.</p>
+                </info>
+            </step>
+        </steps>
+        <!-- TODO: opacity, transform, clip-path, mask and mix-blend-mode set on the svg element itself, which is a box of the document, stop the run; they work on the elements inside the drawing -->
+    </taskbody>
+</task>

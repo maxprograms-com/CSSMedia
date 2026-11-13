@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introImages">
+    <title>Images</title>
+    <shortdesc>An element of your <xref href="../glossaries/XML.dita">XML</xref> can show an image from a file. This chapter explains how to turn an element into an image, how to size it and how to fit it in its box. The <xref href="../references/image-chapter-reference.dita#image-chapter-reference">images reference</xref> at the end lists the properties.</shortdesc>
+    <conbody>
+        <p>XML has no element for images, so the stylesheet decides which elements are images. An element whose <codeph>content</codeph> is an image is a <xref href="../glossaries/ReplacedElement.dita">replaced element</xref>: CSSMedia shows the image in its place and ignores what the element contains. Most vocabularies keep the name of the file in an attribute, and the stylesheet reads it from there.</p>
+        <p>CSSMedia reads these image formats, and it knows the format from the content of the file, not from its name:</p>
+        <table frame="all">
+            <tgroup cols="2">
+                <colspec colname="c1" colwidth="1*"/>
+                <colspec colname="c2" colwidth="4*"/>
+                <thead>
+                    <row>
+                        <entry>Format</entry>
+                        <entry>What CSSMedia reads</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry>PNG</entry>
+                        <entry>All color types and bit depths, interlaced files, transparency and the color profile of the file.</entry>
+                    </row>
+                    <row>
+                        <entry>JPEG</entry>
+                        <entry>Baseline, extended and progressive files of 8 bits, in gray, RGB or CMYK, with the color profile of the file.</entry>
+                    </row>
+                    <row>
+                        <entry>WebP</entry>
+                        <entry>Lossy and lossless files, with transparency and the color profile of the file.</entry>
+                    </row>
+                    <row>
+                        <entry><xref href="../glossaries/SVG.dita">SVG</xref></entry>
+                        <entry>Drawings, which CSSMedia draws as vector graphics. <xref href="intro-svg.dita#introSvg">SVG</xref> explains how to write them.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <!-- TODO: GIF, BMP, TIFF, JPEG 2000 and HEIF files are not decoded yet; animated WebP files and JPEG files of 12 bits, with two components, arithmetic coding or lossless coding too; a PNG with a cICP chunk -->
+        <p>The same files work as the images of a <codeph>background-image</codeph>, which <xref href="../tasks/backgrounds.dita#backgrounds">Backgrounds</xref> explains. An image is a picture in the PDF: it does not move, and its pixels are not text.</p>
+        <p>The element names in the examples of this chapter, such as <codeph>figure</codeph> and <codeph>src</codeph>, are placeholders. Use the names that occur in your XML.</p>
+        <p>The topics of this chapter follow the steps of the work:</p>
+        <ul>
+            <li><xref href="../tasks/place-images.dita"/></li>
+            <li><xref href="../tasks/fit-images.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

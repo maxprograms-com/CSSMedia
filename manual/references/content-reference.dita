@@ -17,7 +17,8 @@
                         </row>
                     </thead>
                     <tbody>
-                        <row valign="middle">
+                        <!-- TODO: the images of content: image(), image-set() and cross-fade() as the content of an element have no natural size, and a gradient, image(), image-set() or cross-fade() among other items of a content list is not drawn -->
+                        <row id="row-content" valign="middle">
                             <entry>
                                 <codeph>content</codeph>
                             </entry>
@@ -25,7 +26,7 @@
                             <entry>
                                 <codeph>normal</codeph>, <codeph>none</codeph>, an image that replaces the contents, a list of generated items, or <codeph>element()</codeph>; a list can include alternative text after <codeph>/</codeph>
                             </entry>
-                            <entry />
+                            <entry><codeph>normal</codeph></entry>
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-content" scope="external" format="html">CSS Content 3 §1</xref>
                             </entry>

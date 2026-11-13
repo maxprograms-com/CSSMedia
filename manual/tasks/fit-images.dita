@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="fit-images">
+    <title>Fit an image in its box</title>
+    <shortdesc>When the box of an image has another proportion than the image, you choose how the image fills it. You can also turn an image and choose how its pixels are drawn.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="fit-the-image">
+                <cmd>Choose how the image fills the box</cmd>
+                <info>
+                    <p>The <codeph>object-fit</codeph> property applies when you set both the width and the height of the image, and they do not have the proportion of the image. These are its values:</p>
+                    <ul>
+                        <li><codeph>fill</codeph> is the initial value. The image is stretched to the box, and its proportions change.</li>
+                        <li><codeph>contain</codeph> scales the image as large as it can be and still fit in the box. Part of the box can stay empty.</li>
+                        <li><codeph>cover</codeph> scales the image as small as it can be and still cover the box. Part of the image is cut.</li>
+                        <li><codeph>none</codeph> keeps the natural size of the image.</li>
+                        <li><codeph>scale-down</codeph> is the smaller result of <codeph>none</codeph> and <codeph>contain</codeph>, so an image is never enlarged.</li>
+                    </ul>
+                    <fig id="object-fit-samples">
+                        <title>The values of object-fit</title>
+                        <image href="../images/object-fit.svg" placement="break" scale="75">
+                            <alt>Five square boxes that show the same wide picture. With fill it is stretched. With contain it fits, with empty space above and below. With cover it fills the box and its sides are cut. With none and with scale-down it has its natural size, in the middle of the box.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">photo {
+    width: 120pt;
+    height: 120pt;
+    object-fit: cover;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="position-the-image">
+                <cmd>Position the image in the box</cmd>
+                <info>
+                    <p>When the image does not fill the box, <codeph>object-position</codeph> decides where it goes. It takes the values of <codeph>background-position</codeph>: keywords, lengths and percentages. The initial value is <codeph>50% 50%</codeph>, the center of the box.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">photo {
+    object-fit: cover;
+    object-position: top;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This photo fills its box, and the part that is cut comes from the bottom of the picture.</p>
+                </info>
+            </step>
+            <step id="turn-the-image">
+                <cmd>Turn the image</cmd>
+                <info>
+                    <p>Cameras store a photo in the same way for every position and write in the file how to turn it. The <codeph>image-orientation</codeph> property decides what CSSMedia does with that. The initial value, <codeph>from-image</codeph>, turns the image as the file says. A quarter turn swaps the width and the height of the natural size. Other values:</p>
+                    <ul>
+                        <li><codeph>none</codeph> shows the image as it is stored.</li>
+                        <li>An angle, such as <codeph>90deg</codeph>, turns the image by that angle, rounded to a multiple of 90 degrees. It replaces what the file says.</li>
+                        <li><codeph>flip</codeph> mirrors the image, after the turn. It can follow an angle.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">scan {
+    image-orientation: 90deg flip;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="choose-how-pixels-are-drawn">
+                <cmd>Choose how the pixels are drawn</cmd>
+                <info>
+                    <p>When an image is shown larger than its pixels, <codeph>image-rendering</codeph> decides how the PDF viewer fills the space between them:</p>
+                    <ul>
+                        <li><codeph>auto</codeph> is the initial value. <codeph>smooth</codeph> and <codeph>high-quality</codeph> do the same. They ask the viewer to smooth the image.</li>
+                        <li><codeph>crisp-edges</codeph> asks the viewer not to blend the colors of the pixels.</li>
+                        <li><codeph>pixelated</codeph> enlarges the image by whole multiples of its pixels, so that each pixel becomes a sharp square. Use it for small images such as bar codes.</li>
+                    </ul>
+                    <!-- TODO: image-rendering: pixelated is not drawn for JPEG files, which CSSMedia cannot decode yet -->
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">barcode {
+    image-rendering: pixelated;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <note>A PDF does not move, so the property <codeph>image-animation</codeph> has no effect.</note>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

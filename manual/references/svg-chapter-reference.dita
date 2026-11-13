@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="svg-chapter-reference">
+    <title>SVG reference</title>
+    <shortdesc>This reference lists the elements of SVG that CSSMedia draws and the properties that style them.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-svg/svg-elements"/>
+        <section conkeyref="ref-svg/svg-geometry"/>
+        <section conkeyref="ref-svg/svg-paint"/>
+        <section conkeyref="ref-svg/svg-effects"/>
+        <section conkeyref="ref-backgrounds/background-compositing"/>
+        <section conkeyref="ref-svg/svg-text-properties"/>
+    </refbody>
+</reference>

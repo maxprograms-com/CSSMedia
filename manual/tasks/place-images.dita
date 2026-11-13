@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="place-images">
+    <title>Place an image</title>
+    <shortdesc>Use the <codeph>content</codeph> property to make an element show an image, then give the image the size that you need.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="make-an-element-an-image">
+                <cmd>Make an element an image</cmd>
+                <info>
+                    <p>Set <codeph>content</codeph> to a <codeph>url()</codeph> that names the file. The element shows the image, and what it contains is ignored:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">logo {
+    content: url("images/logo.png");
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="read-the-file-name-from-your-xml">
+                <cmd>Read the file name from your XML</cmd>
+                <info>
+                    <p>When each element has its own file, keep the name in an attribute and read it with <codeph>attr()</codeph>. Add the type <codeph>url</codeph> so that CSSMedia reads the value as a file name:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    display: block;
+    content: attr(src url);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This rule shows <codeph>&lt;figure src="images/pump.jpg"/&gt;</codeph> as the picture <codeph>images/pump.jpg</codeph>.</p>
+                </info>
+            </step>
+            <step id="say-where-the-file-is">
+                <cmd>Say where the file is</cmd>
+                <info>
+                    <p>A file name can be written in these ways:</p>
+                    <ul>
+                        <li>A relative name in <codeph>attr()</codeph> is found from the location of the XML file, or from the <codeph>xml:base</codeph> of the element, if there is one.</li>
+                        <li>A relative name in a <codeph>url()</codeph> of the stylesheet is found from the location of the stylesheet.</li>
+                        <li>An absolute name can be a <codeph>file:</codeph> URL.</li>
+                        <li>An <codeph>http:</codeph> or <codeph>https:</codeph> URL is downloaded when CSSMedia makes the PDF.</li>
+                        <li>A <codeph>data:</codeph> URL holds the file itself, for example <codeph>data:image/png;base64,</codeph> followed by the data.</li>
+                    </ul>
+                    <p>If CSSMedia cannot read a file, or cannot decode it, the box stays empty and the messages at the end of the run name the file.</p>
+                </info>
+            </step>
+            <step id="put-an-image-in-a-line">
+                <cmd>Put an image in a line of text</cmd>
+                <info>
+                    <p>An element is inline by default, so an image is a character of its line. Its bottom edge sits on the baseline of the text. Use <codeph>vertical-align</codeph> to move it. Set <codeph>display: block</codeph> to put the image on a line of its own.</p>
+                    <p>A pseudo-element can hold an image too, which is useful for icons:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">warning::before {
+    content: url("images/warning.png");
+    vertical-align: middle;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="size-an-image">
+                <cmd>Set the size</cmd>
+                <info>
+                    <p>Without a width and a height, an image has its natural size, which is the size that the file has. One pixel of the image is one CSS pixel, or 0.75pt, so a photo of 1200 x 800 pixels is 900 x 600pt. Set <codeph>width</codeph>, <codeph>height</codeph>, or both. If you set only one, CSSMedia calculates the other to keep the proportions of the image.</p>
+                    <p>A common rule keeps wide pictures in the page:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    max-width: 100%;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Files from cameras and scanners have many pixels for their size on paper. Use <codeph>image-resolution</codeph> to say how many pixels make a CSS pixel. The value is a resolution, such as <codeph>2dppx</codeph> or <codeph>192dpi</codeph>, and the initial value is <codeph>1dppx</codeph>. The keyword <codeph>from-image</codeph> uses the resolution that the file states, when it states one:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    image-resolution: from-image;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The properties of <xref href="box-sizes.dita#box-sizes">Box sizes</xref> apply to images. An image without a natural size, such as a drawing with no width and height, is 300 x 150 pixels.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

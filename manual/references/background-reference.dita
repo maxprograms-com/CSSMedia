@@ -31,7 +31,7 @@
                             <entry><codeph>transparent</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-color" scope="external" format="html">CSS Backgrounds 4 §2.1</xref></entry>
                         </row>
-                        <!-- TODO: background-image is not complete: natural sizes of image() and image-set(), element() -->
+                        <!-- TODO: background-image is not complete: element(); the fragment of image(); box-decoration-break: slice; background-clip: text and border-area inside a MathML formula -->
                         <row>
                             <entry><codeph>background-image</codeph></entry>
                             <entry>Sets the images of the layers. The first image is the top layer.</entry>

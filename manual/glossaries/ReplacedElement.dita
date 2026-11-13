@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="ReplacedElement">
+    <glossterm>Replaced element</glossterm>
+    <glossdef>An element whose content is replaced by something that is not text, such as an image. Its size comes from the image, unless the stylesheet sets one.</glossdef>
+</glossentry>

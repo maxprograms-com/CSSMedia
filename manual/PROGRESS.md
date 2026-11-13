@@ -7,6 +7,7 @@ An item is documented when a table row in a DITA topic of the manual ([CSSMedia.
 - `[x]` This item is documented. Its grammar acceptance, computed-value path, downstream consumers, and PDF applicability have each been checked for this item alone, and the code does what the topic says.
 - `[~]` This item is documented, but at least one of those checks has not been done for this item alone, or it found that the code does not do what the topic says.
 - `[ ]` This item is not documented.
+- `[-]` This item does not apply to PDF output (it needs time or interaction), so it is not documented and does not count in the percentages.
 
 The inventory has 113 selectors, 784 properties, 41 at-rules, and 104 descriptors.
 
@@ -33,7 +34,7 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @footnote
 - [x] @function
 - [x] @import
-- [ ] @keyframes
+- [-] @keyframes
 - [x] @layer
 - [x] @left-bottom
 - [x] @left-middle
@@ -46,7 +47,7 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @right-middle
 - [x] @right-top
 - [x] @scope
-- [ ] @starting-style
+- [-] @starting-style
 - [x] @supports
 - [x] @supports-condition
 - [x] @top-center
@@ -54,8 +55,8 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @top-left-corner
 - [x] @top-right
 - [x] @top-right-corner
-- [ ] @view-transition
-- [ ] @viewport
+- [-] @view-transition
+- [-] @viewport
 - [x] @when
 
 ## Descriptors
@@ -74,10 +75,10 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [ ] @container / height
 - [ ] @container / inline-size
 - [ ] @container / orientation
-- [ ] @container / scrollable
-- [ ] @container / scrolled
-- [ ] @container / snapped
-- [ ] @container / stuck
+- [-] @container / scrollable
+- [-] @container / scrolled
+- [-] @container / snapped
+- [-] @container / stuck
 - [ ] @container / width
 
 ### @counter-style
@@ -88,7 +89,7 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @counter-style / pad
 - [x] @counter-style / prefix
 - [x] @counter-style / range
-- [ ] @counter-style / speak-as
+- [-] @counter-style / speak-as
 - [x] @counter-style / suffix
 - [x] @counter-style / symbols
 - [x] @counter-style / system
@@ -147,7 +148,7 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @media / device-height
 - [x] @media / device-width
 - [x] @media / display-mode
-- [ ] @media / display-state
+- [-] @media / display-state
 - [x] @media / dynamic-range
 - [x] @media / environment-blending
 - [x] @media / forced-colors
@@ -167,7 +168,7 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @media / prefers-reduced-data
 - [x] @media / prefers-reduced-motion
 - [x] @media / prefers-reduced-transparency
-- [ ] @media / resizable
+- [-] @media / resizable
 - [x] @media / resolution
 - [x] @media / scan
 - [x] @media / scripting
@@ -193,12 +194,12 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 
 ### @view-transition
 
-- [ ] @view-transition / navigation
-- [ ] @view-transition / types
+- [-] @view-transition / navigation
+- [-] @view-transition / types
 
 ### @viewport
 
-- [ ] @viewport / viewport-fit
+- [-] @viewport / viewport-fit
 
 ## Selectors
 
@@ -356,52 +357,52 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Animations 1 (css-animations-1)
 
-- [ ] animation
-- [ ] animation-delay
-- [ ] animation-direction
-- [ ] animation-fill-mode
-- [ ] animation-iteration-count
-- [ ] animation-name
-- [ ] animation-play-state
-- [ ] animation-timing-function
+- [-] animation
+- [-] animation-delay
+- [-] animation-direction
+- [-] animation-fill-mode
+- [-] animation-iteration-count
+- [-] animation-name
+- [-] animation-play-state
+- [-] animation-timing-function
 
 ### CSS Animations 2 (css-animations-2)
 
-- [ ] animation-composition
-- [ ] animation-duration
-- [ ] animation-timeline
+- [-] animation-composition
+- [-] animation-duration
+- [-] animation-timeline
 
 ### CSS Animation Triggers 1 (animation-triggers-1)
 
-- [ ] animation-trigger
-- [ ] event-trigger
-- [ ] event-trigger-name
-- [ ] event-trigger-source
-- [ ] timeline-trigger
-- [ ] timeline-trigger-activation-range
-- [ ] timeline-trigger-activation-range-end
-- [ ] timeline-trigger-activation-range-start
-- [ ] timeline-trigger-active-range
-- [ ] timeline-trigger-active-range-end
-- [ ] timeline-trigger-active-range-start
-- [ ] timeline-trigger-name
-- [ ] timeline-trigger-range
-- [ ] timeline-trigger-source
-- [ ] trigger-scope
+- [-] animation-trigger
+- [-] event-trigger
+- [-] event-trigger-name
+- [-] event-trigger-source
+- [-] timeline-trigger
+- [-] timeline-trigger-activation-range
+- [-] timeline-trigger-activation-range-end
+- [-] timeline-trigger-activation-range-start
+- [-] timeline-trigger-active-range
+- [-] timeline-trigger-active-range-end
+- [-] timeline-trigger-active-range-start
+- [-] timeline-trigger-name
+- [-] timeline-trigger-range
+- [-] timeline-trigger-source
+- [-] trigger-scope
 
 ### Scroll-driven Animations 1 (scroll-animations-1)
 
-- [ ] animation-range
-- [ ] animation-range-end
-- [ ] animation-range-start
-- [ ] scroll-timeline
-- [ ] scroll-timeline-axis
-- [ ] scroll-timeline-name
-- [ ] timeline-scope
-- [ ] view-timeline
-- [ ] view-timeline-axis
-- [ ] view-timeline-inset
-- [ ] view-timeline-name
+- [-] animation-range
+- [-] animation-range-end
+- [-] animation-range-start
+- [-] scroll-timeline
+- [-] scroll-timeline-axis
+- [-] scroll-timeline-name
+- [-] timeline-scope
+- [-] view-timeline
+- [-] view-timeline-axis
+- [-] view-timeline-inset
+- [-] view-timeline-name
 
 ### CSS Backgrounds 4 (css-backgrounds-4)
 
@@ -556,7 +557,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### CSS Round Display 1 (css-round-display-1)
 
 - [ ] border-boundary
-- [ ] shape-inside
+- [~] shape-inside
 
 ### CSS Box Sizing 3 (css-sizing-3)
 
@@ -648,21 +649,21 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS 2 (CSS2)
 
-- [ ] azimuth
-- [ ] elevation
+- [-] azimuth
+- [-] elevation
 - [ ] page-break-after
 - [ ] page-break-before
 - [ ] page-break-inside
-- [ ] pitch
-- [ ] pitch-range
-- [ ] play-during
-- [ ] richness
-- [ ] speak-header
-- [ ] speak-numeral
-- [ ] speak-punctuation
-- [ ] speech-rate
-- [ ] stress
-- [ ] volume
+- [-] pitch
+- [-] pitch-range
+- [-] play-during
+- [-] richness
+- [-] speak-header
+- [-] speak-numeral
+- [-] speak-punctuation
+- [-] speech-rate
+- [-] stress
+- [-] volume
 - [x] z-index
 
 ### CSS Display 4 (css-display-4)
@@ -708,9 +709,9 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### CSS Inline Layout 3 (css-inline-3)
 
 - [ ] alignment-baseline
-- [ ] baseline-shift
+- [~] baseline-shift
 - [ ] baseline-source
-- [ ] dominant-baseline
+- [~] dominant-baseline
 - [ ] initial-letter
 - [ ] initial-letter-align
 - [ ] initial-letter-wrap
@@ -867,7 +868,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### CSS Color 4 (css-color-4)
 
 - [ ] color
-- [ ] opacity
+- [~] opacity
 
 ### CSS Color Adjustment 1 (css-color-adjust-1)
 
@@ -882,29 +883,29 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Images 3 (css-images-3)
 
-- [ ] image-orientation
-- [ ] image-rendering
-- [ ] object-position
+- [x] image-orientation
+- [x] image-rendering
+- [x] object-position
 
 ### CSS Images 4 (css-images-4)
 
-- [ ] image-resolution
-- [ ] object-fit
+- [x] image-resolution
+- [x] object-fit
 
 ### CSS Image Animation 1 (css-image-animation-1)
 
-- [ ] image-animation
+- [x] image-animation
 
 ### CSS Values 5 (css-values-5)
 
-- [ ] interpolate-size
+- [-] interpolate-size
 
 ### CSS Masking 1 (css-masking-1)
 
 - [ ] clip
-- [ ] clip-path
-- [ ] clip-rule
-- [ ] mask
+- [x] clip-path
+- [x] clip-rule
+- [~] mask
 - [ ] mask-border
 - [ ] mask-border-mode
 - [ ] mask-border-outset
@@ -920,7 +921,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] mask-position
 - [ ] mask-repeat
 - [ ] mask-size
-- [ ] mask-type
+- [x] mask-type
 
 ### Filter Effects 1 (filter-effects-1)
 
@@ -932,34 +933,34 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### Fill and Stroke 3 (fill-stroke-3)
 
-- [ ] fill
+- [~] fill
 - [ ] fill-break
 - [ ] fill-color
 - [ ] fill-image
-- [ ] fill-opacity
+- [x] fill-opacity
 - [ ] fill-origin
 - [ ] fill-position
 - [ ] fill-repeat
-- [ ] fill-rule
+- [x] fill-rule
 - [ ] fill-size
-- [ ] stroke
+- [~] stroke
 - [ ] stroke-align
 - [ ] stroke-break
 - [ ] stroke-color
 - [ ] stroke-dash-corner
 - [ ] stroke-dash-justify
-- [ ] stroke-dasharray
-- [ ] stroke-dashoffset
+- [x] stroke-dasharray
+- [x] stroke-dashoffset
 - [ ] stroke-image
-- [ ] stroke-linecap
-- [ ] stroke-linejoin
-- [ ] stroke-miterlimit
-- [ ] stroke-opacity
+- [x] stroke-linecap
+- [x] stroke-linejoin
+- [x] stroke-miterlimit
+- [x] stroke-opacity
 - [ ] stroke-origin
 - [ ] stroke-position
 - [ ] stroke-repeat
 - [ ] stroke-size
-- [ ] stroke-width
+- [x] stroke-width
 - [ ] text-decoration-fill
 - [ ] text-decoration-fill-break
 - [ ] text-decoration-fill-color
@@ -1171,8 +1172,8 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] overflow-inline
 - [ ] overflow-x
 - [ ] overflow-y
-- [ ] scroll-behavior
-- [ ] scrollbar-gutter
+- [-] scroll-behavior
+- [-] scrollbar-gutter
 
 ### CSS Overflow 4 (css-overflow-4)
 
@@ -1195,93 +1196,93 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Overflow 5 (css-overflow-5)
 
-- [ ] scroll-marker-group
+- [-] scroll-marker-group
 
 ### CSS Scroll Anchoring 1 (css-scroll-anchoring-1)
 
-- [ ] overflow-anchor
+- [-] overflow-anchor
 
 ### CSS Overscroll Behavior 1 (css-overscroll-1)
 
-- [ ] overscroll-behavior
-- [ ] overscroll-behavior-block
-- [ ] overscroll-behavior-inline
-- [ ] overscroll-behavior-x
-- [ ] overscroll-behavior-y
+- [-] overscroll-behavior
+- [-] overscroll-behavior-block
+- [-] overscroll-behavior-inline
+- [-] overscroll-behavior-x
+- [-] overscroll-behavior-y
 
 ### CSS Scroll Snap 1 (css-scroll-snap-1)
 
-- [ ] scroll-margin
-- [ ] scroll-margin-block
-- [ ] scroll-margin-block-end
-- [ ] scroll-margin-block-start
-- [ ] scroll-margin-bottom
-- [ ] scroll-margin-inline
-- [ ] scroll-margin-inline-end
-- [ ] scroll-margin-inline-start
-- [ ] scroll-margin-left
-- [ ] scroll-margin-right
-- [ ] scroll-margin-top
-- [ ] scroll-padding
-- [ ] scroll-padding-block
-- [ ] scroll-padding-block-end
-- [ ] scroll-padding-block-start
-- [ ] scroll-padding-bottom
-- [ ] scroll-padding-inline
-- [ ] scroll-padding-inline-end
-- [ ] scroll-padding-inline-start
-- [ ] scroll-padding-left
-- [ ] scroll-padding-right
-- [ ] scroll-padding-top
-- [ ] scroll-snap-align
-- [ ] scroll-snap-stop
-- [ ] scroll-snap-type
+- [-] scroll-margin
+- [-] scroll-margin-block
+- [-] scroll-margin-block-end
+- [-] scroll-margin-block-start
+- [-] scroll-margin-bottom
+- [-] scroll-margin-inline
+- [-] scroll-margin-inline-end
+- [-] scroll-margin-inline-start
+- [-] scroll-margin-left
+- [-] scroll-margin-right
+- [-] scroll-margin-top
+- [-] scroll-padding
+- [-] scroll-padding-block
+- [-] scroll-padding-block-end
+- [-] scroll-padding-block-start
+- [-] scroll-padding-bottom
+- [-] scroll-padding-inline
+- [-] scroll-padding-inline-end
+- [-] scroll-padding-inline-start
+- [-] scroll-padding-left
+- [-] scroll-padding-right
+- [-] scroll-padding-top
+- [-] scroll-snap-align
+- [-] scroll-snap-stop
+- [-] scroll-snap-type
 
 ### CSS Scroll Snap 2 (css-scroll-snap-2)
 
-- [ ] scroll-start-target
+- [-] scroll-start-target
 
 ### CSS Scrollbars 1 (css-scrollbars-1)
 
-- [ ] scrollbar-color
-- [ ] scrollbar-width
+- [-] scrollbar-color
+- [-] scrollbar-width
 
 ### CSS Transforms 1 (css-transforms-1)
 
-- [ ] transform
+- [~] transform
 - [ ] transform-box
-- [ ] transform-origin
+- [~] transform-origin
 
 ### CSS Transforms 2 (css-transforms-2)
 
 - [ ] backface-visibility
 - [ ] perspective
 - [ ] perspective-origin
-- [ ] rotate
-- [ ] scale
+- [~] rotate
+- [~] scale
 - [ ] transform-style
-- [ ] translate
+- [~] translate
 
 ### CSS Transitions 1 (css-transitions-1)
 
-- [ ] transition
-- [ ] transition-delay
-- [ ] transition-duration
-- [ ] transition-property
-- [ ] transition-timing-function
+- [-] transition
+- [-] transition-delay
+- [-] transition-duration
+- [-] transition-property
+- [-] transition-timing-function
 
 ### CSS Transitions 2 (css-transitions-2)
 
-- [ ] transition-behavior
+- [-] transition-behavior
 
 ### CSS View Transitions 1 (css-view-transitions-1)
 
-- [ ] view-transition-name
+- [-] view-transition-name
 
 ### CSS View Transitions 2 (css-view-transitions-2)
 
-- [ ] view-transition-class
-- [ ] view-transition-group
+- [-] view-transition-class
+- [-] view-transition-group
 
 ### CSS Viewport 1 (css-viewport-1)
 
@@ -1289,65 +1290,65 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Will Change 1 (css-will-change-1)
 
-- [ ] will-change
+- [-] will-change
 
 ### CSS Basic User Interface 4 (css-ui-4)
 
-- [ ] accent-color
-- [ ] appearance
-- [ ] caret
-- [ ] caret-animation
-- [ ] caret-color
-- [ ] caret-shape
-- [ ] cursor
-- [ ] interactivity
-- [ ] interest-delay
-- [ ] interest-delay-end
-- [ ] interest-delay-start
-- [ ] nav-down
-- [ ] nav-left
-- [ ] nav-right
-- [ ] nav-up
+- [-] accent-color
+- [-] appearance
+- [-] caret
+- [-] caret-animation
+- [-] caret-color
+- [-] caret-shape
+- [-] cursor
+- [-] interactivity
+- [-] interest-delay
+- [-] interest-delay-end
+- [-] interest-delay-start
+- [-] nav-down
+- [-] nav-left
+- [-] nav-right
+- [-] nav-up
 - [ ] outline
 - [ ] outline-color
 - [ ] outline-offset
 - [ ] outline-style
 - [ ] outline-width
-- [ ] pointer-events
-- [ ] resize
-- [ ] user-select
+- [-] pointer-events
+- [-] resize
+- [-] user-select
 
 ### CSS Forms 1 (css-forms-1)
 
-- [ ] slider-orientation
+- [-] slider-orientation
 
 ### CSS Spatial Navigation 1 (css-nav-1)
 
-- [ ] spatial-navigation-action
-- [ ] spatial-navigation-contain
-- [ ] spatial-navigation-function
+- [-] spatial-navigation-action
+- [-] spatial-navigation-contain
+- [-] spatial-navigation-function
 
 ### CSS Speech 1 (css-speech-1)
 
-- [ ] cue
-- [ ] cue-after
-- [ ] cue-before
-- [ ] pause
-- [ ] pause-after
-- [ ] pause-before
-- [ ] rest
-- [ ] rest-after
-- [ ] rest-before
-- [ ] speak
-- [ ] speak-as
-- [ ] voice-balance
-- [ ] voice-duration
-- [ ] voice-family
-- [ ] voice-pitch
-- [ ] voice-range
-- [ ] voice-rate
-- [ ] voice-stress
-- [ ] voice-volume
+- [-] cue
+- [-] cue-after
+- [-] cue-before
+- [-] pause
+- [-] pause-after
+- [-] pause-before
+- [-] rest
+- [-] rest-after
+- [-] rest-before
+- [-] speak
+- [-] speak-as
+- [-] voice-balance
+- [-] voice-duration
+- [-] voice-family
+- [-] voice-pitch
+- [-] voice-range
+- [-] voice-rate
+- [-] voice-stress
+- [-] voice-volume
 
 ### CSSMedia extensions
 

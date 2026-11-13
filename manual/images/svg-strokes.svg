@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="170" viewBox="0 0 340 170" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <g stroke="#1d4f7a" stroke-width="12" fill="none">
+        <line x1="20" y1="20" x2="120" y2="20" stroke-linecap="butt"/>
+        <line x1="20" y1="45" x2="120" y2="45" stroke-linecap="round"/>
+        <line x1="20" y1="70" x2="120" y2="70" stroke-linecap="square"/>
+        <polyline points="180,70 210,20 240,70" stroke-linejoin="miter"/>
+        <polyline points="270,70 300,20 330,70" stroke-linejoin="round"/>
+    </g>
+    <g fill="#222222">
+        <text x="130" y="24">butt</text>
+        <text x="130" y="49">round</text>
+        <text x="130" y="74">square</text>
+        <text x="190" y="90">miter</text>
+        <text x="280" y="90">round</text>
+    </g>
+    <g stroke="#7a4a10" stroke-width="4" fill="none">
+        <line x1="20" y1="110" x2="320" y2="110" stroke-dasharray="12 6"/>
+        <line x1="20" y1="130" x2="320" y2="130" stroke-dasharray="1 8" stroke-linecap="round"/>
+        <line x1="20" y1="150" x2="320" y2="150" stroke-dasharray="24 6 4 6"/>
+    </g>
+</svg>

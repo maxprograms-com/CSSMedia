@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="draw-shapes">
+    <title>Draw shapes and reuse them</title>
+    <shortdesc>You draw with seven shape elements. You can group shapes, move and turn them, and define a shape once to draw it many times.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="draw-basic-shapes">
+                <cmd>Draw the basic shapes</cmd>
+                <info>
+                    <p>Each shape element has attributes for its position and size. All the numbers are in user units, which are CSS pixels unless you change the scale with a <codeph>viewBox</codeph>.</p>
+                    <table frame="all">
+                        <tgroup cols="2">
+                            <colspec colname="c1" colwidth="1*"/>
+                            <colspec colname="c2" colwidth="4*"/>
+                            <thead>
+                                <row>
+                                    <entry>Element</entry>
+                                    <entry>Attributes</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>rect</codeph></entry>
+                                    <entry><codeph>x</codeph> and <codeph>y</codeph> for the top left corner, <codeph>width</codeph> and <codeph>height</codeph>, and <codeph>rx</codeph> and <codeph>ry</codeph> for rounded corners. When you write only one radius, the other one has the same value.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>circle</codeph></entry>
+                                    <entry><codeph>cx</codeph> and <codeph>cy</codeph> for the center, and <codeph>r</codeph> for the radius.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>ellipse</codeph></entry>
+                                    <entry><codeph>cx</codeph> and <codeph>cy</codeph> for the center, and <codeph>rx</codeph> and <codeph>ry</codeph> for the two radii.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>line</codeph></entry>
+                                    <entry><codeph>x1</codeph> and <codeph>y1</codeph> for the start, and <codeph>x2</codeph> and <codeph>y2</codeph> for the end. A line has no inside, so it needs a <codeph>stroke</codeph> to be visible.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>polyline</codeph> and <codeph>polygon</codeph></entry>
+                                    <entry><codeph>points</codeph>, a list of x and y pairs. A <codeph>polygon</codeph> closes the shape with a line from the last point to the first one.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>path</codeph></entry>
+                                    <entry><codeph>d</codeph>, the path data.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <fig id="shape-samples">
+                        <title>Shapes and paths</title>
+                        <image href="../images/svg-shapes.svg" placement="break" scale="75">
+                            <alt>A rounded rectangle, a circle, an ellipse and a triangle in a row, with a wavy blue curve and a short brown line below them.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;svg xmlns="http://www.w3.org/2000/svg" width="320" height="140" viewBox="0 0 320 140">
+    &lt;rect x="10" y="10" width="70" height="50" rx="10" fill="#cfe3f5" stroke="#1d4f7a" stroke-width="2"/>
+    &lt;circle cx="125" cy="35" r="25" fill="#f5e6c8" stroke="#7a4a10" stroke-width="2"/>
+    &lt;ellipse cx="195" cy="35" rx="35" ry="22" fill="#d9ecd0" stroke="#2f6b1f" stroke-width="2"/>
+    &lt;polygon points="250,60 275,10 300,60" fill="#f2d4d4" stroke="#8a2a2a" stroke-width="2"/>
+    &lt;path d="M10 110 C 50 80, 90 140, 130 110 S 210 80, 250 110" fill="none" stroke="#1d4f7a" stroke-width="3"/>
+    &lt;line x1="265" y1="95" x2="305" y2="125" stroke="#7a4a10" stroke-width="3"/>
+&lt;/svg>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="write-path-data">
+                <cmd>Write the data of a path</cmd>
+                <info>
+                    <p>The <codeph>d</codeph> attribute is a list of commands, each one with its numbers. A command in capital letters uses absolute coordinates. The same command in lowercase letters uses coordinates relative to the current point:</p>
+                    <table frame="all">
+                        <tgroup cols="3">
+                            <colspec colname="c1" colwidth="1*"/>
+                            <colspec colname="c2" colwidth="2*"/>
+                            <colspec colname="c3" colwidth="4*"/>
+                            <thead>
+                                <row>
+                                    <entry>Command</entry>
+                                    <entry>Numbers</entry>
+                                    <entry>What it does</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>M</codeph>, <codeph>m</codeph></entry>
+                                    <entry>x y</entry>
+                                    <entry>Starts a new part of the path at a point, without drawing.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>L</codeph>, <codeph>l</codeph></entry>
+                                    <entry>x y</entry>
+                                    <entry>Draws a straight line to a point.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>H</codeph>, <codeph>h</codeph>, <codeph>V</codeph>, <codeph>v</codeph></entry>
+                                    <entry>x, or y</entry>
+                                    <entry>Draws a horizontal or a vertical line.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>C</codeph>, <codeph>c</codeph></entry>
+                                    <entry>x1 y1 x2 y2 x y</entry>
+                                    <entry>Draws a cubic Bézier curve with two control points.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>S</codeph>, <codeph>s</codeph></entry>
+                                    <entry>x2 y2 x y</entry>
+                                    <entry>Draws a cubic curve that continues the previous curve smoothly.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>Q</codeph>, <codeph>q</codeph></entry>
+                                    <entry>x1 y1 x y</entry>
+                                    <entry>Draws a quadratic Bézier curve with one control point.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>T</codeph>, <codeph>t</codeph></entry>
+                                    <entry>x y</entry>
+                                    <entry>Draws a quadratic curve that continues the previous curve smoothly.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>A</codeph>, <codeph>a</codeph></entry>
+                                    <entry>rx ry rotation large-arc sweep x y</entry>
+                                    <entry>Draws an arc of an ellipse. The two flags, 0 or 1, choose which of the four possible arcs is drawn.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>Z</codeph>, <codeph>z</codeph></entry>
+                                    <entry>none</entry>
+                                    <entry>Closes the current part with a line to its start.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <p>If the data has an error, CSSMedia draws the path up to the command before the error and ignores the rest.</p>
+                </info>
+            </step>
+            <step id="group-and-transform">
+                <cmd>Group shapes and move them</cmd>
+                <info>
+                    <p>A <codeph>g</codeph> element groups shapes. The properties you set on the group, such as <codeph>fill</codeph>, are inherited by the shapes inside it. The <codeph>transform</codeph> attribute moves, turns or scales the group and everything in it. It is a list of these functions:</p>
+                    <ul>
+                        <li><codeph>translate(x y)</codeph> moves the group.</li>
+                        <li><codeph>scale(x y)</codeph> enlarges or reduces it. With one number, the scale is the same in both directions.</li>
+                        <li><codeph>rotate(angle)</codeph> turns it by an angle in degrees, around the origin of the drawing. <codeph>rotate(angle x y)</codeph> turns it around the point x y.</li>
+                        <li><codeph>skewX(angle)</codeph> and <codeph>skewY(angle)</codeph> slant it.</li>
+                        <li><codeph>matrix(a b c d e f)</codeph> gives the six numbers of the transform directly.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;g transform="translate(40 20) rotate(15)">
+    &lt;rect width="60" height="30" fill="#cfe3f5"/>
+&lt;/g>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The CSS property <codeph>transform</codeph> does the same with CSS syntax: <codeph>transform: translate(40px, 20px) rotate(15deg)</codeph>. You can also use the properties <codeph>rotate</codeph>, <codeph>scale</codeph> and <codeph>translate</codeph> and the 3D functions such as <codeph>rotateY()</codeph> and <codeph>perspective()</codeph>. The origin of a transform in a drawing is the origin of the drawing. Set <codeph>transform-origin</codeph> to turn an element around another point:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.turned {
+    transform: rotate(30deg);
+    transform-origin: 40px 30px;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="define-and-reuse">
+                <cmd>Define a shape once and draw it many times</cmd>
+                <info>
+                    <p>Elements inside <codeph>defs</codeph> are not drawn. Give them an <codeph>id</codeph>, then draw them with a <codeph>use</codeph> element. Its <codeph>href</codeph> names the shape, and its <codeph>x</codeph> and <codeph>y</codeph> move the copy. The copy takes its style from the <codeph>use</codeph> element where the shape does not set its own, so each copy can have another color:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;rect id="cell" width="20" height="20"/>
+&lt;/defs>
+&lt;use href="#cell" x="0" y="0" fill="#cfe3f5"/>
+&lt;use href="#cell" x="30" y="0" fill="#f5e6c8"/>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A <codeph>symbol</codeph> is a shape that has its own <codeph>viewBox</codeph>. It is never drawn by itself, and a <codeph>use</codeph> element that gives it a <codeph>width</codeph> and a <codeph>height</codeph> draws it scaled to that size. A <codeph>use</codeph> element can name an element of another drawing of your document too.</p>
+                </info>
+            </step>
+            <step id="choose-between-alternatives">
+                <cmd>Draw the first alternative that applies</cmd>
+                <info>
+                    <p>A <codeph>switch</codeph> element draws only its first child that has neither the <codeph>systemLanguage</codeph> nor the <codeph>requiredExtensions</codeph> attribute. CSSMedia supports no extension and has no language preference, so the children with these attributes never apply. Put the fallback last, without them.</p>
+                </info>
+            </step>
+            <step id="nest-drawings">
+                <cmd>Nest drawings and hide elements</cmd>
+                <info>
+                    <p>An <codeph>svg</codeph> element inside a drawing makes a nested drawing. Its <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph> and <codeph>height</codeph> place it, and its <codeph>viewBox</codeph> scales its content. What it draws outside its box is cut, unless you set <codeph>overflow: visible</codeph>.</p>
+                    <p>With <codeph>display: none</codeph> an element and its children are not drawn. With <codeph>visibility: hidden</codeph> an element is not painted, but its children can still be visible when they set <codeph>visibility: visible</codeph>.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

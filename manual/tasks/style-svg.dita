@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="style-svg">
+    <title>Style a drawing</title>
+    <shortdesc>You can style the elements of a drawing with attributes, with rules in the drawing and, when the drawing is part of your XML, with the style sheet of your document.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="use-attributes">
+                <cmd>Use presentation attributes for simple drawings</cmd>
+                <info>
+                    <p>Most properties of a drawing can be written as attributes of the element, such as <codeph>fill</codeph>, <codeph>stroke</codeph>, <codeph>stroke-width</codeph> and <codeph>font-size</codeph>. These are presentation attributes. A presentation attribute is the weakest style an element can have: any rule overrides it.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;rect width="60" height="40" fill="#cfe3f5" stroke="#1d4f7a"/>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="use-rules">
+                <cmd>Use rules for the styles you repeat</cmd>
+                <info>
+                    <p>A drawing follows the rules of CSS: selectors, specificity, inheritance and the order of the cascade. These sources of style can reach an element:</p>
+                    <ul>
+                        <li>The presentation attributes of the element. They are the weakest.</li>
+                        <li>The rules of the style sheet of your document, when the drawing is part of your XML.</li>
+                        <li>The rules in a <codeph>style</codeph> element inside the drawing. They come after the rules of your document.</li>
+                        <li>The <codeph>style</codeph> attribute of the element. It wins over the rules.</li>
+                    </ul>
+                    <p>The rules follow the usual order: the more specific selector wins, and the later rule wins when the specificity is the same. A declaration marked <codeph>!important</codeph> wins over the rest.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;svg xmlns="http://www.w3.org/2000/svg" width="100" height="60">
+    &lt;style>
+        .warning { fill: #f2d4d4; stroke: #8a2a2a; }
+    &lt;/style>
+    &lt;rect class="warning" width="100" height="60"/>
+&lt;/svg>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A type selector without a namespace matches the elements of any namespace. When your XML has elements named like those of SVG, such as <codeph>text</codeph>, use a namespace in the selector:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@namespace svg url("http://www.w3.org/2000/svg");
+
+svg|text {
+    font-size: 10pt;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="use-inheritance">
+                <cmd>Let the elements inherit</cmd>
+                <info>
+                    <p>The properties of paint and text are inherited. Set <codeph>fill</codeph> or <codeph>stroke</codeph> on a <codeph>g</codeph> element and every shape inside it uses them. A drawing in your XML also inherits the properties of the elements around it, such as <codeph>font-family</codeph> and <codeph>color</codeph>. The keyword <codeph>currentColor</codeph> is the value of <codeph>color</codeph>, so a drawing can follow the color of the text:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;svg xmlns="http://www.w3.org/2000/svg" width="16" height="16">
+    &lt;circle cx="8" cy="8" r="7" fill="currentColor"/>
+&lt;/svg>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Custom properties work too: define <codeph>--accent</codeph> on the <codeph>svg</codeph> element and write <codeph>fill: var(--accent)</codeph> in a rule.</p>
+                </info>
+            </step>
+            <step id="set-geometry-with-css">
+                <cmd>Set the geometry with CSS</cmd>
+                <info>
+                    <p>The geometry of the shapes is also a set of CSS properties: <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph> and <codeph>height</codeph> for rectangles, <codeph>cx</codeph>, <codeph>cy</codeph> and <codeph>r</codeph> for circles, <codeph>rx</codeph> and <codeph>ry</codeph> for ellipses and rounded corners, and <codeph>d</codeph> for the data of a path. A rule that sets them has the same effect as the attributes, and it can use any length unit and <codeph>calc()</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">circle.dot {
+    cx: 50px;
+    cy: 50px;
+    r: 2em;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Percentages refer to the size of the drawing, or to the area of its <codeph>viewBox</codeph> when it has one.</p>
+                </info>
+            </step>
+            <step id="use-fonts">
+                <cmd>Choose the fonts of the text</cmd>
+                <info>
+                    <p>The text of a drawing in your XML uses the fonts of your document, including the fonts that its <codeph>@font-face</codeph> rules define. A <codeph>style</codeph> element in the drawing can define more fonts for that drawing. A drawing in a file does not see the fonts of your document: it uses the standard fonts, the fonts you give to CSSMedia with the option <codeph>-f</codeph>, and its own <codeph>@font-face</codeph> rules.</p>
+                </info>
+            </step>
+            <step id="link-from-a-drawing">
+                <cmd>Make parts of the drawing links</cmd>
+                <info>
+                    <p>Put the elements in an <codeph>a</codeph> element and write the destination in its <codeph>href</codeph> attribute. The PDF gets a link over the area of the elements, or over the characters of the text:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;a href="https://www.example.com/">
+    &lt;rect width="60" height="20" fill="#cfe3f5"/>
+&lt;/a>
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="clip-and-mask">
+    <title>Clip, mask and blend</title>
+    <shortdesc>You can show only a part of an element, fade it with a mask, and choose how it mixes with what is behind it.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="clip-an-element">
+                <cmd>Clip an element</cmd>
+                <info>
+                    <p>A clip cuts away the parts of an element outside an area. Define the area with a <codeph>clipPath</codeph> element, and name it in the <codeph>clip-path</codeph> property of the element. The shapes inside the <codeph>clipPath</codeph> make the area: the parts of the element that are under them stay visible. The <codeph>clip-rule</codeph> property of a shape works as <codeph>fill-rule</codeph> does for the area it makes.</p>
+                    <p>By default the numbers inside a <codeph>clipPath</codeph> are user units. With <codeph>clipPathUnits="objectBoundingBox"</codeph> they are fractions of the box of the clipped element, so the same clip fits elements of any size. A <codeph>clip-path</codeph> that names something that is not a <codeph>clipPath</codeph> clips nothing.</p>
+                    <p>The <codeph>clip-path</codeph> property accepts basic shapes too: <codeph>circle()</codeph>, <codeph>ellipse()</codeph>, <codeph>inset()</codeph>, <codeph>polygon()</codeph> and <codeph>path()</codeph>. A word before or after the shape chooses the box the shape is measured in: <codeph>fill-box</codeph> is the box of the shape without its stroke, <codeph>stroke-box</codeph> includes the stroke, and <codeph>view-box</codeph> is the whole drawing.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;clipPath id="disc">
+        &lt;circle cx="55" cy="45" r="32"/>
+    &lt;/clipPath>
+&lt;/defs>
+&lt;rect x="10" y="10" width="90" height="70" fill="#cfe3f5" clip-path="url(#disc)"/>
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">.badge {
+    clip-path: circle(40%);
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="mask-an-element">
+                <cmd>Fade an element with a mask</cmd>
+                <info>
+                    <p>A mask makes parts of an element transparent. Define it with a <codeph>mask</codeph> element, and name it in the <codeph>mask</codeph> property or attribute of the element. The children of the <codeph>mask</codeph> are drawn, and where they are light the element shows, and where they are dark it is transparent. The mask uses the luminance of the colors, with their opacity. With <codeph>mask-type: alpha</codeph> on the <codeph>mask</codeph> element, the mask uses only the opacity of what is drawn, and the colors do not matter.</p>
+                    <p>A mask has a region, given by <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph> and <codeph>height</codeph>, outside which the element is not shown. It is the box of the masked element made 10% larger on every side, as the initial values <codeph>-10%</codeph> and <codeph>120%</codeph> say. The attribute <codeph>maskUnits="userSpaceOnUse"</codeph> gives them in user units. The attribute <codeph>maskContentUnits="objectBoundingBox"</codeph> makes the numbers of the children fractions of the box of the element. A mask that names nothing makes the element invisible.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;linearGradient id="ramp">
+        &lt;stop offset="0" stop-color="#ffffff"/>
+        &lt;stop offset="1" stop-color="#000000"/>
+    &lt;/linearGradient>
+    &lt;mask id="fade-out">
+        &lt;rect x="120" y="10" width="95" height="70" fill="url(#ramp)"/>
+    &lt;/mask>
+&lt;/defs>
+&lt;rect x="120" y="10" width="95" height="70" fill="#1d4f7a" mask="url(#fade-out)"/>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="blend-elements">
+                <cmd>Blend an element with what is behind it</cmd>
+                <info>
+                    <p>The <codeph>mix-blend-mode</codeph> property chooses how the colors of an element mix with the colors under it. The initial value is <codeph>normal</codeph>. The values such as <codeph>multiply</codeph>, <codeph>screen</codeph>, <codeph>overlay</codeph>, <codeph>darken</codeph> and <codeph>difference</codeph> are the blend modes of the PDF format. The property <codeph>isolation: isolate</codeph> on a group stops its children from blending with what is outside the group.</p>
+                    <fig id="clip-mask-samples">
+                        <title>A clip, a mask and a blend mode</title>
+                        <image href="../images/svg-clip-mask.svg" placement="break" scale="75">
+                            <alt>A light blue disc cut from a rectangle. A dark blue rectangle that fades from opaque on the left to transparent on the right. Two overlapping circles, blue and yellow, whose overlap is green.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;circle cx="260" cy="45" r="28" fill="#6fc3e8"/>
+&lt;circle cx="285" cy="45" r="28" fill="#f2d649" style="mix-blend-mode: multiply"/>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A group with an <codeph>opacity</codeph> below 1, a clip or a mask is isolated too.</p>
+                </info>
+            </step>
+        </steps>
+        <!-- TODO: mask-image with a file or a gradient, the other mask longhands and mask-border, and the filter property stop the run in a drawing; the values of mix-blend-mode set on the svg element itself stop the run -->
+    </taskbody>
+</task>

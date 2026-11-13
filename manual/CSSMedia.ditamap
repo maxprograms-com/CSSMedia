@@ -115,18 +115,20 @@
         <!-- TODO: placeholder, write this chapter -->
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>Images</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+    <chapter href="concepts/intro-images.dita">
+        <topicref href="tasks/place-images.dita"/>
+        <topicref href="tasks/fit-images.dita"/>
+        <topicref href="references/image-chapter-reference.dita"/>
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>SVG</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+    <chapter href="concepts/intro-svg.dita">
+        <topicref href="tasks/place-svg.dita"/>
+        <topicref href="tasks/style-svg.dita"/>
+        <topicref href="tasks/draw-shapes.dita"/>
+        <topicref href="tasks/paint-shapes.dita"/>
+        <topicref href="tasks/clip-and-mask.dita"/>
+        <topicref href="tasks/svg-text.dita"/>
+        <topicref href="references/svg-chapter-reference.dita"/>
     </chapter>
 
     <chapter>
@@ -176,6 +178,7 @@
                 <topicref href="glossaries/OpenType.dita" type="glossentry"/>
                 <topicref href="glossaries/PDF.dita" type="glossentry"/>
                 <topicref href="glossaries/RelaxNG.dita" type="glossentry"/>
+                <topicref href="glossaries/ReplacedElement.dita" type="glossentry"/>
                 <topicref href="glossaries/VariableFont.dita" type="glossentry"/>
                 <topicref href="glossaries/SVG.dita" type="glossentry"/>
                 <topicref href="glossaries/XML.dita" type="glossentry"/>

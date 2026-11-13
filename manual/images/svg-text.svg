@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="340" height="170" viewBox="0 0 340 170" font-family="Helvetica, Arial, sans-serif">
+    <defs>
+        <path id="curve" d="M10 150 C 50 90, 130 90, 170 150"/>
+    </defs>
+    <text x="10" y="30" font-size="20" fill="#222222">Plain <tspan fill="#8a2a2a" font-weight="bold">text</tspan> with a <tspan dy="-6" font-size="14" fill="#1d4f7a">raised</tspan><tspan dy="6"> word</tspan></text>
+    <text font-size="16" fill="#1d4f7a"><textPath href="#curve" startOffset="10">Text that follows a path</textPath></text>
+    <circle cx="260" cy="95" r="60" fill="#eef4fa" stroke="#1d4f7a"/>
+    <text x="205" y="60" font-size="12" fill="#222222" style="shape-inside: circle(58px at 260px 95px)">Lines of this text are shorter near the top and the bottom of the circle that holds them.</text>
+</svg>

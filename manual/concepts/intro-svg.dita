@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introSvg">
+    <title>SVG</title>
+    <shortdesc>With <xref href="../glossaries/SVG.dita">SVG</xref> you draw shapes, curves, gradients and text. CSSMedia draws them as vector graphics in the PDF, so they stay sharp at any size. This chapter explains how to put a drawing in your document, how to style it and which parts of SVG you can use. The <xref href="../references/svg-chapter-reference.dita#svg-chapter-reference">SVG reference</xref> at the end lists the properties and elements.</shortdesc>
+    <conbody>
+        <p>A drawing is a tree of elements, written in <xref href="../glossaries/XML.dita">XML</xref>. It can be part of your own XML, or it can be a file that an element shows as an image. In both cases CSSMedia reads the drawing, applies the style sheets that reach it and writes the result as lines, curves and text in the PDF. Nothing becomes a bitmap, and the text of a drawing stays text.</p>
+        <p>SVG elements belong to a namespace, so every <codeph>svg</codeph> element declares it:</p>
+        <pre outputclass="language-xml">&lt;svg xmlns="http://www.w3.org/2000/svg" width="120" height="60">
+    &lt;rect width="120" height="60" fill="#cfe3f5"/>
+&lt;/svg>
+</pre>
+        <p>A drawing has its own coordinate system. Its origin is the top left corner, the x axis goes to the right and the y axis goes down. One unit of this system, a <term>user unit</term>, is one CSS pixel. The <codeph>viewBox</codeph> attribute changes the scale, as <xref href="../tasks/place-svg.dita#place-svg">Put a drawing in your document</xref> shows.</p>
+        <p>The element names are fixed by SVG. These are the elements that CSSMedia draws or uses:</p>
+        <table frame="all">
+            <tgroup cols="2">
+                <colspec colname="c1" colwidth="1*"/>
+                <colspec colname="c2" colwidth="4*"/>
+                <thead>
+                    <row>
+                        <entry>Element</entry>
+                        <entry>What it does</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><codeph>svg</codeph></entry>
+                        <entry>Holds a drawing. Inside another drawing, it makes a nested drawing with its own size and scale.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>rect</codeph>, <codeph>circle</codeph>, <codeph>ellipse</codeph>, <codeph>line</codeph>, <codeph>polyline</codeph>, <codeph>polygon</codeph>, <codeph>path</codeph></entry>
+                        <entry>Draw shapes.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>g</codeph>, <codeph>defs</codeph>, <codeph>use</codeph>, <codeph>symbol</codeph>, <codeph>switch</codeph></entry>
+                        <entry>Group shapes, define shapes that are drawn later, and repeat them.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>linearGradient</codeph>, <codeph>radialGradient</codeph>, <codeph>stop</codeph>, <codeph>pattern</codeph></entry>
+                        <entry>Define the paints that fill and outline shapes.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>marker</codeph></entry>
+                        <entry>Defines a mark that is drawn at the vertices of a shape.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>clipPath</codeph>, <codeph>mask</codeph></entry>
+                        <entry>Define the area where another element shows.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>text</codeph>, <codeph>tspan</codeph>, <codeph>textPath</codeph></entry>
+                        <entry>Write text, in a line, along a path or inside a shape.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>image</codeph></entry>
+                        <entry>Shows a PNG, JPEG or WebP image, or another SVG file.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>a</codeph></entry>
+                        <entry>Makes the elements inside it a link.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>style</codeph></entry>
+                        <entry>Holds a style sheet for the drawing.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <p>The elements <codeph>title</codeph>, <codeph>desc</codeph> and <codeph>metadata</codeph> describe a drawing and are not drawn.</p>
+        <!-- TODO: foreignObject, the filter property, mask images other than mask elements, the rule @color-profile, container style queries in a drawing and the paint of shape-inside from a gradient or other image function stop the run -->
+        <p>The elements of SVG that are for screens, such as <codeph>animate</codeph> and <codeph>script</codeph>, have no effect in a PDF.</p>
+        <p>A drawing uses the same CSS as the rest of your document. Properties such as <codeph>fill</codeph> and <codeph>stroke</codeph> are CSS properties, and the style sheet of your document reaches the elements of a drawing that is part of your XML. The topics of this chapter follow the work of making a drawing:</p>
+        <ul>
+            <li><xref href="../tasks/place-svg.dita"/></li>
+            <li><xref href="../tasks/style-svg.dita"/></li>
+            <li><xref href="../tasks/draw-shapes.dita"/></li>
+            <li><xref href="../tasks/paint-shapes.dita"/></li>
+            <li><xref href="../tasks/clip-and-mask.dita"/></li>
+            <li><xref href="../tasks/svg-text.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

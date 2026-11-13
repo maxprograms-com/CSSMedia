@@ -36,7 +36,7 @@
                 </stepxmp>
                 <info>
                     <p>The watermark is above the gradient, and the background color is below both. A relative <codeph>url()</codeph> is found from the location of the stylesheet.</p>
-                    <!-- TODO: background-image is not complete: natural sizes of image() and image-set(), element() -->
+                    <!-- TODO: background-image is not complete: element(); the fragment of image() (url(sprite.svg#icon)), which is read as part of the URL; slice, the positioning of the background of a box that breaks across pages or lines as if the box were whole (box-decoration-break: slice); background-clip: text and border-area inside a MathML formula -->
                 </info>
             </step>
             <step id="place-an-image">

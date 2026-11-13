@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="paint-shapes">
+    <title>Paint shapes</title>
+    <shortdesc>A shape has a fill, which paints its inside, and a stroke, which paints its outline. You choose their colors, their opacity, the look of the outline, and gradients, patterns and markers.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="fill-and-stroke">
+                <cmd>Choose the fill and the stroke</cmd>
+                <info>
+                    <p>The <codeph>fill</codeph> property paints the inside of a shape. Its initial value is black. The <codeph>stroke</codeph> property paints the outline, and its initial value is <codeph>none</codeph>, so a shape has no outline until you give it a paint. A paint is a color, <codeph>none</codeph>, <codeph>currentColor</codeph> or a reference to a gradient or a pattern, written as <codeph>url(#id)</codeph>. After a reference you can write a color that is used when the reference names nothing.</p>
+                    <p>When a shape crosses itself, or has holes, <codeph>fill-rule</codeph> decides which areas are inside. With <codeph>nonzero</codeph>, the initial value, an inner outline that goes in the same direction as the outer one is filled too, and one that goes in the opposite direction is a hole. With <codeph>evenodd</codeph> every second area is empty, whatever the directions are.</p>
+                    <p>The properties <codeph>fill-opacity</codeph> and <codeph>stroke-opacity</codeph> make each paint transparent, with a number from 0 to 1. The property <codeph>opacity</codeph> makes the whole element transparent, fill, stroke and children together, so the overlaps do not show.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.alert {
+    fill: #f2d4d4;
+    stroke: #8a2a2a;
+    stroke-width: 2;
+    fill-opacity: 0.8;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="shape-the-stroke">
+                <cmd>Shape the outline</cmd>
+                <info>
+                    <p>These properties change how the outline looks:</p>
+                    <ul>
+                        <li><codeph>stroke-width</codeph> is the thickness. The initial value is 1.</li>
+                        <li><codeph>stroke-linecap</codeph> is the end of an open line: <codeph>butt</codeph> ends it flat at the point, <codeph>round</codeph> adds a half circle and <codeph>square</codeph> adds half the width.</li>
+                        <li><codeph>stroke-linejoin</codeph> is the corner: <codeph>miter</codeph>, <codeph>round</codeph> or <codeph>bevel</codeph>. A sharp miter turns into a bevel when it is longer than <codeph>stroke-miterlimit</codeph> times the width, which is 4 initially.</li>
+                        <li><codeph>stroke-dasharray</codeph> makes a dashed line. It is a list of lengths for dashes and gaps, in turn. A list with an odd number of lengths is repeated, so <codeph>10 5 3</codeph> means <codeph>10 5 3 10 5 3</codeph>. A negative length makes the list invalid.</li>
+                        <li><codeph>stroke-dashoffset</codeph> moves the start of the pattern along the line.</li>
+                    </ul>
+                    <fig id="stroke-samples">
+                        <title>Caps, joins and dashes</title>
+                        <image href="../images/svg-strokes.svg" placement="break" scale="75">
+                            <alt>Three thick blue lines with butt, round and square ends. Two thick blue angles with a miter and a round corner. Below, three brown lines with long dashes, round dots and a pattern of long and short dashes.</alt>
+                        </image>
+                    </fig>
+                    <p>The <codeph>paint-order</codeph> property decides what is painted first. The value <codeph>stroke</codeph> paints the outline under the fill, so a thick outline does not cover the inside of the shape. The value <codeph>fill stroke markers</codeph> is the initial one.</p>
+                    <p>The <codeph>pathLength</codeph> attribute of a shape tells CSSMedia to measure the shape as if it had that length, so lengths in <codeph>stroke-dasharray</codeph> scale with it. This line is 80 units long and counts as 100, so each dash of 10 is 8 units long:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;line x1="10" y1="20" x2="90" y2="20" stroke="black" pathLength="100" stroke-dasharray="10 10"/>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The property <codeph>vector-effect: non-scaling-stroke</codeph> keeps the thickness of the outline when a transform scales the shape.</p>
+                </info>
+            </step>
+            <step id="use-gradients">
+                <cmd>Fill with a gradient</cmd>
+                <info>
+                    <p>Define a gradient in <codeph>defs</codeph>, give it an <codeph>id</codeph> and use the reference as a paint. A <codeph>linearGradient</codeph> changes the color along a line, and a <codeph>radialGradient</codeph> changes it from a center to a circle. The <codeph>stop</codeph> elements inside give the colors:</p>
+                    <ul>
+                        <li><codeph>offset</codeph> is the position of the stop, from 0 to 1 or in percent.</li>
+                        <li><codeph>stop-color</codeph> is its color and <codeph>stop-opacity</codeph> its opacity.</li>
+                    </ul>
+                    <p>A linear gradient goes from <codeph>x1</codeph> <codeph>y1</codeph> to <codeph>x2</codeph> <codeph>y2</codeph>, which are 0% 0% and 100% 0% initially, so it goes from left to right. A radial gradient has the center <codeph>cx</codeph> <codeph>cy</codeph>, the radius <codeph>r</codeph> and the focus <codeph>fx</codeph> <codeph>fy</codeph>, the point where the first stop is painted. These attributes are fractions of the box of the shape. Set <codeph>gradientUnits="userSpaceOnUse"</codeph> to give them in user units, and use <codeph>gradientTransform</codeph> to turn or scale the gradient.</p>
+                    <p>The attribute <codeph>spreadMethod</codeph> decides what happens outside the line of the gradient: <codeph>pad</codeph> extends the last colors, <codeph>repeat</codeph> starts again and <codeph>reflect</codeph> goes back. The property <codeph>color-interpolation</codeph> set to <codeph>linearRGB</codeph> mixes the colors in a linear color space, which gives brighter middle colors.</p>
+                    <p>A gradient can take its stops and attributes from another gradient, named with <codeph>href</codeph>. A gradient with one stop paints that color, and a gradient without stops paints nothing.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;linearGradient id="fade">
+        &lt;stop offset="0" stop-color="#cfe3f5"/>
+        &lt;stop offset="1" stop-color="#1d4f7a"/>
+    &lt;/linearGradient>
+&lt;/defs>
+&lt;rect width="95" height="70" fill="url(#fade)"/>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="use-patterns">
+                <cmd>Fill with a pattern</cmd>
+                <info>
+                    <p>A <codeph>pattern</codeph> repeats a small drawing, the tile, to fill a shape. The tile is at <codeph>x</codeph> <codeph>y</codeph> and has the size <codeph>width</codeph> by <codeph>height</codeph>. These numbers are fractions of the box of the shape, unless you set <codeph>patternUnits="userSpaceOnUse"</codeph>. The elements inside the pattern are the drawing of the tile. A <codeph>viewBox</codeph> scales it to the tile, and <codeph>patternTransform</codeph> turns or scales the whole pattern.</p>
+                    <fig id="paint-server-samples">
+                        <title>A gradient, a radial gradient and a pattern</title>
+                        <image href="../images/svg-paint-servers.svg" placement="break" scale="75">
+                            <alt>Three rectangles. The first has a linear gradient from light blue on the left to dark blue on the right. The second has a radial gradient from white in the center to dark green at the edges. The third is filled with a regular grid of red dots.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;pattern id="dots" width="12" height="12" patternUnits="userSpaceOnUse">
+        &lt;circle cx="6" cy="6" r="3" fill="#8a2a2a"/>
+    &lt;/pattern>
+&lt;/defs>
+&lt;rect width="95" height="70" fill="url(#dots)"/>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="add-markers">
+                <cmd>Mark the vertices</cmd>
+                <info>
+                    <p>A <codeph>marker</codeph> is a small drawing that CSSMedia repeats on the vertices of a line, a polyline, a polygon or a path. Define it in <codeph>defs</codeph> and name it in these properties of the shape: <codeph>marker-start</codeph> for the first vertex, <codeph>marker-mid</codeph> for the ones between and <codeph>marker-end</codeph> for the last. The property <codeph>marker</codeph> sets the three at once.</p>
+                    <p>These attributes of the <codeph>marker</codeph> element control the mark:</p>
+                    <ul>
+                        <li><codeph>markerWidth</codeph> and <codeph>markerHeight</codeph> give its size, 3 by 3 initially. A <codeph>viewBox</codeph> scales the drawing to that size.</li>
+                        <li><codeph>refX</codeph> and <codeph>refY</codeph> give the point of the mark that goes on the vertex.</li>
+                        <li><codeph>orient</codeph> is the direction. With <codeph>auto</codeph> the mark follows the direction of the line, and with an angle it is fixed.</li>
+                        <li><codeph>markerUnits</codeph> is <codeph>strokeWidth</codeph> initially, so the mark is scaled by the thickness of the line. With <codeph>userSpaceOnUse</codeph> it has the size of its numbers.</li>
+                    </ul>
+                    <fig id="marker-samples">
+                        <title>Markers</title>
+                        <image href="../images/svg-markers.svg" placement="break" scale="75">
+                            <alt>A zigzag line with red dots at its start and at its two inner corners, and a blue arrow at its end. Next to it, a curve ends with an arrow that points along the curve.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;marker id="arrow" viewBox="0 0 10 10" markerWidth="5" markerHeight="5" refX="5" refY="5" orient="auto">
+        &lt;path d="M0 0 L10 5 L0 10 Z" fill="#1d4f7a"/>
+    &lt;/marker>
+&lt;/defs>
+&lt;path d="M230 80 Q 260 10 300 60" fill="none" stroke="#555555" stroke-width="3" marker-end="url(#arrow)"/>
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+        <!-- TODO: stroke-alignment, stroke-dashadjust, stroke-dashcorner, marker-pattern, marker-segment and the knockout properties of markers are read and not painted; the vector-effect values non-scaling-size, non-rotation and fixed-position have no effect -->
+    </taskbody>
+</task>

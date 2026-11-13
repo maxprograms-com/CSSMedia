@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="svg-text">
+    <title>Write text in a drawing</title>
+    <shortdesc>The text of a drawing is text in the PDF, with the fonts you choose. You can place it character by character, set it along a path, wrap it to a width or pour it into a shape.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="write-a-line">
+                <cmd>Write a line of text</cmd>
+                <info>
+                    <p>A <codeph>text</codeph> element writes a line. Its <codeph>x</codeph> and <codeph>y</codeph> attributes give the point where the line starts. The y is the baseline, the line the letters stand on, so letters go above it. The properties <codeph>font-family</codeph>, <codeph>font-size</codeph>, <codeph>font-weight</codeph> and <codeph>font-style</codeph>, and the other font properties of <xref href="font-properties.dita#font-properties">Font selection and sizing</xref>, work as they do in the rest of the document. The text is painted with <codeph>fill</codeph> and <codeph>stroke</codeph>, like a shape.</p>
+                    <p>The property <codeph>text-anchor</codeph> chooses which part of the line is at the point: <codeph>start</codeph>, the initial value, <codeph>middle</codeph> or <codeph>end</codeph>. Use <codeph>middle</codeph> to center a label on a point.</p>
+                    <p>Spaces and line feeds in the text collapse, as they do in the rest of your document. Set <codeph>xml:space="preserve"</codeph>, or <codeph>white-space: pre</codeph>, to keep them.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;text x="10" y="30" font-size="20" fill="#222222">Plain &lt;tspan fill="#8a2a2a" font-weight="bold">text&lt;/tspan> with a &lt;tspan dy="-6" font-size="14" fill="#1d4f7a">raised&lt;/tspan>&lt;tspan dy="6"> word&lt;/tspan>&lt;/text>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="change-parts-of-a-line">
+                <cmd>Change and move parts of a line</cmd>
+                <info>
+                    <p>A <codeph>tspan</codeph> element is a part of the text with its own style or position. It can have all the attributes of <codeph>text</codeph>. These attributes place the characters:</p>
+                    <ul>
+                        <li><codeph>x</codeph> and <codeph>y</codeph> set the position of characters. A list of numbers, such as <codeph>x="10 30 50"</codeph>, sets one position for each of the first characters. The characters after the last number follow the previous one.</li>
+                        <li><codeph>dx</codeph> and <codeph>dy</codeph> move a character and the ones after it, by the lengths they give. They can be lists too.</li>
+                        <li><codeph>rotate</codeph> turns each character, by the angles of its list in degrees. The last angle is used for the rest of the characters.</li>
+                    </ul>
+                    <p>The property <codeph>baseline-shift</codeph> raises or lowers a part of the line, with the values <codeph>super</codeph> and <codeph>sub</codeph> or a length. The property <codeph>dominant-baseline</codeph> chooses the baseline of the text that is placed at the y, such as <codeph>middle</codeph> or <codeph>hanging</codeph>.</p>
+                    <p>The properties <codeph>letter-spacing</codeph>, <codeph>word-spacing</codeph> and <codeph>text-decoration</codeph> work as in the rest of your document. The attribute <codeph>textLength</codeph> gives the length that the text must have. The attribute <codeph>lengthAdjust</codeph> chooses how CSSMedia reaches it: <codeph>spacing</codeph>, the initial value, changes the space between characters, and <codeph>spacingAndGlyphs</codeph> stretches the characters too.</p>
+                </info>
+            </step>
+            <step id="write-along-a-path">
+                <cmd>Write along a path</cmd>
+                <info>
+                    <p>Put a <codeph>textPath</codeph> element inside a <codeph>text</codeph> element, and name a shape in its <codeph>href</codeph>. The text follows the outline of the shape. The attribute <codeph>startOffset</codeph> moves the start along the path, with a length or a percentage of the length of the path. With <codeph>side="right"</codeph> the text goes on the right side of the path, in the opposite direction.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;path id="curve" d="M10 150 C 50 90, 130 90, 170 150"/>
+&lt;/defs>
+&lt;text font-size="16" fill="#1d4f7a">&lt;textPath href="#curve" startOffset="10">Text that follows a path&lt;/textPath>&lt;/text>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="wrap-text">
+                <cmd>Wrap text to a width or into a shape</cmd>
+                <info>
+                    <p>With the property <codeph>inline-size</codeph> on a <codeph>text</codeph> element, the text wraps to lines of that length. The line breaks follow the rules of the languages of the text. The property <codeph>text-anchor</codeph> aligns the lines in the length.</p>
+                    <p>With the property <codeph>shape-inside</codeph> the text fills a shape. Each line is as long as the shape is wide at that height, and the text goes around the holes. The value is a basic shape, such as <codeph>circle()</codeph>, <codeph>ellipse()</codeph>, <codeph>polygon()</codeph> or <codeph>inset()</codeph>, a reference to a shape of the drawing, such as <codeph>url(#id)</codeph>, or the URL of an image, whose opaque pixels are the area. In a shape, <codeph>text-align</codeph> aligns the lines, and <codeph>text-align: justify</codeph> makes them fill the width.</p>
+                    <fig id="svg-text-samples">
+                        <title>A line, text on a path and text in a shape</title>
+                        <image href="../images/svg-text.svg" placement="break" scale="75">
+                            <alt>A line of text with a bold red word and a small raised blue word. Below it, blue text that follows an arch. On the right, a circle with a few lines of text inside it, which are shorter near the top and the bottom.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;circle cx="260" cy="95" r="60" fill="#eef4fa" stroke="#1d4f7a"/>
+&lt;text x="205" y="60" font-size="12" fill="#222222" style="shape-inside: circle(58px at 260px 95px)">Lines of this text are shorter near the top and the bottom of the circle that holds them.&lt;/text>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="write-vertically">
+                <cmd>Write vertically or from right to left</cmd>
+                <info>
+                    <p>The property <codeph>writing-mode</codeph> set to <codeph>vertical-rl</codeph> or <codeph>vertical-lr</codeph> writes the text in vertical lines, as in the languages of East Asia, and <codeph>text-orientation</codeph> chooses how its characters are turned. The property <codeph>direction: rtl</codeph> and the Unicode bidirectional algorithm write text from right to left where the language needs it.</p>
+                </info>
+            </step>
+        </steps>
+        <!-- TODO: method="stretch" and spacing="auto" of textPath, text-overflow, text-decoration-style and the other decoration properties, dominant-baseline on a tspan, alignment-baseline outside wrapped text, and shape-inside from a gradient are not painted or stop the run -->
+    </taskbody>
+</task>

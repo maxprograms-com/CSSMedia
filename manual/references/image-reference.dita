@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="image-reference">
+    <title>Images</title>
+    <shortdesc>This reference lists the properties that CSSMedia uses to size, fit and draw images.</shortdesc>
+    <refbody>
+        <section id="image-properties">
+            <title>Image properties</title>
+            <table id="image-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>image-resolution</codeph></entry>
+                            <entry>Sets how many pixels of a raster image make one CSS pixel, which sets its natural size. <codeph>from-image</codeph> uses the resolution that the file states.</entry>
+                            <entry><codeph>from-image</codeph>, a resolution such as <codeph>2dppx</codeph> or <codeph>192dpi</codeph>, or both</entry>
+                            <entry><codeph>1dppx</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-images-4/#the-image-resolution" scope="external" format="html">CSS Images 4 §6.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>object-fit</codeph></entry>
+                            <entry>Chooses how an image fills its box: stretched, scaled to fit, scaled to cover, or at its natural size.</entry>
+                            <entry><codeph>fill</codeph>, <codeph>none</codeph>, <codeph>contain</codeph>, <codeph>cover</codeph> or <codeph>scale-down</codeph>; <codeph>scale-down</codeph> can follow <codeph>contain</codeph> or <codeph>cover</codeph></entry>
+                            <entry><codeph>fill</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-images-4/#the-object-fit" scope="external" format="html">CSS Images 4 §5.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>object-position</codeph></entry>
+                            <entry>Sets where an image goes in its box when it does not fill it.</entry>
+                            <entry>One to four values: keywords, lengths and percentages, as in <codeph>background-position</codeph></entry>
+                            <entry><codeph>50% 50%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-images-3/#the-object-position" scope="external" format="html">CSS Images 3 §4.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>image-orientation</codeph></entry>
+                            <entry>Chooses whether an image is turned as its file says, and can turn or mirror it.</entry>
+                            <entry><codeph>from-image</codeph>, <codeph>none</codeph>, or an angle and <codeph>flip</codeph></entry>
+                            <entry><codeph>from-image</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-images-3/#the-image-orientation" scope="external" format="html">CSS Images 3 §5.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>image-rendering</codeph></entry>
+                            <entry>Chooses how the pixels of an image are drawn when it is shown larger than its size: smoothed, with sharp edges, or enlarged by whole multiples of its pixels.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>smooth</codeph>, <codeph>high-quality</codeph>, <codeph>pixelated</codeph> or <codeph>crisp-edges</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-images-3/#the-image-rendering" scope="external" format="html">CSS Images 3 §5.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>image-animation</codeph></entry>
+                            <entry>Chooses whether an animated image plays. A PDF does not move, so it has no effect.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>paused</codeph>, <codeph>stopped</codeph> or <codeph>running</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-image-animation-1/#propdef-image-animation" scope="external" format="html">CSS Image Animation 1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

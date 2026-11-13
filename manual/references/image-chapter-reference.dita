@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="image-chapter-reference">
+    <title>Images reference</title>
+    <shortdesc>This reference lists the properties that CSSMedia uses to show images and to size and fit them. Backgrounds and the box sizes are in the <xref href="box-chapter-reference.dita#box-chapter-reference">boxes reference</xref>.</shortdesc>
+    <refbody>
+        <section id="image-content">
+            <title>Making an element an image</title>
+            <table id="image-content__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-content/row-content"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section conkeyref="ref-images/image-properties"/>
+    </refbody>
+</reference>

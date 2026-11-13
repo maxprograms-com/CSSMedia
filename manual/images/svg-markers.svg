@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="110" viewBox="0 0 320 110" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <defs>
+        <marker id="dot" viewBox="0 0 10 10" markerWidth="5" markerHeight="5" refX="5" refY="5">
+            <circle cx="5" cy="5" r="5" fill="#8a2a2a"/>
+        </marker>
+        <marker id="arrow" viewBox="0 0 10 10" markerWidth="5" markerHeight="5" refX="5" refY="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#1d4f7a"/>
+        </marker>
+    </defs>
+    <polyline points="20,70 80,20 140,70 200,20" fill="none" stroke="#555555" stroke-width="3" marker-start="url(#dot)" marker-mid="url(#dot)" marker-end="url(#arrow)"/>
+    <path d="M230 80 Q 260 10 300 60" fill="none" stroke="#555555" stroke-width="3" marker-end="url(#arrow)"/>
+    <g fill="#222222" text-anchor="middle">
+        <text x="110" y="100">marker-start, marker-mid and marker-end</text>
+        <text x="265" y="100">orient="auto"</text>
+    </g>
+</svg>
