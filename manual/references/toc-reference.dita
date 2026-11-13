@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="toc-reference">
+    <title>Table of contents</title>
+    <shortdesc>This reference lists the properties, functions and at-rules that CSSMedia uses for bookmarks and tables of contents.</shortdesc>
+    <refbody>
+        <section id="toc-properties">
+            <title>Properties and functions</title>
+            <table id="toc-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-content/row-bookmark-level"/>
+                        <row conkeyref="ref-content/row-bookmark-label"/>
+                        <row conkeyref="ref-content/row-bookmark-state"/>
+                        <row conkeyref="ref-content/row-toc-function"/>
+                        <row conkeyref="ref-content/row-toc-title"/>
+                        <row conkeyref="ref-content/row-toc-depth"/>
+                        <row conkeyref="ref-content/row-toc-label"/>
+                        <row conkeyref="ref-content/row-toc-divider"/>
+                        <row conkeyref="ref-content/row-toc-leader"/>
+                        <row conkeyref="ref-content/row-leader"/>
+                        <row conkeyref="ref-content/row-target-counter"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="toc-at-rules">
+            <title>At-rules</title>
+            <table id="toc-at-rules__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-content/row-toc-title-rule"/>
+                        <row conkeyref="ref-content/row-toc-entry-rule"/>
+                        <row conkeyref="ref-content/row-toc-divider-rule"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

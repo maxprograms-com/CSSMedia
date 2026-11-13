@@ -32,3 +32,12 @@ cssmedia -x CSSMedia_MERGED.xml -c stylesheets/ditac.css -p CSSMedia.pdf
 rm CSSMedia_MERGED.xml
 rm -rf img/
 ```
+
+The *CSS Reference* is a separate PDF with the reference tables of the guide. Execute these commands to build `CSSReference.pdf`:
+
+``` bash
+typesditac CSSReference.ditamap --merge -o CSSReference_MERGED.xml 
+cssmedia -x CSSReference_MERGED.xml -c stylesheets/ditac.css -p CSSReference.pdf 
+rm CSSReference_MERGED.xml
+rm -rf img/
+```

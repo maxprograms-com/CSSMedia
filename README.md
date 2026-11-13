@@ -16,7 +16,8 @@ Styling comes from CSS alone. The engine makes no assumptions about element name
 
 > **Work in progress.** CSSMedia already generates PDF files and is under active development. Support for CSS features is not complete yet, and more is being added.
 
-- **[User Manual](manual/CSSMedia.pdf)**
+- **[User Manual](manual/CSSMedia.pdf)**: how to run CSSMedia and write stylesheets for it.
+- **[CSS Reference](manual/CSSReference.pdf)**: every selector, property, at-rule and descriptor that CSSMedia supports, with the CSS specification that defines it.
 - **[Quick Start](#quick-start)**
 - **[Why CSSMedia](#why-cssmedia)**
 - **[Features](#features)**
@@ -74,6 +75,7 @@ CSSMedia replaces that pipeline with a single CSS stylesheet applied directly to
 - **Fonts**: OpenType, TrueType, collections, WOFF and WOFF 2.0 files, loaded from `@font-face` rules or a fonts folder, plus the 14 standard PDF fonts.
 - **Images**: readers for PNG, JPEG, JPEG 2000 and WebP, written in CSSMedia's own code.
 - **SVG and MathML**: SVG and MathML found in a document are handled as images.
+- **Documentation**: the [User Manual](manual/CSSMedia.pdf) explains how to use CSSMedia, and the [CSS Reference](manual/CSSReference.pdf) is a separate PDF that lists everything the stylesheets can use, with a link to the specification of each entry.
 - **Dependencies**: XML is parsed with [TypesXML](https://www.npmjs.com/package/typesxml), language tags are handled with [TypesBCP47](https://www.npmjs.com/package/typesbcp47), CSS syntax is parsed with `css-tree`, and `pdfnative` provides font data and the shaping of Indic and other complex scripts.
 
 ## Samples
@@ -174,7 +176,7 @@ Warnings are printed to stderr. When processing fails, the program prints the er
 
 ### Fonts
 
-Fonts come from the `@font-face` rules of the stylesheet, then from the folder given with `-f`. CSSMedia does not search the fonts installed on the computer. The 14 standard PDF fonts are always available under the family names `Times`, `Helvetica`, `Courier`, `Symbol` and `ZapfDingbats`. A declared family or a family in the `-f` folder with the same name takes precedence.
+Fonts come from the `@font-face` rules of the stylesheet, then from the folder given with `-f`. CSSMedia does not search the fonts installed on the computer. The 14 standard PDF fonts are always available under the family names `Times`, `Helvetica`, `Courier`, `Symbol` and `ZapfDingbats`. A family declared with `@font-face` takes precedence over a standard family with the same name, and a standard family takes precedence over a family in the `-f` folder with the same name.
 
 CSSMedia loads OpenType and TrueType (`.otf`, `.ttf`), OpenType collections (`.otc`, `.ttc`), WOFF 1.0 (`.woff`) and WOFF 2.0 (`.woff2`) fonts. The User Manual describes the `@font-face` descriptors, the `format()` and `tech()` values that are supported, and the sources that are skipped.
 
@@ -221,11 +223,13 @@ npm run build
 node ./dist/cssmedia.js [options]
 ```
 
-## User Manual
+## User Manual and CSS Reference
 
 The [CSSMedia User Guide](manual/CSSMedia.pdf) (PDF) explains how to run CSSMedia and how to write stylesheets for it. It is still a work in progress.
 
-The manual is written in DITA XML and its PDF is generated with CSSMedia itself, so it is also an example of what CSSMedia produces. See [manual/README.md](manual/README.md) for the build instructions.
+The [CSSMedia CSS Reference](manual/CSSReference.pdf) (PDF) is the complete reference for CSSMedia. It has the tables of selectors, properties, at-rules and descriptors, grouped by subject, with the values and the specification of each entry. The same tables end the chapters of the User Guide.
+
+Both documents are written in DITA XML and their PDFs are generated with CSSMedia itself, so they are also examples of what CSSMedia produces. See [manual/README.md](manual/README.md) for the build instructions.
 
 ## Related Projects
 

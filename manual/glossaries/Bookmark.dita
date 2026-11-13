@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="Bookmark">
+    <glossterm>Bookmark</glossterm>
+    <glossdef>A title in the navigation tree of a <xref href="PDF.dita">PDF</xref>. PDF viewers, such as Adobe Acrobat, show the bookmarks in a side panel. Selecting a title goes to its page. Bookmarks can have child bookmarks.</glossdef>
+</glossentry>

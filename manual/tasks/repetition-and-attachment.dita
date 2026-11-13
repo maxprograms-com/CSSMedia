@@ -65,7 +65,7 @@ table {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>In paged media, <codeph>fixed</codeph> attaches the image to the page box. CSSMedia’s <xref href="../glossaries/PDF.dita">PDF</xref> default is <codeph>fixed</codeph>. Separate values for multiple image layers with commas.</p>
+                    <p>In paged media, <codeph>fixed</codeph> attaches the image to the page box. The initial value is <codeph>scroll</codeph>, which attaches the image to the box. Separate values for multiple image layers with commas.</p>
                 </info>
             </step>
         </steps>

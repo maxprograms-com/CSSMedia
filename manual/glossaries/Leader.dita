@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="Leader">
+    <glossterm>Leader</glossterm>
+    <glossdef>A row of dots, or of another repeated pattern, that fills the space between two parts of a line. A table of contents uses a leader to join the title of an entry to its page number. <xref href="https://www.w3.org/TR/css-content-3/#leaders" format="html" scope="external">CSS Content 3</xref> defines leaders.</glossdef>
+</glossentry>

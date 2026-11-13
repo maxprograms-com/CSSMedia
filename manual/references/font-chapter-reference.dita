@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="font-chapter-reference">
+    <title>Text and fonts reference</title>
+    <shortdesc>This reference lists the properties, at-rules and descriptors that CSSMedia uses to select, load and shape fonts.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-fonts/font-selection"/>
+        <section conkeyref="ref-fonts/font-features"/>
+        <section conkeyref="ref-fonts/font-variable"/>
+        <section conkeyref="ref-fonts/font-face-rule"/>
+        <section conkeyref="ref-fonts/font-feature-values-rule"/>
+        <section conkeyref="ref-fonts/font-palette-values-rule"/>
+    </refbody>
+</reference>

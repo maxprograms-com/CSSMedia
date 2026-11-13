@@ -2,45 +2,31 @@
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="font-faces">
     <title>Font resources and descriptors</title>
-    <shortdesc>Use <codeph>@font-face</codeph> to make a font face available to a stylesheet. The rule names the family, identifies one or more sources and describes the face so the font matcher can choose it.</shortdesc>
+    <shortdesc>Load your own fonts with the <codeph>@font-face</codeph> rule or with a fonts folder. Each rule names a family, lists the sources of one face and describes what the face provides, so that CSSMedia can choose it.</shortdesc>
     <taskbody>
         <context>
-            <p>
-                <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-rule" scope="external" format="html">CSS Fonts 4 §4.1, The <codeph>@font-face</codeph> rule</xref>.</p>
+            <p>Use a fonts folder when you reuse the same fonts in many projects. Pass the folder with the <codeph>-f</codeph> option. CSSMedia reads the files with the extensions <codeph>.ttf</codeph>, <codeph>.otf</codeph>, <codeph>.ttc</codeph> and <codeph>.otc</codeph> in the folder and in its subfolders, and takes the family names from the fonts. Then you name a family in <codeph>font-family</codeph>, with no other declaration.</p>
+            <p>Use <codeph>@font-face</codeph> when you want to load a font from a file or a web address, or to give a font another family name:</p>
             <pre outputclass="language-css21">@font-face {
     font-family: "Example Serif";
     src: url("example-serif.woff2") format("woff2");
     font-weight: 400 700;
     font-style: normal;
-    unicode-range: U+0000-00FF;
 }
 
 chapter {
     font-family: "Example Serif", serif;
 }
 </pre>
-            <p>The descriptors inside the rule describe the font face, not the selected <xref href="../glossaries/XML.dita">XML</xref> element. Use separate rules for separate faces in the family, such as regular, bold and italic faces. A rule needs valid <codeph>font-family</codeph> and <codeph>src</codeph> descriptors. Invalid declarations are ignored. When a descriptor occurs more than once, the last valid value is used.</p>
+            <p>The descriptors inside the rule describe a font face, not an element of your <xref href="../glossaries/XML.dita">XML</xref>. Write one rule for each face of the family, such as the regular, bold and italic faces. Each rule needs a <codeph>font-family</codeph> and a <codeph>src</codeph> descriptor. CSSMedia ignores an invalid declaration, and when a descriptor occurs more than once in a rule, it uses the last valid value.</p>
+            <p>A family that you declare with <codeph>@font-face</codeph> hides an installed or standard family with the same name. When CSSMedia cannot load any source of a rule, it prints a warning and the family has no face from that rule.</p>
         </context>
         <steps>
-            <step id="identify-the-family-and-source">
-                <cmd>Identify the family and source</cmd>
+            <step id="name-the-family-and-source">
+                <cmd>Name the family and the sources</cmd>
                 <info>
-                    <div outputclass="role-h3" id="font-family">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-family" scope="external" format="html">
-                            <codeph>font-family</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-family-desc" scope="external" format="html">CSS Fonts 4 §4.2, Font family descriptor</xref>.</p>
-                    <p>This descriptor gives the face the family name used by a <codeph>font-family</codeph> property. It replaces family names stored in the font file. Write the name as a quoted string or as one or more unquoted identifiers. Separate words in an unquoted name with spaces. A name that is a CSS-wide keyword must be quoted. A declared family name also takes precedence over an installed family with the same name.</p>
-                    <div outputclass="role-h3" id="src">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-src" scope="external" format="html">
-                            <codeph>src</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#src-desc" scope="external" format="html">CSS Fonts 4 §4.3, Font reference descriptor</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">parsing</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-formats" scope="external" format="html">source selection</xref>; <xref href="https://www.w3.org/TR/css-fonts-5/#src-desc" scope="external" format="html">CSS Fonts 5 <codeph>src</codeph> descriptor</xref>.</p>
-                    <p>This descriptor is a comma-separated, ordered list of sources. Each source is either a URL with optional hints or a <codeph>local()</codeph> reference. When choosing a source, a processor checks the entries in order and can skip entries whose declared format or technology it does not support.</p>
+                    <p>The <codeph>font-family</codeph> descriptor gives the name that the <codeph>font-family</codeph> property uses. It replaces the names that are stored in the font file. Write the name as a string, or as one or more identifiers.</p>
+                    <p>The <codeph>src</codeph> descriptor is a comma-separated list of sources. CSSMedia tries them in order and uses the first that it can load:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">@font-face {
@@ -52,385 +38,104 @@ chapter {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>
-                        <codeph>url()</codeph> identifies a font resource. A relative URL is resolved against the stylesheet’s base URL. <codeph>local()</codeph> identifies an installed font by its full name or PostScript name. It does not refer to a file. The processor tries sources in order and proceeds to the next source if it cannot find or use the current one.</p>
-                    <div outputclass="role-h4" id="format">
-                        <codeph>format()</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#format()" scope="external" format="html">CSS Fonts 4 <codeph>format()</codeph> hint</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">font format definitions</xref>.</p>
-                    <p>The optional <codeph>format()</codeph> hint identifies a URL resource’s format. Use one format keyword or a quoted format string.</p>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">
-                                <codeph>collection</codeph>
-                            </xref> identifies a TrueType or OpenType font collection, which can contain multiple font faces.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">
-                                <codeph>embedded-opentype</codeph>
-                            </xref> identifies Embedded OpenType resources.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">
-                                <codeph>opentype</codeph>
-                            </xref> identifies OpenType resources. It does not promise a particular glyph outline format or that the font contains OpenType layout tables.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">
-                                <codeph>svg</codeph>
-                            </xref> identifies an <xref href="../glossaries/SVG.dita">SVG</xref> font.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">
-                                <codeph>truetype</codeph>
-                            </xref> identifies TrueType resources.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">
-                                <codeph>woff</codeph>
-                            </xref> identifies WOFF 1.0 resources.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#font-format-definitions" scope="external" format="html">
-                                <codeph>woff2</codeph>
-                            </xref> identifies WOFF 2.0 resources.</li>
+                        <li><codeph>url()</codeph> is the address of a font file. A relative address is resolved against the address of the stylesheet. It can be a file or a web address.</li>
+                        <li><codeph>local()</codeph> is the full name or the PostScript name of a face in the fonts folder. It does not name a family.</li>
                     </ul>
-                    <p>The <codeph>opentype</codeph> and <codeph>truetype</codeph> hints are treated as synonyms by CSS Fonts. The hint lets a processor avoid a resource format it cannot use. It does not convert the resource.</p>
-                    <p>For compatibility with older stylesheets, CSS Fonts 4 also accepts these quoted forms: <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>format("woff2")</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>format("woff")</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>format("truetype")</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>format("opentype")</codeph>
-                        </xref> and <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>format("collection")</codeph>
-                        </xref>. They mean the corresponding unquoted format keywords.</p>
-                    <p>The legacy strings <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>"woff2-variations"</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>"woff-variations"</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>"truetype-variations"</codeph>
-                        </xref> and <xref href="https://www.w3.org/TR/css-fonts-4/#font-face-src-parsing" scope="external" format="html">
-                            <codeph>"opentype-variations"</codeph>
-                        </xref> mean the corresponding format keyword followed by <codeph>tech(variations)</codeph>.</p>
-                    <div outputclass="role-h4" id="tech">
-                        <codeph>tech()</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#tech()" scope="external" format="html">CSS Fonts 4 <codeph>tech()</codeph> hint</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#font-tech-definitions" scope="external" format="html">font technology definitions</xref>.</p>
-                    <p>The optional <codeph>tech()</codeph> function lists technologies required by the resource. Separate multiple values with commas. The processor can skip the source if it does not support any listed requirement.</p>
+                    <p>CSSMedia reads <xref href="../glossaries/OpenType.dita">OpenType</xref> and TrueType fonts, font collections, and WOFF and WOFF 2.0 files. A <codeph>url()</codeph> value can end with a fragment that names the face to use from a collection, such as <codeph>url("fonts.ttc#Example-Bold")</codeph>. The fragment is the PostScript name of the face.</p>
+                    <div outputclass="role-h3" id="format-and-tech">Hints: format() and tech()</div>
+                    <p>A <codeph>url()</codeph> source can have two hints. They let CSSMedia skip a source without loading it. Write <codeph>format()</codeph> first and then <codeph>tech()</codeph>.</p>
+                    <p><codeph>format()</codeph> names the format of the file. CSSMedia supports <codeph>collection</codeph>, <codeph>opentype</codeph>, <codeph>truetype</codeph>, <codeph>woff</codeph> and <codeph>woff2</codeph>. It skips the sources with another format, such as <codeph>embedded-opentype</codeph> and <codeph>svg</codeph>. The strings <codeph>"woff2"</codeph>, <codeph>"woff"</codeph>, <codeph>"truetype"</codeph>, <codeph>"opentype"</codeph> and <codeph>"collection"</codeph> are accepted as well. The strings that end in <codeph>-variations</codeph>, such as <codeph>"woff2-variations"</codeph>, mean the format plus <codeph>tech(variations)</codeph>.</p>
+                    <p><codeph>tech()</codeph> lists the technologies that the font needs, separated by commas. CSSMedia skips the source when it does not support one of them. It supports these:</p>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-features-tech-features-opentype" scope="external" format="html">
-                                <codeph>features-opentype</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-features-tech-features-aat" scope="external" format="html">
-                                <codeph>features-aat</codeph>
-                            </xref> and <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-features-tech-features-graphite" scope="external" format="html">
-                                <codeph>features-graphite</codeph>
-                            </xref> indicate support for OpenType, Apple Advanced Typography or Graphite layout features, respectively.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-color-font-tech-color-colrv0" scope="external" format="html">
-                                <codeph>color-COLRv0</codeph>
-                            </xref> and <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-color-font-tech-color-colrv1" scope="external" format="html">
-                                <codeph>color-COLRv1</codeph>
-                            </xref> indicate color glyphs in the corresponding COLR table versions.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-color-font-tech-color-svg" scope="external" format="html">
-                                <codeph>color-SVG</codeph>
-                            </xref> indicates SVG color glyphs.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-color-font-tech-color-sbix" scope="external" format="html">
-                                <codeph>color-sbix</codeph>
-                            </xref> indicates the sbix bitmap color glyph format.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-color-font-tech-color-cbdt" scope="external" format="html">
-                                <codeph>color-CBDT</codeph>
-                            </xref> indicates the CBDT bitmap color glyph format.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-tech-variations" scope="external" format="html">
-                                <codeph>variations</codeph>
-                            </xref> indicates support for font variation axes.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-tech-palettes" scope="external" format="html">
-                                <codeph>palettes</codeph>
-                            </xref> indicates color-font palette support.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-tech-incremental" scope="external" format="html">
-                                <codeph>incremental</codeph>
-                            </xref> indicates support for incremental font transfer.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#valdef-font-features-tech-avar2" scope="external" format="html">
-                                <codeph>avar2</codeph>
-                            </xref> indicates support for OpenType version 2 axis variations, which remap variable-font axes.</li>
+                        <li><codeph>features-opentype</codeph> and <codeph>features-aat</codeph>: layout features of OpenType and of Apple Advanced Typography.</li>
+                        <li><codeph>variations</codeph> and <codeph>avar2</codeph>: <xref href="../glossaries/VariableFont.dita">variable fonts</xref> and their axis remapping.</li>
+                        <li><codeph>palettes</codeph>, <codeph>color-COLRv0</codeph>, <codeph>color-COLRv1</codeph>, <codeph>color-SVG</codeph>, <codeph>color-sbix</codeph> and <codeph>color-CBDT</codeph>: color fonts.</li>
                     </ul>
-                    <p>
-                        <codeph>format()</codeph> precedes <codeph>tech()</codeph> when a source uses both. The four <codeph>-variations</codeph> strings listed above each mean the corresponding format hint plus <codeph>tech(variations)</codeph>.</p>
+                    <p>The technologies <codeph>features-graphite</codeph> and <codeph>incremental</codeph> are not supported, so CSSMedia skips the sources that need them.</p>
                 </info>
             </step>
-            <step id="describe-which-face-the-source-provides">
-                <cmd>Describe which face the source provides</cmd>
+            <step id="describe-the-face">
+                <cmd>Describe the face</cmd>
                 <info>
-                    <div outputclass="role-h3" id="font-weight">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-weight" scope="external" format="html">
-                            <codeph>font-weight</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-prop-desc" scope="external" format="html">CSS Fonts 4 font property descriptors</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#font-weight-absolute-values" scope="external" format="html">weight values</xref>.</p>
-                    <p>This descriptor tells the font matcher which weight or weight range the face provides. <codeph>auto</codeph> uses the weight information in the font. Otherwise, provide one absolute weight or two ascending endpoints. Two endpoints include every weight in the interval.</p>
+                    <p>The descriptors <codeph>font-weight</codeph>, <codeph>font-width</codeph> and <codeph>font-style</codeph> tell CSSMedia which requests the face can satisfy. Their initial value is <codeph>auto</codeph>, which reads the information from the font. Write one value, or two values to state a range that a <xref href="../glossaries/VariableFont.dita">variable font</xref> covers:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@font-face {
+    font-family: "Example Sans";
+    src: url("example-sans-variable.woff2");
+    font-weight: 300 800;
+    font-width: 75% 125%;
+    font-style: oblique 0deg 12deg;
+}
+</pre>
+                </stepxmp>
+                <info>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-weight-normal" scope="external" format="html">
-                                <codeph>normal</codeph>
-                            </xref> is <codeph>400</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-weight-bold" scope="external" format="html">
-                                <codeph>bold</codeph>
-                            </xref> is <codeph>700</codeph>.</li>
-                        <li>A <xref href="https://www.w3.org/TR/css-fonts-4/#font-weight-absolute-values" scope="external" format="html">number from <codeph>1</codeph> through <codeph>1000</codeph>
-                            </xref> gives the weight directly. Larger numbers mean heavier weights.</li>
+                        <li><codeph>font-weight</codeph> takes <codeph>normal</codeph>, <codeph>bold</codeph> or a number from 1 to 1000.</li>
+                        <li><codeph>font-width</codeph> takes a percentage or a width keyword. The keywords are 50%, 62.5%, 75%, 87.5%, 100%, 112.5%, 125%, 150% and 200%, from <codeph>ultra-condensed</codeph> to <codeph>ultra-expanded</codeph>. The old name <codeph>font-stretch</codeph> is an alias.</li>
+                        <li><codeph>font-style</codeph> takes <codeph>normal</codeph>, <codeph>italic</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, or <codeph>oblique</codeph> with no angle, one angle or two angles from -90deg to 90deg.</li>
                     </ul>
-                    <p>The descriptor’s range tells the matcher which requested weights this face can satisfy. It does not change the font’s data.</p>
-                    <div outputclass="role-h3" id="font-width">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-width" scope="external" format="html">
-                            <codeph>font-width</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-prop-desc" scope="external" format="html">CSS Fonts 4 font property descriptors</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#font-width-prop" scope="external" format="html">width values</xref>.</p>
-                    <p>This descriptor tells the matcher which width or width range the face provides. <codeph>auto</codeph> uses the width information in the font. Otherwise, provide one value or two ascending endpoints. A <xref href="https://www.w3.org/TR/css-fonts-4/#font-width-prop" scope="external" format="html">non-negative percentage</xref> represents glyph width relative to normal width. Values below <codeph>100%</codeph> are narrower; values above <codeph>100%</codeph> are wider.</p>
-                    <p>The named values correspond to these percentages:</p>
-                    <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-ultra-condensed" scope="external" format="html">
-                                <codeph>ultra-condensed</codeph>
-                            </xref>: <codeph>50%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-extra-condensed" scope="external" format="html">
-                                <codeph>extra-condensed</codeph>
-                            </xref>: <codeph>62.5%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-condensed" scope="external" format="html">
-                                <codeph>condensed</codeph>
-                            </xref>: <codeph>75%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-semi-condensed" scope="external" format="html">
-                                <codeph>semi-condensed</codeph>
-                            </xref>: <codeph>87.5%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-normal" scope="external" format="html">
-                                <codeph>normal</codeph>
-                            </xref>: <codeph>100%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-semi-expanded" scope="external" format="html">
-                                <codeph>semi-expanded</codeph>
-                            </xref>: <codeph>112.5%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-expanded" scope="external" format="html">
-                                <codeph>expanded</codeph>
-                            </xref>: <codeph>125%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-extra-expanded" scope="external" format="html">
-                                <codeph>extra-expanded</codeph>
-                            </xref>: <codeph>150%</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-width-ultra-expanded" scope="external" format="html">
-                                <codeph>ultra-expanded</codeph>
-                            </xref>: <codeph>200%</codeph>.</li>
-                    </ul>
-                    <p>The legacy descriptor name <xref href="https://www.w3.org/TR/css-fonts-4/#font-stretch-desc" scope="external" format="html">
-                            <codeph>font-stretch</codeph>
-                        </xref> is an alias for <codeph>font-width</codeph>.</p>
-                    <div outputclass="role-h3" id="font-style">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-style" scope="external" format="html">
-                            <codeph>font-style</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-prop-desc" scope="external" format="html">CSS Fonts 4 font property descriptors</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#font-style-prop" scope="external" format="html">style values</xref>.</p>
-                    <p>This descriptor tells the matcher which style or style range the face provides. <codeph>auto</codeph> uses the style information in the font.</p>
-                    <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-style-normal" scope="external" format="html">
-                                <codeph>normal</codeph>
-                            </xref> describes an upright face with no slant.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-style-italic" scope="external" format="html">
-                                <codeph>italic</codeph>
-                            </xref> describes an italic face. If one is unavailable, matching can use an oblique face.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-style-left" scope="external" format="html">
-                                <codeph>left</codeph>
-                            </xref> describes an italic or oblique face with a positive, clockwise slant.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-style-right" scope="external" format="html">
-                                <codeph>right</codeph>
-                            </xref> describes an italic or oblique face with a negative, counter-clockwise slant.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-style-oblique-angle--90deg-90deg" scope="external" format="html">
-                                <codeph>oblique</codeph>
-                            </xref> describes a slanted face. It can take one angle or two ascending endpoints from <codeph>-90deg</codeph> to <codeph>90deg</codeph>. With no angle, the value is <codeph>14deg</codeph>. Positive angles are clockwise; negative angles are counter-clockwise.</li>
-                    </ul>
-                    <p>Two values define an inclusive angle range. Fractional angles are allowed.</p>
-                    <div outputclass="role-h3" id="font-size">
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-font-size" scope="external" format="html">
-                            <codeph>font-size</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#font-size-desc" scope="external" format="html">CSS Fonts 5 font size descriptor</xref>.</p>
-                    <p>This descriptor limits the font sizes for which the face is a match. <xref href="https://www.w3.org/TR/css-fonts-5/#valdef-font-face-font-size-auto" scope="external" format="html">
-                            <codeph>auto</codeph>
-                        </xref> matches any size. One <xref href="https://www.w3.org/TR/css-fonts-5/#valdef-font-face-font-size-number" scope="external" format="html">number</xref> matches that size; two numbers define an inclusive range. The values are unitless numbers, not CSS lengths.</p>
-                    <div outputclass="role-h3" id="font-named-instance">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-named-instance" scope="external" format="html">
-                            <codeph>font-named-instance</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-named-instance" scope="external" format="html">CSS Fonts 4 <codeph>font-named-instance</codeph> descriptor</xref>.</p>
-                    <p>This descriptor selects a named instance in a variable font. <codeph>auto</codeph> leaves instance selection to the normal font variation process. A string selects the first named instance whose localized name matches the string. If no such instance exists, the descriptor behaves as <codeph>auto</codeph>. The requested <codeph>font-weight</codeph>, <codeph>font-width</codeph>, and <codeph>font-style</codeph> variation values are applied before the named instance’s axis values.</p>
+                    <p>The <codeph>font-size</codeph> descriptor limits the sizes for which the face is used. It takes one number, or two numbers for a range. The numbers are font sizes in CSS pixels, without a unit. Use it for fonts that have a face for each size, such as a text face and a display face.</p>
+                    <p>The <codeph>font-named-instance</codeph> descriptor selects a named instance of a variable font, such as <codeph>"Condensed Bold"</codeph>. The value is a string that CSSMedia compares with the names of the instances, without regard to case. If no instance has the name, the descriptor has no effect. The weight, width and style that you request are applied first, and the axes of the named instance replace them.</p>
                 </info>
             </step>
-            <step id="limit-a-face-to-characters">
-                <cmd>Limit a face to characters</cmd>
+            <step id="limit-the-face-to-characters">
+                <cmd>Limit the face to some characters</cmd>
                 <info>
-                    <div outputclass="role-h3" id="unicode-range">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-unicode-range" scope="external" format="html">
-                            <codeph>unicode-range</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#unicode-range-desc" scope="external" format="html">CSS Fonts 4 character range descriptor</xref>.</p>
-                    <p>This descriptor gives the Unicode code points for which the face is eligible. Its value is a comma-separated list:</p>
-                    <ul>
-                        <li>A single code point has a form such as <codeph>U+0041</codeph>.</li>
-                        <li>A range has a form such as <codeph>U+0400-04FF</codeph>. Both endpoints are included.</li>
-                        <li>A wildcard uses one or more trailing question marks, as in <codeph>U+4??</codeph>. Each question mark stands for one hexadecimal digit.</li>
-                    </ul>
-                    <p>Hexadecimal digits are ASCII case-insensitive. Endpoints must be valid Unicode code points, and a range’s end cannot precede its start. The descriptor filters the characters for which the face can be considered. It does not guarantee that the font contains a glyph for each one. The default range includes all Unicode code points.</p>
+                    <p>The <codeph>unicode-range</codeph> descriptor lists the characters for which the face can be used. The value is a comma-separated list of code points such as <codeph>U+0041</codeph>, ranges such as <codeph>U+0400-04FF</codeph>, and ranges with wildcards such as <codeph>U+4??</codeph>, where each <codeph>?</codeph> stands for one hexadecimal digit. The initial value covers all characters:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@font-face {
+    font-family: "Document";
+    src: url("latin.woff2");
+    unicode-range: U+0000-024F;
+}
+
+@font-face {
+    font-family: "Document";
+    src: url("cyrillic.woff2");
+    unicode-range: U+0400-04FF;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Two rules with the same family and the same style make one family. CSSMedia uses the face of each character from the rules whose range includes it. If the ranges overlap, the rule that comes last wins. A range does not guarantee that the font has the glyph. If it does not, CSSMedia goes on with the next family of the list.</p>
                 </info>
             </step>
-            <step id="set-face-specific-font-behavior">
-                <cmd>Set face-specific font behavior</cmd>
+            <step id="set-face-defaults">
+                <cmd>Set the defaults of the face</cmd>
                 <info>
-                    <div outputclass="role-h3" id="font-display">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-display" scope="external" format="html">
-                            <codeph>font-display</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-display-desc" scope="external" format="html">CSS Fonts 4 font display descriptor</xref>.</p>
-                    <p>This descriptor controls the font’s loading behavior while text is being displayed. The processor divides loading into a block period, when text may be invisible, and a swap period, when a loaded font may replace the fallback.</p>
+                    <p>Three descriptors set what the face does by default. A property of the same name in your rules replaces the descriptor:</p>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-auto" scope="external" format="html">
-                                <codeph>auto</codeph>
-                            </xref> lets the processor choose the policy.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-block" scope="external" format="html">
-                                <codeph>block</codeph>
-                            </xref> uses an invisible-text block period, then allows the downloaded font to replace the fallback.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-swap" scope="external" format="html">
-                                <codeph>swap</codeph>
-                            </xref> shows fallback text immediately and allows the downloaded font to replace it.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-fallback" scope="external" format="html">
-                                <codeph>fallback</codeph>
-                            </xref> allows a short block period and a limited swap period. A late font load does not replace the fallback.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-optional" scope="external" format="html">
-                                <codeph>optional</codeph>
-                            </xref> allows a very short block period and no swap period. The processor may use the font only when it is available promptly.</li>
+                        <li><codeph>font-feature-settings</codeph> turns <xref href="../glossaries/OpenType.dita">OpenType</xref> features on or off by their tags. <xref href="font-variants.dita#font-variants">Font variants and features</xref> explains the value.</li>
+                        <li><codeph>font-variation-settings</codeph> sets the axes of a variable font. <xref href="variable-and-color-fonts.dita#variable-and-color-fonts">Variable and color fonts</xref> explains the value. Use <codeph>font-weight</codeph>, <codeph>font-width</codeph> and <codeph>font-style</codeph> for the standard axes.</li>
+                        <li><codeph>font-language-override</codeph> sets the OpenType language system of the face, as <xref href="font-variants.dita#font-variants">Font variants and features</xref> explains.</li>
                     </ul>
-                    <p>The user agent determines the durations of the block and swap periods.</p>
-                    <div outputclass="role-h3" id="font-language-override">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-language-override" scope="external" format="html">
-                            <codeph>font-language-override</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-language-override-desc" scope="external" format="html">CSS Fonts 4 font language override descriptor</xref>.</p>
-                    <p>This descriptor sets the OpenType language-system tag used for the face’s language-sensitive features. <codeph>normal</codeph> uses the language selected for the text. A string supplies a case-sensitive OpenType language-system tag, such as <codeph>"SRB"</codeph>. Find tags in the font’s documentation or in Microsoft’s <xref href="https://learn.microsoft.com/en-us/typography/opentype/spec/languagetags" scope="external" format="html">OpenType language system tags</xref>. These are not BCP 47 tags such as <codeph>sr</codeph> or <codeph>sr-Latn</codeph>; use BCP 47 tags in <codeph>xml:lang</codeph> to identify the text’s language. The OpenType tag is matched as four characters; shorter strings are padded at the end with U+0020 spaces. Unknown tags are ignored.</p>
-                    <div outputclass="role-h3" id="font-feature-settings">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-feature-settings" scope="external" format="html">
-                            <codeph>font-feature-settings</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-feature-settings" scope="external" format="html">CSS Fonts 4 font feature settings descriptor</xref>; <xref href="https://www.w3.org/TR/css-fonts-4/#feature-tag-value" scope="external" format="html">feature tag values</xref>.</p>
-                    <p>This descriptor sets initial low-level OpenType feature settings for the face. It does not affect font selection. <xref href="https://www.w3.org/TR/css-fonts-4/#font-feature-settings-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> makes no explicit change to glyph selection or positioning. Otherwise, give a comma-separated list of feature tags. Each tag is a case-sensitive string of exactly four printable ASCII characters. A tag can be followed by an integer, <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-feature-tag-value-on" scope="external" format="html">
-                            <codeph>on</codeph>
-                        </xref> or <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-feature-tag-value-off" scope="external" format="html">
-                            <codeph>off</codeph>
-                        </xref>. If the value is omitted, it is <codeph>1</codeph>. <codeph>on</codeph> means <codeph>1</codeph>; <codeph>off</codeph> means <codeph>0</codeph>. <codeph>0</codeph> disables the feature. For a boolean feature, <codeph>1</codeph> enables it. For a non-boolean feature, an integer of <codeph>1</codeph> or greater enables it and selects that feature index. Tags that the font does not contain are ignored. See the <xref href="https://www.w3.org/TR/css-fonts-4/#feature-tag-value" scope="external" format="html">feature tag value syntax</xref>.</p>
-                    <div outputclass="role-h3" id="font-variation-settings">
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-variation-settings" scope="external" format="html">
-                            <codeph>font-variation-settings</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-variation-settings" scope="external" format="html">CSS Fonts 4 font variation settings descriptor</xref>.</p>
-                    <p>This descriptor sets initial low-level variation-axis settings for the face. It does not affect font selection. <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-variation-settings" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> does not request additional axis settings. Otherwise, give a comma-separated list of case-sensitive axis tags paired with numbers, such as <codeph>"wght" 650</codeph>. An axis tag is a string of exactly four printable ASCII characters. Each number is an axis value; values outside the range supported by the font are clamped to that range. An axis tag the font does not contain is ignored. See the <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variation-settings" scope="external" format="html">
-                            <codeph>font-variation-settings</codeph> property</xref> for the axis-tag rules. Prefer <codeph>font-weight</codeph>, <codeph>font-width</codeph> or <codeph>font-style</codeph> for the standard weight, width and slant axes. Those properties express the requested font characteristics and can also match non-variable faces.</p>
                 </info>
             </step>
-            <step id="override-font-metrics">
-                <cmd>Override font metrics</cmd>
+            <step id="adjust-the-metrics">
+                <cmd>Adjust the metrics of the face</cmd>
                 <info>
-                    <div outputclass="role-h3" id="size-adjust">
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-size-adjust" scope="external" format="html">
-                            <codeph>size-adjust</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#size-adjust-desc" scope="external" format="html">CSS Fonts 5 glyph size multiplier descriptor</xref>.</p>
-                    <p>This descriptor scales a face’s glyph outlines and associated metrics by a non-negative percentage. <codeph>100%</codeph> leaves them unchanged. Other values scale glyphs, advances and metrics together. The CSS <codeph>font-size</codeph> remains unchanged.</p>
-                    <div outputclass="role-h3" id="ascent-override-descent-override-and-line-gap-override">
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-ascent-override" scope="external" format="html">
-                            <codeph>ascent-override</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-descent-override" scope="external" format="html">
-                            <codeph>descent-override</codeph>
-                        </xref> and <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-line-gap-override" scope="external" format="html">
-                            <codeph>line-gap-override</codeph>
-                        </xref>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#font-metrics-override-desc" scope="external" format="html">CSS Fonts 5 font metrics override descriptors</xref>.</p>
-                    <p>
-                        <codeph>ascent-override</codeph> replaces the ascent metric. <codeph>descent-override</codeph> replaces the descent metric. <codeph>line-gap-override</codeph> replaces the line-gap metric. Each accepts <codeph>normal</codeph> or a non-negative percentage. The percentage replaces the corresponding metric with that percentage of the effective font size after adjustment. <codeph>normal</codeph> uses the metric from the font as if the descriptor were absent. Each descriptor accepts one value for the x-axis and an optional second value for the y-axis. The second value defaults to <codeph>normal</codeph>.</p>
-                    <div outputclass="role-h3" id="superscript-and-subscript-metric-overrides">Superscript and subscript metric overrides</div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#font-sup-sub-override-desc" scope="external" format="html">CSS Fonts 5 superscript and subscript metric override descriptors</xref>.</p>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-superscript-position-override" scope="external" format="html">
-                            <codeph>superscript-position-override</codeph>
-                        </xref> and <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-subscript-position-override" scope="external" format="html">
-                            <codeph>subscript-position-override</codeph>
-                        </xref> replace the corresponding glyph position metrics. <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-superscript-size-override" scope="external" format="html">
-                            <codeph>superscript-size-override</codeph>
-                        </xref> and <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-subscript-size-override" scope="external" format="html">
-                            <codeph>subscript-size-override</codeph>
-                        </xref> replace their glyph size metrics. These metrics are used when <codeph>font-variant-position</codeph> synthesizes superscript or subscript glyphs.</p>
-                    <p>Each descriptor accepts <codeph>normal</codeph>, <codeph>from-font</codeph> or a percentage. For a position descriptor, the percentage can be positive or negative. For a size descriptor, it cannot be negative.</p>
+                    <p>Fonts of different families look different at the same size, and their lines have different heights. Adjust a face so that it fits with the others:</p>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#valdef-superscript-position-overridedescriptor-normal" scope="external" format="html">
-                                <codeph>normal</codeph>
-                            </xref> lets the processor choose the metric from the font or a heuristic.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#valdef-superscript-position-overridedescriptor-from-font" scope="external" format="html">
-                                <codeph>from-font</codeph>
-                            </xref> uses the corresponding font metric when present. If it is absent, it behaves as <codeph>normal</codeph>.</li>
-                        <li>A <xref href="https://www.w3.org/TR/css-fonts-5/#valdef-superscript-position-overridedescriptor-percentage" scope="external" format="html">percentage</xref> replaces the metric with that percentage of the used font size.</li>
+                        <li><codeph>size-adjust</codeph> scales the glyphs and the metrics of the face by a percentage. The initial value is <codeph>100%</codeph>. The font size does not change.</li>
+                        <li><codeph>ascent-override</codeph>, <codeph>descent-override</codeph> and <codeph>line-gap-override</codeph> replace the ascent, the descent and the line gap of the font. Each takes <codeph>normal</codeph> or a percentage of the font size. The first value is for horizontal text, and an optional second value is for vertical text.</li>
+                        <li><codeph>superscript-position-override</codeph>, <codeph>superscript-size-override</codeph>, <codeph>subscript-position-override</codeph> and <codeph>subscript-size-override</codeph> replace the position and the size of the glyphs that <codeph>font-variant-position</codeph> creates. Each takes <codeph>normal</codeph>, <codeph>from-font</codeph> or a percentage. The initial value is <codeph>normal</codeph>.</li>
                     </ul>
-                    <p>The descriptors accept one value for the x-axis and an optional second value for the y-axis. If the second value is omitted, the x-axis value is used. The y-axis metric is used for upright text in vertical typographic modes.</p>
                 </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@font-face {
+    font-family: "Example Sans";
+    src: url("example-sans.woff2");
+    size-adjust: 105%;
+    ascent-override: 90%;
+    descent-override: 22%;
+    line-gap-override: 0%;
+}
+</pre>
+                </stepxmp>
             </step>
         </steps>
     </taskbody>
 </task>
-

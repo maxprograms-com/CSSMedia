@@ -648,9 +648,11 @@ export class BlockLayout {
     place(box: ElementBox, inlineStart: number, inlineSize: number, origin: number, top: number, required: number, out: Array<BoxFragment | LineFragment>,
         blockBasis?: number, incoming?: BreakToken): boolean {
         const values: Readonly<Record<string, CssValue>> = box.style.values;
-        const side: string = this.keyword(values["float"]);
+        const floated: CssValue | undefined = values["float"];
+        const side: string = this.keyword(floated);
         if (!INLINE_FLOATS.has(side)) {
-            return true;
+            // A float placed nowhere would vanish from the PDF, so the page floats of CSS Page Floats 3 stop the run.
+            throw new Error("The layout of float: " + (floated !== undefined && floated.kind === "function" ? floated.name + "()" : side) + " is not implemented");
         }
         // CSS Fragmentation 4 §2.1: a float is a parallel flow; one that starts after the end of the fragmentainer goes whole to
         // the next one, and so does every later float, since CSS 2 §9.5.1 rules 5 and 6 keep their order.

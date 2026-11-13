@@ -19,15 +19,15 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @bottom-left-corner
 - [x] @bottom-right
 - [x] @bottom-right-corner
-- [~] @charset
+- [x] @charset
 - [ ] @color-profile
 - [x] @container
 - [x] @counter-style
 - [x] @custom-media
 - [x] @else
 - [x] @font-face
-- [~] @font-feature-values
-- [~] @font-palette-values
+- [x] @font-feature-values
+- [x] @font-palette-values
 - [x] @footnote
 - [x] @function
 - [x] @import
@@ -93,41 +93,41 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 
 ### @font-face
 
-- [~] @font-face / ascent-override
-- [~] @font-face / descent-override
+- [x] @font-face / ascent-override
+- [x] @font-face / descent-override
 - [x] @font-face / font-family
 - [x] @font-face / font-feature-settings
 - [x] @font-face / font-language-override
 - [x] @font-face / font-named-instance
-- [~] @font-face / font-size
+- [x] @font-face / font-size
 - [x] @font-face / font-style
 - [x] @font-face / font-variation-settings
 - [x] @font-face / font-weight
 - [x] @font-face / font-width
-- [~] @font-face / line-gap-override
-- [~] @font-face / size-adjust
+- [x] @font-face / line-gap-override
+- [x] @font-face / size-adjust
 - [x] @font-face / src
-- [~] @font-face / subscript-position-override
-- [~] @font-face / subscript-size-override
-- [~] @font-face / superscript-position-override
-- [~] @font-face / superscript-size-override
+- [x] @font-face / subscript-position-override
+- [x] @font-face / subscript-size-override
+- [x] @font-face / superscript-position-override
+- [x] @font-face / superscript-size-override
 - [x] @font-face / unicode-range
 
 ### @font-feature-values
 
-- [~] @font-feature-values / @annotation
-- [~] @font-feature-values / @character-variant
-- [~] @font-feature-values / @historical-forms
-- [~] @font-feature-values / @ornaments
-- [~] @font-feature-values / @styleset
-- [~] @font-feature-values / @stylistic
-- [~] @font-feature-values / @swash
+- [x] @font-feature-values / @annotation
+- [x] @font-feature-values / @character-variant
+- [x] @font-feature-values / @historical-forms
+- [x] @font-feature-values / @ornaments
+- [x] @font-feature-values / @styleset
+- [x] @font-feature-values / @stylistic
+- [x] @font-feature-values / @swash
 
 ### @font-palette-values
 
-- [~] @font-palette-values / base-palette
-- [~] @font-palette-values / font-family
-- [~] @font-palette-values / override-colors
+- [x] @font-palette-values / base-palette
+- [x] @font-palette-values / font-family
+- [x] @font-palette-values / override-colors
 
 ### @function
 
@@ -403,28 +403,28 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Backgrounds 4 (css-backgrounds-4)
 
-- [~] background
-- [~] background-attachment
-- [~] background-clip
+- [x] background
+- [x] background-attachment
+- [x] background-clip
 - [x] background-color
-- [~] background-image
-- [~] background-origin
-- [~] background-position
-- [~] background-position-block
-- [~] background-position-inline
-- [~] background-position-x
-- [~] background-position-y
-- [~] background-repeat
-- [~] background-repeat-block
-- [~] background-repeat-inline
-- [~] background-repeat-x
-- [~] background-repeat-y
-- [~] background-size
-- [~] background-tbd
+- [x] background-image
+- [x] background-origin
+- [x] background-position
+- [x] background-position-block
+- [x] background-position-inline
+- [x] background-position-x
+- [x] background-position-y
+- [x] background-repeat
+- [x] background-repeat-block
+- [x] background-repeat-inline
+- [x] background-repeat-x
+- [x] background-repeat-y
+- [x] background-size
+- [x] background-tbd
 
 ### Compositing 1 (compositing-1)
 
-- [~] background-blend-mode
+- [x] background-blend-mode
 - [~] isolation
 - [~] mix-blend-mode
 
@@ -627,18 +627,18 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Positioned Layout 3 (css-position-3)
 
-- [~] bottom
-- [~] inset
-- [~] inset-block
-- [~] inset-block-end
-- [~] inset-block-start
-- [~] inset-inline
-- [~] inset-inline-end
-- [~] inset-inline-start
-- [~] left
+- [x] bottom
+- [x] inset
+- [x] inset-block
+- [x] inset-block-end
+- [x] inset-block-start
+- [x] inset-inline
+- [x] inset-inline-end
+- [x] inset-inline-start
+- [x] left
 - [~] position
-- [~] right
-- [~] top
+- [x] right
+- [x] top
 
 ### CSS Positioned Layout 4 (css-position-4)
 
@@ -678,17 +678,17 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [x] font-feature-settings
 - [x] font-kerning
 - [x] font-language-override
-- [~] font-optical-sizing
-- [~] font-palette
+- [x] font-optical-sizing
+- [x] font-palette
 - [x] font-size
 - [x] font-style
-- [~] font-synthesis
+- [x] font-synthesis
 - [x] font-synthesis-position
 - [x] font-synthesis-small-caps
-- [~] font-synthesis-style
-- [~] font-synthesis-weight
+- [x] font-synthesis-style
+- [x] font-synthesis-weight
 - [x] font-variant
-- [~] font-variant-alternates
+- [x] font-variant-alternates
 - [x] font-variant-caps
 - [x] font-variant-east-asian
 - [x] font-variant-emoji
@@ -828,8 +828,8 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [x] counter-increment
 - [x] counter-reset
 - [x] counter-set
-- [~] list-style
-- [~] list-style-image
+- [x] list-style
+- [x] list-style-image
 - [x] list-style-position
 - [x] list-style-type
 - [~] marker-side
@@ -1351,13 +1351,13 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 - [~] -cssmedia-lang
 - [x] -cssmedia-link
-- [ ] -cssmedia-toc-depth
-- [ ] -cssmedia-toc-divider
-- [ ] -cssmedia-toc-label
-- [ ] -cssmedia-toc-leader
-- [ ] -cssmedia-toc-title
-- [ ] -cssmedia-toc()
-- [~] -cssmedia-link-counter()
-- [ ] @-cssmedia-toc-title
-- [ ] @-cssmedia-toc-entry
-- [ ] @-cssmedia-toc-divider
+- [x] -cssmedia-toc-depth
+- [x] -cssmedia-toc-divider
+- [x] -cssmedia-toc-label
+- [x] -cssmedia-toc-leader
+- [~] -cssmedia-toc-title
+- [x] -cssmedia-toc()
+- [x] -cssmedia-link-counter()
+- [x] @-cssmedia-toc-title
+- [x] @-cssmedia-toc-entry
+- [x] @-cssmedia-toc-divider

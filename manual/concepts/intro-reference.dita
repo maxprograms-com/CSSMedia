@@ -17,6 +17,7 @@
             <li><xref href="../references/footnote-reference.dita"/></li>
             <li><xref href="../references/link-reference.dita"/></li>
             <li><xref href="../references/named-strings-reference.dita"/></li>
+            <li><xref href="../references/toc-reference.dita"/></li>
             <li><xref href="../references/cascade-reference.dita"/></li>
         </ul>
     </conbody>

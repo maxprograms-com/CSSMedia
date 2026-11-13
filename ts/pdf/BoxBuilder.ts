@@ -583,21 +583,24 @@ export class BoxBuilder {
                     entries.push([key, bookmark]);
                 }
             }
-            if (title === undefined || entries.length === 0) {
+            if (entries.length === 0) {
                 continue;
             }
-            const titleStyle: ComputedStyle = this.tocStyle(PropertyTable.TOC_TITLE, undefined, toc);
-            const titleLevel: CssValue | undefined = titleStyle.values["bookmark-level"];
-            if (titleLevel !== undefined && titleLevel.kind === "number") {
-                const titleMark: Bookmark = {
-                    element: toc.element, level: titleLevel.value, open: !this.isClosed(titleStyle.values["bookmark-state"]), label: title, style: titleStyle, state: toc.state,
-                    generated: {}
-                };
-                this.bookmarks.set(toc.box, titleMark);
-                this.markStringLabel(toc.box, titleMark);
-                this.references.bookmark(toc.box);
+            const children: Array<BoxNode> = [];
+            if (title !== undefined) {
+                const titleStyle: ComputedStyle = this.tocStyle(PropertyTable.TOC_TITLE, undefined, toc);
+                const titleLevel: CssValue | undefined = titleStyle.values["bookmark-level"];
+                if (titleLevel !== undefined && titleLevel.kind === "number") {
+                    const titleMark: Bookmark = {
+                        element: toc.element, level: titleLevel.value, open: !this.isClosed(titleStyle.values["bookmark-state"]), label: title, style: titleStyle, state: toc.state,
+                        generated: {}
+                    };
+                    this.bookmarks.set(toc.box, titleMark);
+                    this.markStringLabel(toc.box, titleMark);
+                    this.references.bookmark(toc.box);
+                }
+                children.push(this.tocBox(titleStyle, this.content.evaluate(title, this.anonymousStyle(titleStyle), toc.state), toc.usedPage));
             }
-            const children: Array<BoxNode> = [this.tocBox(titleStyle, this.content.evaluate(title, this.anonymousStyle(titleStyle), toc.state), toc.usedPage)];
             for (const [element, bookmark] of entries) {
                 if (bookmark.divider !== undefined) {
                     const style: ComputedStyle = this.tocStyle(PropertyTable.TOC_DIVIDER, bookmark.level, toc);

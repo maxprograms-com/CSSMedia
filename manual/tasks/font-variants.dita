@@ -2,214 +2,94 @@
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="font-variants">
     <title>Font variants and features</title>
-    <shortdesc>Fonts can contain alternate letter shapes, number styles and ligatures. Use the properties in this guide to request those forms. The result depends on the selected font and its <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-intro" scope="external" format="html">
-            <codeph>font-synthesis</codeph>
-        </xref> settings. See <xref href="font-properties.dita#font-properties/font-synthesis">Font selection and sizing</xref> for the synthesis properties and their values.</shortdesc>
+    <shortdesc>Many fonts have alternate letter shapes, number styles, <xref href="../glossaries/Ligature.dita">ligatures</xref> and other features. Use the properties of this topic to ask for them. The font must provide a feature for CSSMedia to use it.</shortdesc>
     <taskbody>
+        <context>
+            <p>An <xref href="../glossaries/OpenType.dita">OpenType</xref> font stores its features in tables, and each feature has a four-letter tag, such as <codeph>liga</codeph> for the common ligatures. The properties <codeph>font-variant-*</codeph> and <codeph>font-kerning</codeph> ask for groups of features by name. The property <codeph>font-feature-settings</codeph> sets one feature by its tag.</p>
+            <p>The element names in the examples, such as <codeph>term</codeph> and <codeph>formula</codeph>, are placeholders. Use the names that occur in your XML.</p>
+        </context>
         <steps>
-            <step id="common-font-features">
-                <cmd>Common font features</cmd>
+            <step id="kerning-and-ligatures">
+                <cmd>Control kerning and ligatures</cmd>
                 <info>
-                    <div outputclass="role-h3" id="font-kerning">
-                        <codeph>font-kerning</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-kerning-prop" scope="external" format="html">CSS Fonts 4 §6.3, Kerning: the font-kerning property</xref>.</p>
-                    <p>Kerning adjusts the space between particular pairs of letters when the font provides kerning data. Use <xref href="https://www.w3.org/TR/css-fonts-4/#font-kerning-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> to request kerning, <xref href="https://www.w3.org/TR/css-fonts-4/#font-kerning-none-value" scope="external" format="html">
-                            <codeph>none</codeph>
-                        </xref> to turn it off, or <xref href="https://www.w3.org/TR/css-fonts-4/#font-kerning-auto-value" scope="external" format="html">
-                            <codeph>auto</codeph>
-                        </xref> to let the processor decide.</p>
+                    <p>Use <codeph>font-kerning</codeph> to turn <xref href="../glossaries/Kerning.dita">kerning</xref> on or off. The values <codeph>auto</codeph> and <codeph>normal</codeph> use the kerning of the font, and <codeph>none</codeph> turns it off:</p>
                 </info>
                 <stepxmp>
-                    <pre outputclass="language-css21">body { font-kerning: normal; }
+                    <pre outputclass="language-css21">code { font-kerning: none; }
 </pre>
                 </stepxmp>
                 <info>
-                    <div outputclass="role-h3" id="font-variant-ligatures">
-                        <codeph>font-variant-ligatures</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-ligatures-prop" scope="external" format="html">CSS Fonts 4 §6.4, Ligatures: the font-variant-ligatures property</xref>.</p>
-                    <p>Ligatures replace certain letter combinations with a single designed glyph. Use this property to control common, discretionary, historical or contextual ligatures.</p>
+                    <p>Use <codeph>font-variant-ligatures</codeph> to control the ligatures. The value <codeph>normal</codeph> uses the defaults of the font: common ligatures and contextual forms are on, and discretionary and historical ligatures are off. The value <codeph>none</codeph> turns off all of them. You can also combine one value from each pair:</p>
+                    <ul>
+                        <li><codeph>common-ligatures</codeph> or <codeph>no-common-ligatures</codeph>, for ligatures such as "fi" and "fl".</li>
+                        <li><codeph>discretionary-ligatures</codeph> or <codeph>no-discretionary-ligatures</codeph>, for optional ligatures that suit a particular style.</li>
+                        <li><codeph>historical-ligatures</codeph> or <codeph>no-historical-ligatures</codeph>.</li>
+                        <li><codeph>contextual</codeph> or <codeph>no-contextual</codeph>, for glyphs that change with the characters around them.</li>
+                    </ul>
                 </info>
                 <stepxmp>
-                    <pre outputclass="language-css21">body { font-variant-ligatures: common-ligatures; }
+                    <pre outputclass="language-css21">body { font-variant-ligatures: common-ligatures discretionary-ligatures; }
 code { font-variant-ligatures: none; }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-ligatures-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> uses the default feature behavior. For OpenType fonts, common ligatures and contextual forms are on by default. Discretionary and historical ligatures are off by default. <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-ligatures-none-value" scope="external" format="html">
-                            <codeph>none</codeph>
-                        </xref> disables all kinds of ligatures and contextual forms covered by this property.</p>
+                    <p>The ligatures that a script needs, such as those of Arabic, are always used.</p>
+                </info>
+            </step>
+            <step id="capitals-positions-and-numbers">
+                <cmd>Choose capitals, positions and numbers</cmd>
+                <info>
+                    <p>Use <codeph>font-variant-caps</codeph> to ask for small capitals and other forms of capital letters:</p>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-common-ligatures" scope="external" format="html">
-                                <codeph>common-ligatures</codeph>
-                            </xref> enables common ligatures, such as <codeph>fi</codeph> or <codeph>fl</codeph>, when the font provides them. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-no-common-ligatures" scope="external" format="html">
-                                <codeph>no-common-ligatures</codeph>
-                            </xref> disables them.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-discretionary-ligatures" scope="external" format="html">
-                                <codeph>discretionary-ligatures</codeph>
-                            </xref> enables optional ligatures intended for particular styles. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-no-discretionary-ligatures" scope="external" format="html">
-                                <codeph>no-discretionary-ligatures</codeph>
-                            </xref> disables them.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-historical-ligatures" scope="external" format="html">
-                                <codeph>historical-ligatures</codeph>
-                            </xref> enables historical ligatures. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-no-historical-ligatures" scope="external" format="html">
-                                <codeph>no-historical-ligatures</codeph>
-                            </xref> disables them.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-contextual" scope="external" format="html">
-                                <codeph>contextual</codeph>
-                            </xref> enables contextual forms, where a glyph changes according to nearby characters. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-ligatures-no-contextual" scope="external" format="html">
-                                <codeph>no-contextual</codeph>
-                            </xref> disables them.</li>
+                        <li><codeph>small-caps</codeph>: small capitals instead of lowercase letters.</li>
+                        <li><codeph>all-small-caps</codeph>: small capitals instead of lowercase and uppercase letters.</li>
+                        <li><codeph>petite-caps</codeph> and <codeph>all-petite-caps</codeph>: the same with petite capitals, which are smaller.</li>
+                        <li><codeph>unicase</codeph>: small capitals for the uppercase letters, and normal lowercase letters.</li>
+                        <li><codeph>titling-caps</codeph>: capitals designed for titles.</li>
+                        <li><codeph>normal</codeph>: the usual letters.</li>
                     </ul>
-                    <p>You can combine one value from each pair. Required ligatures used to render complex scripts are not affected by these settings.</p>
-                    <div outputclass="role-h3" id="font-variant-caps">
-                        <codeph>font-variant-caps</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-caps-prop" scope="external" format="html">CSS Fonts 4 §6.6, Capitalization: the font-variant-caps property</xref>.</p>
-                    <p>Use <codeph>font-variant-caps</codeph> to request small capitals or other capitalization forms from a font.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">term { font-variant-caps: small-caps; }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-caps-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> uses the usual letter forms. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-caps-small-caps" scope="external" format="html">
-                            <codeph>small-caps</codeph>
-                        </xref> uses small capitals for lowercase letters. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-caps-all-small-caps" scope="external" format="html">
-                            <codeph>all-small-caps</codeph>
-                        </xref> uses small capitals for both lowercase and uppercase letters. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-caps-petite-caps" scope="external" format="html">
-                            <codeph>petite-caps</codeph>
-                        </xref> uses petite capitals for lowercase letters. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-caps-all-petite-caps" scope="external" format="html">
-                            <codeph>all-petite-caps</codeph>
-                        </xref> uses petite capitals for both cases. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-caps-unicase" scope="external" format="html">
-                            <codeph>unicase</codeph>
-                        </xref> uses small capitals for uppercase letters with ordinary lowercase letters. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-caps-titling-caps" scope="external" format="html">
-                            <codeph>titling-caps</codeph>
-                        </xref> requests capitals designed for titles.</p>
-                    <p>If the font does not provide the requested forms, <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-small-caps" scope="external" format="html">
-                            <codeph>font-synthesis-small-caps</codeph>
-                        </xref> determines whether the processor synthesizes them.</p>
-                    <div outputclass="role-h3" id="font-variant-position">
-                        <codeph>font-variant-position</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-position-prop" scope="external" format="html">CSS Fonts 4 §6.5, Subscript and superscript forms: the font-variant-position property</xref>.</p>
-                    <p>Use <codeph>font-variant-position</codeph> to request subscript or superscript glyph forms from the font.</p>
+                    <p>When the font has no small capitals, CSSMedia creates them by scaling the capitals, unless <codeph>font-synthesis-small-caps</codeph> is <codeph>none</codeph>.</p>
+                    <p>Use <codeph>font-variant-position</codeph> to ask for subscript glyphs with <codeph>sub</codeph> or superscript glyphs with <codeph>super</codeph>. The value <codeph>normal</codeph> uses the ordinary glyphs. When the font has no such glyphs, CSSMedia scales and moves the ordinary glyphs, unless <codeph>font-synthesis-position</codeph> is <codeph>none</codeph>. The <codeph>@font-face</codeph> descriptors that <xref href="font-faces.dita#font-faces">Font resources and descriptors</xref> explains can change their size and position.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">formula { font-variant-position: sub; }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-position-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> uses the ordinary glyphs. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-position-sub" scope="external" format="html">
-                            <codeph>sub</codeph>
-                        </xref> requests subscript glyphs. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-position-super" scope="external" format="html">
-                            <codeph>super</codeph>
-                        </xref> requests superscript glyphs. The alternate glyphs use the same em-box and baseline as ordinary glyphs, so this property does not resize or reposition them. It does not change the meaning or position of the <xref href="../glossaries/XML.dita">XML</xref> element. If the font does not provide the requested forms, <xref href="https://www.w3.org/TR/css-fonts-4/#font-synthesis-position" scope="external" format="html">
-                            <codeph>font-synthesis-position</codeph>
-                        </xref> determines whether the processor synthesizes them.</p>
-                    <div outputclass="role-h3" id="font-variant-numeric">
-                        <codeph>font-variant-numeric</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-numeric-prop" scope="external" format="html">CSS Fonts 4 §6.7, Numerical formatting: the font-variant-numeric property</xref>.</p>
-                    <p>Use this property to request number shapes, spacing and fractions. <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-numeric-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> uses the font’s default forms. You may combine one value from each mutually exclusive pair:</p>
-                </info>
-                <stepxmp>
-                    <pre outputclass="language-css21">table { font-variant-numeric: tabular-nums; }
-</pre>
-                </stepxmp>
-                <info>
+                    <p>Use <codeph>font-variant-numeric</codeph> to choose the shape and the spacing of numbers. Combine one value from each group:</p>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-lining-nums" scope="external" format="html">
-                                <codeph>lining-nums</codeph>
-                            </xref> requests figures aligned with the capital-letter height. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-oldstyle-nums" scope="external" format="html">
-                                <codeph>oldstyle-nums</codeph>
-                            </xref> requests figures with ascenders and descenders.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-proportional-nums" scope="external" format="html">
-                                <codeph>proportional-nums</codeph>
-                            </xref> requests figures whose widths vary. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-tabular-nums" scope="external" format="html">
-                                <codeph>tabular-nums</codeph>
-                            </xref> requests figures with equal widths.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-diagonal-fractions" scope="external" format="html">
-                                <codeph>diagonal-fractions</codeph>
-                            </xref> requests a numerator and denominator separated by a diagonal slash. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-stacked-fractions" scope="external" format="html">
-                                <codeph>stacked-fractions</codeph>
-                            </xref> requests a numerator above a denominator.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-ordinal" scope="external" format="html">
-                                <codeph>ordinal</codeph>
-                            </xref> requests letter forms used with ordinal numbers, such as the suffix in <codeph>1st</codeph>. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-numeric-slashed-zero" scope="external" format="html">
-                                <codeph>slashed-zero</codeph>
-                            </xref> requests a zero glyph with a slash.</li>
+                        <li><codeph>lining-nums</codeph> or <codeph>oldstyle-nums</codeph>: figures as high as capitals, or figures with ascenders and descenders.</li>
+                        <li><codeph>proportional-nums</codeph> or <codeph>tabular-nums</codeph>: figures with different widths, or with equal widths. Use equal widths in tables so that the digits line up.</li>
+                        <li><codeph>diagonal-fractions</codeph> or <codeph>stacked-fractions</codeph>: fractions with a diagonal slash, or with the numerator above the denominator.</li>
+                        <li><codeph>ordinal</codeph>: the forms of the suffixes of ordinal numbers, such as "st" in "1st".</li>
+                        <li><codeph>slashed-zero</codeph>: a zero with a slash.</li>
                     </ul>
-                    <p>The font must provide each requested feature.</p>
-                </info>
-            </step>
-            <step id="alternate-glyphs-and-language-forms">
-                <cmd>Alternate glyphs and language forms</cmd>
-                <info>
-                    <div outputclass="role-h3" id="font-variant-alternates">
-                        <codeph>font-variant-alternates</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-alternates-prop" scope="external" format="html">CSS Fonts 4 §6.8, Alternates and swashes: the font-variant-alternates property</xref>.</p>
-                    <p>Use <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-alternates-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> to request no named alternate. Otherwise, combine one or more alternate requests:</p>
                 </info>
                 <stepxmp>
-                    <pre outputclass="language-css21">heading { font-variant-alternates: historical-forms; }
+                    <pre outputclass="language-css21">table { font-variant-numeric: lining-nums tabular-nums; }
 </pre>
                 </stepxmp>
+            </step>
+            <step id="alternate-glyphs">
+                <cmd>Use alternate glyphs</cmd>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#stylistic" scope="external" format="html">
-                            <codeph>stylistic(name)</codeph>
-                        </xref> requests one named stylistic alternate. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-alternates-historical-forms" scope="external" format="html">
-                            <codeph>historical-forms</codeph>
-                        </xref> requests historical glyph forms. <xref href="https://www.w3.org/TR/css-fonts-4/#styleset" scope="external" format="html">
-                            <codeph>styleset(name, ...)</codeph>
-                        </xref> requests one or more named stylistic sets. <xref href="https://www.w3.org/TR/css-fonts-4/#character-variant" scope="external" format="html">
-                            <codeph>character-variant(name, ...)</codeph>
-                        </xref> requests named variants for individual characters. <xref href="https://www.w3.org/TR/css-fonts-4/#swash" scope="external" format="html">
-                            <codeph>swash(name)</codeph>
-                        </xref> requests a named swash form. <xref href="https://www.w3.org/TR/css-fonts-4/#ornaments" scope="external" format="html">
-                            <codeph>ornaments(name)</codeph>
-                        </xref> requests a named ornament. <xref href="https://www.w3.org/TR/css-fonts-4/#annotation" scope="external" format="html">
-                            <codeph>annotation(name)</codeph>
-                        </xref> requests a named annotation form.</p>
-                    <p>Names in these functions are case-sensitive. A name can be defined for a font family by <codeph>@font-feature-values</codeph>. If it is not defined for the selected family and feature type, it has no effect. The font must support the mapped feature.</p>
-                    <div outputclass="role-h3" id="font-feature-values">
-                        <codeph>@font-feature-values</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-feature-values" scope="external" format="html">CSS Fonts 4 §6.9, Defining font specific alternates: the @font-feature-values rule</xref>.</p>
-                    <p>Use <codeph>@font-feature-values</codeph> to give readable names to alternate features that a font identifies by OpenType feature tags. Its prelude is one or more named font families separated by commas. Generic and system font names are not allowed. Inside the block, use feature-value rules to map names to the font-specific integer indexes.</p>
+                    <p>Fonts can have several alternate shapes for a character, which the font identifies by numbers. Use <codeph>font-variant-alternates</codeph> to ask for them. The value <codeph>normal</codeph> asks for none. Otherwise combine these values:</p>
+                    <ul>
+                        <li><codeph>historical-forms</codeph>: historical glyph forms.</li>
+                        <li><codeph>stylistic(name)</codeph>: a stylistic alternate.</li>
+                        <li><codeph>styleset(name, ...)</codeph>: one or more stylistic sets.</li>
+                        <li><codeph>character-variant(name, ...)</codeph>: variants of individual characters.</li>
+                        <li><codeph>swash(name)</codeph>: a swash form.</li>
+                        <li><codeph>ornaments(name)</codeph>: an ornament.</li>
+                        <li><codeph>annotation(name)</codeph>: an annotation form, such as a circled digit.</li>
+                    </ul>
+                    <p>The names are yours. You define each name for a font family with <codeph>@font-feature-values</codeph>. The prelude of the rule lists one or more family names, which cannot be generic families. Inside the block, a rule for each kind of alternate maps names to numbers:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">@font-feature-values "Example Serif" {
@@ -222,155 +102,52 @@ h1 { font-variant-alternates: styleset(headings); }
 </pre>
                 </stepxmp>
                 <info>
-                    <div outputclass="role-h3" id="feature-value-rules">Feature-value rules</div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-feature-values-syntax" scope="external" format="html">CSS Fonts 4 §6.9.1, Basic syntax</xref>.</p>
-                    <p>Each nested rule has a declaration block. A declaration maps a case-sensitive name to a non-negative integer or integer list. The meaning and number of integers depend on the rule:</p>
+                    <p>A name that is not defined for the family of the text has no effect. Names are case-sensitive. If you define the same name twice, the last definition wins. These are the rules of the block:</p>
                     <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-stylistic" scope="external" format="html">
-                                <codeph>@stylistic</codeph>
-                            </xref> maps a name to one stylistic-alternate index for OpenType feature <codeph>salt</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-historical-forms" scope="external" format="html">
-                                <codeph>@historical-forms</codeph>
-                            </xref> maps a name to one or more historical-form indexes for OpenType feature <codeph>hist</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-styleset" scope="external" format="html">
-                                <codeph>@styleset</codeph>
-                            </xref> maps a name to one or more style-set indexes. Values from <codeph>1</codeph> through <codeph>99</codeph> select the corresponding <codeph>ss01</codeph> through <codeph>ss99</codeph> features. The OpenType standard defines <codeph>ss01</codeph> through <codeph>ss20</codeph>; later feature tags may be used by fonts that support them. The value <codeph>0</codeph> and values above <codeph>99</codeph> are syntactically valid but enable no OpenType feature. See <xref href="https://www.w3.org/TR/css-fonts-4/#multi-value-features" scope="external" format="html">CSS Fonts 4 §6.9.2</xref>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-character-variant" scope="external" format="html">
-                                <codeph>@character-variant</codeph>
-                            </xref> maps a name to one or two indexes. The first selects <codeph>cv01</codeph> through <codeph>cv99</codeph>; the optional second sets that feature’s variant value. A first index of <codeph>0</codeph> or greater than <codeph>99</codeph> is valid but enables no feature. See <xref href="https://www.w3.org/TR/css-fonts-4/#multi-value-features" scope="external" format="html">CSS Fonts 4 §6.9.2</xref>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-swash" scope="external" format="html">
-                                <codeph>@swash</codeph>
-                            </xref> maps a name to one swash index for OpenType feature <codeph>swsh</codeph> or <codeph>cswh</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-ornaments" scope="external" format="html">
-                                <codeph>@ornaments</codeph>
-                            </xref> maps a name to one ornament index for OpenType feature <codeph>ornm</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-annotation" scope="external" format="html">
-                                <codeph>@annotation</codeph>
-                            </xref> maps a name to one annotation index for OpenType feature <codeph>nalt</codeph>.</li>
+                        <li><codeph>@stylistic</codeph> maps a name to one number for the feature <codeph>salt</codeph>.</li>
+                        <li><codeph>@historical-forms</codeph> maps a name to one or more numbers for <codeph>hist</codeph>.</li>
+                        <li><codeph>@styleset</codeph> maps a name to one or more numbers from 1 to 99, for the features <codeph>ss01</codeph> to <codeph>ss99</codeph>. A 0 or a number above 99 selects no feature.</li>
+                        <li><codeph>@character-variant</codeph> maps a name to one or two numbers. The first, from 1 to 99, selects <codeph>cv01</codeph> to <codeph>cv99</codeph>, and the optional second sets its value. A 0 or a number above 99 selects no feature.</li>
+                        <li><codeph>@swash</codeph> maps a name to one number for <codeph>swsh</codeph> or <codeph>cswh</codeph>.</li>
+                        <li><codeph>@ornaments</codeph> maps a name to one number for <codeph>ornm</codeph>.</li>
+                        <li><codeph>@annotation</codeph> maps a name to one number for <codeph>nalt</codeph>.</li>
                     </ul>
-                    <p>Repeated feature-value rules of the same type contribute their declarations together. If the same family, rule type and name are defined more than once, the last definition is used.</p>
-                    <p>
-                        <codeph>@font-feature-values</codeph> also accepts a <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-feature-values-font-display" scope="external" format="html">
-                            <codeph>font-display</codeph>
-                        </xref> descriptor. Its initial value is <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-auto" scope="external" format="html">
-                            <codeph>auto</codeph>
-                        </xref>, which leaves the policy to the processor. The descriptor sets the default font-display policy for <codeph>@font-face</codeph> rules for the listed family when those rules do not set their own <codeph>font-display</codeph>. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-block" scope="external" format="html">
-                            <codeph>block</codeph>
-                        </xref> uses a short block period, with 3 seconds recommended, followed by an infinite swap period. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-swap" scope="external" format="html">
-                            <codeph>swap</codeph>
-                        </xref> uses an extremely short block period, with 100 milliseconds or less recommended, followed by an infinite swap period. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-fallback" scope="external" format="html">
-                            <codeph>fallback</codeph>
-                        </xref> uses an extremely short block period, with 100 milliseconds or less recommended, followed by a short swap period, with 3 seconds recommended. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-face-font-display-optional" scope="external" format="html">
-                            <codeph>optional</codeph>
-                        </xref> uses the font only if it is available for the first rendering. Otherwise, the block and swap periods are treated as expired, so the fallback remains in use.</p>
-                    <div outputclass="role-h3" id="font-variant-east-asian">
-                        <codeph>font-variant-east-asian</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-east-asian-prop" scope="external" format="html">CSS Fonts 4 §6.10, East Asian text rendering: the font-variant-east-asian property</xref>.</p>
-                    <p>Use <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-east-asian-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> to request none of the variants below. You can combine a glyph-variant value, a width value and <codeph>ruby</codeph>:</p>
+                </info>
+            </step>
+            <step id="language-forms">
+                <cmd>Choose forms for a language or a script</cmd>
+                <info>
+                    <p>Use <codeph>font-variant-east-asian</codeph> to choose the forms of Chinese and Japanese characters. The value <codeph>normal</codeph> asks for none. Otherwise combine a glyph form, a width and <codeph>ruby</codeph>:</p>
+                    <ul>
+                        <li><codeph>jis78</codeph>, <codeph>jis83</codeph>, <codeph>jis90</codeph> and <codeph>jis04</codeph>: the Japanese forms of that edition of the JIS standard.</li>
+                        <li><codeph>simplified</codeph> and <codeph>traditional</codeph>: the forms of simplified and traditional Chinese.</li>
+                        <li><codeph>full-width</codeph> and <codeph>proportional-width</codeph>: glyphs of equal width, or with proportional spacing.</li>
+                        <li><codeph>ruby</codeph>: glyphs designed for the small size of ruby text.</li>
+                    </ul>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">ruby { font-variant-east-asian: ruby; }
 </pre>
                 </stepxmp>
                 <info>
-                    <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-jis78" scope="external" format="html">
-                                <codeph>jis78</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-jis83" scope="external" format="html">
-                                <codeph>jis83</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-jis90" scope="external" format="html">
-                                <codeph>jis90</codeph>
-                            </xref> and <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-jis04" scope="external" format="html">
-                                <codeph>jis04</codeph>
-                            </xref> request Japanese glyph forms from the corresponding JIS standard editions.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-simplified" scope="external" format="html">
-                                <codeph>simplified</codeph>
-                            </xref> requests simplified-character forms. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-traditional" scope="external" format="html">
-                                <codeph>traditional</codeph>
-                            </xref> requests traditional-character forms.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-full-width" scope="external" format="html">
-                                <codeph>full-width</codeph>
-                            </xref> requests full-width glyphs. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-proportional-width" scope="external" format="html">
-                                <codeph>proportional-width</codeph>
-                            </xref> requests proportionally spaced glyphs.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-east-asian-ruby" scope="external" format="html">
-                                <codeph>ruby</codeph>
-                            </xref> requests glyph forms designed for ruby text.</li>
-                    </ul>
-                    <p>The font must provide the requested forms. Ruby-specific glyphs are designed to remain legible at the smaller sizes used for ruby text.</p>
-                    <div outputclass="role-h3" id="font-language-override">
-                        <codeph>font-language-override</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-language-override-prop" scope="external" format="html">CSS Fonts 4 §6.13, Font language override: the font-language-override property</xref>.</p>
-                    <p>Set the text’s language with a BCP 47 tag in <codeph>xml:lang</codeph>. For example, <codeph>tr</codeph> identifies Turkish and <codeph>en-GB</codeph> identifies British English. Use a language tag that follows <xref href="https://www.rfc-editor.org/rfc/rfc5646" scope="external" format="html">BCP 47</xref> and its registered subtags in the <xref href="https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry" scope="external" format="html">IANA Language Subtag Registry</xref>.</p>
-                    <p>Fonts can use OpenType language-system tags to select language-specific glyph features. Normally, the text’s BCP 47 language lets the processor choose the corresponding OpenType system. Set <codeph>font-language-override</codeph> only when you need to select a different OpenType system, such as when the font lacks the system for the text’s language.</p>
-                </info>
-                <stepxmp>
-                    <pre outputclass="language-css21">chapter { font-language-override: "SRB"; }
-</pre>
-                </stepxmp>
-                <info>
-                    <p>For example, use <codeph>xml:lang="mk"</codeph> to identify Macedonian text. If the selected font lacks a Macedonian language system but provides Serbian conventions that suit the text, <codeph>"SRB"</codeph> selects its Serbian OpenType system.</p>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-language-override-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> uses the OpenType system inferred from the text’s BCP 47 language. A <xref href="https://www.w3.org/TR/css-fonts-4/#font-language-override-string-value" scope="external" format="html">
-                            <codeph>string</codeph>
-                        </xref> must be a case-sensitive OpenType language-system tag, not a BCP 47 tag. Find the tag in the font’s documentation or in Microsoft’s <xref href="https://learn.microsoft.com/en-us/typography/opentype/spec/languagetags" scope="external" format="html">OpenType language system tags</xref>. The tag is matched as four characters; shorter strings are padded at the end with U+0020 spaces. Unknown tags are ignored. Leave the value as <codeph>normal</codeph> unless you need to override the inferred system.</p>
-                    <div outputclass="role-h3" id="font-variant-emoji">
-                        <codeph>font-variant-emoji</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-emoji-prop" scope="external" format="html">CSS Fonts 4 §9.3, Selecting the text presentation style: The font-variant-emoji property</xref>.</p>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-emoji-normal" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> lets the processor choose text or emoji presentation according to its usual policy. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-emoji-text" scope="external" format="html">
-                            <codeph>text</codeph>
-                        </xref> treats each character that can have emoji presentation as if followed by U+FE0E, the text presentation selector. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-emoji-emoji" scope="external" format="html">
-                            <codeph>emoji</codeph>
-                        </xref> treats each such character as if followed by U+FE0F, the emoji presentation selector. <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-variant-emoji-unicode" scope="external" format="html">
-                            <codeph>unicode</codeph>
-                        </xref> follows the Unicode default presentation for each character. An explicit text or emoji variation selector in the text overrides that default.</p>
+                    <p>Use <codeph>font-variant-emoji</codeph> to choose between the text and the emoji forms of the characters that have both. The value <codeph>text</codeph> asks for the text form, <codeph>emoji</codeph> for the emoji form and <codeph>unicode</codeph> for the default form that Unicode gives to each character. The value <codeph>normal</codeph> lets CSSMedia choose. A variation selector in the text, U+FE0E for text and U+FE0F for emoji, overrides the property.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">label { font-variant-emoji: text; }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The selected font must contain the requested glyphs and presentation.</p>
+                    <p>A font can have different glyphs for different languages. CSSMedia chooses the language system of the font from the language of the text, which comes from <codeph>xml:lang</codeph> or from <codeph>-cssmedia-lang</codeph>. Use <codeph>font-language-override</codeph> only when the font lacks the language system for your text but has another that suits it. The value is the OpenType language system tag in a string, such as <codeph>"SRB"</codeph> for Serbian. It is not a language tag such as <codeph>sr</codeph>. The tag has four characters, and CSSMedia pads shorter tags with spaces. A tag that the font does not have is ignored. The value <codeph>normal</codeph> uses the language of the text.</p>
                 </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter { font-language-override: "SRB"; }
+</pre>
+                </stepxmp>
             </step>
-            <step id="shorthand-and-low-level-control">
-                <cmd>Shorthand and low-level control</cmd>
+            <step id="shorthand-and-tags">
+                <cmd>Use the shorthand and the feature tags</cmd>
                 <info>
-                    <div outputclass="role-h3" id="font-variant">
-                        <codeph>font-variant</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-prop" scope="external" format="html">CSS Fonts 4 §6.11, Overall shorthand for font rendering: the font-variant property</xref>.</p>
-                    <p>Use <codeph>font-variant</codeph> to set several variant properties in one declaration. <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> resets every subproperty to its initial value. <xref href="https://www.w3.org/TR/css-fonts-4/#font-variant-none-value" scope="external" format="html">
-                            <codeph>none</codeph>
-                        </xref> sets <codeph>font-variant-ligatures</codeph> to <codeph>none</codeph> and resets the other variant subproperties. Otherwise, combine compatible values from the ligature, capitalization, alternate, numeric, East Asian, position and emoji groups described above. Omitted subproperties reset to their initial values.</p>
+                    <p>Use <codeph>font-variant</codeph> to set several variant properties in one declaration. It takes <codeph>normal</codeph>, <codeph>none</codeph>, or values of the longhand properties. The value <codeph>none</codeph> sets <codeph>font-variant-ligatures</codeph> to <codeph>none</codeph>. The properties that you do not write return to their initial values. The shorthand does not change <codeph>font-language-override</codeph>, <codeph>font-feature-settings</codeph> or <codeph>font-variation-settings</codeph>:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">body { font-variant: small-caps; }
@@ -378,35 +155,16 @@ table { font-variant: lining-nums tabular-nums; }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>Use a longhand such as <codeph>font-variant-numeric</codeph> when you want to control only one kind of feature. The <xref href="https://www.w3.org/TR/css-fonts-4/#font-prop" scope="external" format="html">
-                            <codeph>font</codeph> shorthand</xref> is different. It resets font variant settings rather than setting all these detailed choices. <codeph>font-variant</codeph> does not reset <codeph>font-language-override</codeph>, <codeph>font-feature-settings</codeph> or <codeph>font-variation-settings</codeph>.</p>
-                    <div outputclass="role-h3" id="font-feature-settings">
-                        <codeph>font-feature-settings</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-feature-settings-prop" scope="external" format="html">CSS Fonts 4 §6.12, Low-level font feature settings control: the font-feature-settings property</xref>.</p>
-                    <p>Use <codeph>font-feature-settings</codeph> to set a specific OpenType feature directly. Write the feature tag as a four-character string, followed by an optional number, <codeph>on</codeph> or <codeph>off</codeph>.</p>
+                    <p>Use <codeph>font-feature-settings</codeph> when no other property describes the feature that you need. The value is <codeph>normal</codeph>, or a comma-separated list of tags. A tag is a string of four characters, followed by an optional number, <codeph>on</codeph> or <codeph>off</codeph>. Without a value, a tag is on. The value <codeph>0</codeph> or <codeph>off</codeph> turns the feature off, and a positive number turns it on and selects its alternate:</p>
                 </info>
                 <stepxmp>
-                    <pre outputclass="language-css21">body { font-feature-settings: "liga" 0; }
+                    <pre outputclass="language-css21">body { font-feature-settings: "liga" 0, "ss01"; }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-feature-settings-normal-value" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> makes no change to glyph selection or positioning. Otherwise, give one or more comma-separated <xref href="https://www.w3.org/TR/css-fonts-4/#feature-tag-value" scope="external" format="html">
-                            <codeph>&lt;feature-tag-value&gt;</codeph>
-                        </xref> items. Each tag is a case-sensitive string of four printable ASCII characters, from U+0020 through U+007E. The font must define the tag. Unsupported tags are ignored. This property does not synthesize their behavior, except that a processor may synthesize kerning for fonts with a legacy <codeph>kern</codeph> table.</p>
-                    <p>For each tag, omit the value or use <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-feature-tag-value-on" scope="external" format="html">
-                            <codeph>on</codeph>
-                        </xref> to enable the feature with value <codeph>1</codeph>. Use <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-feature-tag-value-off" scope="external" format="html">
-                            <codeph>off</codeph>
-                        </xref> or <codeph>0</codeph> to disable it. The optional <xref href="https://www.w3.org/TR/css-fonts-4/#feature-tag-value" scope="external" format="html">integer value</xref> cannot be negative. A positive integer enables the feature and selects its indexed form when it has multiple forms. <codeph>on</codeph> is equivalent to <codeph>1</codeph>; <codeph>off</codeph> is equivalent to <codeph>0</codeph>. If a tag is repeated, its last value takes precedence.</p>
-                    <p>In the example, <codeph>liga</codeph> is the standard ligature feature and <codeph>0</codeph> disables it. Prefer a higher-level property such as <codeph>font-variant-ligatures</codeph> when it describes the feature you need.</p>
+                    <p>Tags are case-sensitive. A tag that the font does not have is ignored. If a tag occurs more than once, the last value wins. The settings of this property come after the settings of the other properties, so they win. Prefer a higher-level property, such as <codeph>font-variant-ligatures</codeph>, when it describes the feature.</p>
                 </info>
             </step>
         </steps>
     </taskbody>
 </task>
-

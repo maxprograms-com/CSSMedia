@@ -30,38 +30,44 @@
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-content" scope="external" format="html">CSS Content 3 §1</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bookmark-label" valign="middle">
                             <entry>
                                 <codeph>bookmark-label</codeph>
                             </entry>
-                            <entry>Sets the text for a generated bookmark.</entry>
+                            <entry>Sets the text of the bookmark of an element. It is also the default text of the entry of the element in a table of contents.</entry>
                             <entry>A list of generated content items</entry>
-                            <entry />
+                            <entry>
+                                <codeph>content(text)</codeph>
+                            </entry>
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-bookmark-label" scope="external" format="html">CSS Content 3 §3.2</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bookmark-level" valign="middle">
                             <entry>
                                 <codeph>bookmark-level</codeph>
                             </entry>
-                            <entry>Sets a bookmark’s hierarchy level, or disables its creation.</entry>
+                            <entry>Makes an element a bookmark of the PDF and an entry in a table of contents, and sets its level. Level 1 is the top level.</entry>
                             <entry>
                                 <codeph>none</codeph> or an integer of 1 or greater</entry>
-                            <entry />
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-bookmark-level" scope="external" format="html">CSS Content 3 §3.1</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bookmark-state" valign="middle">
                             <entry>
                                 <codeph>bookmark-state</codeph>
                             </entry>
-                            <entry>Sets whether a generated bookmark starts open or closed.</entry>
+                            <entry>Sets whether the bookmark of a block-level element shows its child bookmarks or hides them when the PDF opens.</entry>
                             <entry>
                                 <codeph>open</codeph> or <codeph>closed</codeph>
                             </entry>
-                            <entry />
+                            <entry>
+                                <codeph>open</codeph>
+                            </entry>
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-bookmark-state" scope="external" format="html">CSS Content 3 §3.3</xref>
                             </entry>
@@ -150,6 +156,126 @@
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-link-params-1/#propdef-link-parameters" scope="external" format="html">CSS Link Parameters 1 §2.1</xref>
                             </entry>
+                        </row>
+                        <row id="row-leader" valign="middle">
+                            <entry>
+                                <codeph>leader()</codeph>
+                            </entry>
+                            <entry>Fills the space between the content before it and the content after it on a line with a repeated pattern. Use it in <codeph>content</codeph>.</entry>
+                            <entry>
+                                <codeph>dotted</codeph>, <codeph>solid</codeph>, <codeph>space</codeph> or a string</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#leader-function" scope="external" format="html">CSS Content 3 §2.5.1</xref>
+                            </entry>
+                        </row>
+                        <row id="row-target-counter" valign="middle">
+                            <entry>
+                                <codeph>target-counter()</codeph>
+                            </entry>
+                            <entry>Gives the value of a counter at the destination of a link, such as the page number of a heading. Use it in <codeph>content</codeph>.</entry>
+                            <entry>
+                                A link, as <codeph>attr()</codeph>, a string or <codeph>url()</codeph>; a counter name; and an optional counter style</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-content-3/#target-counter" scope="external" format="html">CSS Content 3 §2.6.1</xref>
+                            </entry>
+                        </row>
+                        <row id="row-toc-function" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-toc()</codeph>
+                            </entry>
+                            <entry>Generates a table of contents with an entry for each element that has a <codeph>bookmark-level</codeph>. Use it as the value of <codeph>content</codeph>. CSSMedia extension.</entry>
+                            <entry>No arguments.</entry>
+                            <entry />
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-title" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-toc-title</codeph>
+                            </entry>
+                            <entry>Sets the title of the table of contents. Set it where <codeph>content</codeph> is <codeph>-cssmedia-toc()</codeph>. The title is also a bookmark if <codeph>@-cssmedia-toc-title</codeph> sets a <codeph>bookmark-level</codeph>. CSSMedia extension.</entry>
+                            <entry>
+                                <codeph>none</codeph> or a list of generated content items</entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-depth" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-toc-depth</codeph>
+                            </entry>
+                            <entry>Sets the deepest level of <codeph>bookmark-level</codeph> that gets an entry in the table of contents. Set it where <codeph>content</codeph> is <codeph>-cssmedia-toc()</codeph>. CSSMedia extension.</entry>
+                            <entry>
+                                <codeph>all</codeph> or an integer of 1 or greater</entry>
+                            <entry>
+                                <codeph>all</codeph>
+                            </entry>
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-label" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-toc-label</codeph>
+                            </entry>
+                            <entry>Sets the text of the entry of an element in the table of contents. Set it on the element that has the <codeph>bookmark-level</codeph>. CSSMedia extension.</entry>
+                            <entry>
+                                <codeph>auto</codeph> or a list of generated content items</entry>
+                            <entry>
+                                <codeph>auto</codeph>, which uses the value of <codeph>bookmark-label</codeph>
+                            </entry>
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-divider" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-toc-divider</codeph>
+                            </entry>
+                            <entry>Adds a line of text before the entry of an element in the table of contents, to group entries. Set it on the element that has the <codeph>bookmark-level</codeph>. CSSMedia extension.</entry>
+                            <entry>
+                                <codeph>none</codeph> or a list of generated content items</entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-leader" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-toc-leader</codeph>
+                            </entry>
+                            <entry>Sets the leader between the text of an entry and its page number. Set it in <codeph>@-cssmedia-toc-entry</codeph>. CSSMedia extension.</entry>
+                            <entry>
+                                <codeph>dotted</codeph>, <codeph>solid</codeph>, <codeph>space</codeph> or a string</entry>
+                            <entry>
+                                <codeph>dotted</codeph>
+                            </entry>
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-title-rule" valign="middle">
+                            <entry>
+                                <codeph>@-cssmedia-toc-title</codeph>
+                            </entry>
+                            <entry>Styles the title of the table of contents. CSSMedia extension.</entry>
+                            <entry>A block of declarations.</entry>
+                            <entry />
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-entry-rule" valign="middle">
+                            <entry>
+                                <codeph>@-cssmedia-toc-entry</codeph>
+                            </entry>
+                            <entry>Styles the entries of the table of contents. Write a level after the name to style only the entries of that level. CSSMedia extension.</entry>
+                            <entry>An optional integer of 1 or greater, and a block of declarations.</entry>
+                            <entry />
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-toc-divider-rule" valign="middle">
+                            <entry>
+                                <codeph>@-cssmedia-toc-divider</codeph>
+                            </entry>
+                            <entry>Styles the dividers of the table of contents. Write a level after the name to style only the dividers of the entries of that level. CSSMedia extension.</entry>
+                            <entry>An optional integer of 1 or greater, and a block of declarations.</entry>
+                            <entry />
+                            <entry>CSSMedia extension</entry>
                         </row>
                     </tbody>
                 </tgroup>

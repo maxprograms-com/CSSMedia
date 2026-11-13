@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="toc-chapter-reference">
+    <title>Table of contents reference</title>
+    <shortdesc>This reference lists the properties, functions and at-rules that CSSMedia uses for bookmarks and tables of contents.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-toc/toc-properties"/>
+        <section conkeyref="ref-toc/toc-at-rules"/>
+    </refbody>
+</reference>

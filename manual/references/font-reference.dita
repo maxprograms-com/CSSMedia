@@ -1,859 +1,495 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="font-reference">
-    <title>Font reference</title>
-    <shortdesc>This table covers the font properties, at-rules, and descriptors introduced in the font guides.</shortdesc>
+    <title>Text and fonts</title>
+    <shortdesc>This reference lists the properties, at-rules and descriptors that CSSMedia uses to select, load and shape fonts.</shortdesc>
     <refbody>
-        <table id="font-reference__I_18_">
-            <tgroup cols="5">
-                <thead>
-                    <row valign="middle">
-                        <entry align="center">Name</entry>
-                        <entry align="center">Description</entry>
-                        <entry align="center">Values</entry>
-                        <entry align="center">Default</entry>
-                        <entry align="center">Specification</entry>
-                    </row>
-                </thead>
-                <tbody>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font</codeph>
-                        </entry>
-                        <entry>Sets the font family, size, style, weight, width, variant, and line height in one declaration.</entry>
-                        <entry>A system-font keyword (<codeph>caption</codeph>, <codeph>icon</codeph>, <codeph>menu</codeph>, <codeph>message-box</codeph>, <codeph>small-caption</codeph>, or <codeph>status-bar</codeph>), or optional font-style, <codeph>normal</codeph> or <codeph>small-caps</codeph>, font-weight, and font-width values followed by required font size and family and optional line height</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font" scope="external" format="html">CSS Fonts 4, <codeph>font</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-family</codeph>
-                        </entry>
-                        <entry>Selects a font family or ordered list of fallback families.</entry>
-                        <entry>Family names and <codeph>serif</codeph>, <codeph>sans-serif</codeph>, <codeph>system-ui</codeph>, <codeph>cursive</codeph>, <codeph>fantasy</codeph>, <codeph>math</codeph>, <codeph>monospace</codeph>, <codeph>ui-serif</codeph>, <codeph>ui-sans-serif</codeph>, <codeph>ui-monospace</codeph>, <codeph>ui-rounded</codeph>, or <codeph>generic(fangsong)</codeph>, <codeph>generic(kai)</codeph>, <codeph>generic(khmer-mul)</codeph>, <codeph>generic(nastaliq)</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-family" scope="external" format="html">CSS Fonts 4, <codeph>font-family</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-size</codeph>
-                        </entry>
-                        <entry>Sets the font size.</entry>
-                        <entry>
-                            <codeph>xx-small</codeph>, <codeph>x-small</codeph>, <codeph>small</codeph>, <codeph>medium</codeph>, <codeph>large</codeph>, <codeph>x-large</codeph>, <codeph>xx-large</codeph>, <codeph>xxx-large</codeph>, <codeph>larger</codeph>, <codeph>smaller</codeph>, a non-negative length or percentage, or <codeph>math</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-size" scope="external" format="html">CSS Fonts 4, <codeph>font-size</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-size-adjust</codeph>
-                        </entry>
-                        <entry>Adjusts font sizing using a selected font metric.</entry>
-                        <entry>
-                            <codeph>none</codeph>, optional metric (<codeph>ex-height</codeph>, <codeph>cap-height</codeph>, <codeph>ch-width</codeph>, <codeph>ic-width</codeph>, or <codeph>ic-height</codeph>), then <codeph>from-font</codeph> or a non-negative number</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#propdef-font-size-adjust" scope="external" format="html">CSS Fonts 5, <codeph>font-size-adjust</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-weight</codeph>
-                        </entry>
-                        <entry>Selects the requested weight of a font face.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>bold</codeph>, <codeph>bolder</codeph>, <codeph>lighter</codeph>, or a number from 1 to 1000</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-weight" scope="external" format="html">CSS Fonts 4, <codeph>font-weight</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-width</codeph>
-                        </entry>
-                        <entry>Selects the requested width of a font face.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, a non-negative percentage, <codeph>ultra-condensed</codeph>, <codeph>extra-condensed</codeph>, <codeph>condensed</codeph>, <codeph>semi-condensed</codeph>, <codeph>semi-expanded</codeph>, <codeph>expanded</codeph>, <codeph>extra-expanded</codeph>, or <codeph>ultra-expanded</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-width" scope="external" format="html">CSS Fonts 4, <codeph>font-width</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-stretch</codeph>
-                        </entry>
-                        <entry>Legacy alias for <codeph>font-width</codeph>.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, a non-negative percentage, <codeph>ultra-condensed</codeph>, <codeph>extra-condensed</codeph>, <codeph>condensed</codeph>, <codeph>semi-condensed</codeph>, <codeph>semi-expanded</codeph>, <codeph>expanded</codeph>, <codeph>extra-expanded</codeph>, or <codeph>ultra-expanded</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-stretch" scope="external" format="html">CSS Fonts 4, <codeph>font-stretch</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-style</codeph>
-                        </entry>
-                        <entry>Selects the requested upright or slanted face.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>italic</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, or <codeph>oblique</codeph> with an optional angle from -90deg to 90deg</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-style" scope="external" format="html">CSS Fonts 4, <codeph>font-style</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-synthesis</codeph>
-                        </entry>
-                        <entry>Controls synthetic weight, style, small-cap, and position forms.</entry>
-                        <entry>
-                            <codeph>none</codeph>, or any combination of <codeph>weight</codeph>, <codeph>style</codeph>, <codeph>small-caps</codeph>, and <codeph>position</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis" scope="external" format="html">CSS Fonts 4, <codeph>font-synthesis</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-synthesis-weight</codeph>
-                        </entry>
-                        <entry>Controls synthetic bolding.</entry>
-                        <entry>
-                            <codeph>auto</codeph> or <codeph>none</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-weight" scope="external" format="html">CSS Fonts 4, <codeph>font-synthesis-weight</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-synthesis-style</codeph>
-                        </entry>
-                        <entry>Controls synthetic italic or oblique styling.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, <codeph>none</codeph>, or <codeph>oblique-only</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-style" scope="external" format="html">CSS Fonts 4, <codeph>font-synthesis-style</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-synthesis-small-caps</codeph>
-                        </entry>
-                        <entry>Controls synthetic small capitals.</entry>
-                        <entry>
-                            <codeph>auto</codeph> or <codeph>none</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-small-caps" scope="external" format="html">CSS Fonts 4, <codeph>font-synthesis-small-caps</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-synthesis-position</codeph>
-                        </entry>
-                        <entry>Controls synthetic subscript and superscript forms.</entry>
-                        <entry>
-                            <codeph>auto</codeph> or <codeph>none</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-position" scope="external" format="html">CSS Fonts 4, <codeph>font-synthesis-position</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant</codeph>
-                        </entry>
-                        <entry>Shorthand for typographic variant properties.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>none</codeph>, or combinations of variant longhand values</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant" scope="external" format="html">CSS Fonts 4, <codeph>font-variant</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant-alternates</codeph>
-                        </entry>
-                        <entry>Requests named alternate glyphs and stylistic forms.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or combinations of <codeph>stylistic()</codeph>, <codeph>historical-forms</codeph>, <codeph>styleset()</codeph>, <codeph>character-variant()</codeph>, <codeph>swash()</codeph>, <codeph>ornaments()</codeph>, and <codeph>annotation()</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-alternates" scope="external" format="html">CSS Fonts 4, <codeph>font-variant-alternates</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant-caps</codeph>
-                        </entry>
-                        <entry>Requests small-cap and other capitalization forms.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>small-caps</codeph>, <codeph>all-small-caps</codeph>, <codeph>petite-caps</codeph>, <codeph>all-petite-caps</codeph>, <codeph>unicase</codeph>, or <codeph>titling-caps</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-caps" scope="external" format="html">CSS Fonts 4, <codeph>font-variant-caps</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant-east-asian</codeph>
-                        </entry>
-                        <entry>Requests East Asian glyph variants and widths.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or combinations of <codeph>jis78</codeph>, <codeph>jis83</codeph>, <codeph>jis90</codeph>, <codeph>jis04</codeph>, <codeph>simplified</codeph>, <codeph>traditional</codeph>, <codeph>full-width</codeph>, <codeph>proportional-width</codeph>, and <codeph>ruby</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-east-asian" scope="external" format="html">CSS Fonts 4, <codeph>font-variant-east-asian</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant-emoji</codeph>
-                        </entry>
-                        <entry>Requests text or emoji presentation for supported characters.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>text</codeph>, <codeph>emoji</codeph>, or <codeph>unicode</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-emoji" scope="external" format="html">CSS Fonts 4, <codeph>font-variant-emoji</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant-ligatures</codeph>
-                        </entry>
-                        <entry>Controls common, discretionary, historical, and contextual ligatures.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>none</codeph>, or combinations of <codeph>common-ligatures</codeph>/<codeph>no-common-ligatures</codeph>, <codeph>discretionary-ligatures</codeph>/<codeph>no-discretionary-ligatures</codeph>, <codeph>historical-ligatures</codeph>/<codeph>no-historical-ligatures</codeph>, and <codeph>contextual</codeph>/<codeph>no-contextual</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-ligatures" scope="external" format="html">CSS Fonts 4, <codeph>font-variant-ligatures</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant-numeric</codeph>
-                        </entry>
-                        <entry>Requests number shapes, spacing, and fractions.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or combinations of <codeph>lining-nums</codeph>/<codeph>oldstyle-nums</codeph>, <codeph>proportional-nums</codeph>/<codeph>tabular-nums</codeph>, <codeph>diagonal-fractions</codeph>/<codeph>stacked-fractions</codeph>, <codeph>ordinal</codeph>, and <codeph>slashed-zero</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-numeric" scope="external" format="html">CSS Fonts 4, <codeph>font-variant-numeric</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variant-position</codeph>
-                        </entry>
-                        <entry>Requests subscript or superscript glyph forms.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>sub</codeph>, or <codeph>super</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-position" scope="external" format="html">CSS Fonts 4, <codeph>font-variant-position</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-kerning</codeph>
-                        </entry>
-                        <entry>Controls use of kerning information in the font.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, <codeph>normal</codeph>, or <codeph>none</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-kerning" scope="external" format="html">CSS Fonts 4, <codeph>font-kerning</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-feature-settings</codeph>
-                        </entry>
-                        <entry>Sets low-level OpenType feature tags and values.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or a comma-separated list of feature tags, optionally followed by a non-negative integer, <codeph>on</codeph>, or <codeph>off</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-feature-settings" scope="external" format="html">CSS Fonts 4, <codeph>font-feature-settings</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-language-override</codeph>
-                        </entry>
-                        <entry>Sets the OpenType language system tag.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or a string</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-language-override" scope="external" format="html">CSS Fonts 4, <codeph>font-language-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-optical-sizing</codeph>
-                        </entry>
-                        <entry>Enables or disables automatic optical-size axis selection for variable fonts.</entry>
-                        <entry>
-                            <codeph>auto</codeph> or <codeph>none</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-optical-sizing" scope="external" format="html">CSS Fonts 4, <codeph>font-optical-sizing</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-variation-settings</codeph>
-                        </entry>
-                        <entry>Sets low-level variable-font axis tags and values.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or a comma-separated list of four-character tags and numbers</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variation-settings" scope="external" format="html">CSS Fonts 4, <codeph>font-variation-settings</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>font-palette</codeph>
-                        </entry>
-                        <entry>Chooses a color palette for a color font.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>light</codeph>, <codeph>dark</codeph>, a palette identifier, or <codeph>palette-mix()</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-palette" scope="external" format="html">CSS Fonts 4, <codeph>font-palette</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>line-height</codeph>
-                        </entry>
-                        <entry>Sets the preferred height of inline content used to determine line-box height.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, a non-negative number, non-negative length, or non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-inline-3/#propdef-line-height" scope="external" format="html">CSS Inline 3, <codeph>line-height</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                        </entry>
-                        <entry>Declares a font face and its source for use by a family name.</entry>
-                        <entry>Font-face rule with descriptors</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-font-face-rule" scope="external" format="html">CSS Fonts 4, <codeph>@font-face</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-family</codeph>
-                        </entry>
-                        <entry>Names the family for this face.</entry>
-                        <entry>A family name</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-family" scope="external" format="html">CSS Fonts 4, <codeph>font-family</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>src</codeph>
-                        </entry>
-                        <entry>Lists font resources or installed font names to try in order.</entry>
-                        <entry>Comma-separated <codeph>url()</codeph> or <codeph>local()</codeph> sources with optional format and technology hints</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-src" scope="external" format="html">CSS Fonts 4, <codeph>src</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-display</codeph>
-                        </entry>
-                        <entry>Sets the fallback and swap behavior while a font loads.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, <codeph>block</codeph>, <codeph>swap</codeph>, <codeph>fallback</codeph>, or <codeph>optional</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-display" scope="external" format="html">CSS Fonts 4, <codeph>font-display</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-weight</codeph>
-                        </entry>
-                        <entry>Describes the weight or weight range supplied by the face.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, or one or two values, each <codeph>normal</codeph>, <codeph>bold</codeph>, or a number from 1 to 1000</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-weight" scope="external" format="html">CSS Fonts 4, <codeph>font-weight</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-width</codeph>
-                        </entry>
-                        <entry>Describes the width or width range supplied by the face.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, or one or two <codeph>font-width</codeph> values, each <codeph>normal</codeph>, a width keyword, or a non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-width" scope="external" format="html">CSS Fonts 4, <codeph>font-width</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-stretch</codeph>
-                        </entry>
-                        <entry>Legacy alias for the <codeph>font-width</codeph> descriptor.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, or one or two values, each <codeph>normal</codeph>, a non-negative percentage, <codeph>ultra-condensed</codeph>, <codeph>extra-condensed</codeph>, <codeph>condensed</codeph>, <codeph>semi-condensed</codeph>, <codeph>semi-expanded</codeph>, <codeph>expanded</codeph>, <codeph>extra-expanded</codeph>, or <codeph>ultra-expanded</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-stretch" scope="external" format="html">CSS Fonts 4, <codeph>font-stretch</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-style</codeph>
-                        </entry>
-                        <entry>Describes the style or style range supplied by the face.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, <codeph>normal</codeph>, <codeph>italic</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, or <codeph>oblique</codeph> with no angle or one or two angles from -90deg to 90deg</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-style" scope="external" format="html">CSS Fonts 4, <codeph>font-style</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>unicode-range</codeph>
-                        </entry>
-                        <entry>Limits which character code points this face can serve.</entry>
-                        <entry>One or more Unicode ranges</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-unicode-range" scope="external" format="html">CSS Fonts 4, <codeph>unicode-range</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-feature-settings</codeph>
-                        </entry>
-                        <entry>Sets default low-level OpenType feature settings for a face.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or a comma-separated list of feature tags, optionally followed by a non-negative integer, <codeph>on</codeph>, or <codeph>off</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-feature-settings" scope="external" format="html">CSS Fonts 4, <codeph>font-feature-settings</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-language-override</codeph>
-                        </entry>
-                        <entry>Sets the default OpenType language system tag for a face.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or a string</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-language-override" scope="external" format="html">CSS Fonts 4, <codeph>font-language-override</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-named-instance</codeph>
-                        </entry>
-                        <entry>Selects a named variation instance in the font.</entry>
-                        <entry>
-                            <codeph>auto</codeph> or a string</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-named-instance" scope="external" format="html">CSS Fonts 4, <codeph>font-named-instance</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-variation-settings</codeph>
-                        </entry>
-                        <entry>Sets the face’s default variable-font axes.</entry>
-                        <entry>
-                            <codeph>normal</codeph> or a list of axis tags and numbers</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-variation-settings" scope="external" format="html">CSS Fonts 4, <codeph>font-variation-settings</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>font-size</codeph>
-                        </entry>
-                        <entry>Describes the face’s optical-size value or range.</entry>
-                        <entry>
-                            <codeph>auto</codeph> or one or two numbers</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-font-size" scope="external" format="html">CSS Fonts 5, <codeph>font-size</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>ascent-override</codeph>
-                        </entry>
-                        <entry>Overrides the face’s ascent metric.</entry>
-                        <entry>One or two values, each <codeph>normal</codeph> or a non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-ascent-override" scope="external" format="html">CSS Fonts 5, <codeph>ascent-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>descent-override</codeph>
-                        </entry>
-                        <entry>Overrides the face’s descent metric.</entry>
-                        <entry>One or two values, each <codeph>normal</codeph> or a non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-descent-override" scope="external" format="html">CSS Fonts 5, <codeph>descent-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>line-gap-override</codeph>
-                        </entry>
-                        <entry>Overrides the face’s line-gap metric.</entry>
-                        <entry>One or two values, each <codeph>normal</codeph> or a non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-line-gap-override" scope="external" format="html">CSS Fonts 5, <codeph>line-gap-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>size-adjust</codeph>
-                        </entry>
-                        <entry>Scales the face’s glyph outlines and metrics.</entry>
-                        <entry>Non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-size-adjust" scope="external" format="html">CSS Fonts 5, <codeph>size-adjust</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>subscript-position-override</codeph>
-                        </entry>
-                        <entry>Overrides the subscript position metric.</entry>
-                        <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph>, or a percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-subscript-position-override" scope="external" format="html">CSS Fonts 5, <codeph>subscript-position-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>subscript-size-override</codeph>
-                        </entry>
-                        <entry>Overrides the subscript size metric.</entry>
-                        <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph>, or a non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-subscript-size-override" scope="external" format="html">CSS Fonts 5, <codeph>subscript-size-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>superscript-position-override</codeph>
-                        </entry>
-                        <entry>Overrides the superscript position metric.</entry>
-                        <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph>, or a percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-superscript-position-override" scope="external" format="html">CSS Fonts 5, <codeph>superscript-position-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-face</codeph>
-                            <codeph>superscript-size-override</codeph>
-                        </entry>
-                        <entry>Overrides the superscript size metric.</entry>
-                        <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph>, or a non-negative percentage</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-superscript-size-override" scope="external" format="html">CSS Fonts 5, <codeph>superscript-size-override</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                        </entry>
-                        <entry>Names feature values for one or more font families.</entry>
-                        <entry>Rule with one or more family names and feature-value blocks</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values" scope="external" format="html">CSS Fonts 4, <codeph>@font-feature-values</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>font-display</codeph>
-                        </entry>
-                        <entry>Sets a default font-display policy for the listed families.</entry>
-                        <entry>
-                            <codeph>auto</codeph>, <codeph>block</codeph>, <codeph>swap</codeph>, <codeph>fallback</codeph>, or <codeph>optional</codeph>
-                        </entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-feature-values-font-display" scope="external" format="html">CSS Fonts 4, <codeph>font-display</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>@annotation</codeph>
-                        </entry>
-                        <entry>Maps names to annotation feature indexes.</entry>
-                        <entry>Named values mapped to one non-negative integer</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-annotation" scope="external" format="html">CSS Fonts 4, <codeph>@annotation</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>@character-variant</codeph>
-                        </entry>
-                        <entry>Maps names to character-variant feature indexes.</entry>
-                        <entry>One or two integers. Values 1 to 99 select <codeph>cv01</codeph> to <codeph>cv99</codeph>; in a two-integer value, the second integer sets that feature’s value. Zero and values above 99 parse but select no feature.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-character-variant" scope="external" format="html">CSS Fonts 4, <codeph>@character-variant</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>@historical-forms</codeph>
-                        </entry>
-                        <entry>Maps names to historical-forms feature indexes.</entry>
-                        <entry>Named values mapped to one or more non-negative integers</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-historical-forms" scope="external" format="html">CSS Fonts 4, <codeph>@historical-forms</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>@ornaments</codeph>
-                        </entry>
-                        <entry>Maps names to ornaments feature indexes.</entry>
-                        <entry>Named values mapped to one non-negative integer</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-ornaments" scope="external" format="html">CSS Fonts 4, <codeph>@ornaments</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>@styleset</codeph>
-                        </entry>
-                        <entry>Maps names to styleset feature indexes.</entry>
-                        <entry>Named values mapped to one or more integers; 1 through 99 select <codeph>ss01</codeph> through <codeph>ss99</codeph>, while 0 and values above 99 select no OpenType feature</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-styleset" scope="external" format="html">CSS Fonts 4, <codeph>@styleset</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>@stylistic</codeph>
-                        </entry>
-                        <entry>Maps names to stylistic feature indexes.</entry>
-                        <entry>Named values mapped to one non-negative integer</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-stylistic" scope="external" format="html">CSS Fonts 4, <codeph>@stylistic</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-feature-values</codeph>
-                            <codeph>@swash</codeph>
-                        </entry>
-                        <entry>Maps names to swash feature indexes.</entry>
-                        <entry>Named values mapped to one non-negative integer</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-swash" scope="external" format="html">CSS Fonts 4, <codeph>@swash</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-palette-values</codeph>
-                        </entry>
-                        <entry>Defines a named palette for a color font.</entry>
-                        <entry>Rule with a dashed identifier and palette descriptors</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-palette-values" scope="external" format="html">CSS Fonts 4, <codeph>@font-palette-values</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-palette-values</codeph>
-                            <codeph>font-family</codeph>
-                        </entry>
-                        <entry>Required descriptor that identifies the font family to which the named palette applies.</entry>
-                        <entry>One or more family names</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-font-family" scope="external" format="html">CSS Fonts 4, <codeph>font-family</codeph> descriptor</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-palette-values</codeph>
-                            <codeph>base-palette</codeph>
-                        </entry>
-                        <entry>Chooses the base palette for the named palette.</entry>
-                        <entry>
-                            <codeph>light</codeph>, <codeph>dark</codeph>, or a non-negative integer</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-base-palette" scope="external" format="html">CSS Fonts 4, <codeph>base-palette</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>@font-palette-values</codeph>
-                            <codeph>override-colors</codeph>
-                        </entry>
-                        <entry>Replaces selected colors in the base palette.</entry>
-                        <entry>One or more palette index and color pairs</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-override-colors" scope="external" format="html">CSS Fonts 4, <codeph>override-colors</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                </tbody>
-            </tgroup>
-        </table>
+        <section id="font-selection">
+            <title>Font selection and sizing</title>
+            <table id="font-selection__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>font</codeph></entry>
+                            <entry>Sets the font style, variant, weight, width, size, line height and family in one declaration.</entry>
+                            <entry>A system font keyword (<codeph>caption</codeph>, <codeph>icon</codeph>, <codeph>menu</codeph>, <codeph>message-box</codeph>, <codeph>small-caption</codeph> or <codeph>status-bar</codeph>), or optional style, <codeph>normal</codeph> or <codeph>small-caps</codeph>, weight and width, then the size, an optional <codeph>/</codeph> and line height, and the family</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font" scope="external" format="html">CSS Fonts 4 §2.7</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-family</codeph></entry>
+                            <entry>Lists the font families to try, in order. A family name with spaces needs quotes.</entry>
+                            <entry>Family names, and <codeph>serif</codeph>, <codeph>sans-serif</codeph>, <codeph>monospace</codeph>, <codeph>system-ui</codeph>, <codeph>cursive</codeph>, <codeph>fantasy</codeph>, <codeph>math</codeph>, <codeph>ui-serif</codeph>, <codeph>ui-sans-serif</codeph>, <codeph>ui-monospace</codeph>, <codeph>ui-rounded</codeph> or <codeph>generic()</codeph> keywords</entry>
+                            <entry><codeph>sans-serif</codeph>, which is Helvetica</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-family" scope="external" format="html">CSS Fonts 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-size</codeph></entry>
+                            <entry>Sets the size of the text.</entry>
+                            <entry>A keyword from <codeph>xx-small</codeph> to <codeph>xxx-large</codeph>, <codeph>larger</codeph>, <codeph>smaller</codeph>, <codeph>math</codeph>, or a non-negative length or percentage</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-size" scope="external" format="html">CSS Fonts 4 §2.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-size-adjust</codeph></entry>
+                            <entry>Scales the text so that a chosen metric of the font, such as the height of lowercase letters, has the same relative size in every font.</entry>
+                            <entry><codeph>none</codeph>, or an optional metric (<codeph>ex-height</codeph>, <codeph>cap-height</codeph>, <codeph>ch-width</codeph>, <codeph>ic-width</codeph> or <codeph>ic-height</codeph>) followed by <codeph>from-font</codeph> or a non-negative number</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#propdef-font-size-adjust" scope="external" format="html">CSS Fonts 5 §3.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-weight</codeph></entry>
+                            <entry>Selects the weight of the face.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>bold</codeph>, <codeph>bolder</codeph>, <codeph>lighter</codeph> or a number from 1 to 1000</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-weight" scope="external" format="html">CSS Fonts 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-width</codeph></entry>
+                            <entry>Selects the width of the face.</entry>
+                            <entry><codeph>normal</codeph>, a non-negative percentage, or <codeph>ultra-condensed</codeph>, <codeph>extra-condensed</codeph>, <codeph>condensed</codeph>, <codeph>semi-condensed</codeph>, <codeph>semi-expanded</codeph>, <codeph>expanded</codeph>, <codeph>extra-expanded</codeph> or <codeph>ultra-expanded</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-width" scope="external" format="html">CSS Fonts 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-stretch</codeph></entry>
+                            <entry>Alias of <codeph>font-width</codeph>.</entry>
+                            <entry>The values of <codeph>font-width</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-stretch" scope="external" format="html">CSS Fonts 4 §2.3.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-style</codeph></entry>
+                            <entry>Selects an upright, italic or oblique face.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>italic</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, or <codeph>oblique</codeph> with an optional angle from -90deg to 90deg</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-style" scope="external" format="html">CSS Fonts 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-synthesis</codeph></entry>
+                            <entry>Allows or forbids the faces that CSSMedia creates when the family has none: bold, slanted, small capitals, subscripts and superscripts.</entry>
+                            <entry><codeph>none</codeph>, or any of <codeph>weight</codeph>, <codeph>style</codeph>, <codeph>small-caps</codeph> and <codeph>position</codeph></entry>
+                            <entry><codeph>weight style small-caps position</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis" scope="external" format="html">CSS Fonts 4 §2.8.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-synthesis-weight</codeph></entry>
+                            <entry>Allows or forbids synthesized bold.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>none</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-weight" scope="external" format="html">CSS Fonts 4 §2.8.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-synthesis-style</codeph></entry>
+                            <entry>Allows or forbids synthesized italic and oblique faces.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>none</codeph> or <codeph>oblique-only</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-style" scope="external" format="html">CSS Fonts 4 §2.8.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-synthesis-small-caps</codeph></entry>
+                            <entry>Allows or forbids synthesized small capitals.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>none</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-small-caps" scope="external" format="html">CSS Fonts 4 §2.8.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-synthesis-position</codeph></entry>
+                            <entry>Allows or forbids synthesized subscripts and superscripts.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>none</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-synthesis-position" scope="external" format="html">CSS Fonts 4 §2.8.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>line-height</codeph></entry>
+                            <entry>Sets the height of a line of text.</entry>
+                            <entry><codeph>normal</codeph>, a non-negative number, or a non-negative length or percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-inline-3/#propdef-line-height" scope="external" format="html">CSS Inline Layout 3 §5.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="font-features">
+            <title>Font variants and features</title>
+            <table id="font-features__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>font-variant</codeph></entry>
+                            <entry>Shorthand for the <codeph>font-variant-*</codeph> properties.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>none</codeph>, or values of the longhand properties</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant" scope="external" format="html">CSS Fonts 4 §6.11</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variant-alternates</codeph></entry>
+                            <entry>Selects alternate glyphs that the font names, such as stylistic sets and swashes.</entry>
+                            <entry><codeph>normal</codeph>, or any of <codeph>stylistic()</codeph>, <codeph>historical-forms</codeph>, <codeph>styleset()</codeph>, <codeph>character-variant()</codeph>, <codeph>swash()</codeph>, <codeph>ornaments()</codeph> and <codeph>annotation()</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-alternates" scope="external" format="html">CSS Fonts 4 §6.8</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variant-caps</codeph></entry>
+                            <entry>Selects small capitals and other capital forms.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>small-caps</codeph>, <codeph>all-small-caps</codeph>, <codeph>petite-caps</codeph>, <codeph>all-petite-caps</codeph>, <codeph>unicase</codeph> or <codeph>titling-caps</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-caps" scope="external" format="html">CSS Fonts 4 §6.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variant-east-asian</codeph></entry>
+                            <entry>Selects glyph forms and widths for East Asian text.</entry>
+                            <entry><codeph>normal</codeph>, or any of <codeph>jis78</codeph>, <codeph>jis83</codeph>, <codeph>jis90</codeph>, <codeph>jis04</codeph>, <codeph>simplified</codeph>, <codeph>traditional</codeph>, <codeph>full-width</codeph>, <codeph>proportional-width</codeph> and <codeph>ruby</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-east-asian" scope="external" format="html">CSS Fonts 4 §6.10</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variant-emoji</codeph></entry>
+                            <entry>Chooses text or emoji presentation for characters that have both.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>text</codeph>, <codeph>emoji</codeph> or <codeph>unicode</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-emoji" scope="external" format="html">CSS Fonts 4 §9.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variant-ligatures</codeph></entry>
+                            <entry>Turns common, discretionary, historical and contextual ligatures on or off.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>none</codeph>, or any of <codeph>common-ligatures</codeph>, <codeph>no-common-ligatures</codeph>, <codeph>discretionary-ligatures</codeph>, <codeph>no-discretionary-ligatures</codeph>, <codeph>historical-ligatures</codeph>, <codeph>no-historical-ligatures</codeph>, <codeph>contextual</codeph> and <codeph>no-contextual</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-ligatures" scope="external" format="html">CSS Fonts 4 §6.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variant-numeric</codeph></entry>
+                            <entry>Selects the shape and spacing of numbers, fractions and zeros.</entry>
+                            <entry><codeph>normal</codeph>, or any of <codeph>lining-nums</codeph>, <codeph>oldstyle-nums</codeph>, <codeph>proportional-nums</codeph>, <codeph>tabular-nums</codeph>, <codeph>diagonal-fractions</codeph>, <codeph>stacked-fractions</codeph>, <codeph>ordinal</codeph> and <codeph>slashed-zero</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-numeric" scope="external" format="html">CSS Fonts 4 §6.7</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variant-position</codeph></entry>
+                            <entry>Selects subscript or superscript glyphs.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>sub</codeph> or <codeph>super</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variant-position" scope="external" format="html">CSS Fonts 4 §6.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-kerning</codeph></entry>
+                            <entry>Turns the kerning of the font on or off.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>normal</codeph> or <codeph>none</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-kerning" scope="external" format="html">CSS Fonts 4 §6.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-feature-settings</codeph></entry>
+                            <entry>Turns OpenType features on or off by their four-letter tags.</entry>
+                            <entry><codeph>normal</codeph>, or a comma-separated list of tags, each followed by an optional integer, <codeph>on</codeph> or <codeph>off</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-feature-settings" scope="external" format="html">CSS Fonts 4 §6.12</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-language-override</codeph></entry>
+                            <entry>Sets the OpenType language system of the text, in place of its language.</entry>
+                            <entry><codeph>normal</codeph> or a string</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-language-override" scope="external" format="html">CSS Fonts 4 §6.13</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="font-variable">
+            <title>Variable and color fonts</title>
+            <table id="font-variable__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>font-optical-sizing</codeph></entry>
+                            <entry>Sets the optical size axis of a variable font from the font size.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>none</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-optical-sizing" scope="external" format="html">CSS Fonts 4 §8.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variation-settings</codeph></entry>
+                            <entry>Sets the axes of a variable font by their four-letter tags.</entry>
+                            <entry><codeph>normal</codeph>, or a comma-separated list of axis tags in quotes, each followed by a number</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variation-settings" scope="external" format="html">CSS Fonts 4 §8.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-palette</codeph></entry>
+                            <entry>Chooses the color palette of a color font.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>light</codeph>, <codeph>dark</codeph>, the name of an <codeph>@font-palette-values</codeph> rule, or <codeph>palette-mix()</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-palette" scope="external" format="html">CSS Fonts 4 §9.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="font-face-rule">
+            <title>The @font-face rule</title>
+            <table id="font-face-rule__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>@font-face</codeph></entry>
+                            <entry>Makes a font face available to the stylesheet under a family name.</entry>
+                            <entry>A block of the descriptors below</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-font-face-rule" scope="external" format="html">CSS Fonts 4 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-family</codeph> descriptor</entry>
+                            <entry>Names the family of the face. This name hides an installed family with the same name.</entry>
+                            <entry>A family name</entry>
+                            <entry>Required</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-family" scope="external" format="html">CSS Fonts 4 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>src</codeph> descriptor</entry>
+                            <entry>Lists the sources of the face. CSSMedia uses the first one that it can load.</entry>
+                            <entry>A comma-separated list of <codeph>url()</codeph> and <codeph>local()</codeph> sources, each with optional <codeph>format()</codeph> and <codeph>tech()</codeph> hints</entry>
+                            <entry>Required</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-src" scope="external" format="html">CSS Fonts 4 §4.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-weight</codeph> descriptor</entry>
+                            <entry>Gives the weight, or the range of weights, of the face.</entry>
+                            <entry><codeph>auto</codeph>, or one or two values, each <codeph>normal</codeph>, <codeph>bold</codeph> or a number from 1 to 1000</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-weight" scope="external" format="html">CSS Fonts 4 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-width</codeph> descriptor</entry>
+                            <entry>Gives the width, or the range of widths, of the face.</entry>
+                            <entry><codeph>auto</codeph>, or one or two values, each a width keyword or a non-negative percentage</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-width" scope="external" format="html">CSS Fonts 4 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-stretch</codeph> descriptor</entry>
+                            <entry>Alias of the <codeph>font-width</codeph> descriptor.</entry>
+                            <entry>The values of the <codeph>font-width</codeph> descriptor</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-stretch" scope="external" format="html">CSS Fonts 4 §4.4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-style</codeph> descriptor</entry>
+                            <entry>Gives the style, or the range of oblique angles, of the face.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>normal</codeph>, <codeph>italic</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, or <codeph>oblique</codeph> with one or two angles from -90deg to 90deg</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-style" scope="external" format="html">CSS Fonts 4 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-size</codeph> descriptor</entry>
+                            <entry>Limits the font sizes for which the face is used.</entry>
+                            <entry><codeph>auto</codeph> or one or two numbers</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-font-size" scope="external" format="html">CSS Fonts 5 §4.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-named-instance</codeph> descriptor</entry>
+                            <entry>Selects a named instance of a variable font.</entry>
+                            <entry><codeph>auto</codeph> or a string</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-named-instance" scope="external" format="html">CSS Fonts 4 §4.7</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>unicode-range</codeph> descriptor</entry>
+                            <entry>Limits the characters for which the face is used.</entry>
+                            <entry>A comma-separated list of code points, ranges and ranges with <codeph>?</codeph> wildcards</entry>
+                            <entry><codeph>U+0-10FFFF</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-unicode-range" scope="external" format="html">CSS Fonts 4 §4.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-feature-settings</codeph> descriptor</entry>
+                            <entry>Sets the OpenType features that the face uses by default.</entry>
+                            <entry>The values of the <codeph>font-feature-settings</codeph> property</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-feature-settings" scope="external" format="html">CSS Fonts 4 §4.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-variation-settings</codeph> descriptor</entry>
+                            <entry>Sets the variable font axes that the face uses by default.</entry>
+                            <entry>The values of the <codeph>font-variation-settings</codeph> property</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-variation-settings" scope="external" format="html">CSS Fonts 4 §4.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-language-override</codeph> descriptor</entry>
+                            <entry>Sets the OpenType language system that the face uses by default.</entry>
+                            <entry><codeph>normal</codeph> or a string</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-face-font-language-override" scope="external" format="html">CSS Fonts 4 §4.10</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>size-adjust</codeph> descriptor</entry>
+                            <entry>Scales the glyphs and the metrics of the face.</entry>
+                            <entry>A non-negative percentage</entry>
+                            <entry><codeph>100%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-size-adjust" scope="external" format="html">CSS Fonts 5 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>ascent-override</codeph> descriptor</entry>
+                            <entry>Replaces the ascent of the face.</entry>
+                            <entry>One or two values, each <codeph>normal</codeph> or a non-negative percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-ascent-override" scope="external" format="html">CSS Fonts 5 §4.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>descent-override</codeph> descriptor</entry>
+                            <entry>Replaces the descent of the face.</entry>
+                            <entry>One or two values, each <codeph>normal</codeph> or a non-negative percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-descent-override" scope="external" format="html">CSS Fonts 5 §4.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>line-gap-override</codeph> descriptor</entry>
+                            <entry>Replaces the line gap of the face.</entry>
+                            <entry>One or two values, each <codeph>normal</codeph> or a non-negative percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-line-gap-override" scope="external" format="html">CSS Fonts 5 §4.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>superscript-position-override</codeph> descriptor</entry>
+                            <entry>Replaces the position of the superscript glyphs.</entry>
+                            <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph> or a percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-superscript-position-override" scope="external" format="html">CSS Fonts 5 §4.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>superscript-size-override</codeph> descriptor</entry>
+                            <entry>Replaces the size of the superscript glyphs.</entry>
+                            <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph> or a non-negative percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-superscript-size-override" scope="external" format="html">CSS Fonts 5 §4.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>subscript-position-override</codeph> descriptor</entry>
+                            <entry>Replaces the position of the subscript glyphs.</entry>
+                            <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph> or a percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-subscript-position-override" scope="external" format="html">CSS Fonts 5 §4.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>subscript-size-override</codeph> descriptor</entry>
+                            <entry>Replaces the size of the subscript glyphs.</entry>
+                            <entry>One or two values, each <codeph>normal</codeph>, <codeph>from-font</codeph> or a non-negative percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-5/#descdef-font-face-subscript-size-override" scope="external" format="html">CSS Fonts 5 §4.6</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="font-feature-values-rule">
+            <title>The @font-feature-values rule</title>
+            <table id="font-feature-values-rule__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>@font-feature-values</codeph></entry>
+                            <entry>Gives names to the alternate glyphs of one or more font families, for use in <codeph>font-variant-alternates</codeph>.</entry>
+                            <entry>One or more family names, and a block with the rules below</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values" scope="external" format="html">CSS Fonts 4 §6.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>@stylistic</codeph></entry>
+                            <entry>Names stylistic alternates (<codeph>salt</codeph>).</entry>
+                            <entry>Names, each with one non-negative integer</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-stylistic" scope="external" format="html">CSS Fonts 4 §6.9.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>@styleset</codeph></entry>
+                            <entry>Names stylistic sets (<codeph>ss01</codeph> to <codeph>ss99</codeph>).</entry>
+                            <entry>Names, each with one or more integers from 1 to 99. 0 and larger values select no feature.</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-styleset" scope="external" format="html">CSS Fonts 4 §6.9.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>@character-variant</codeph></entry>
+                            <entry>Names character variants (<codeph>cv01</codeph> to <codeph>cv99</codeph>).</entry>
+                            <entry>Names, each with one or two integers. The first, from 1 to 99, selects the feature, and the second sets its value. 0 and larger values select no feature.</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-character-variant" scope="external" format="html">CSS Fonts 4 §6.9.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>@swash</codeph></entry>
+                            <entry>Names swashes (<codeph>swsh</codeph>, <codeph>cswh</codeph>).</entry>
+                            <entry>Names, each with one non-negative integer</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-swash" scope="external" format="html">CSS Fonts 4 §6.9.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>@ornaments</codeph></entry>
+                            <entry>Names ornaments (<codeph>ornm</codeph>).</entry>
+                            <entry>Names, each with one non-negative integer</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-ornaments" scope="external" format="html">CSS Fonts 4 §6.9.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>@annotation</codeph></entry>
+                            <entry>Names annotation forms (<codeph>nalt</codeph>).</entry>
+                            <entry>Names, each with one non-negative integer</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-annotation" scope="external" format="html">CSS Fonts 4 §6.9.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>@historical-forms</codeph></entry>
+                            <entry>Names historical forms (<codeph>hist</codeph>).</entry>
+                            <entry>Names, each with one or more non-negative integers</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-historical-forms" scope="external" format="html">CSS Fonts 4 §6.9.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="font-palette-values-rule">
+            <title>The @font-palette-values rule</title>
+            <table id="font-palette-values-rule__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>@font-palette-values</codeph></entry>
+                            <entry>Defines a named color palette for a color font. Use its name in <codeph>font-palette</codeph>.</entry>
+                            <entry>A name that starts with <codeph>--</codeph>, and a block of the descriptors below</entry>
+                            <entry/>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-palette-values" scope="external" format="html">CSS Fonts 4 §9.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>font-family</codeph> descriptor</entry>
+                            <entry>Names the families that the palette is for.</entry>
+                            <entry>One or more family names</entry>
+                            <entry>Required</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-font-family" scope="external" format="html">CSS Fonts 4 §9.2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>base-palette</codeph> descriptor</entry>
+                            <entry>Chooses the palette of the font that the new palette starts from.</entry>
+                            <entry><codeph>light</codeph>, <codeph>dark</codeph> or a non-negative integer</entry>
+                            <entry>The first palette of the font</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-base-palette" scope="external" format="html">CSS Fonts 4 §9.2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>override-colors</codeph> descriptor</entry>
+                            <entry>Replaces colors of the base palette.</entry>
+                            <entry>A comma-separated list of pairs of a palette index and a color</entry>
+                            <entry>No replacements</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-override-colors" scope="external" format="html">CSS Fonts 4 §9.2.3</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
     </refbody>
 </reference>
-

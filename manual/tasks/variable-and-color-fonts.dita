@@ -2,149 +2,68 @@
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="variable-and-color-fonts">
     <title>Variable and color fonts</title>
-    <shortdesc>Variable fonts can change their design along axes such as weight, width or optical size. Color fonts can draw glyphs with indexed colors from a palette. The font file must provide the axis or palette that you request.</shortdesc>
+    <shortdesc>A <xref href="../glossaries/VariableFont.dita">variable font</xref> changes its design along axes, such as weight, width and optical size. A color font draws its glyphs with the colors of a palette. The font file must provide the axis or the palette that you request.</shortdesc>
     <taskbody>
+        <context>
+            <p>Each axis of a variable font has a four-letter tag. The registered tags are <codeph>wght</codeph> for the weight, <codeph>wdth</codeph> for the width, <codeph>slnt</codeph> and <codeph>ital</codeph> for the slant, and <codeph>opsz</codeph> for the optical size. A font can also have axes with other tags. The font can have named instances, which are ready-made combinations of axis values, such as "Condensed Bold".</p>
+            <p>For the standard axes, use the properties that you use with any font: <codeph>font-weight</codeph> controls <codeph>wght</codeph>, <codeph>font-width</codeph> controls <codeph>wdth</codeph>, and <codeph>font-style</codeph> controls <codeph>slnt</codeph> and <codeph>ital</codeph>. They also take part in the choice of the face. Declare the range that the font covers in an <codeph>@font-face</codeph> rule, as <xref href="font-faces.dita#font-faces">Font resources and descriptors</xref> explains.</p>
+        </context>
         <steps>
-            <step id="variable-font-controls">
-                <cmd>Variable font controls</cmd>
+            <step id="optical-size">
+                <cmd>Set the optical size</cmd>
                 <info>
-                    <div outputclass="role-h3" id="font-optical-sizing">
-                        <codeph>font-optical-sizing</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-optical-sizing-def" scope="external" format="html">CSS Fonts 4 §8.1, Optical sizing control</xref>.</p>
-                    <p>An optical-size axis lets a font adjust glyph details for different text sizes. The property accepts <xref href="https://www.w3.org/TR/css-fonts-4/#font-optical-sizing-auto-value" scope="external" format="html">
-                            <codeph>auto</codeph>
-                        </xref> or <xref href="https://www.w3.org/TR/css-fonts-4/#font-optical-sizing-none-value" scope="external" format="html">
-                            <codeph>none</codeph>
-                        </xref>.</p>
+                    <p>A font with an optical size axis changes the details of its glyphs with the size of the text, for example thinner strokes at large sizes. Use <codeph>font-optical-sizing</codeph> to turn it on or off. With <codeph>auto</codeph>, which is the initial value, CSSMedia sets the <codeph>opsz</codeph> axis from the font size, within the range of the axis. With <codeph>none</codeph>, it leaves the axis at the value that you set or at its default:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">body { font-optical-sizing: auto; }
 </pre>
                 </stepxmp>
+            </step>
+            <step id="set-the-axes">
+                <cmd>Set the axes directly</cmd>
                 <info>
-                    <p>With <codeph>auto</codeph>, the processor may adjust glyphs for the used font size. Variable OpenType and TrueType fonts commonly do this through the <codeph>opsz</codeph> axis. The processor must stay within the axis range in the font and must not synthesize optical sizing when the font does not provide it. With <codeph>none</codeph>, it must not change glyph shapes for optical size.</p>
-                    <div outputclass="role-h3" id="font-variation-settings">
-                        <codeph>font-variation-settings</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-variation-settings-def" scope="external" format="html">CSS Fonts 4 §8.2, Low-level font variation settings control</xref>.</p>
-                    <p>Use this property to set one or more variable-font axes directly. Each item is a four-character, case-sensitive <xref href="https://www.w3.org/TR/css-fonts-4/#typedef-opentype-tag" scope="external" format="html">
-                            <codeph>&lt;opentype-tag&gt;</codeph>
-                        </xref> followed by a number. The tag must contain printable ASCII characters, from U+0020 through U+007E. The number may be fractional or negative.</p>
+                    <p>Use <codeph>font-variation-settings</codeph> to set the axes by their tags. The value is <codeph>normal</codeph>, or a comma-separated list of an axis tag in quotes followed by a number. The number can be a fraction or negative:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">heading { font-variation-settings: "wght" 650, "wdth" 90; }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#propdef-font-variation-settings" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref> means this property makes no change to glyph shape, matching or positioning. An unknown axis tag or an axis not supported by the selected font has no effect. A number outside the supported range for an axis is clamped to that range. If a tag occurs more than once, its last value is used.</p>
-                    <p>Use higher-level properties for common axes. <xref href="https://www.w3.org/TR/css-fonts-4/#font-weight-prop" scope="external" format="html">
-                            <codeph>font-weight</codeph>
-                        </xref> controls the <codeph>wght</codeph> axis, <xref href="https://www.w3.org/TR/css-fonts-4/#font-width-prop" scope="external" format="html">
-                            <codeph>font-width</codeph>
-                        </xref> controls <codeph>wdth</codeph>, <xref href="https://www.w3.org/TR/css-fonts-4/#font-style-prop" scope="external" format="html">
-                            <codeph>font-style</codeph>
-                        </xref> controls <codeph>slnt</codeph> or <codeph>ital</codeph>, and <codeph>font-optical-sizing</codeph> controls <codeph>opsz</codeph>. These properties participate in font matching; <codeph>font-variation-settings</codeph> does not.</p>
+                    <p>CSSMedia clamps a number to the range of the axis. It ignores an axis that the font does not have, and if a tag occurs more than once, the last value wins. This property does not take part in the choice of the face. The <codeph>font-variation-settings</codeph> descriptor of <codeph>@font-face</codeph> sets the same values as the defaults of a face. The values of the property come last, so they win.</p>
                 </info>
             </step>
-            <step id="color-font-palettes">
-                <cmd>Color font palettes</cmd>
+            <step id="choose-a-palette">
+                <cmd>Choose a color palette</cmd>
                 <info>
-                    <div outputclass="role-h3" id="font-palette">
-                        <codeph>font-palette</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-palette-prop" scope="external" format="html">CSS Fonts 4 §9.1, Controlling color font palettes</xref>.</p>
-                    <p>Use this property to choose the colors used by a color font. It accepts <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-palette-normal" scope="external" format="html">
-                            <codeph>normal</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-palette-light" scope="external" format="html">
-                            <codeph>light</codeph>
-                        </xref>, <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-font-palette-dark" scope="external" format="html">
-                            <codeph>dark</codeph>
-                        </xref>, a named palette, or <xref href="https://www.w3.org/TR/css-fonts-4/#funcdef-palette-mix" scope="external" format="html">
-                            <codeph>palette-mix()</codeph>
-                        </xref>.</p>
+                    <p>A color font has one or more palettes, which are numbered lists of colors, starting at 0. Use <codeph>font-palette</codeph> to choose one:</p>
+                    <ul>
+                        <li><codeph>normal</codeph>: the usual palette of the font, which is palette 0 in most fonts.</li>
+                        <li><codeph>light</codeph> and <codeph>dark</codeph>: the first palette that the font marks for light or for dark backgrounds. If the font has none, CSSMedia uses <codeph>normal</codeph>.</li>
+                        <li>A name that starts with two hyphens, such as <codeph>--night</codeph>: a palette that you define with <codeph>@font-palette-values</codeph>. If no rule defines it, CSSMedia uses <codeph>normal</codeph>.</li>
+                        <li><codeph>palette-mix()</codeph>: a palette that mixes the colors of other palettes.</li>
+                    </ul>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">emoji { font-palette: dark; }
 </pre>
                 </stepxmp>
                 <info>
+                    <p><codeph>palette-mix()</codeph> takes a color interpolation method and two or more palettes, each with an optional percentage. The method is the one that <codeph>color-mix()</codeph> uses, such as <codeph>in oklab</codeph>. The palettes are any value of <codeph>font-palette</codeph>, including another <codeph>palette-mix()</codeph>. Palettes without a percentage share the remainder equally. If the percentages add up to more than 100%, CSSMedia scales them to 100%, and if they add up to less, the colors become more transparent by the missing share. This example mixes a quarter of the <codeph>dark</codeph> palette and three quarters of <codeph>--night</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">emoji { font-palette: palette-mix(in oklab, dark 25%, --night); }
+</pre>
+                </stepxmp>
+            </step>
+            <step id="define-a-palette">
+                <cmd>Define your own palette</cmd>
+                <info>
+                    <p>Use the <codeph>@font-palette-values</codeph> rule to give a name to a palette. The name starts with two hyphens. Three descriptors define the palette:</p>
                     <ul>
-                        <li>
-                            <codeph>normal</codeph> uses the font’s normal palette selection. For OpenType CPAL fonts, this is usually palette index <codeph>0</codeph>. When <codeph>color-scheme</codeph> requests a light or dark scheme, the specification says the processor should select the first matching palette.</li>
-                        <li>
-                            <codeph>light</codeph> selects the first palette marked for light backgrounds. If the font format has no such metadata, or no palette is marked, this behaves as <codeph>normal</codeph>.</li>
-                        <li>
-                            <codeph>dark</codeph> selects the first palette marked for dark backgrounds. If the font format has no such metadata, or no palette is marked, this behaves as <codeph>normal</codeph>.</li>
-                        <li>A <xref href="https://www.w3.org/TR/css-fonts-4/#typedef-font-palette-palette-identifier" scope="external" format="html">palette identifier</xref> names an author-defined palette from <codeph>@font-palette-values</codeph>. The identifier is a <xref href="https://www.w3.org/TR/css-values-4/#typedef-dashed-ident" scope="external" format="html">
-                                <codeph>&lt;dashed-ident&gt;</codeph>
-                            </xref>, so it starts with two hyphens, as in <codeph>--night</codeph>. If no applicable rule defines it, it behaves as <codeph>normal</codeph>.</li>
-                        <li>
-                            <codeph>palette-mix()</codeph> makes a palette by interpolating corresponding colors from one or more other palettes. Its arguments are <codeph>font-palette</codeph> values, which may be keywords, named palettes or nested <codeph>palette-mix()</codeph> functions. Each may have a percentage from <codeph>0%</codeph> to <codeph>100%</codeph>. Omitted percentages share the remaining percentage equally. If specified percentages total more than <codeph>100%</codeph>, they are normalized; if they total less, the result’s opacity is reduced by the unassigned share. The rules follow <xref href="https://www.w3.org/TR/css-color-5/#color-mix-percent-norm" scope="external" format="html">CSS Color 5 §3.2</xref> and <xref href="https://www.w3.org/TR/css-color-5/#funcdef-color-mix" scope="external" format="html">
-                                <codeph>color-mix()</codeph>
-                            </xref>.</li>
+                        <li><codeph>font-family</codeph> lists the families that the palette is for. It is required. Generic families are not allowed.</li>
+                        <li><codeph>base-palette</codeph> is the palette that you start from: <codeph>light</codeph>, <codeph>dark</codeph> or a palette number. If you omit it, or the font has no such palette, it is palette 0.</li>
+                        <li><codeph>override-colors</codeph> replaces colors of the base palette. The value is a comma-separated list of pairs of a palette number and a color. An index that the palette does not have is ignored, and if an index occurs more than once, the last color wins.</li>
                     </ul>
-                    <p>For example, <codeph>palette-mix(in oklab, dark 25%, --night)</codeph> blends one quarter of the dark palette with three quarters of <codeph>--night</codeph>. The optional <xref href="https://www.w3.org/TR/css-color-5/#color-interpolation-method" scope="external" format="html">
-                            <codeph>&lt;color-interpolation-method&gt;</codeph>
-                        </xref> selects the space used to blend corresponding colors. If omitted, the default is <codeph>oklab</codeph>.</p>
-                    <ul>
-                        <li>Rectangular RGB spaces include <xref href="https://www.w3.org/TR/css-color-4/#valdef-color-srgb" scope="external" format="html">
-                                <codeph>srgb</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-color-4/#valdef-color-srgb-linear" scope="external" format="html">
-                                <codeph>srgb-linear</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-color-4/#valdef-color-display-p3" scope="external" format="html">
-                                <codeph>display-p3</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-color-4/#valdef-color-display-p3-linear" scope="external" format="html">
-                                <codeph>display-p3-linear</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-color-4/#valdef-color-a98-rgb" scope="external" format="html">
-                                <codeph>a98-rgb</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-color-4/#valdef-color-prophoto-rgb" scope="external" format="html">
-                                <codeph>prophoto-rgb</codeph>
-                            </xref> and <xref href="https://www.w3.org/TR/css-color-4/#valdef-color-rec2020" scope="external" format="html">
-                                <codeph>rec2020</codeph>
-                            </xref>. The <codeph>-linear</codeph> forms interpolate light rather than gamma-encoded channel values.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-color-4/#valdef-lab-lab" scope="external" format="html">
-                                <codeph>lab</codeph>
-                            </xref> and <xref href="https://www.w3.org/TR/css-color-4/#valdef-oklab-oklab" scope="external" format="html">
-                                <codeph>oklab</codeph>
-                            </xref> use lightness and two opponent-color coordinates. The <xref href="https://www.w3.org/TR/css-color-4/#typedef-xyz-space" scope="external" format="html">
-                                <codeph>xyz</codeph>
-                            </xref> spaces use CIE XYZ tristimulus coordinates: <codeph>xyz</codeph>, <codeph>xyz-d50</codeph> and <codeph>xyz-d65</codeph> identify the reference white.</li>
-                        <li>Polar spaces represent colors with an angle and other coordinates. <xref href="https://www.w3.org/TR/css-color-4/#valdef-hsl-hsl" scope="external" format="html">
-                                <codeph>hsl</codeph>
-                            </xref> uses hue, saturation and lightness. <xref href="https://www.w3.org/TR/css-color-4/#valdef-hwb-hwb" scope="external" format="html">
-                                <codeph>hwb</codeph>
-                            </xref> uses hue, whiteness and blackness. <xref href="https://www.w3.org/TR/css-color-4/#valdef-lch-lch" scope="external" format="html">
-                                <codeph>lch</codeph>
-                            </xref> and <xref href="https://www.w3.org/TR/css-color-4/#valdef-oklch-oklch" scope="external" format="html">
-                                <codeph>oklch</codeph>
-                            </xref> use lightness, chroma and hue.</li>
-                        <li>A custom color space is a dashed identifier declared by <xref href="https://www.w3.org/TR/css-color-5/#at-ruledef-profile" scope="external" format="html">
-                                <codeph>@color-profile</codeph>
-                            </xref>.</li>
-                        <li>A polar space may also specify a hue direction using <xref href="https://www.w3.org/TR/css-color-5/#typedef-hue-interpolation-method" scope="external" format="html">
-                                <codeph>shorter</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-color-5/#typedef-hue-interpolation-method" scope="external" format="html">
-                                <codeph>longer</codeph>
-                            </xref>, <xref href="https://www.w3.org/TR/css-color-5/#typedef-hue-interpolation-method" scope="external" format="html">
-                                <codeph>increasing</codeph>
-                            </xref> or <xref href="https://www.w3.org/TR/css-color-5/#typedef-hue-interpolation-method" scope="external" format="html">
-                                <codeph>decreasing</codeph>
-                            </xref>. <codeph>shorter</codeph> follows the shorter route around the hue circle, <codeph>longer</codeph> the longer route, <codeph>increasing</codeph> moves toward larger hue angles, and <codeph>decreasing</codeph> moves toward smaller hue angles. If no direction is written, <codeph>shorter</codeph> is used. See the <xref href="https://www.w3.org/TR/css-color-5/#color-interpolation-method" scope="external" format="html">color interpolation grammar</xref> for the complete syntax.</li>
-                    </ul>
-                    <div outputclass="role-h3" id="font-palette-values">
-                        <codeph>@font-palette-values</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#font-palette-values" scope="external" format="html">CSS Fonts 4 §9.2, User-defined font color palettes</xref>.</p>
-                    <p>Use this rule to give a palette a name, choose its starting palette and replace selected colors. Its name must be a <codeph>&lt;dashed-ident&gt;</codeph>, such as <codeph>--night</codeph>. When rules use the same name, the last rule in document order takes effect.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">@font-palette-values --night {
@@ -160,48 +79,9 @@ emoji {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The rule requires a <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-font-family" scope="external" format="html">
-                            <codeph>font-family</codeph>
-                        </xref> descriptor. It accepts one or more named font families, separated by commas. A family name may be a string or a sequence of identifiers, such as <codeph>"Example Emoji"</codeph> or <codeph>Example Sans</codeph>. Generic family names such as <codeph>serif</codeph> are not allowed. The palette applies only to font faces whose family name matches.</p>
-                    <div outputclass="role-h3" id="base-palette">
-                        <codeph>base-palette</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-base-palette" scope="external" format="html">CSS Fonts 4 §9.2.2, Specifying the base palette</xref>.</p>
-                    <p>This descriptor chooses the palette in the font on which the named palette is based.</p>
-                    <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-base-palette-light" scope="external" format="html">
-                                <codeph>light</codeph>
-                            </xref> selects the first palette marked for light backgrounds. If the font format has no such metadata, or no palette is marked, it means palette index <codeph>0</codeph>.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/css-fonts-4/#valdef-base-palette-dark" scope="external" format="html">
-                                <codeph>dark</codeph>
-                            </xref> selects the first palette marked for dark backgrounds. If the font format has no such metadata, or no palette is marked, it means palette index <codeph>0</codeph>.</li>
-                        <li>A non-negative <xref href="https://www.w3.org/TR/css-values-4/#integer-value" scope="external" format="html">integer</xref> selects a zero-based palette index. For example, <codeph>0</codeph> selects the first palette and <codeph>2</codeph> selects the third.</li>
-                    </ul>
-                    <p>If this descriptor is omitted, or the font has no palette at that index, the base is palette <codeph>0</codeph>. Colors not replaced by <codeph>override-colors</codeph> remain from the base palette.</p>
-                    <div outputclass="role-h3" id="override-colors">
-                        <codeph>override-colors</codeph>
-                    </div>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-fonts-4/#descdef-font-palette-values-override-colors" scope="external" format="html">CSS Fonts 4 §9.2.3, Overriding colors from a palette</xref>.</p>
-                    <p>This descriptor takes a comma-separated list of palette entries and replacement colors. Each entry is a non-negative integer followed by an <xref href="https://www.w3.org/TR/css-color-5/#absolute-color" scope="external" format="html">absolute CSS color</xref>. Palette indexes start at <codeph>0</codeph>.</p>
-                </info>
-                <stepxmp>
-                    <pre outputclass="language-css21">@font-palette-values --night {
-    font-family: "Example Emoji";
-    base-palette: 0;
-    override-colors: 0 navy, 1 rgb(255 255 255);
-}
-</pre>
-                </stepxmp>
-                <info>
-                    <p>Each pair replaces the color at that index in the base palette. An index outside the palette’s range is ignored. If an index is specified more than once, the last color is used. Every color in the descriptor must be <xref href="https://www.w3.org/TR/css-color-5/#absolute-color" scope="external" format="html">absolute</xref>, meaning its computed value has a colorimetric meaning independent of the current text color or color mode. Named colors, hexadecimal colors, and numeric <codeph>rgb()</codeph> colors are examples. <codeph>currentColor</codeph>, system colors, <codeph>light-dark()</codeph>, <codeph>contrast-color()</codeph> and <codeph>device-cmyk()</codeph> are not absolute. A non-absolute color makes the descriptor invalid. Wrapping a relative color in <codeph>color-mix()</codeph> or relative color syntax does not make it absolute. An absolute color may use any supported color space.</p>
-                    <p>Math functions, <codeph>var()</codeph> and <codeph>env()</codeph> may be used in descriptor values. They are evaluated in the root element’s context. When a descriptor occurs more than once in one rule, the last valid declaration is used.</p>
+                    <p>The colors of <codeph>override-colors</codeph> must be absolute: named colors, hexadecimal colors and numeric functions such as <codeph>rgb()</codeph> in any color space. A color that depends on the context, such as <codeph>currentColor</codeph>, makes the descriptor invalid. If two rules have the same name, the last one wins.</p>
                 </info>
             </step>
         </steps>
     </taskbody>
 </task>
-

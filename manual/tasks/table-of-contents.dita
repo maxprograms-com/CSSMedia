@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="table-of-contents">
+    <title>Table of contents</title>
+    <shortdesc>A table of contents lists the headings of a document with the page where each one starts. CSSMedia builds it from the elements that you mark as headings, so the table is always up to date. The <xref href="../references/toc-chapter-reference.dita#toc-chapter-reference">table of contents reference</xref> lists the properties, functions and at-rules that you use.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>contents</codeph>, <codeph>chapter</codeph> and <codeph>title</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+            <p>The table of contents and the <xref href="../glossaries/Bookmark.dita">bookmarks</xref> of the <xref href="../glossaries/PDF.dita">PDF</xref> come from the same marking. An element with a <codeph>bookmark-level</codeph> is a bookmark, and it is an entry in the table of contents. CSSMedia extensions have the prefix <codeph>-cssmedia-</codeph>, and CSSMedia ignores the same names without it.</p>
+        </context>
+        <steps>
+            <step id="mark-the-headings">
+                <cmd>Mark the headings</cmd>
+                <info>
+                    <p>Set <codeph>bookmark-level</codeph> on the elements that you want in the table. Level 1 is the top level. Elements without a level, which is the initial value <codeph>none</codeph>, are not listed:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter > title {
+    bookmark-level: 1;
+}
+
+section > title {
+    bookmark-level: 2;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The entry of an element has the text of the element. Use <codeph>bookmark-label</codeph> to change the text of the bookmark and of the entry. Its value is a list of strings, <codeph>attr()</codeph> values and <codeph>content()</codeph> values. The initial value is <codeph>content(text)</codeph>.</p>
+                    <p>A bookmark shows its child bookmarks when the PDF opens. Set <codeph>bookmark-state: closed</codeph> on a block-level element to hide them.</p>
+                    <note>CSSMedia creates the <xref href="../glossaries/Bookmark.dita">bookmarks</xref> of the PDF automatically, one for each element that has a <codeph>bookmark-level</codeph>. PDF viewers, such as Adobe Acrobat, display them in a side panel. The bookmarks need only the <codeph>bookmark-level</codeph> declarations in your CSS. If no element has a <codeph>bookmark-level</codeph>, the PDF has no bookmarks. A table of contents is optional, and its options, such as <codeph>-cssmedia-toc-depth</codeph> and <codeph>-cssmedia-toc-label</codeph>, do not change the bookmarks.</note>
+                </info>
+            </step>
+            <step id="place-the-toc">
+                <cmd>Place the table of contents</cmd>
+                <info>
+                    <p>Use <codeph>-cssmedia-toc()</codeph> as the value of <codeph>content</codeph>. The table appears where the content is generated. A pseudo-element of an empty element is a good place. The table can come before the headings that it lists:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">contents::before {
+    content: -cssmedia-toc();
+    display: block;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Each entry is a block with the text of the heading, a <xref href="../glossaries/Leader.dita">leader</xref> and the page number of the heading. The entry is also a link to the heading. The table is empty, and CSSMedia leaves it out, when no element has a <codeph>bookmark-level</codeph>.</p>
+                </info>
+            </step>
+            <step id="add-a-title">
+                <cmd>Add a title</cmd>
+                <info>
+                    <p>The table has no title unless you set <codeph>-cssmedia-toc-title</codeph> where <codeph>content</codeph> is <codeph>-cssmedia-toc()</codeph>. Its value is a list of strings, like the value of <codeph>content</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">contents::before {
+    content: -cssmedia-toc();
+    -cssmedia-toc-title: "Contents";
+    display: block;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="limit-the-depth">
+                <cmd>Limit the depth</cmd>
+                <info>
+                    <p>The table lists every level. Set <codeph>-cssmedia-toc-depth</codeph> to the deepest level that you want:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">contents::before {
+    content: -cssmedia-toc();
+    -cssmedia-toc-title: "Contents";
+    -cssmedia-toc-depth: 2;
+    display: block;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The value <codeph>all</codeph> lists every level. The depth does not change the bookmarks of the PDF.</p>
+                </info>
+            </step>
+            <step id="style-the-table">
+                <cmd>Style the table</cmd>
+                <info>
+                    <p>The title, the entries and the dividers have no element in your XML, so three at-rules style them. Each at-rule holds ordinary declarations, and its boxes inherit from the element that holds the table:</p>
+                    <ul>
+                        <li><codeph>@-cssmedia-toc-title</codeph> styles the title.</li>
+                        <li><codeph>@-cssmedia-toc-entry</codeph> styles the entries.</li>
+                        <li><codeph>@-cssmedia-toc-divider</codeph> styles the dividers, which the next step explains.</li>
+                    </ul>
+                    <p>Write a level after the name of <codeph>@-cssmedia-toc-entry</codeph> or <codeph>@-cssmedia-toc-divider</codeph> to style only that level. A rule for a level comes after the rules without level, so it wins. This example indents the entries of level 2:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@-cssmedia-toc-title {
+    font-size: 20pt;
+    margin-bottom: 10pt;
+}
+
+@-cssmedia-toc-entry 2 {
+    margin-left: 24pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The <codeph>-cssmedia-toc-leader</codeph> property sets the leader between the text and the page number. Set it in <codeph>@-cssmedia-toc-entry</codeph>. The values are <codeph>dotted</codeph>, which is the initial value, <codeph>solid</codeph>, <codeph>space</codeph> and a string. A string is repeated to fill the space:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@-cssmedia-toc-entry {
+    -cssmedia-toc-leader: solid;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="change-the-text-of-an-entry">
+                <cmd>Change the text of an entry</cmd>
+                <info>
+                    <p>By default, an entry has the same text as the bookmark of its element. Set <codeph>-cssmedia-toc-label</codeph> on the heading element to give the entry another text. The value is a list, like the value of <codeph>bookmark-label</codeph>. This rule adds a word to the entries of the appendixes. The bookmarks do not change:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">appendix > title {
+    -cssmedia-toc-label: "Appendix " content();
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The initial value is <codeph>auto</codeph>, which uses <codeph>bookmark-label</codeph>.</p>
+                </info>
+            </step>
+            <step id="group-the-entries">
+                <cmd>Group the entries with dividers</cmd>
+                <info>
+                    <p>A divider is a line of text before an entry. Use it to name a group of entries. Set <codeph>-cssmedia-toc-divider</codeph> on the heading element where the group starts:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter:first-of-type > title {
+    -cssmedia-toc-divider: "Chapters";
+}
+
+appendix:first-of-type > title {
+    -cssmedia-toc-divider: "Appendixes";
+}
+
+@-cssmedia-toc-divider {
+    font-weight: bold;
+    margin-top: 8pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The initial value is <codeph>none</codeph>, which adds no divider.</p>
+                </info>
+            </step>
+            <step id="add-the-title-as-a-bookmark">
+                <cmd>Add the title to the bookmarks</cmd>
+                <info>
+                    <p>To make the title of the table a bookmark, set <codeph>bookmark-level</codeph> in <codeph>@-cssmedia-toc-title</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@-cssmedia-toc-title {
+    bookmark-level: 1;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+        <postreq>
+            <p>The same pattern gives page numbers in other places. <codeph>target-counter()</codeph> gives the value of a counter at the destination of a link, and <codeph>leader()</codeph> fills the space before it. The <xref keyref="ch-links">Links</xref> chapter explains how to set destinations with <codeph>-cssmedia-link</codeph>.</p>
+        </postreq>
+    </taskbody>
+</task>

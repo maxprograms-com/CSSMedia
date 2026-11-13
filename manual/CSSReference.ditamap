@@ -25,13 +25,21 @@
     <backmatter>
         <booklists>
             <glossarylist chunk="to-content">
+                <topicref href="glossaries/Bookmark.dita" type="glossentry"/>
                 <topicref href="glossaries/CSS.dita" type="glossentry"/>
                 <topicref href="glossaries/DTD.dita" type="glossentry"/>
+                <topicref href="glossaries/FontFace.dita" type="glossentry"/>
+                <topicref href="glossaries/Glyph.dita" type="glossentry"/>
+                <topicref href="glossaries/Kerning.dita" type="glossentry"/>
+                <topicref href="glossaries/Leader.dita" type="glossentry"/>
+                <topicref href="glossaries/Ligature.dita" type="glossentry"/>
                 <topicref href="glossaries/MathML.dita" type="glossentry"/>
                 <topicref href="glossaries/XMLNamespace.dita" type="glossentry"/>
                 <topicref href="glossaries/OASISCatalog.dita" type="glossentry"/>
+                <topicref href="glossaries/OpenType.dita" type="glossentry"/>
                 <topicref href="glossaries/PDF.dita" type="glossentry"/>
                 <topicref href="glossaries/RelaxNG.dita" type="glossentry"/>
+                <topicref href="glossaries/VariableFont.dita" type="glossentry"/>
                 <topicref href="glossaries/SVG.dita" type="glossentry"/>
                 <topicref href="glossaries/XML.dita" type="glossentry"/>
                 <topicref href="glossaries/XMLSchema.dita" type="glossentry"/>

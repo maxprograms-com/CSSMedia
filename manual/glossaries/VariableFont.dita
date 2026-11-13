@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="VariableFont">
+    <glossterm>Variable font</glossterm>
+    <glossdef>A font whose design changes along axes, such as weight, width and slant. One variable font file can replace many ordinary font files. Each axis has a four-letter tag and a range of values. <xref href="https://learn.microsoft.com/en-us/typography/opentype/spec/otvaroverview" format="html" scope="external">The OpenType specification</xref> describes variable fonts.</glossdef>
+</glossentry>

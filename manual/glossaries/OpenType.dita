@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="OpenType">
+    <glossterm>OpenType</glossterm>
+    <glossdef>The font format that most fonts use today. An OpenType font holds glyphs and tables of features, such as ligatures, alternate shapes and kerning. Each feature has a four-letter tag. <xref href="https://learn.microsoft.com/en-us/typography/opentype/spec/" format="html" scope="external">The OpenType specification</xref> defines the format.</glossdef>
+</glossentry>

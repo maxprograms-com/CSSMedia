@@ -13,5 +13,6 @@
     <topicref href="references/footnote-reference.dita"/>
     <topicref href="references/link-reference.dita"/>
     <topicref href="references/named-strings-reference.dita"/>
+    <topicref href="references/toc-reference.dita"/>
     <topicref href="references/cascade-reference.dita"/>
 </map>

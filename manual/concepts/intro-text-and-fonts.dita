@@ -2,10 +2,17 @@
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
 <concept id="introTextAndFonts">
     <title>Text and fonts</title>
-    <shortdesc>The font properties in your stylesheet decide how text looks in the <xref href="../glossaries/PDF.dita">PDF</xref>.</shortdesc>
+    <shortdesc>The font properties of your stylesheet decide how text looks in the <xref href="../glossaries/PDF.dita">PDF</xref>. This chapter explains how to choose fonts, load your own and use their special features. The <xref href="../references/font-chapter-reference.dita#font-chapter-reference">text and fonts reference</xref> at the end lists every property, at-rule and descriptor.</shortdesc>
     <conbody>
-        <p>Choose a family, size and weight first. Load your own fonts when you need ones that are not
-            available, and use font features for finer control. These topics explain each step:</p>
+        <p>A font is a file that holds the shapes of the characters, called <xref href="../glossaries/Glyph.dita">glyphs</xref>. A font family is a group of related <xref href="../glossaries/FontFace.dita">font faces</xref>, such as the regular, bold and italic faces of one design. You choose a family with <codeph>font-family</codeph>, and CSSMedia picks the face that best matches the weight, width and style that you request.</p>
+        <p>CSSMedia gets fonts from three places:</p>
+        <ul>
+            <li>The 14 standard fonts of PDF: Times, Helvetica, Courier, Symbol and ZapfDingbats. They are built in.</li>
+            <li>The fonts in the folder that you pass with the <codeph>-f</codeph> option.</li>
+            <li>The fonts that your stylesheet declares with <codeph>@font-face</codeph>.</li>
+        </ul>
+        <p>CSSMedia does not read the fonts installed in your computer, so a PDF looks the same on every computer. It embeds the fonts that it loads in the PDF.</p>
+        <p>The topics of this chapter follow the order in which you work:</p>
         <ul>
             <li><xref href="../tasks/font-properties.dita"/></li>
             <li><xref href="../tasks/font-faces.dita"/></li>
