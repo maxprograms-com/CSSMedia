@@ -12,6 +12,8 @@ The inventory has 113 selectors, 784 properties, 41 at-rules, and 104 descriptor
 
 The inventory follows the code. When a selector, property, at-rule, or descriptor is added to or removed from the code, its line is added to or removed from this file.
 
+> This file tracks documentation status only. Features may already be implemented in the code but not yet documented in the [User Guide](CSSMedia.pdf).
+
 ## At-rules
 
 - [x] @bottom-center
