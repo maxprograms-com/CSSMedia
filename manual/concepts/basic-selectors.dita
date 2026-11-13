@@ -6,8 +6,6 @@
     <conbody>
         <section id="element-names-and-any-element">
             <title>Element names and any element</title>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-4/#type-selectors" scope="external" format="html">Selectors 4 §5.1, Type (tag name) selector</xref>; <xref href="https://www.w3.org/TR/selectors-4/#universal-selector" scope="external" format="html">Selectors 4 §5.2, Universal selector</xref>.</p>
             <p>A type selector is an element name, such as <codeph>chapter</codeph> or <codeph>title</codeph>. It matches elements with that name. The universal selector <codeph>*</codeph> matches any element.</p>
             <pre outputclass="language-css21">chapter { color: navy; }
 * { font-family: serif; }
@@ -16,21 +14,16 @@
         </section>
         <section id="ids-and-classes">
             <title>IDs and classes</title>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-4/#class-html" scope="external" format="html">Selectors 4 §6.6, Class selectors</xref>; <xref href="https://www.w3.org/TR/selectors-4/#id-selectors" scope="external" format="html">Selectors 4 §6.7, ID selectors</xref>.</p>
             <p>An ID identifies an element. Write <codeph>#</codeph> followed by the ID value to select it. CSSMedia checks the <codeph>id</codeph> and <codeph>xml:id</codeph> attributes.</p>
             <pre outputclass="language-css21">#overview { color: navy; }
 </pre>
-            <p>A class selector starts with a period, as in <codeph>.warning</codeph>. CSSMedia accepts this syntax, but does not use it to test an <xref href="../glossaries/XML.dita">XML</xref> attribute. Selectors Level 4 leaves the meaning of class membership to the document language, and XML does not define one universal class attribute.</p>
-            <p>If your XML uses an unnamespaced <codeph>class</codeph> attribute containing space-separated class names, test it with an attribute selector. The <codeph>~=</codeph> operator checks for one whole, space-separated value:</p>
+            <p>A class selector starts with a period, as in <codeph>.warning</codeph>. <xref href="https://www.w3.org/TR/selectors-4/#class-html" scope="external" format="html">Selectors Level 4</xref> leaves the meaning of class membership to the document language, and <xref href="../glossaries/XML.dita">XML</xref> has no universal class attribute. For that reason, class selectors only match inside <xref href="../glossaries/SVG.dita">SVG</xref> and <xref href="../glossaries/MathML.dita">MathML</xref> content, which define a <codeph>class</codeph> attribute.</p>
+            <p>If your XML has a <codeph>class</codeph> attribute with space-separated names, select it with an attribute selector. The <codeph>~=</codeph> operator matches one whole word of the value:</p>
             <pre outputclass="language-css21">[class~="warning"] { color: red; }
 </pre>
-            <p>This matches an element whose <codeph>class</codeph> attribute contains <codeph>warning</codeph> as one of its values. It does not make <codeph>.warning</codeph> a working class selector in CSSMedia.</p>
         </section>
         <section id="attributes">
             <title>Attributes</title>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-4/#attribute-selectors" scope="external" format="html">Selectors 4 §6, Attribute selectors</xref>.</p>
             <p>An attribute selector checks an XML attribute. Put its name in square brackets to require that the attribute exists. Add an operator and value to compare its contents.</p>
             <pre outputclass="language-css21">[role] { color: navy; }
 [role="notice"] { color: navy; }
@@ -47,9 +40,7 @@
         </section>
         <section id="xml-namespaces">
             <title>XML namespaces</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-namespaces-3/#declaration" scope="external" format="html">CSS Namespaces 3 §3, Declaring namespaces: the @namespace rule</xref>.</p>
-            <p>XML elements and attributes can belong to namespaces. A <xref href="../glossaries/CSS.dita">CSS</xref> namespace declaration assigns a prefix to a namespace URI. Use that prefix in a selector to choose elements in that namespace.</p>
+            <p>XML elements and attributes can belong to a <xref href="../glossaries/XMLNamespace.dita">namespace</xref>. The <xref href="https://www.w3.org/TR/css-namespaces-3/#declaration" scope="external" format="html"><codeph>@namespace</codeph> rule</xref> of <xref href="../glossaries/CSS.dita">CSS</xref> assigns a prefix to a namespace URI. Use that prefix in a selector to choose elements in that namespace.</p>
             <pre outputclass="language-css21">@namespace svg url("http://www.w3.org/2000/svg");
 
 svg|rect { color: navy; }

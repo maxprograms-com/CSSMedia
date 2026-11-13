@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="named-strings-chapter-reference">
+    <title>Named strings reference</title>
+    <shortdesc>This reference lists the property and the functions that CSSMedia uses for named strings.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-named-strings/named-strings-properties"/>
+    </refbody>
+</reference>

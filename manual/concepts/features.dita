@@ -25,7 +25,9 @@
             <li><b>Generated content.</b> Counters, quotes, list markers, named strings, running
                 elements, cross-references and tables of contents.</li>
             <li><b>Links and bookmarks.</b> Internal and external links and PDF bookmarks.</li>
-            <li><b>Images.</b> PNG, JPEG, JPEG 2000 and WebP images.</li>
+            <li><b>Footnotes.</b> Any element can be a footnote. CSS moves it to the bottom of the
+                page, numbered with a counter that you can restart on each page.</li>
+            <li><b>Images.</b> PNG, JPEG, JPEG 2000, GIF, BMP, TIFF and WebP images.</li>
             <li><b>SVG and MathML.</b> <xref href="../glossaries/SVG.dita">SVG</xref> and <xref href="../glossaries/MathML.dita">MathML</xref> found in a document are drawn as images.</li>
         </ul>
     </conbody>

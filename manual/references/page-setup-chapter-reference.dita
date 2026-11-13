@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="page-setup-chapter-reference">
+    <title>Page setup reference</title>
+    <shortdesc>This reference lists the rules, descriptors and properties that CSSMedia uses to define pages.</shortdesc>
+    <refbody>
+        <section id="page-setup-pages">
+            <title>Page rule, size and page type</title>
+            <table id="page-setup-pages__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-page/row-at-page"/>
+                        <row conkeyref="ref-page/row-size"/>
+                        <row conkeyref="ref-page/row-page"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="page-setup-margins">
+            <title>Page margins</title>
+            <table id="page-setup-margins__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-box-model/row-margin"/>
+                        <row conkeyref="ref-box-model/row-margin-top"/>
+                        <row conkeyref="ref-box-model/row-margin-right"/>
+                        <row conkeyref="ref-box-model/row-margin-bottom"/>
+                        <row conkeyref="ref-box-model/row-margin-left"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="page-setup-margin-rules">
+            <title>Page-margin rules</title>
+            <table id="page-setup-margin-rules__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-page/row-top-left-corner"/>
+                        <row conkeyref="ref-page/row-top-left"/>
+                        <row conkeyref="ref-page/row-top-center"/>
+                        <row conkeyref="ref-page/row-top-right"/>
+                        <row conkeyref="ref-page/row-top-right-corner"/>
+                        <row conkeyref="ref-page/row-right-top"/>
+                        <row conkeyref="ref-page/row-right-middle"/>
+                        <row conkeyref="ref-page/row-right-bottom"/>
+                        <row conkeyref="ref-page/row-bottom-right-corner"/>
+                        <row conkeyref="ref-page/row-bottom-right"/>
+                        <row conkeyref="ref-page/row-bottom-center"/>
+                        <row conkeyref="ref-page/row-bottom-left"/>
+                        <row conkeyref="ref-page/row-bottom-left-corner"/>
+                        <row conkeyref="ref-page/row-left-bottom"/>
+                        <row conkeyref="ref-page/row-left-middle"/>
+                        <row conkeyref="ref-page/row-left-top"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

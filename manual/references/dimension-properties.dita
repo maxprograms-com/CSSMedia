@@ -2,7 +2,8 @@
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="dimension-properties">
     <title>Dimension properties</title>
-    <shortdesc>This reference lists the <xref href="../glossaries/CSS.dita">CSS</xref> sizing properties documented in <xref href="../concepts/box-dimensions.dita#box-dimensions">Box dimensions</xref>. The <codeph>Values</codeph> column gives CSS syntax. CSSMedia accepts these declarations for computed styles, but it has no element layout stage and does not generate a <xref href="../glossaries/PDF.dita">PDF</xref>. The properties therefore have no PDF effect. The <codeph>Default</codeph> cells are left blank because there is no PDF output.</shortdesc>
+    <shortdesc>This reference lists the <xref href="../glossaries/CSS.dita">CSS</xref> sizing properties documented in <xref href="../concepts/box-dimensions.dita#box-dimensions">Box dimensions</xref>. The <codeph>Values</codeph> column gives CSS syntax.</shortdesc>
+    <!-- TODO: fill the Default cells and describe how each property affects layout in the PDF -->
     <refbody>
         <section>
             <p>CSS Anchor Positioning permits <codeph>anchor-size()</codeph> only on properties accepted in an <xref href="https://www.w3.org/TR/css-anchor-position-1/#accepted-position-try-properties" scope="external" format="html">

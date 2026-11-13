@@ -16,7 +16,7 @@
                         </row>
                     </thead>
                     <tbody>
-                        <row valign="middle">
+                        <row id="row-page" valign="middle">
                             <entry>
                                 <codeph>page</codeph>
                             </entry>
@@ -31,7 +31,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-at-page" valign="middle">
                             <entry>
                                 <codeph>@page</codeph>
                             </entry>
@@ -43,7 +43,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-size" valign="middle">
                             <entry>
                                 <codeph>size</codeph>
                             </entry>
@@ -103,7 +103,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-top-left-corner" valign="middle">
                             <entry>
                                 <codeph>@top-left-corner</codeph>
                             </entry>
@@ -115,7 +115,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-top-left" valign="middle">
                             <entry>
                                 <codeph>@top-left</codeph>
                             </entry>
@@ -127,7 +127,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-top-center" valign="middle">
                             <entry>
                                 <codeph>@top-center</codeph>
                             </entry>
@@ -139,7 +139,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-top-right" valign="middle">
                             <entry>
                                 <codeph>@top-right</codeph>
                             </entry>
@@ -151,7 +151,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-top-right-corner" valign="middle">
                             <entry>
                                 <codeph>@top-right-corner</codeph>
                             </entry>
@@ -163,7 +163,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-right-top" valign="middle">
                             <entry>
                                 <codeph>@right-top</codeph>
                             </entry>
@@ -175,7 +175,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-right-middle" valign="middle">
                             <entry>
                                 <codeph>@right-middle</codeph>
                             </entry>
@@ -187,7 +187,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-right-bottom" valign="middle">
                             <entry>
                                 <codeph>@right-bottom</codeph>
                             </entry>
@@ -199,7 +199,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bottom-right-corner" valign="middle">
                             <entry>
                                 <codeph>@bottom-right-corner</codeph>
                             </entry>
@@ -211,7 +211,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bottom-right" valign="middle">
                             <entry>
                                 <codeph>@bottom-right</codeph>
                             </entry>
@@ -223,7 +223,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bottom-center" valign="middle">
                             <entry>
                                 <codeph>@bottom-center</codeph>
                             </entry>
@@ -235,7 +235,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bottom-left" valign="middle">
                             <entry>
                                 <codeph>@bottom-left</codeph>
                             </entry>
@@ -247,7 +247,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-bottom-left-corner" valign="middle">
                             <entry>
                                 <codeph>@bottom-left-corner</codeph>
                             </entry>
@@ -259,7 +259,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-left-bottom" valign="middle">
                             <entry>
                                 <codeph>@left-bottom</codeph>
                             </entry>
@@ -271,7 +271,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-left-middle" valign="middle">
                             <entry>
                                 <codeph>@left-middle</codeph>
                             </entry>
@@ -283,7 +283,7 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-left-top" valign="middle">
                             <entry>
                                 <codeph>@left-top</codeph>
                             </entry>
@@ -293,6 +293,17 @@
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-page-3/#at-ruledef-left-top" scope="external" format="html">CSS Paged Media 3, <codeph>@left-top</codeph>
                                 </xref>
+                            </entry>
+                        </row>
+                        <row id="row-footnote" valign="middle">
+                            <entry>
+                                <codeph>@footnote</codeph>
+                            </entry>
+                            <entry>Styles the footnote area at the bottom of the page. It goes inside an <codeph>@page</codeph> rule.</entry>
+                            <entry>A block of declarations, such as borders, margins, padding and <codeph>max-height</codeph>.</entry>
+                            <entry />
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#footnote-area" scope="external" format="html">CSS GCPM 3 §2.4</xref>
                             </entry>
                         </row>
                     </tbody>

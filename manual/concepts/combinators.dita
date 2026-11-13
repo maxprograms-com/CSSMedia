@@ -6,32 +6,49 @@
     <conbody>
         <section id="descendant-and-sibling-relationships">
             <title>Descendant and sibling relationships</title>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-4/#combinators" scope="external" format="html">Selectors 4 §14, Combinators</xref>.</p>
             <p>Use a space to select a descendant at any depth. Use <codeph>&gt;</codeph> for a direct child, <codeph>+</codeph> for the next element sibling and <codeph>~</codeph> for any later element sibling with the same parent.</p>
             <pre outputclass="language-css21">chapter title { color: navy; }
 chapter &gt; title { color: teal; }
 title + paragraph { color: gray; }
 title ~ paragraph { color: purple; }
 </pre>
-            <p>The first rule selects every <codeph>title</codeph> inside a <codeph>chapter</codeph>, even when other elements are between them. The second selects only titles that are direct children of a chapter. The last two select paragraphs based on their position after a title.</p>
+            <p>Example:</p>
+            <pre outputclass="language-xml">&lt;chapter&gt;
+    &lt;title&gt;Setup&lt;/title&gt;
+    &lt;paragraph&gt;Install the tool.&lt;/paragraph&gt;
+    &lt;paragraph&gt;Start the tool.&lt;/paragraph&gt;
+    &lt;section&gt;
+        &lt;title&gt;Options&lt;/title&gt;
+        &lt;paragraph&gt;Choose an option.&lt;/paragraph&gt;
+    &lt;/section&gt;
+&lt;/chapter&gt;
+</pre>
+            <ul>
+                <li><codeph>chapter title</codeph> selects both titles, <codeph>Setup</codeph> and <codeph>Options</codeph>, because the second one is inside a <codeph>section</codeph> that is inside the chapter.</li>
+                <li><codeph>chapter &gt; title</codeph> selects only <codeph>Setup</codeph>, the title that is a direct child of the chapter.</li>
+                <li><codeph>title + paragraph</codeph> selects <codeph>Install the tool.</codeph> and <codeph>Choose an option.</codeph>, the paragraphs that come right after a title.</li>
+                <li><codeph>title ~ paragraph</codeph> selects all three paragraphs, because each one has a title before it among its siblings.</li>
+            </ul>
         </section>
         <section id="column-combinator">
             <title>Column combinator</title>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-5/#the-column-combinator" scope="external" format="html">Selectors 5 §8.1, Column combinator (||)</xref>.</p>
-            <p>The column combinator <codeph>||</codeph> relates elements that belong to the same table column.</p>
-            <pre outputclass="language-css21">col || td { color: navy; }
+            <p>The column combinator <codeph>||</codeph>, from <xref href="https://www.w3.org/TR/selectors-5/#the-column-combinator" scope="external" format="html">Selectors Level 5</xref>, selects the cells of the column that a column element describes. CSSMedia finds columns and cells by the <codeph>display</codeph> values <codeph>table-column</codeph>, <codeph>table-column-group</codeph> and <codeph>table-cell</codeph>, not by element names. Columns must come before the first row. CSS gives a cell no span, so each cell takes the next column of its row.</p>
+            <pre outputclass="language-css21">colspec || entry { color: navy; }
 </pre>
+            <p>This selects every <codeph>entry</codeph> in a column described by a <codeph>colspec</codeph>, when the stylesheet gives <codeph>colspec</codeph> the display value <codeph>table-column</codeph> and <codeph>entry</codeph> the value <codeph>table-cell</codeph>.</p>
         </section>
         <section id="reference-combinators">
             <title>Reference combinators</title>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-5/#idref-combinators" scope="external" format="html">Selectors 5 §9.1, Reference combinators /ref/</xref>.</p>
-            <p>A reference combinator relates elements through an attribute that refers to an element ID.</p>
-            <pre outputclass="language-css21">section /aria-labelledby/ title { color: navy; }
+            <p>A reference combinator, from <xref href="https://www.w3.org/TR/selectors-5/#idref-combinators" scope="external" format="html">Selectors Level 5</xref>, selects an element that is referred to by an attribute of another element.</p>
+            <pre outputclass="language-css21">note /target/ step { color: navy; }
 </pre>
-            <p>The name between slashes is the reference attribute. CSSMedia accepts this syntax and uses the referenced element relationship when matching.</p>
+            <p>The name between slashes is the attribute that holds the reference. The rule selects every <codeph>step</codeph> whose <codeph>id</codeph> or <codeph>xml:id</codeph> equals the <codeph>target</codeph> attribute of a <codeph>note</codeph>. The attribute value can start with <codeph>#</codeph>.</p>
+            <p>Example:</p>
+            <pre outputclass="language-xml">&lt;note target="s2"&gt;Check the cable first.&lt;/note&gt;
+&lt;step id="s1"&gt;Open the cover.&lt;/step&gt;
+&lt;step id="s2"&gt;Unplug the cable.&lt;/step&gt;
+</pre>
+            <p>The rule selects only the second step, <codeph>Unplug the cable.</codeph>, because the note refers to <codeph>s2</codeph>.</p>
         </section>
     </conbody>
 </concept>

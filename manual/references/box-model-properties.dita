@@ -5,7 +5,8 @@
     <shortdesc>This table lists the box model properties described in <xref href="../concepts/box-sizing-and-spacing.dita#box-sizing-and-spacing">Box sizing, margins and padding</xref>. A length is a number with a unit, such as <codeph>12pt</codeph> or <codeph>1em</codeph>. Margin and padding percentages are relative to the containing block’s logical width, or inline size.</shortdesc>
     <refbody>
         <section>
-            <p>CSSMedia accepts and computes these declarations, but does not use element box model values to lay out element boxes. <xref href="../glossaries/PDF.dita">PDF</xref> generation is not implemented. Page geometry is prepared separately. The <codeph>Default</codeph> cells are blank because there is no PDF output.</p>
+            <!-- TODO: fill the Default cells and describe how each property affects layout in the PDF -->
+            <p>These properties set the margins, padding and box sizing of the boxes of a document.</p>
             <p>The CSS-wide keywords <codeph>inherit</codeph>, <codeph>initial</codeph>, <codeph>revert</codeph>, <codeph>revert-layer</codeph>, and <codeph>unset</codeph> can also be used with these properties.</p>
         </section>
         <table id="box-model-properties__I_1g_">
@@ -32,7 +33,7 @@
                             <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-box-sizing" scope="external" format="html">CSS Sizing 3</xref>
                         </entry>
                     </row>
-                    <row valign="middle">
+                    <row id="row-margin" valign="middle">
                         <entry>
                             <codeph>margin</codeph>
                         </entry>
@@ -76,7 +77,7 @@
                             <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-block-start" scope="external" format="html">CSS Logical Properties 1</xref>
                         </entry>
                     </row>
-                    <row valign="middle">
+                    <row id="row-margin-bottom" valign="middle">
                         <entry>
                             <codeph>margin-bottom</codeph>
                         </entry>
@@ -132,7 +133,7 @@
                             <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-inline-start" scope="external" format="html">CSS Logical Properties 1</xref>
                         </entry>
                     </row>
-                    <row valign="middle">
+                    <row id="row-margin-left" valign="middle">
                         <entry>
                             <codeph>margin-left</codeph>
                         </entry>
@@ -143,7 +144,7 @@
                             <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-left" scope="external" format="html">CSS Box Model 4</xref>
                         </entry>
                     </row>
-                    <row valign="middle">
+                    <row id="row-margin-right" valign="middle">
                         <entry>
                             <codeph>margin-right</codeph>
                         </entry>
@@ -154,7 +155,7 @@
                             <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-right" scope="external" format="html">CSS Box Model 4</xref>
                         </entry>
                     </row>
-                    <row valign="middle">
+                    <row id="row-margin-top" valign="middle">
                         <entry>
                             <codeph>margin-top</codeph>
                         </entry>

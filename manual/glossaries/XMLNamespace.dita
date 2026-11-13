@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="XMLNamespace">
+    <glossterm>Namespace</glossterm>
+    <glossdef>An <xref href="https://www.w3.org/TR/xml-names/" format="html" scope="external">XML
+            namespace</xref> is a URI that identifies the vocabulary an element or attribute belongs
+        to. An <xref href="XML.dita">XML</xref> document declares it with an <codeph>xmlns</codeph>
+        attribute, so elements with the same name in different vocabularies do not collide.</glossdef>
+</glossentry>

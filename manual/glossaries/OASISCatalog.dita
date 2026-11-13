@@ -2,8 +2,9 @@
 <!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
 <glossentry id="OASISCatalog">
     <glossterm>OASIS Catalog</glossterm>
-    <glossdef>An OASIS Catalog is an <xref href="XML.dita">XML</xref> file, defined by the OASIS XML
-        Catalogs standard, that maps the identifiers used in documents to the locations where the
+    <glossdef>An OASIS Catalog is an <xref href="XML.dita">XML</xref> file, defined by the <xref
+            href="https://www.oasis-open.org/committees/download.php/14809/xml-catalogs.html"
+            format="html" scope="external">OASIS XML Catalogs</xref> standard, that maps the identifiers used in documents to the locations where the
         files are stored. A catalog lets a parser find a <xref href="DTD.dita">DTD</xref>, an <xref
             href="XMLSchema.dita">XML Schema</xref> or a <xref href="RelaxNG.dita">RelaxNG</xref>
         schema without downloading it. Pass a catalog to CSSMedia with the <codeph>-g</codeph>

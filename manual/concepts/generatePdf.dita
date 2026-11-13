@@ -20,5 +20,9 @@
 </pre>
         <p>Use <codeph>-f</codeph> to pass a fonts folder that you reuse from any project. Use
                 <codeph>-g</codeph> to pass an <xref href="../glossaries/OASISCatalog.dita">OASIS Catalog</xref> when your XML refers to grammars.</p>
+        <p>When something in the XML or the stylesheet cannot be used, for example an image that
+            cannot be read, CSSMedia still writes the PDF and prints a warning for each problem after
+            the run. If a file is missing or an error stops the run, CSSMedia prints the error and
+            does not write the PDF.</p>
     </conbody>
 </concept>

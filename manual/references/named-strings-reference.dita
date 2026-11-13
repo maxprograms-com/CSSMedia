@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="named-strings-reference">
+    <title>Named strings</title>
+    <shortdesc>This reference lists the property and the functions that CSSMedia uses for named strings.</shortdesc>
+    <refbody>
+        <section id="named-strings-properties">
+            <table id="named-strings-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-content/row-string-set"/>
+                        <row conkeyref="ref-content/row-content-function"/>
+                        <row conkeyref="ref-content/row-string-function"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

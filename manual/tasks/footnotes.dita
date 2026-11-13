@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="footnotes">
+    <title>Footnotes</title>
+    <shortdesc>A footnote is an element that CSSMedia moves to the bottom of the page where the text refers to it. In the text, a number takes its place. The <xref href="../references/footnote-chapter-reference.dita#footnote-chapter-reference">footnote reference</xref> lists the properties, rules and pseudo-elements used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>These terms are used in this chapter:</p>
+            <ul>
+                <li>The <b>footnote body</b> is the content of the footnote element.</li>
+                <li>The <b>footnote call</b> is the number that replaces the footnote in the text.</li>
+                <li>The <b>footnote marker</b> is the number at the start of the footnote body.</li>
+                <li>The <b>footnote area</b> is the box at the bottom of the page that holds the footnote bodies.</li>
+            </ul>
+            <p>The element names in the examples, such as <codeph>fn</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="mark-an-element-as-a-footnote">
+                <cmd>Mark an element as a footnote</cmd>
+                <info>
+                    <p>Set <codeph>float: footnote</codeph> on the element that holds the text of the footnote:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;p&gt;Swordfish stores translations in memories&lt;fn&gt;A memory is a database of translated segments.&lt;/fn&gt;.&lt;/p&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">fn {
+    float: footnote;
+    font-size: 8pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>CSSMedia removes <codeph>fn</codeph> from the text, puts a number in its place, and shows the content of <codeph>fn</codeph> in the footnote area of the same page, in document order. If the footnote does not fit on the page, the rest continues on the next pages.</p>
+                    <p>The rule of the footnote element styles the footnote body, so set the font size and the line height there.</p>
+                </info>
+            </step>
+            <step id="number-the-footnotes">
+                <cmd>Number the footnotes</cmd>
+                <info>
+                    <p>Footnotes are numbered with the <codeph>footnote</codeph> counter. A counter is a number that CSS keeps for you and that you can show in the content of a document. The <codeph>footnote</codeph> counter already exists: CSSMedia creates it at the start of the document with the value 0 and adds 1 each time it finds a footnote. The first footnote is 1, the second is 2, and so on through the whole document.</p>
+                    <p>The call and the marker of a footnote show the same value, because both use <codeph>counter(footnote)</codeph>.</p>
+                    <p>You change the numbering with the properties <codeph>counter-reset</codeph>, <codeph>counter-set</codeph> and <codeph>counter-increment</codeph>:</p>
+                    <ul>
+                        <li><codeph>counter-reset: footnote</codeph> sets the counter to 0, so the next footnote is 1. <codeph>counter-reset: footnote 9</codeph> sets it to 9, so the next footnote is 10.</li>
+                        <li><codeph>counter-set: footnote 4</codeph> also sets the value of the counter.</li>
+                        <li><codeph>counter-increment: footnote 2</codeph> adds 2 to the counter, and <codeph>counter-increment: footnote -1</codeph> subtracts 1.</li>
+                    </ul>
+                    <p>Where you write the declaration decides where the numbering changes. In an element rule, it changes when the element starts. This example starts the numbers at 1 in each chapter:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    counter-reset: footnote;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>In an <codeph>@page</codeph> rule, it changes on every page. This example starts the numbers at 1 on each page:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    counter-reset: footnote;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>With the rule in <codeph>@page</codeph>, the number of a footnote depends on the page of its call, and a footnote that continues on the next page keeps its number.</p>
+                    <p>The optional second argument of <codeph>counter()</codeph> is a counter style, which sets how the number is written. For example, <codeph>counter(footnote, lower-alpha)</codeph> shows a, b, c, and <codeph>counter(footnote, upper-roman)</codeph> shows I, II, III. A style can also list the symbols to use:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">fn::footnote-call {
+    content: counter(footnote, symbols("*" "†" "‡"));
+}
+
+fn::footnote-marker {
+    content: counter(footnote, symbols("*" "†" "‡")) " ";
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The first three footnotes show *, † and ‡. Write the same style in the call and in the marker.</p>
+                </info>
+            </step>
+            <step id="style-the-call-and-the-marker">
+                <cmd>Style the call and the marker</cmd>
+                <info>
+                    <p>The pseudo-element <codeph>::footnote-call</codeph> is the number in the text. The pseudo-element <codeph>::footnote-marker</codeph> is the number at the start of the footnote. By default, the call is the value of the <codeph>footnote</codeph> counter as a superscript, and the marker is the value followed by a period and a space.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">::footnote-call {
+    font-size: 70%;
+    vertical-align: super;
+    line-height: 0;
+}
+
+::footnote-marker {
+    font-weight: bold;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Use the <codeph>content</codeph> property to change what they show. For example, show the number in brackets:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">fn::footnote-call {
+    content: "[" counter(footnote) "]";
+}
+
+fn::footnote-marker {
+    content: "[" counter(footnote) "] ";
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="use-your-own-callouts">
+                <cmd>Use your own callouts</cmd>
+                <info>
+                    <p>To show a symbol or a label from the XML instead of a number, give the call and the marker that text, and stop the footnote from using a number. Every footnote adds 1 to the counter, and <codeph>counter-increment: footnote -1</codeph> takes it back, so the other footnotes keep their numbers.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;p&gt;The price&lt;fn callout="*"&gt;Prices do not include taxes.&lt;/fn&gt; is final.&lt;/p&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">fn[callout] {
+    counter-increment: footnote -1;
+}
+
+fn[callout]::footnote-call {
+    content: attr(callout);
+}
+
+fn[callout]::footnote-marker {
+    content: attr(callout) " ";
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="style-the-footnote-area">
+                <cmd>Style the footnote area</cmd>
+                <info>
+                    <p>Use an <codeph>@footnote</codeph> rule inside an <codeph>@page</codeph> rule to style the footnote area. The area sits at the bottom of the page area. A border and a margin separate it from the text.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    @footnote {
+        border-top: 0.5pt solid black;
+        margin-top: 6pt;
+        padding-top: 3pt;
+    }
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Set <codeph>max-height</codeph> to limit the height of the area, so that a page does not fill up with footnotes. The limit does not apply to a page that has only footnotes. Because <codeph>@footnote</codeph> belongs to an <codeph>@page</codeph> rule, you can set a different limit for a named page:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page limited {
+    @footnote {
+        max-height: 25mm;
+    }
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="choose-how-footnotes-are-displayed">
+                <cmd>Choose how footnotes are displayed</cmd>
+                <info>
+                    <p>The <codeph>footnote-display</codeph> property sets how a footnote body appears in the footnote area:</p>
+                    <ul>
+                        <li><codeph>block</codeph> puts each footnote in its own block. This is the initial value.</li>
+                        <li><codeph>inline</codeph> runs the footnotes together in one paragraph.</li>
+                        <li><codeph>compact</codeph> puts footnotes in the same line when they fit, and in separate blocks when they do not.</li>
+                    </ul>
+                    <p>With <codeph>inline</codeph> and <codeph>compact</codeph>, add a margin after each footnote to separate it from the next one:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">fn {
+    float: footnote;
+    footnote-display: compact;
+    margin-inline-end: 1em;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="choose-where-a-footnote-breaks">
+                <cmd>Choose what happens when a footnote does not fit</cmd>
+                <info>
+                    <p>The <codeph>footnote-policy</codeph> property sets what CSSMedia does when the body of a footnote does not fit on the page of its call:</p>
+                    <ul>
+                        <li><codeph>auto</codeph> starts the footnote on the page of its call and continues it on the next pages. This is the initial value.</li>
+                        <li><codeph>line</codeph> moves the line that has the call to the next page, together with the footnote. Widows and orphans are respected, so more than one line can move.</li>
+                        <li><codeph>block</codeph> moves the whole paragraph that has the call to the next page, together with the footnote.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">fn {
+    float: footnote;
+    footnote-policy: line;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

@@ -6,9 +6,7 @@
     <conbody>
         <section id="comparing-selector-specificity">
             <title>Comparing selector specificity</title>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-4/#specificity-rules" scope="external" format="html">Selectors 4 §15, Calculating a selector’s specificity</xref>.</p>
-            <p>Selectors contribute specificity according to their parts. An ID selector contributes more than an attribute selector or pseudo-class. Those contribute more than an element name or pseudo-element.</p>
+            <p>Each part of a selector adds to its specificity, as <xref href="https://www.w3.org/TR/selectors-4/#specificity-rules" scope="external" format="html">Selectors Level 4</xref> defines. An ID selector counts more than an attribute selector or a pseudo-class. Those count more than an element name or a pseudo-element.</p>
             <pre outputclass="language-css21">chapter { color: gray; }
 [role="notice"] { color: teal; }
 #important-notice { color: navy; }
@@ -16,7 +14,7 @@
             <p>If all other cascade priorities are equal, the ID rule wins over the attribute rule, and the attribute rule wins over the element-name rule. If competing rules have the same specificity, source order decides and the later declaration wins.</p>
             <p>
                 <codeph>:where()</codeph> contributes no specificity. For <codeph>:is()</codeph>, <codeph>:not()</codeph> and <codeph>:has()</codeph>, specificity is based on the most specific selector in the argument. The <codeph>&amp;</codeph> nesting selector contributes specificity according to the parent selector list.</p>
-            <p>CSSMedia accepts class-selector syntax such as <codeph>.warning</codeph>, but does not use it to test an <xref href="../glossaries/XML.dita">XML</xref> attribute. When your XML stores space-separated class names in an unnamespaced <codeph>class</codeph> attribute, use <codeph>[class~="warning"]</codeph> instead. This is an attribute selector, so its specificity is that of an attribute selector. See <xref href="basic-selectors.dita#basic-selectors/ids-and-classes">Basic selectors and namespaces</xref>.</p>
+            <p>An attribute selector such as <codeph>[class~="warning"]</codeph> has the specificity of an attribute selector. See <xref href="basic-selectors.dita#basic-selectors/ids-and-classes">Basic selectors and namespaces</xref> for how to select a <codeph>class</codeph> attribute in <xref href="../glossaries/XML.dita">XML</xref>.</p>
         </section>
     </conbody>
 </concept>

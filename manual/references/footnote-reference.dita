@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="footnote-reference">
+    <title>Footnotes</title>
+    <shortdesc>This reference lists the properties, the rule, the counter and the pseudo-elements that CSSMedia uses for footnotes.</shortdesc>
+    <refbody>
+        <section id="footnote-properties">
+            <title>Properties, rule and counter</title>
+            <table id="footnote-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-display/row-float"/>
+                        <row conkeyref="ref-content/row-footnote-display"/>
+                        <row conkeyref="ref-content/row-footnote-policy"/>
+                        <row conkeyref="ref-content/row-footnote-counter"/>
+                        <row conkeyref="ref-page/row-footnote"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="footnote-pseudo-elements">
+            <title>Pseudo-elements</title>
+            <table id="footnote-pseudo-elements__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <tbody>
+                        <row conkeyref="ref-selectors/row-footnote-call"/>
+                        <row conkeyref="ref-selectors/row-footnote-marker"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE map PUBLIC "-//OASIS//DTD DITA Map//EN" "map.dtd">
+<map processing-role="resource-only">
+    <title translate="no">CSSMedia keys</title>
+    <keydef keys="ref-headers" href="references/table-headers.dita"/>
+    <keydef keys="ref-footnotes" href="references/footnote-reference.dita"/>
+    <keydef keys="ref-links" href="references/link-reference.dita"/>
+    <keydef keys="ref-named-strings" href="references/named-strings-reference.dita"/>
+    <keydef keys="ref-selectors" href="references/selector-reference.dita"/>
+    <keydef keys="ref-fonts" href="references/font-reference.dita"/>
+    <keydef keys="ref-box-model" href="references/box-model-properties.dita"/>
+    <keydef keys="ref-dimensions" href="references/dimension-properties.dita"/>
+    <keydef keys="ref-backgrounds" href="references/background-reference.dita"/>
+    <keydef keys="ref-display" href="references/display-and-positioning.dita"/>
+    <keydef keys="ref-page" href="references/page-reference.dita"/>
+    <keydef keys="ref-content" href="references/content-reference.dita"/>
+    <keydef keys="ref-cascade" href="references/cascade-reference.dita"/>
+</map>

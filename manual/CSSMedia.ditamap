@@ -11,14 +11,13 @@
         </booktitlealt>
     </booktitle>
     <frontmatter>
+        <mapref href="keys.ditamap" processing-role="resource-only"/>
         <booklists>
             <toc/>
         </booklists>
     </frontmatter>
 
-    <chapter href="concepts/features.dita">
-        <topicref href="concepts/features.dita"/>
-    </chapter>
+    <chapter href="concepts/features.dita"/>n
 
     <chapter href="concepts/intro-get-started.dita">
         <topicref href="tasks/install-cssmedia.dita"/>
@@ -34,9 +33,12 @@
         <topicref href="concepts/pseudo-classes.dita"/>
         <topicref href="concepts/pseudo-elements.dita"/>
         <topicref href="concepts/specificity.dita"/>
+        <topicref href="references/selector-chapter-reference.dita"/>
     </chapter>
 
-    <chapter href="tasks/page-setup.dita"/>
+    <chapter href="tasks/page-setup.dita">
+        <topicref href="references/page-setup-chapter-reference.dita"/>
+    </chapter>
 
     <chapter>
         <topicmeta>
@@ -45,13 +47,21 @@
         <!-- TODO: placeholder, write this chapter -->
     </chapter>
 
-    <chapter href="tasks/named-strings.dita"/>
+    <chapter href="tasks/named-strings.dita">
+        <topicref href="references/named-strings-chapter-reference.dita"/>
+    </chapter>
 
-    <chapter href="tasks/links.dita"/>
+    <chapter href="tasks/links.dita">
+        <topicref href="references/link-chapter-reference.dita"/>
+    </chapter>
+
+    <chapter href="tasks/footnotes.dita">
+        <topicref href="references/footnote-chapter-reference.dita"/>
+    </chapter>
 
     <chapter>
         <topicmeta>
-            <navtitle>Footnotes</navtitle>
+            <navtitle>Table of contents</navtitle>
         </topicmeta>
         <!-- TODO: placeholder, write this chapter -->
     </chapter>
@@ -139,6 +149,9 @@
         <topicref href="references/display-and-positioning.dita"/>
         <topicref href="references/page-reference.dita"/>
         <topicref href="references/content-reference.dita"/>
+        <topicref href="references/footnote-reference.dita"/>
+        <topicref href="references/link-reference.dita"/>
+        <topicref href="references/named-strings-reference.dita"/>
         <topicref href="references/cascade-reference.dita"/>
     </chapter>
 
@@ -150,6 +163,7 @@
                 <topicref href="glossaries/CSS.dita" type="glossentry"/>
                 <topicref href="glossaries/DTD.dita" type="glossentry"/>
                 <topicref href="glossaries/MathML.dita" type="glossentry"/>
+                <topicref href="glossaries/XMLNamespace.dita" type="glossentry"/>
                 <topicref href="glossaries/OASISCatalog.dita" type="glossentry"/>
                 <topicref href="glossaries/PDF.dita" type="glossentry"/>
                 <topicref href="glossaries/RelaxNG.dita" type="glossentry"/>

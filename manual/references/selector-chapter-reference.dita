@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="selector-chapter-reference">
+    <title>Selector reference</title>
+    <shortdesc>These tables list every selector that CSSMedia accepts. The <codeph>In a PDF</codeph> column says whether the selector matches elements while CSSMedia generates a <xref href="../glossaries/PDF.dita">PDF</xref>.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-selectors/selector-reference-basic"/>
+        <section conkeyref="ref-selectors/selector-reference-combinators"/>
+        <section conkeyref="ref-selectors/selector-reference-pseudo-classes"/>
+        <section conkeyref="ref-selectors/selector-reference-pseudo-elements"/>
+    </refbody>
+</reference>

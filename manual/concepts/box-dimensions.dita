@@ -6,7 +6,8 @@
     <conbody>
         <p>For the meaning of CSS boxes and the length units used below, see <xref href="box-sizing-and-spacing.dita#box-sizing-and-spacing">Box sizing, margins and padding</xref>.</p>
         <p>These properties also accept the CSS-wide keywords. See <xref href="inheritance-and-defaults.dita#inheritance-and-defaults">Inheritance and default values</xref>.</p>
-        <p>CSSMedia parses these declarations and computes their style values, but it does not lay out element boxes or generate a <xref href="../glossaries/PDF.dita">PDF</xref>. The properties therefore do not affect PDF output. The <codeph>Default</codeph> cells below and in the <xref href="../references/dimension-properties.dita#dimension-properties">dimension property reference</xref> are left blank because there is no PDF output. The <codeph>Values</codeph> entries describe CSS syntax. <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor-size" scope="external" format="html">CSS Anchor Positioning</xref> defines <codeph>anchor-size()</codeph> for physical sizing properties, not their logical counterparts.</p>
+        <!-- TODO: fill the Default cells here and in the dimension property reference, and describe how each property affects layout in the PDF -->
+        <p>The <codeph>Values</codeph> entries describe CSS syntax. <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor-size" scope="external" format="html">CSS Anchor Positioning</xref> defines <codeph>anchor-size()</codeph> for physical sizing properties, not their logical counterparts.</p>
         <section id="preferred-sizes">
             <title>Preferred sizes</title>
             <p>

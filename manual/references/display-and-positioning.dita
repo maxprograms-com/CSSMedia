@@ -145,6 +145,20 @@
                             <xref href="https://www.w3.org/TR/CSS2/visuren.html#propdef-z-index" scope="external" format="html">CSS 2 §9.9</xref>
                         </entry>
                     </row>
+                    <row id="row-float" valign="middle">
+                        <entry>
+                            <codeph>float</codeph>
+                        </entry>
+                        <entry>Takes a box out of the normal flow and places it at the side, at the top or at the bottom of its container. The value <codeph>footnote</codeph> makes the element a footnote.</entry>
+                        <entry>
+                            <codeph>none</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, <codeph>top</codeph>, <codeph>bottom</codeph>, <codeph>block-start</codeph>, <codeph>block-end</codeph>, <codeph>inline-start</codeph>, <codeph>inline-end</codeph>, <codeph>snap-block</codeph>, <codeph>snap-inline</codeph> or <codeph>footnote</codeph></entry>
+                        <entry>
+                            <codeph>none</codeph>
+                        </entry>
+                        <entry>
+                            <xref href="https://www.w3.org/TR/css-page-floats-3/#propdef-float" scope="external" format="html">CSS Page Floats 3 §3.2</xref>
+                        </entry>
+                    </row>
                 </tbody>
             </tgroup>
         </table>

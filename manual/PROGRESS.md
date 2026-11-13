@@ -1,6 +1,6 @@
 # Manual documentation progress
 
-Each property, at-rule, and descriptor in [CssDefinitions.ts](../ts/css/generated/CssDefinitions.ts) and each CSSMedia property in [PropertyTable.ts](../ts/css/PropertyTable.ts) has its own line. Descriptors are written as `@rule / name`. Headings group lines for reading only; a status belongs to one line and is never inherited.
+Each selector that [SelectorCompiler.ts](../ts/css/SelectorCompiler.ts) accepts, and each property, at-rule, and descriptor in [CssDefinitions.ts](../ts/css/generated/CssDefinitions.ts) and each CSSMedia property in [PropertyTable.ts](../ts/css/PropertyTable.ts) has its own line. Descriptors are written as `@rule / name`. Headings group lines for reading only; a status belongs to one line and is never inherited.
 
 An item is documented when a table row in a DITA topic of the manual ([CSSMedia.ditamap](CSSMedia.ditamap)) names it and defines it in another column or links to its specification. A name that only appears in an example or in passing is not documented.
 
@@ -8,7 +8,9 @@ An item is documented when a table row in a DITA topic of the manual ([CSSMedia.
 - `[~]` This item is documented, but at least one of those checks has not been done for this item alone, or it found that the code does not do what the topic says.
 - `[ ]` This item is not documented.
 
-The inventory has 784 properties, 40 at-rules, and 104 descriptors.
+The inventory has 113 selectors, 784 properties, 41 at-rules, and 104 descriptors.
+
+The inventory follows the code. When a selector, property, at-rule, or descriptor is added to or removed from the code, its line is added to or removed from this file.
 
 ## At-rules
 
@@ -26,6 +28,7 @@ The inventory has 784 properties, 40 at-rules, and 104 descriptors.
 - [x] @font-face
 - [~] @font-feature-values
 - [~] @font-palette-values
+- [x] @footnote
 - [x] @function
 - [x] @import
 - [ ] @keyframes
@@ -194,6 +197,135 @@ The inventory has 784 properties, 40 at-rules, and 104 descriptors.
 ### @viewport
 
 - [ ] @viewport / viewport-fit
+
+## Selectors
+
+Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompiler.ts](../ts/css/SelectorCompiler.ts) accepts has its own line. They are documented in the [selector reference](references/selector-reference.dita). For a selector, the checks are its grammar acceptance in the compiler and its matching in [SelectorMatcher.ts](../ts/pdf/SelectorMatcher.ts).
+
+### Basic selectors
+
+- [x] E
+- [x] *
+- [x] #id
+- [x] .name
+- [x] [attr]
+- [x] [attr=value]
+- [x] [attr~=value]
+- [x] [attr|=value]
+- [x] [attr^=value]
+- [x] [attr$=value]
+- [x] [attr*=value]
+- [x] ns|E
+- [x] &
+
+### Combinators
+
+- [x] A B
+- [x] A > B
+- [x] A + B
+- [x] A ~ B
+- [x] A || B
+- [x] A /attr/ B
+
+### Pseudo-classes
+
+- [x] :root
+- [x] :empty
+- [x] :scope
+- [x] :first-child
+- [x] :last-child
+- [x] :only-child
+- [x] :first-of-type
+- [x] :last-of-type
+- [x] :only-of-type
+- [x] :nth-child()
+- [x] :nth-last-child()
+- [x] :nth-of-type()
+- [x] :nth-last-of-type()
+- [x] :nth-col()
+- [x] :nth-last-col()
+- [x] :is()
+- [x] :matches()
+- [x] :where()
+- [x] :not()
+- [x] :has()
+- [x] :lang()
+- [x] :dir()
+- [x] :link
+- [x] :any-link
+- [x] :local-link
+- [x] :read-only
+- [x] :defined
+- [x] :hover
+- [x] :active
+- [x] :focus
+- [x] :focus-visible
+- [x] :focus-within
+- [x] :interest-source
+- [x] :interest-target
+- [x] :visited
+- [x] :target
+- [x] :playing
+- [x] :paused
+- [x] :seeking
+- [x] :buffering
+- [x] :stalled
+- [x] :muted
+- [x] :volume-locked
+- [x] :current
+- [x] :current()
+- [x] :past
+- [x] :future
+- [x] :open
+- [x] :popover-open
+- [x] :modal
+- [x] :fullscreen
+- [x] :picture-in-picture
+- [x] :enabled
+- [x] :disabled
+- [x] :read-write
+- [x] :placeholder-shown
+- [x] :autofill
+- [x] :default
+- [x] :checked
+- [x] :unchecked
+- [x] :indeterminate
+- [x] :blank
+- [x] :valid
+- [x] :invalid
+- [x] :in-range
+- [x] :out-of-range
+- [x] :required
+- [x] :optional
+- [x] :user-valid
+- [x] :user-invalid
+- [x] :state()
+- [x] :heading
+- [x] :heading()
+
+### Pseudo-elements
+
+- [x] ::before
+- [x] ::after
+- [x] ::marker
+- [x] ::before::marker
+- [x] ::after::marker
+- [x] ::first-line
+- [x] ::first-letter
+- [x] ::first-letter::prefix
+- [x] ::first-letter::suffix
+- [x] ::footnote-call
+- [x] ::footnote-marker
+- [x] ::selection
+- [x] ::search-text
+- [x] ::target-text
+- [x] ::spelling-error
+- [x] ::grammar-error
+- [x] ::highlight()
+- [x] ::placeholder
+- [x] ::file-selector-button
+- [x] ::details-content
+- [x] ::backdrop
 
 ## Properties
 
@@ -704,8 +836,8 @@ The inventory has 784 properties, 40 at-rules, and 104 descriptors.
 
 ### CSS Generated Content for Paged Media 3 (css-gcpm-3)
 
-- [~] footnote-display
-- [~] footnote-policy
+- [x] footnote-display
+- [x] footnote-policy
 
 ### CSS Paged Media 3 (css-page-3)
 
@@ -1008,7 +1140,7 @@ The inventory has 784 properties, 40 at-rules, and 104 descriptors.
 ### CSS Page Floats 3 (css-page-floats-3)
 
 - [ ] clear
-- [ ] float
+- [~] float
 - [ ] float-defer
 - [ ] float-offset
 - [ ] float-reference
@@ -1225,7 +1357,7 @@ The inventory has 784 properties, 40 at-rules, and 104 descriptors.
 - [ ] -cssmedia-toc-leader
 - [ ] -cssmedia-toc-title
 - [ ] -cssmedia-toc()
-- [ ] -cssmedia-link-counter()
+- [~] -cssmedia-link-counter()
 - [ ] @-cssmedia-toc-title
 - [ ] @-cssmedia-toc-entry
 - [ ] @-cssmedia-toc-divider

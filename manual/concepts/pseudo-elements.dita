@@ -2,51 +2,33 @@
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
 <concept id="pseudo-elements">
     <title>Pseudo-elements</title>
-    <shortdesc>A pseudo-element starts with <codeph>::</codeph> and targets a special part or state associated with an element. It appears after the element selector:</shortdesc>
+    <shortdesc>A pseudo-element starts with <codeph>::</codeph> and selects a part of an element or a piece of generated content. It follows the element selector.</shortdesc>
     <conbody>
         <pre outputclass="language-css21">paragraph::first-letter { color: navy; }
 paragraph::before { content: "Note: "; }
 </pre>
+        <p>The <xref href="../references/selector-reference.dita#selector-reference/selector-reference-pseudo-elements">selector reference</xref> lists every pseudo-element that CSSMedia accepts.</p>
         <section id="text-parts">
             <title>Text parts</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-pseudo-4/#typographic-pseudos" scope="external" format="html">CSS Pseudo-Elements 4 §2, Typographic Pseudo-elements</xref>.</p>
-            <p>
-                <codeph>::first-line</codeph> selects the first formatted line of text. <codeph>::first-letter</codeph> selects the first typographic letter or punctuation group.</p>
+            <p><codeph>::first-line</codeph> selects the first formatted line of a block. <codeph>::first-letter</codeph> selects its first letter, together with the punctuation around it. <codeph>::first-letter::prefix</codeph> and <codeph>::first-letter::suffix</codeph> select that punctuation.</p>
             <pre outputclass="language-css21">paragraph::first-line { font-weight: bold; }
 paragraph::first-letter { font-size: 150%; }
 </pre>
-            <p>Use these selectors to style the first formatted line or typographic letter of an element.</p>
         </section>
         <section id="generated-content-markers-and-footnotes">
             <title>Generated content, markers and footnotes</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-pseudo-4/#treelike" scope="external" format="html">CSS Pseudo-Elements 4 §4, Tree-Abiding Pseudo-elements</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#setting-named-strings-the-string-set-pro" scope="external" format="html">CSS GCPM 3 §1.1.1, The string-set property</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#content-function-header" scope="external" format="html">CSS GCPM 3 §1.1.1.1, The content() function</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#using-named-strings" scope="external" format="html">CSS GCPM 3 §1.1.2, The string() function</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#footnote-call" scope="external" format="html">CSS GCPM 3 §2.6, The footnote-call pseudo-element</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#footnote-marker" scope="external" format="html">CSS GCPM 3 §2.7, The footnote-marker pseudo-element</xref>.</p>
-            <p>
-                <codeph>::before</codeph> and <codeph>::after</codeph> identify generated-content positions before or after an element’s content. The <codeph>content</codeph> property supplies their content. <codeph>::marker</codeph> targets a list marker. The footnote pseudo-elements identify a footnote call and marker.</p>
+            <p><codeph>::before</codeph> and <codeph>::after</codeph> are positions before and after the content of an element. They exist only when the <codeph>content</codeph> property gives them something to show.</p>
             <pre outputclass="language-css21">paragraph::before { content: "Note: "; }
 item::marker { color: navy; }
 </pre>
-            <p>Paged <xref href="../glossaries/CSS.dita">CSS</xref> also defines <codeph>string-set</codeph> to copy an element’s text into a named string for reuse, for example in a page margin box. See <xref href="../tasks/named-strings.dita#named-strings">Named strings</xref> for how to use <codeph>string-set</codeph> and <codeph>string()</codeph>.</p>
-            <p>The <codeph>content</codeph> property specifies what <codeph>::before</codeph> and <codeph>::after</codeph> contain. A selector alone does not add text. The list marker’s content can come from <codeph>content</codeph> or the list-marker properties. Footnote pseudo-elements mark the call and marker parts of a footnote.</p>
+            <p><codeph>::marker</codeph> selects the marker of a list item. <codeph>::before::marker</codeph> and <codeph>::after::marker</codeph> select the marker of generated content that is a list item.</p>
+            <p><codeph>::footnote-call</codeph> and <codeph>::footnote-marker</codeph> select the reference that replaces a footnote in the text and the marker at the start of the footnote.</p>
+            <!-- TODO: link to the Footnotes chapter when it is written -->
+            <p>To copy the text of an element into a page margin box, use <codeph>string-set</codeph>. See <xref href="../tasks/named-strings.dita#named-strings">Named strings</xref>.</p>
         </section>
-        <section id="highlight-pseudo-elements">
-            <title>Highlight pseudo-elements</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-pseudo-4/#highlight-selectors" scope="external" format="html">CSS Pseudo-Elements 4 §3.1, Selecting Highlighted Content</xref>.</p>
-            <p>
-                <codeph>::selection</codeph> identifies text selected by the user. <codeph>::search-text</codeph> identifies text found by a search. <codeph>::target-text</codeph> identifies text targeted by a document link. <codeph>::spelling-error</codeph> and <codeph>::grammar-error</codeph> identify ranges marked by spelling and grammar checking. <codeph>::highlight(name)</codeph> selects a named text range registered through the Custom Highlight API.</p>
-            <p>These ranges are defined by selection, search, navigation, spelling and grammar checking, or script-provided highlights. They are not ordinary <xref href="../glossaries/XML.dita">XML</xref> elements.</p>
-        </section>
-        <section id="element-backed-pseudo-elements">
-            <title>Element-backed pseudo-elements</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-pseudo-4/#treelike" scope="external" format="html">CSS Pseudo-Elements 4 §4, Tree-Abiding Pseudo-elements</xref>; <xref href="https://www.w3.org/TR/css-pseudo-4/#element-like" scope="external" format="html">CSS Pseudo-Elements 4 §5, Element-backed Pseudo-Elements</xref>; <xref href="https://www.w3.org/TR/css-position-4/#backdrop" scope="external" format="html">CSS Position 4 §3.2, The ::backdrop Pseudo-Element</xref>.</p>
-            <p>
-                <codeph>::placeholder</codeph> targets placeholder text in a control. <codeph>::file-selector-button</codeph> targets a file-upload control’s button. <codeph>::details-content</codeph> targets the expandable content of a disclosure control. <codeph>::backdrop</codeph> targets the backdrop behind an element presented in the top layer.</p>
-            <p>These pseudo-elements refer to parts of controls or elements defined by the document language. Their meaning depends on the host language’s control and presentation behavior.</p>
-            <p>CSSMedia also accepts <codeph>::before::marker</codeph>, <codeph>::after::marker</codeph>, <codeph>::first-letter::prefix</codeph> and <codeph>::first-letter::suffix</codeph>. These select marker content associated with generated <codeph>::before</codeph> or <codeph>::after</codeph> content, and punctuation around a <codeph>::first-letter</codeph> part. A supported state pseudo-class can follow a pseudo-element, but interaction states such as <codeph>:hover</codeph> do not match.</p>
+        <section id="pseudo-elements-without-a-target">
+            <title>Pseudo-elements without a target in a PDF</title>
+            <p>Some pseudo-elements select ranges or widgets that exist only on screen. <codeph>::selection</codeph>, <codeph>::search-text</codeph>, <codeph>::target-text</codeph>, <codeph>::spelling-error</codeph>, <codeph>::grammar-error</codeph> and <codeph>::highlight()</codeph> select highlighted text. <codeph>::placeholder</codeph>, <codeph>::file-selector-button</codeph>, <codeph>::details-content</codeph> and <codeph>::backdrop</codeph> select parts of form controls and interactive elements. CSSMedia accepts them, but an XML document has nothing for them to select.</p>
         </section>
     </conbody>
 </concept>
-

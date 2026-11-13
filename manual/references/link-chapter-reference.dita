@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="link-chapter-reference">
+    <title>Link reference</title>
+    <shortdesc>This reference lists the property, the function and the pseudo-classes that CSSMedia uses for links.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-links/link-properties"/>
+        <section conkeyref="ref-links/link-pseudo-classes"/>
+    </refbody>
+</reference>

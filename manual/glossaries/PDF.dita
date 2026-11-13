@@ -2,7 +2,9 @@
 <!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
 <glossentry id="PDF">
     <glossterm>PDF</glossterm>
-    <glossdef>Portable Document Format (PDF) is the file format, standardized as ISO 32000, for
+    <glossdef>Portable Document Format (PDF) is the file format, standardized as <xref
+            href="https://www.iso.org/standard/75839.html" format="html" scope="external">ISO
+            32000</xref>, for
         documents that look the same on any device. A PDF holds pages with text, fonts, images and
         vector graphics at fixed positions, and may also hold links and bookmarks. CSSMedia writes
         a PDF file from an XML file and a CSS file.</glossdef>

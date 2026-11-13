@@ -2,29 +2,436 @@
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="selector-reference">
     <title>Selector reference</title>
-    <shortdesc>This table will list the selectors and rules covered in this chapter.</shortdesc>
+    <shortdesc>These tables list every selector that CSSMedia accepts. The <codeph>In a PDF</codeph> column says whether the selector matches elements while CSSMedia generates a <xref href="../glossaries/PDF.dita">PDF</xref>.</shortdesc>
     <refbody>
-        <table id="selector-reference__I_t_">
-            <tgroup cols="5">
-                <thead>
-                    <row valign="middle">
-                        <entry align="center">Name</entry>
-                        <entry align="center">Description</entry>
-                        <entry align="center">Values</entry>
-                        <entry align="center">Default</entry>
-                        <entry align="center">Specification</entry>
-                    </row>
-                </thead>
-                <tbody>
-                    <row>
-                        <entry/>
-                        <entry/>
-                        <entry/>
-                        <entry/>
-                        <entry/>
-                    </row>
-                </tbody>
-            </tgroup>
-        </table>
+        <section id="selector-reference-basic">
+            <title>Basic selectors</title>
+            <p>Basic selectors match an element by its name, ID or attributes. See <xref href="../concepts/basic-selectors.dita#basic-selectors">Basic selectors and namespaces</xref>.</p>
+            <table id="selector-reference-basic__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <tbody>
+                        <row valign="middle">
+                            <entry><codeph>E</codeph></entry>
+                            <entry>Type selector. Matches elements named <codeph>E</codeph>.</entry>
+                            <entry>An element name.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#type-selectors" scope="external" format="html">Selectors 4 §5.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>*</codeph></entry>
+                            <entry>Universal selector. Matches any element.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#universal-selector" scope="external" format="html">Selectors 4 §5.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>#id</codeph></entry>
+                            <entry>ID selector. Matches the element whose <codeph>id</codeph> or <codeph>xml:id</codeph> attribute has this value.</entry>
+                            <entry>An identifier.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#id-selectors" scope="external" format="html">Selectors 4 §6.7</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>.name</codeph></entry>
+                            <entry>Class selector. Matches inside <xref href="../glossaries/SVG.dita">SVG</xref> and <xref href="../glossaries/MathML.dita">MathML</xref> content, which define a <codeph>class</codeph> attribute.</entry>
+                            <entry>An identifier.</entry>
+                            <entry>Matches in SVG and MathML only</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#class-html" scope="external" format="html">Selectors 4 §6.6</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>[attr]</codeph></entry>
+                            <entry>Matches elements that have the attribute.</entry>
+                            <entry>An attribute name, with an optional namespace prefix.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#attribute-selectors" scope="external" format="html">Selectors 4 §6</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>[attr=value]</codeph></entry>
+                            <entry>Matches when the attribute value is exactly <codeph>value</codeph>.</entry>
+                            <entry>A string or an identifier. Add <codeph>i</codeph> to ignore ASCII case or <codeph>s</codeph> to require it.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#attribute-representation" scope="external" format="html">Selectors 4 §6.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>[attr~=value]</codeph></entry>
+                            <entry>Matches when the value is one of the white-space separated words of the attribute.</entry>
+                            <entry>A word without white space.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#attribute-representation" scope="external" format="html">Selectors 4 §6.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>[attr|=value]</codeph></entry>
+                            <entry>Matches when the attribute is <codeph>value</codeph> or starts with <codeph>value-</codeph>.</entry>
+                            <entry>A string or an identifier.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#attribute-representation" scope="external" format="html">Selectors 4 §6.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>[attr^=value]</codeph></entry>
+                            <entry>Matches when the attribute starts with <codeph>value</codeph>.</entry>
+                            <entry>A non-empty string.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#attribute-substrings" scope="external" format="html">Selectors 4 §6.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>[attr$=value]</codeph></entry>
+                            <entry>Matches when the attribute ends with <codeph>value</codeph>.</entry>
+                            <entry>A non-empty string.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#attribute-substrings" scope="external" format="html">Selectors 4 §6.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>[attr*=value]</codeph></entry>
+                            <entry>Matches when the attribute contains <codeph>value</codeph>.</entry>
+                            <entry>A non-empty string.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#attribute-substrings" scope="external" format="html">Selectors 4 §6.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>ns|E</codeph>, <codeph>*|E</codeph>, <codeph>|E</codeph></entry>
+                            <entry>Limits a type selector to a declared <xref href="../glossaries/XMLNamespace.dita">namespace</xref>, to any namespace, or to no namespace. The same prefixes work in attribute selectors.</entry>
+                            <entry>A prefix declared with <codeph>@namespace</codeph>.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#type-selectors" scope="external" format="html">Selectors 4 §5.3</xref>, <xref href="https://www.w3.org/TR/css-namespaces-3/#declaration" scope="external" format="html">CSS Namespaces 3 §3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>&amp;</codeph></entry>
+                            <entry>Nesting selector. Stands for the selector of the parent rule.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-nesting-1/#nest-selector" scope="external" format="html">CSS Nesting 1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="selector-reference-combinators">
+            <title>Combinators</title>
+            <p>A combinator relates two selectors. See <xref href="../concepts/combinators.dita#combinators">Combinators</xref>.</p>
+            <table id="selector-reference-combinators__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <tbody>
+                        <row valign="middle">
+                            <entry><codeph>A B</codeph></entry>
+                            <entry>Descendant combinator. Matches <codeph>B</codeph> inside <codeph>A</codeph> at any depth.</entry>
+                            <entry>Two selectors separated by white space.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#descendant-combinators" scope="external" format="html">Selectors 4 §14.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>A &gt; B</codeph></entry>
+                            <entry>Child combinator. Matches <codeph>B</codeph> when its parent is <codeph>A</codeph>.</entry>
+                            <entry>Two selectors.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#child-combinators" scope="external" format="html">Selectors 4 §14.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>A + B</codeph></entry>
+                            <entry>Next-sibling combinator. Matches <codeph>B</codeph> when it directly follows <codeph>A</codeph>.</entry>
+                            <entry>Two selectors.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#adjacent-sibling-combinators" scope="external" format="html">Selectors 4 §14.3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>A ~ B</codeph></entry>
+                            <entry>Subsequent-sibling combinator. Matches <codeph>B</codeph> when <codeph>A</codeph> is an earlier sibling.</entry>
+                            <entry>Two selectors.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#general-sibling-combinators" scope="external" format="html">Selectors 4 §14.4</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>A || B</codeph></entry>
+                            <entry>Column combinator. Matches the cells <codeph>B</codeph> of the column that <codeph>A</codeph> describes.</entry>
+                            <entry>Two selectors.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#the-column-combinator" scope="external" format="html">Selectors 5 §8.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>A /attr/ B</codeph></entry>
+                            <entry>Reference combinator. Matches <codeph>B</codeph> when the attribute <codeph>attr</codeph> of <codeph>A</codeph> refers to its ID.</entry>
+                            <entry>Two selectors and an attribute name between slashes.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#idref-combinators" scope="external" format="html">Selectors 5 §9.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="selector-reference-pseudo-classes">
+            <title>Pseudo-classes</title>
+            <p>A pseudo-class tests a property of an element other than its name and attributes. See <xref href="../concepts/pseudo-classes.dita#pseudo-classes">Pseudo-classes</xref>.</p>
+            <table id="selector-reference-pseudo-classes__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <tbody>
+                        <row valign="middle">
+                            <entry><codeph>:root</codeph></entry>
+                            <entry>The root element of the document.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#the-root-pseudo" scope="external" format="html">Selectors 4 §13.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:empty</codeph></entry>
+                            <entry>An element with no child elements and no text other than white space.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#the-empty-pseudo" scope="external" format="html">Selectors 4 §13.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:scope</codeph></entry>
+                            <entry>The scoping element. Without another scope, the root element.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#the-scope-pseudo" scope="external" format="html">Selectors 4 §8.4</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:first-child</codeph>, <codeph>:last-child</codeph>, <codeph>:only-child</codeph></entry>
+                            <entry>The first, last or only element among its siblings.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#child-index" scope="external" format="html">Selectors 4 §13.3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:first-of-type</codeph>, <codeph>:last-of-type</codeph>, <codeph>:only-of-type</codeph></entry>
+                            <entry>The first, last or only element of its type among its siblings.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#typed-child-index" scope="external" format="html">Selectors 4 §13.4</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:nth-child()</codeph>, <codeph>:nth-last-child()</codeph></entry>
+                            <entry>Elements at a position among their siblings, counted from the start or from the end.</entry>
+                            <entry><codeph>odd</codeph>, <codeph>even</codeph> or <codeph>An+B</codeph>, optionally followed by <codeph>of</codeph> and a selector list.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#child-index" scope="external" format="html">Selectors 4 §13.3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:nth-of-type()</codeph>, <codeph>:nth-last-of-type()</codeph></entry>
+                            <entry>Elements at a position among the siblings of the same type.</entry>
+                            <entry><codeph>odd</codeph>, <codeph>even</codeph> or <codeph>An+B</codeph>.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#typed-child-index" scope="external" format="html">Selectors 4 §13.4</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:nth-col()</codeph>, <codeph>:nth-last-col()</codeph></entry>
+                            <entry>Table cells at a position among the columns of their table.</entry>
+                            <entry><codeph>odd</codeph>, <codeph>even</codeph> or <codeph>An+B</codeph>.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#the-nth-col-pseudo" scope="external" format="html">Selectors 5 §8.2</xref>, <xref href="https://www.w3.org/TR/selectors-5/#the-nth-last-col-pseudo" scope="external" format="html">§8.3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:is()</codeph>, <codeph>:matches()</codeph></entry>
+                            <entry>An element that matches any selector of the list. <codeph>:matches()</codeph> is the old name of <codeph>:is()</codeph>.</entry>
+                            <entry>A selector list. Invalid selectors are ignored.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#matches" scope="external" format="html">Selectors 4 §4.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:where()</codeph></entry>
+                            <entry>Works as <codeph>:is()</codeph> and adds no specificity.</entry>
+                            <entry>A selector list. Invalid selectors are ignored.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#zero-matches" scope="external" format="html">Selectors 4 §4.4</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:not()</codeph></entry>
+                            <entry>An element that matches none of the selectors of the list.</entry>
+                            <entry>A selector list. An invalid selector makes the whole selector invalid.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#negation" scope="external" format="html">Selectors 4 §4.3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:has()</codeph></entry>
+                            <entry>An element that has a related element matching the selector.</entry>
+                            <entry>A relative selector list, such as <codeph>&gt; figure</codeph>. It cannot contain another <codeph>:has()</codeph> or a pseudo-element.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#relational" scope="external" format="html">Selectors 4 §4.5</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:lang()</codeph></entry>
+                            <entry>Elements in a language. The language comes from <codeph>xml:lang</codeph> or the <codeph>-cssmedia-lang</codeph> property.</entry>
+                            <entry>One or more language ranges, as identifiers or strings.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#the-lang-pseudo" scope="external" format="html">Selectors 4 §7.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:dir()</codeph></entry>
+                            <entry>Elements by text direction, read from the text and the language, not from the <codeph>direction</codeph> property.</entry>
+                            <entry><codeph>ltr</codeph> or <codeph>rtl</codeph>.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#the-dir-pseudo" scope="external" format="html">Selectors 4 §7.1</xref></entry>
+                        </row>
+                        <row id="row-link" valign="middle">
+                            <entry><codeph>:link</codeph>, <codeph>:any-link</codeph></entry>
+                            <entry>Elements that are hyperlinks, because <codeph>-cssmedia-link</codeph> gives them a destination.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#the-any-link-pseudo" scope="external" format="html">Selectors 4 §8.1</xref>, <xref href="https://www.w3.org/TR/selectors-4/#visited-pseudo" scope="external" format="html">§8.2</xref></entry>
+                        </row>
+                        <row id="row-local-link" valign="middle">
+                            <entry><codeph>:local-link</codeph></entry>
+                            <entry>Hyperlinks that point to the same document. The optional number limits how many path segments are compared.</entry>
+                            <entry>An optional non-negative integer in parentheses.</entry>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#local-pseudo" scope="external" format="html">Selectors 5 §2.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:read-only</codeph>, <codeph>:defined</codeph></entry>
+                            <entry>Every element is read-only and defined, because an XML element has no editable or undefined state.</entry>
+                            <entry/>
+                            <entry>Always matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#rw-pseudos" scope="external" format="html">Selectors 4 §12.1.2</xref>, <xref href="https://www.w3.org/TR/selectors-4/#the-defined-pseudo" scope="external" format="html">§5.4</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:hover</codeph>, <codeph>:active</codeph>, <codeph>:focus</codeph>, <codeph>:focus-visible</codeph>, <codeph>:focus-within</codeph></entry>
+                            <entry>User action states, such as pointing at an element or giving it keyboard focus.</entry>
+                            <entry/>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#useraction-pseudos" scope="external" format="html">Selectors 4 §9</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:interest-source</codeph>, <codeph>:interest-target</codeph></entry>
+                            <entry>Source and target of a user's declared interest.</entry>
+                            <entry/>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#interest-pseudos" scope="external" format="html">Selectors 5 §3.1</xref></entry>
+                        </row>
+                        <row id="row-visited" valign="middle">
+                            <entry><codeph>:visited</codeph>, <codeph>:target</codeph></entry>
+                            <entry>Links that were visited, and the element that a link points to. A PDF has no browsing history and no current target.</entry>
+                            <entry/>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#visited-pseudo" scope="external" format="html">Selectors 4 §8.2</xref>, <xref href="https://www.w3.org/TR/selectors-4/#the-target-pseudo" scope="external" format="html">§8.3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:playing</codeph>, <codeph>:paused</codeph>, <codeph>:seeking</codeph>, <codeph>:buffering</codeph>, <codeph>:stalled</codeph>, <codeph>:muted</codeph>, <codeph>:volume-locked</codeph></entry>
+                            <entry>Media playback, loading and sound states.</entry>
+                            <entry/>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#video-state" scope="external" format="html">Selectors 4 §10</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:current</codeph>, <codeph>:current()</codeph>, <codeph>:past</codeph>, <codeph>:future</codeph></entry>
+                            <entry>Elements in relation to a timeline, such as speech or video playback.</entry>
+                            <entry>A selector list for <codeph>:current()</codeph>.</entry>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#the-current-pseudo" scope="external" format="html">Selectors 5 §5</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:open</codeph>, <codeph>:popover-open</codeph>, <codeph>:modal</codeph>, <codeph>:fullscreen</codeph>, <codeph>:picture-in-picture</codeph></entry>
+                            <entry>Display states of interactive elements.</entry>
+                            <entry/>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#open-state" scope="external" format="html">Selectors 4 §11</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:enabled</codeph>, <codeph>:disabled</codeph>, <codeph>:read-write</codeph>, <codeph>:placeholder-shown</codeph>, <codeph>:autofill</codeph>, <codeph>:default</codeph>, <codeph>:checked</codeph>, <codeph>:unchecked</codeph>, <codeph>:indeterminate</codeph>, <codeph>:blank</codeph></entry>
+                            <entry>Form control states. An XML element is never a form control.</entry>
+                            <entry/>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#enableddisabled" scope="external" format="html">Selectors 4 §12</xref>, <xref href="https://www.w3.org/TR/selectors-5/#blank" scope="external" format="html">Selectors 5 §4.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:valid</codeph>, <codeph>:invalid</codeph>, <codeph>:in-range</codeph>, <codeph>:out-of-range</codeph>, <codeph>:required</codeph>, <codeph>:optional</codeph>, <codeph>:user-valid</codeph>, <codeph>:user-invalid</codeph></entry>
+                            <entry>Form validation states.</entry>
+                            <entry/>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#validity-pseudos" scope="external" format="html">Selectors 4 §12.3</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:state()</codeph></entry>
+                            <entry>A custom state that a document language exposes. XML has none.</entry>
+                            <entry>An identifier.</entry>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#custom-state" scope="external" format="html">Selectors 5 §6</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>:heading</codeph>, <codeph>:heading()</codeph></entry>
+                            <entry>Headings, as a document language defines them. CSSMedia does not give XML elements a heading role.</entry>
+                            <entry>A list of levels for <codeph>:heading()</codeph>.</entry>
+                            <entry>Never matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-5/#headings" scope="external" format="html">Selectors 5 §7</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="selector-reference-pseudo-elements">
+            <title>Pseudo-elements</title>
+            <p>A pseudo-element selects a part of an element or generated content. See <xref href="../concepts/pseudo-elements.dita#pseudo-elements">Pseudo-elements</xref>.</p>
+            <table id="selector-reference-pseudo-elements__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <tbody>
+                        <row valign="middle">
+                            <entry><codeph>::before</codeph>, <codeph>::after</codeph></entry>
+                            <entry>Generated content before or after the content of an element. The <codeph>content</codeph> property gives it.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-pseudo-4/#generated-content" scope="external" format="html">CSS Pseudo-Elements 4 §4.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>::marker</codeph></entry>
+                            <entry>The marker of a list item. Also <codeph>::before::marker</codeph> and <codeph>::after::marker</codeph>.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-pseudo-4/#marker-pseudo" scope="external" format="html">CSS Pseudo-Elements 4 §4.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>::first-line</codeph></entry>
+                            <entry>The first formatted line of a block.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-pseudo-4/#first-line-pseudo" scope="external" format="html">CSS Pseudo-Elements 4 §2.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>::first-letter</codeph></entry>
+                            <entry>The first letter of a block, with the punctuation around it. <codeph>::first-letter::prefix</codeph> and <codeph>::first-letter::suffix</codeph> select that punctuation.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-pseudo-4/#first-letter-pseudo" scope="external" format="html">CSS Pseudo-Elements 4 §2.2</xref></entry>
+                        </row>
+                        <row id="row-footnote-call" valign="middle">
+                            <entry><codeph>::footnote-call</codeph></entry>
+                            <entry>The reference that replaces a footnote in the text. By default it is the value of the <codeph>footnote</codeph> counter, as a superscript.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-gcpm-3/#footnote-call" scope="external" format="html">CSS GCPM 3 §2.6</xref></entry>
+                        </row>
+                        <row id="row-footnote-marker" valign="middle">
+                            <entry><codeph>::footnote-marker</codeph></entry>
+                            <entry>The marker at the start of a footnote body. By default it is the value of the <codeph>footnote</codeph> counter, followed by a period and a space.</entry>
+                            <entry/>
+                            <entry>Matches</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-gcpm-3/#footnote-marker" scope="external" format="html">CSS GCPM 3 §2.7</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>::selection</codeph>, <codeph>::search-text</codeph>, <codeph>::target-text</codeph>, <codeph>::spelling-error</codeph>, <codeph>::grammar-error</codeph>, <codeph>::highlight()</codeph></entry>
+                            <entry>Highlighted ranges created by selection, search, navigation, spelling and grammar checking, or scripts.</entry>
+                            <entry>A custom identifier for <codeph>::highlight()</codeph>.</entry>
+                            <entry>No range exists</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-pseudo-4/#highlight-selectors" scope="external" format="html">CSS Pseudo-Elements 4 §3.1</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>::placeholder</codeph>, <codeph>::file-selector-button</codeph>, <codeph>::details-content</codeph></entry>
+                            <entry>Parts of form controls and disclosure widgets.</entry>
+                            <entry/>
+                            <entry>No such part exists</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-pseudo-4/#placeholder-pseudo" scope="external" format="html">CSS Pseudo-Elements 4 §4.3</xref>, <xref href="https://www.w3.org/TR/css-pseudo-4/#file-selector-button-pseudo" scope="external" format="html">§5.1</xref>, <xref href="https://www.w3.org/TR/css-pseudo-4/#details-content-pseudo" scope="external" format="html">§5.2</xref></entry>
+                        </row>
+                        <row valign="middle">
+                            <entry><codeph>::backdrop</codeph></entry>
+                            <entry>The backdrop of an element shown in the top layer.</entry>
+                            <entry/>
+                            <entry>No such part exists</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-position-4/#backdrop" scope="external" format="html">CSS Position 4 §3.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
     </refbody>
 </reference>

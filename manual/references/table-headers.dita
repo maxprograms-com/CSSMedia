@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="table-headers">
+    <title>Table headers</title>
+    <shortdesc>Resource topic. It defines the header rows of the reference tables, which the tables use through the key <codeph>ref-headers</codeph>.</shortdesc>
+    <refbody>
+        <table id="headers-properties">
+            <tgroup cols="5">
+                <thead id="head-properties">
+                    <row valign="middle">
+                        <entry align="center">Name</entry>
+                        <entry align="center">Description</entry>
+                        <entry align="center">Values</entry>
+                        <entry align="center">Default</entry>
+                        <entry align="center">Specification</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <table id="headers-selectors">
+            <tgroup cols="5">
+                <thead id="head-selectors">
+                    <row valign="middle">
+                        <entry align="center">Name</entry>
+                        <entry align="center">Description</entry>
+                        <entry align="center">Values</entry>
+                        <entry align="center">In a PDF</entry>
+                        <entry align="center">Specification</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                        <entry/>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </refbody>
+</reference>

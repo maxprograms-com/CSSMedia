@@ -78,7 +78,7 @@
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-quotes" scope="external" format="html">CSS Content 3 §2.4.1</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-string-set" valign="middle">
                             <entry>
                                 <codeph>string-set</codeph>
                             </entry>
@@ -90,16 +90,54 @@
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-string-set" scope="external" format="html">CSS Content 3 §2.7.1</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-string-function" valign="middle">
                             <entry>
-                                <codeph>link</codeph>
+                                <codeph>string()</codeph>
                             </entry>
-                            <entry>Sets the destination of an <xref href="../glossaries/XML.dita">XML</xref> element as a CSSMedia extension.</entry>
+                            <entry>Gives the value of a named string saved with <codeph>string-set</codeph>. Use it in the <codeph>content</codeph> property of a page-margin box.</entry>
                             <entry>
-                                <codeph>none</codeph> or one or more quoted strings or <codeph>url()</codeph> and <codeph>src()</codeph> values</entry>
+                                A name, and an optional mode: <codeph>first</codeph>, <codeph>start</codeph>, <codeph>last</codeph> or <codeph>first-except</codeph></entry>
+                            <entry>
+                                <codeph>first</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-string" scope="external" format="html">CSS GCPM 3 §1.1.2</xref>
+                            </entry>
+                        </row>
+                        <row id="row-content-function" valign="middle">
+                            <entry>
+                                <codeph>content()</codeph>
+                            </entry>
+                            <entry>Gives text of an element. Use it in the value of <codeph>string-set</codeph>.</entry>
+                            <entry>
+                                <codeph>text</codeph>, <codeph>before</codeph>, <codeph>after</codeph> or <codeph>first-letter</codeph></entry>
+                            <entry>
+                                <codeph>text</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-content" scope="external" format="html">CSS GCPM 3 §1.1.1.1</xref>
+                            </entry>
+                        </row>
+                        <row id="row-link-counter" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-link-counter()</codeph>
+                            </entry>
+                            <entry>Gives the value of a counter at the destination of the link of the element, such as the number of a footnote that the link points to. CSSMedia extension.</entry>
+                            <entry>The name of a counter, and an optional counter style.</entry>
                             <entry />
-                            <entry>CSSMedia extension; see <xref href="../tasks/links.dita#links/set-a-link-destination">Links</xref>
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row id="row-cssmedia-link" valign="middle">
+                            <entry>
+                                <codeph>-cssmedia-link</codeph>
                             </entry>
+                            <entry>Makes an <xref href="../glossaries/XML.dita">XML</xref> element a link to another part of the document or to an external address. The values are joined in order to make the destination.</entry>
+                            <entry>
+                                <codeph>none</codeph>, or one or more strings or <codeph>url()</codeph> values</entry>
+                            <entry>
+                                <codeph>none</codeph>
+                            </entry>
+                            <entry>CSSMedia extension</entry>
                         </row>
                         <row valign="middle">
                             <entry>
@@ -346,28 +384,43 @@
                                 <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-fallback" scope="external" format="html">CSS Counter Styles 3 §3.8</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-footnote-counter" valign="middle">
+                            <entry>
+                                <codeph>footnote</codeph> counter
+                            </entry>
+                            <entry>The counter that numbers the footnotes. Every footnote adds 1 to it. Change it with <codeph>counter-reset</codeph>, <codeph>counter-set</codeph> and <codeph>counter-increment</codeph>, in an element rule to number by section or in an <codeph>@page</codeph> rule to number by page.</entry>
+                            <entry>Show it with <codeph>counter(footnote)</codeph>, with an optional counter style.</entry>
+                            <entry>0 at the start of the document.</entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#footnote-counter" scope="external" format="html">CSS GCPM 3 §2.5</xref>
+                            </entry>
+                        </row>
+                        <row id="row-footnote-display" valign="middle">
                             <entry>
                                 <codeph>footnote-display</codeph>
                             </entry>
-                            <entry>Chooses the layout form used to display a footnote.</entry>
+                            <entry>Sets how a footnote body appears in the footnote area.</entry>
                             <entry>
                                 <codeph>block</codeph>, <codeph>inline</codeph>, or <codeph>compact</codeph>
                             </entry>
-                            <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-gcpm-3/#propdef-footnote-display" scope="external" format="html">CSS GCPM 3 §2.6</xref>
+                                <codeph>block</codeph>
+                            </entry>
+                            <entry>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#propdef-footnote-display" scope="external" format="html">CSS GCPM 3 §2.3</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-footnote-policy" valign="middle">
                             <entry>
                                 <codeph>footnote-policy</codeph>
                             </entry>
-                            <entry>Controls how footnote content is kept together when it does not fit in the remaining page space.</entry>
+                            <entry>Sets what happens when a footnote does not fit on the page of its call. <codeph>auto</codeph> continues it on the next pages, <codeph>line</codeph> moves the line with the call to the next page, and <codeph>block</codeph> moves the paragraph.</entry>
                             <entry>
                                 <codeph>auto</codeph>, <codeph>line</codeph>, or <codeph>block</codeph>
                             </entry>
-                            <entry />
+                            <entry>
+                                <codeph>auto</codeph>
+                            </entry>
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-gcpm-3/#propdef-footnote-policy" scope="external" format="html">CSS GCPM 3 §2.8</xref>
                             </entry>

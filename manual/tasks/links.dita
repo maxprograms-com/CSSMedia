@@ -2,38 +2,29 @@
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="links">
     <title>Links</title>
-    <shortdesc>An <xref href="../glossaries/XML.dita">XML</xref> document can contain text that should point to another document or to a place in the same document. HTML has standard elements and attributes for links. XML can use any element and attribute names, so CSSMedia cannot know which elements are links by looking at their names. Use the CSSMedia <codeph>-cssmedia-link</codeph> property to tell it which elements act as links and what destination each one has.</shortdesc>
+    <shortdesc>A link points from an element to another part of the document or to an external address. <xref href="../glossaries/XML.dita">XML</xref> has no standard names for links, so you use the CSSMedia property <codeph>-cssmedia-link</codeph> to tell CSSMedia which elements are links and where they go. The <xref href="../references/link-chapter-reference.dita#link-chapter-reference">link reference</xref> lists the property, the function and the pseudo-classes used for links.</shortdesc>
     <taskbody>
         <context>
-            <p>To write a link rule, first find the relevant element and attribute in your XML. The selector at the start of a rule chooses XML elements. A declaration inside the braces sets a property in the form <codeph>property: value;</codeph>. Names such as <codeph>xref</codeph> and <codeph>target</codeph> below are examples. Replace them with names used in your XML. See <xref href="../concepts/selector-matching.dita#selector-matching">Selectors overview</xref> for more ways to choose elements.</p>
+            <p>The element and attribute names in the examples, such as <codeph>xref</codeph> and <codeph>target</codeph>, are placeholders. Use the names that occur in your XML.</p>
         </context>
         <steps>
             <step id="set-a-link-destination">
                 <cmd>Set a link destination</cmd>
                 <info>
-                    <p>The <codeph>-cssmedia-link</codeph> property is a CSSMedia extension. It is not a standard <xref href="../glossaries/CSS.dita">CSS</xref> property, so its name has the vendor prefix <codeph>-cssmedia-</codeph>.</p>
-                    <p>CSSMedia accepts these values:</p>
+                    <p>The <codeph>-cssmedia-link</codeph> property sets the destination of an element. It is a CSSMedia extension, so its name has the prefix <codeph>-cssmedia-</codeph>. Its value is <codeph>none</codeph>, which is the initial value and means that the element is not a link, or one or more of these:</p>
                     <ul>
-                        <li>
-                            <codeph>none</codeph> means the element is not a link. This is the initial value.</li>
-                        <li>One or more <xref href="https://www.w3.org/TR/css-values-4/#string-value" scope="external" format="html">
-                                <codeph>&lt;string&gt;</codeph>
-                            </xref> values. A string can be a full URL, a relative address, or a fragment such as <codeph>#details</codeph>.</li>
-                        <li>One or more <xref href="https://www.w3.org/TR/css-values-4/#url-value" scope="external" format="html">
-                                <codeph>&lt;url&gt;</codeph>
-                            </xref> values. CSS Values 4 defines <codeph>&lt;url&gt;</codeph> as <codeph>url()</codeph> or <codeph>src()</codeph>.</li>
+                        <li>A string, such as <codeph>"chapter-2.xml#installation"</codeph> or <codeph>"#details"</codeph>.</li>
+                        <li>A <codeph>url()</codeph> value.</li>
                     </ul>
-                    <p>A <codeph>&lt;string&gt;</codeph> is text written between quotation marks, such as <codeph>"chapter-2.xml#installation"</codeph>. <codeph>url()</codeph> and <codeph>src()</codeph> are functions that supply a URL value.</p>
-                    <p>Strings and URLs can be mixed in one value. CSSMedia joins them in order without adding spaces or other characters. The joined result is the link destination.</p>
-                    <p>The property is not inherited. Set it on each element that should act as a link. <codeph>-cssmedia-link: none</codeph> removes the link from a selected element.</p>
-                    <p>Suppose your XML contains an <codeph>xref</codeph> element with a <codeph>target</codeph> attribute:</p>
+                    <p>CSSMedia joins the values in order, without spaces, to make the destination. The property is not inherited, so set it on each element that is a link. Use <codeph>none</codeph> to remove a link.</p>
+                    <p>This XML has an <codeph>xref</codeph> element with a <codeph>target</codeph> attribute:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-xml">&lt;xref target="chapter-2.xml#installation"&gt;Installation instructions&lt;/xref&gt;
 </pre>
                 </stepxmp>
                 <info>
-                    <p>Use the element name in the selector and the attribute name in <codeph>attr()</codeph>:</p>
+                    <p>Use <codeph>attr()</codeph> to take the destination from the attribute:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">xref {
@@ -42,9 +33,8 @@
 </pre>
                 </stepxmp>
                 <info>
-                    <p>
-                        <codeph>xref</codeph> selects each element named <codeph>xref</codeph>. <codeph>attr(target)</codeph> reads the value of that element’s <codeph>target</codeph> attribute. The quoted text inside the XML element is its display text; the attribute supplies its destination. If the target attribute is missing, <codeph>attr()</codeph> supplies an empty string unless you provide a fallback.</p>
-                    <p>A same-document link can use a fragment identifier. This example reads the <codeph>id</codeph> attribute from an <codeph>xref</codeph> and adds <codeph>#</codeph> before it:</p>
+                    <p>The text of the element is the text of the link, and the attribute is its destination. If the attribute is missing, <codeph>attr()</codeph> gives an empty string, unless you give a fallback.</p>
+                    <p>To link to a place in the same document, add <codeph>#</codeph> before the ID:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-xml">&lt;xref target="details"&gt;More details&lt;/xref&gt;
@@ -57,13 +47,9 @@
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The two parts are joined to form <codeph>#details</codeph>. The fragment identifies a location in the current XML document.</p>
-                    <p>You can also write a destination directly. This example uses an attribute selector to match an <codeph>xref</codeph> whose <codeph>role</codeph> attribute is <codeph>external</codeph>:</p>
+                    <p>The link goes to <codeph>#details</codeph>, the element of the document with the ID <codeph>details</codeph>.</p>
+                    <p>To link to an external address, write the address as a string:</p>
                 </info>
-                <stepxmp>
-                    <pre outputclass="language-xml">&lt;xref role="external" target="https://example.org/manual/installation.html"&gt;Installation&lt;/xref&gt;
-</pre>
-                </stepxmp>
                 <stepxmp>
                     <pre outputclass="language-css21">xref[role="external"] {
     -cssmedia-link: "https://example.org/manual/installation.html";
@@ -71,27 +57,13 @@
 </pre>
                 </stepxmp>
                 <info>
-                    <p>A relative string destination, such as <codeph>"chapter-2.xml#installation"</codeph>, is resolved against the XML document’s URL. A URL written with <codeph>url("chapter-2.xml#installation")</codeph> is resolved against the stylesheet’s URL. Use a quoted string when the address is meant to be relative to the XML document.</p>
-                    <p>
-                        <codeph>src()</codeph> is also part of the CSS <codeph>&lt;url&gt;</codeph> grammar. CSSMedia resolves its URL against the stylesheet URL, like <codeph>url()</codeph>.</p>
+                    <p>A relative string, such as <codeph>"chapter-2.xml#installation"</codeph>, is resolved against the address of the XML document. A <codeph>url()</codeph> value is resolved against the address of the stylesheet. Use a string when the address is relative to the XML document.</p>
                 </info>
             </step>
             <step id="select-links">
-                <cmd>Select links</cmd>
+                <cmd>Style the links</cmd>
                 <info>
-                    <p>Selectors define these hyperlink pseudo-classes:</p>
-                    <ul>
-                        <li>
-                            <xref href="https://www.w3.org/TR/selectors-4/#the-any-link-pseudo" scope="external" format="html">
-                                <codeph>:any-link</codeph>
-                            </xref> selects elements acting as hyperlink sources.</li>
-                        <li>
-                            <xref href="https://www.w3.org/TR/selectors-4/#link-pseudo" scope="external" format="html">
-                                <codeph>:link</codeph>
-                            </xref> selects links. Its visited-state distinction from <codeph>:visited</codeph> applies to browsers, not <xref href="../glossaries/PDF.dita">PDF</xref> output.</li>
-                    </ul>
-                    <p>PDF links have no visited state. CSSMedia treats <codeph>:link</codeph> and <codeph>:any-link</codeph> identically: both select elements whose <codeph>-cssmedia-link</codeph> value is not <codeph>none</codeph>. The browser-history pseudo-class <codeph>:visited</codeph> is accepted by the selector parser, but never matches.</p>
-                    <p>For example, to set the color of every element that you assigned a destination:</p>
+                    <p>Setting <codeph>-cssmedia-link</codeph> does not change how a link looks. Use <codeph>:any-link</codeph> to select the elements that have a destination, and set the properties that you want:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">:any-link {
@@ -100,30 +72,14 @@
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The pseudo-class selects the link. The <codeph>color</codeph> declaration sets its text color. Setting the <codeph>-cssmedia-link</codeph> property alone does not choose how the link looks.</p>
+                    <p><codeph>:link</codeph> selects the same elements, because a PDF has no visited links. <codeph>:visited</codeph> never matches.</p>
                 </info>
             </step>
             <step id="select-links-by-destination">
                 <cmd>Select links by destination</cmd>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/selectors-5/#local-link-pseudo" scope="external" format="html">:local-link</xref> selects a link based on how its destination compares with the XML document’s URL.</p>
-                    <ul>
-                        <li>
-                            <codeph>:local-link</codeph> matches when the destination is the same document URL. CSSMedia removes the fragment identifiers before comparing the URLs. Thus a link to <codeph>#details</codeph> is local to the current document.</li>
-                        <li>
-                            <codeph>:local-link(0)</codeph> matches links with the same URL origin. An origin consists of the URL scheme, host and port.</li>
-                        <li>
-                            <codeph>:local-link(1)</codeph> matches links with the same origin and first path segment.</li>
-                        <li>
-                            <codeph>:local-link(2)</codeph> matches links with the same origin and first two path segments. Higher non-negative integers check that many initial path segments.</li>
-                    </ul>
-                    <p>For example, the following XML link points to a location in the same document:</p>
+                    <p><codeph>:local-link</codeph> selects the links that point to the same document. CSSMedia ignores the fragment when it compares the addresses, so a link to <codeph>#details</codeph> is a local link.</p>
                 </info>
-                <stepxmp>
-                    <pre outputclass="language-xml">&lt;xref target="#details"&gt;More details&lt;/xref&gt;
-</pre>
-                </stepxmp>
                 <stepxmp>
                     <pre outputclass="language-css21">xref {
     -cssmedia-link: attr(target);
@@ -135,7 +91,7 @@ xref:local-link {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The first rule gives each <codeph>xref</codeph> its destination. The second selects an <codeph>xref</codeph> whose destination is local to the current document and sets its text color. You can combine <codeph>:local-link(0)</codeph> with <codeph>:not()</codeph> to select links to other origins:</p>
+                    <p>Add a number to compare part of the address: <codeph>:local-link(0)</codeph> selects the links with the same origin, which is the scheme, the host and the port. <codeph>:local-link(1)</codeph> also compares the first segment of the path, <codeph>:local-link(2)</codeph> the first two, and so on. Combine it with <codeph>:not()</codeph> to select the links to other origins:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">xref:not(:local-link(0)) {
@@ -143,11 +99,28 @@ xref:local-link {
 }
 </pre>
                 </stepxmp>
+            </step>
+            <step id="show-a-counter-of-the-destination">
+                <cmd>Show a counter of the destination</cmd>
                 <info>
-                    <p>This uses the <xref href="https://www.w3.org/TR/selectors-4/#negation-pseudo" scope="external" format="html">negation pseudo-class</xref> to match <codeph>xref</codeph> links whose destination does not share the current document’s origin.</p>
+                    <p><codeph>-cssmedia-link-counter()</codeph> gives the value of a counter at the destination of the link of an element. Use it in the <codeph>content</codeph> property, for example to show the number of the footnote that a link points to:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;footnoteref linkend="note-1"/&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">footnoteref {
+    -cssmedia-link: "#" attr(linkend);
+    content: -cssmedia-link-counter(footnote);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The element links to the element with the ID <codeph>note-1</codeph> and shows the value of the <codeph>footnote</codeph> counter of that element. An optional second argument sets the counter style, as in <codeph>-cssmedia-link-counter(footnote, lower-alpha)</codeph>.</p>
+                    <!-- TODO: document link-parameters when links to external resources support parameters -->
                 </info>
             </step>
         </steps>
     </taskbody>
 </task>
-

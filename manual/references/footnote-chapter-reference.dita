@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="footnote-chapter-reference">
+    <title>Footnote reference</title>
+    <shortdesc>This reference lists the properties, the rule, the counter and the pseudo-elements that CSSMedia uses for footnotes.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-footnotes/footnote-properties"/>
+        <section conkeyref="ref-footnotes/footnote-pseudo-elements"/>
+    </refbody>
+</reference>

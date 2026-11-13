@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="link-reference">
+    <title>Links</title>
+    <shortdesc>This reference lists the property, the function and the pseudo-classes that CSSMedia uses for links.</shortdesc>
+    <refbody>
+        <section id="link-properties">
+            <title>Property and function</title>
+            <table id="link-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-content/row-cssmedia-link"/>
+                        <row conkeyref="ref-content/row-link-counter"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="link-pseudo-classes">
+            <title>Pseudo-classes</title>
+            <table id="link-pseudo-classes__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <tbody>
+                        <row conkeyref="ref-selectors/row-link"/>
+                        <row conkeyref="ref-selectors/row-local-link"/>
+                        <row conkeyref="ref-selectors/row-visited"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>
