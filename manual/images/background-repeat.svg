@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="180" viewBox="0 0 480 180">
+    <defs>
+        <clipPath id="area"><rect x="0" y="0" width="100" height="80"/></clipPath>
+        <g id="tile">
+            <rect x="0" y="0" width="30" height="30" fill="#336699"/>
+            <circle cx="15" cy="15" r="8" fill="#ffffff"/>
+        </g>
+    </defs>
+    <g font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle">
+        <g transform="translate(15 15)">
+            <rect x="0" y="0" width="100" height="80" fill="#eef3f8" stroke="#7a8794"/>
+            <g clip-path="url(#area)">
+                <use href="#tile" x="0" y="0"/><use href="#tile" x="30" y="0"/><use href="#tile" x="60" y="0"/><use href="#tile" x="90" y="0"/>
+                <use href="#tile" x="0" y="30"/><use href="#tile" x="30" y="30"/><use href="#tile" x="60" y="30"/><use href="#tile" x="90" y="30"/>
+                <use href="#tile" x="0" y="60"/><use href="#tile" x="30" y="60"/><use href="#tile" x="60" y="60"/><use href="#tile" x="90" y="60"/>
+            </g>
+            <text x="50" y="108" fill="#222222">repeat</text>
+            <text x="50" y="124" fill="#666666" font-size="10">last copy is cut</text>
+        </g>
+        <g transform="translate(135 15)">
+            <rect x="0" y="0" width="100" height="80" fill="#eef3f8" stroke="#7a8794"/>
+            <use href="#tile" x="0" y="0"/>
+            <text x="50" y="108" fill="#222222">no-repeat</text>
+            <text x="50" y="124" fill="#666666" font-size="10">drawn once</text>
+        </g>
+        <g transform="translate(255 15)">
+            <rect x="0" y="0" width="100" height="80" fill="#eef3f8" stroke="#7a8794"/>
+            <use href="#tile" x="0" y="0"/><use href="#tile" x="35" y="0"/><use href="#tile" x="70" y="0"/>
+            <use href="#tile" x="0" y="50"/><use href="#tile" x="35" y="50"/><use href="#tile" x="70" y="50"/>
+            <text x="50" y="108" fill="#222222">space</text>
+            <text x="50" y="124" fill="#666666" font-size="10">whole copies, equal gaps</text>
+        </g>
+        <g transform="translate(375 15)">
+            <rect x="0" y="0" width="100" height="80" fill="#eef3f8" stroke="#7a8794"/>
+            <g transform="scale(1.1111 0.8889)">
+                <use href="#tile" x="0" y="0"/><use href="#tile" x="30" y="0"/><use href="#tile" x="60" y="0"/>
+                <use href="#tile" x="0" y="30"/><use href="#tile" x="30" y="30"/><use href="#tile" x="60" y="30"/>
+                <use href="#tile" x="0" y="60"/><use href="#tile" x="30" y="60"/><use href="#tile" x="60" y="60"/>
+            </g>
+            <text x="50" y="108" fill="#222222">round</text>
+            <text x="50" y="124" fill="#666666" font-size="10">whole copies, resized</text>
+        </g>
+    </g>
+</svg>

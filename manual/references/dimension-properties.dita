@@ -1,455 +1,207 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="dimension-properties">
-    <title>Dimension properties</title>
-    <shortdesc>This reference lists the <xref href="../glossaries/CSS.dita">CSS</xref> sizing properties documented in <xref keyref="ch-box-dimensions">Box dimensions</xref>. The <codeph>Values</codeph> column gives CSS syntax.</shortdesc>
-    <!-- TODO: fill the Default cells and describe how each property affects layout in the PDF -->
+    <title>Box sizes</title>
+    <shortdesc>This reference lists the properties that CSSMedia uses to size a box.</shortdesc>
     <refbody>
-        <section>
-            <p>CSS Anchor Positioning permits <codeph>anchor-size()</codeph> only on properties accepted in an <xref href="https://www.w3.org/TR/css-anchor-position-1/#accepted-position-try-properties" scope="external" format="html">
-                    <codeph>@position-try</codeph> rule</xref>. These include sizing, inset, and margin properties. This page lists the sizing properties.</p>
-        </section>
         <section id="preferred-sizes">
             <title>Preferred sizes</title>
-            <table id="dimension-properties__I_1n_">
+            <table id="preferred-sizes__table">
                 <tgroup cols="5">
-                    <colspec colname="c1" />
-                    <colspec colname="c2" />
-                    <colspec colname="c3" />
-                    <colspec colname="c4" />
-                    <colspec colname="c5" />
-                    <thead>
-                        <row valign="middle">
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                            <entry align="center">Values</entry>
-                            <entry align="center">Default</entry>
-                            <entry align="center">Specification</entry>
-                        </row>
-                    </thead>
+                    <thead conkeyref="ref-headers/head-properties"/>
                     <tbody>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-width" scope="external" format="html">
-                                    <codeph>width</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets the preferred physical width.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-width" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>box-sizing</codeph></entry>
+                            <entry>Chooses what <codeph>width</codeph> and <codeph>height</codeph> measure. <codeph>content-box</codeph> measures the content, and the padding and the border are added. <codeph>border-box</codeph> measures the box through the border.</entry>
+                            <entry><codeph>content-box</codeph> or <codeph>border-box</codeph></entry>
+                            <entry><codeph>content-box</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-3/#propdef-box-sizing" scope="external" format="html">CSS Sizing 3 §3.3</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-height" scope="external" format="html">
-                                    <codeph>height</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets the preferred physical height.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-height" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>width</codeph></entry>
+                            <entry>Sets the preferred width of the box.</entry>
+                            <entry><codeph>auto</codeph>, a non-negative length or percentage, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content()</codeph>, <codeph>calc-size()</codeph> or <codeph>anchor-size()</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-3/#propdef-width" scope="external" format="html">CSS Sizing 3 §3.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-inline-size" scope="external" format="html">
-                                    <codeph>inline-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets the preferred size on the inline axis.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content()</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-inline-size" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>height</codeph></entry>
+                            <entry>Sets the preferred height of the box.</entry>
+                            <entry>The values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-3/#propdef-height" scope="external" format="html">CSS Sizing 3 §3.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-block-size" scope="external" format="html">
-                                    <codeph>block-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets the preferred size on the block axis.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content()</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-block-size" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>inline-size</codeph></entry>
+                            <entry>Sets the preferred size along the inline axis, which is the width in horizontal text.</entry>
+                            <entry>The values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-inline-size" scope="external" format="html">CSS Logical Properties 1 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>block-size</codeph></entry>
+                            <entry>Sets the preferred size along the block axis, which is the height in horizontal text.</entry>
+                            <entry>The values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-block-size" scope="external" format="html">CSS Logical Properties 1 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>size</codeph></entry>
+                            <entry>Sets <codeph>width</codeph> and <codeph>height</codeph>. One value applies to both.</entry>
+                            <entry>One or two values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-size" scope="external" format="html">CSS Sizing 4 §3.1</xref></entry>
                         </row>
                     </tbody>
                 </tgroup>
             </table>
-            <ul>
-                <li>
-                    <p>
-                        <codeph>&lt;length-percentage&gt;</codeph> means a length such as <codeph>12pt</codeph>, a percentage such as <codeph>60%</codeph>, or a <codeph>calc()</codeph> expression combining them.</p>
-                </li>
-                <li>
-                    <p>
-                        <codeph>[0,∞]</codeph> in <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph> means the length or percentage cannot be negative.</p>
-                </li>
-                <li>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor-size" scope="external" format="html">
-                            <codeph>anchor-size()</codeph>
-                        </xref> accepts an optional anchor name, an optional size keyword, or both, followed by an optional length or percentage fallback. It resolves to the anchor’s size only when the box is absolutely positioned and has a target anchor. Otherwise, it resolves to the fallback. Without a fallback, the declaration becomes invalid at computed-value time. The sizing properties listed here include physical and logical properties.</p>
-                </li>
-            </ul>
         </section>
         <section id="minimum-and-maximum-sizes">
             <title>Minimum and maximum sizes</title>
-            <table id="dimension-properties__I_1p_">
+            <table id="minimum-and-maximum-sizes__table">
                 <tgroup cols="5">
-                    <colspec colname="c1" />
-                    <colspec colname="c2" />
-                    <colspec colname="c3" />
-                    <colspec colname="c4" />
-                    <colspec colname="c5" />
-                    <thead>
-                        <row valign="middle">
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                            <entry align="center">Values</entry>
-                            <entry align="center">Default</entry>
-                            <entry align="center">Specification</entry>
-                        </row>
-                    </thead>
+                    <thead conkeyref="ref-headers/head-properties"/>
                     <tbody>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-width" scope="external" format="html">
-                                    <codeph>min-width</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets a lower limit for the physical width.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-width" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>min-width</codeph></entry>
+                            <entry>Sets the smallest width of the box.</entry>
+                            <entry>The values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-width" scope="external" format="html">CSS Sizing 3 §3.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-height" scope="external" format="html">
-                                    <codeph>min-height</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets a lower limit for the physical height.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-height" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>min-height</codeph></entry>
+                            <entry>Sets the smallest height of the box.</entry>
+                            <entry>The values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-height" scope="external" format="html">CSS Sizing 3 §3.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-inline-size" scope="external" format="html">
-                                    <codeph>min-inline-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets a lower limit on the inline axis.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content()</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-inline-size" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>min-inline-size</codeph></entry>
+                            <entry>Sets the smallest size along the inline axis.</entry>
+                            <entry>The values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-min-inline-size" scope="external" format="html">CSS Logical Properties 1 §4.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-block-size" scope="external" format="html">
-                                    <codeph>min-block-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets a lower limit on the block axis.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content()</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-min-block-size" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>min-block-size</codeph></entry>
+                            <entry>Sets the smallest size along the block axis.</entry>
+                            <entry>The values of <codeph>width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-min-block-size" scope="external" format="html">CSS Logical Properties 1 §4.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-width" scope="external" format="html">
-                                    <codeph>max-width</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets an upper limit for the physical width.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>none</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-width" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>min-size</codeph></entry>
+                            <entry>Sets <codeph>min-width</codeph> and <codeph>min-height</codeph>. One value applies to both.</entry>
+                            <entry>One or two values of <codeph>min-width</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-min-size" scope="external" format="html">CSS Sizing 4 §3.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-height" scope="external" format="html">
-                                    <codeph>max-height</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets an upper limit for the physical height.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>none</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-height" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>max-width</codeph></entry>
+                            <entry>Sets the largest width of the box.</entry>
+                            <entry><codeph>none</codeph>, or the values of <codeph>width</codeph> except <codeph>auto</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-width" scope="external" format="html">CSS Sizing 3 §3.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-inline-size" scope="external" format="html">
-                                    <codeph>max-inline-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets an upper limit on the inline axis.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>none</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content()</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-inline-size" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>max-height</codeph></entry>
+                            <entry>Sets the largest height of the box.</entry>
+                            <entry>The values of <codeph>max-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-height" scope="external" format="html">CSS Sizing 3 §3.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-block-size" scope="external" format="html">
-                                    <codeph>max-block-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets an upper limit on the block axis.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>none</codeph>, <codeph>&lt;length-percentage&gt;</codeph>, <codeph>stretch</codeph>, <codeph>contain</codeph>, <codeph>min-content</codeph>, <codeph>max-content</codeph>, <codeph>fit-content</codeph>, <codeph>fit-content()</codeph>, <codeph>calc-size()</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-max-block-size" scope="external" format="html">CSS Sizing 3</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>max-inline-size</codeph></entry>
+                            <entry>Sets the largest size along the inline axis.</entry>
+                            <entry>The values of <codeph>max-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-max-inline-size" scope="external" format="html">CSS Logical Properties 1 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>max-block-size</codeph></entry>
+                            <entry>Sets the largest size along the block axis.</entry>
+                            <entry>The values of <codeph>max-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-max-block-size" scope="external" format="html">CSS Logical Properties 1 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>max-size</codeph></entry>
+                            <entry>Sets <codeph>max-width</codeph> and <codeph>max-height</codeph>. One value applies to both.</entry>
+                            <entry>One or two values of <codeph>max-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-max-size" scope="external" format="html">CSS Sizing 4 §3.1</xref></entry>
                         </row>
                     </tbody>
                 </tgroup>
             </table>
-            <ul>
-                <li>
-                    <codeph>&lt;length-percentage&gt;</codeph> means a length such as <codeph>12pt</codeph>, a percentage such as <codeph>60%</codeph>, or a <codeph>calc()</codeph> expression combining them.</li>
-                <li>
-                    <codeph>[0,∞]</codeph> in <codeph>fit-content(&lt;length-percentage [0,∞]&gt;)</codeph> means the length or percentage cannot be negative.</li>
-            </ul>
-        </section>
-        <section id="paired-size-shorthands">
-            <title>Paired size shorthands</title>
-            <table id="dimension-properties__I_1r_">
-                <tgroup cols="5">
-                    <colspec colname="c1" />
-                    <colspec colname="c2" />
-                    <colspec colname="c3" />
-                    <colspec colname="c4" />
-                    <colspec colname="c5" />
-                    <thead>
-                        <row valign="middle">
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                            <entry align="center">Values</entry>
-                            <entry align="center">Default</entry>
-                            <entry align="center">Specification</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-size" scope="external" format="html">
-                                    <codeph>size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets <codeph>width</codeph> and <codeph>height</codeph>.</entry>
-                            <entry namest="c3" nameend="c4">One or two preferred-size values.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-size" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-min-size" scope="external" format="html">
-                                    <codeph>min-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets <codeph>min-width</codeph> and <codeph>min-height</codeph>.</entry>
-                            <entry namest="c3" nameend="c4">One or two minimum-size values.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-min-size" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-max-size" scope="external" format="html">
-                                    <codeph>max-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets <codeph>max-width</codeph> and <codeph>max-height</codeph>.</entry>
-                            <entry namest="c3" nameend="c4">One or two maximum-size values.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-max-size" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-            <ul>
-                <li>Each pair takes the corresponding longhand’s values in width-then-height order. The second value is optional and defaults to the first.</li>
-                <li>The <codeph>size</codeph> shorthand is not valid in an <codeph>@page</codeph> context. That context has a separate <codeph>size</codeph> descriptor for page dimensions.</li>
-            </ul>
         </section>
         <section id="aspect-ratio-and-intrinsic-sizes">
             <title>Aspect ratio and intrinsic sizes</title>
-            <table id="dimension-properties__I_1t_">
+            <table id="aspect-ratio-and-intrinsic-sizes__table">
                 <tgroup cols="5">
-                    <colspec colname="c1" />
-                    <colspec colname="c2" />
-                    <colspec colname="c3" />
-                    <colspec colname="c4" />
-                    <colspec colname="c5" />
-                    <thead>
-                        <row valign="middle">
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                            <entry align="center">Values</entry>
-                            <entry align="center">Default</entry>
-                            <entry align="center">Specification</entry>
-                        </row>
-                    </thead>
+                    <thead conkeyref="ref-headers/head-properties"/>
                     <tbody>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-aspect-ratio" scope="external" format="html">
-                                    <codeph>aspect-ratio</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Supplies a preferred ratio between the width and height.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph>, a non-negative number such as <codeph>1.5</codeph>, or two non-negative numbers such as <codeph>16 / 9</codeph>; <codeph>auto</codeph> can be combined with a number.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-aspect-ratio" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>aspect-ratio</codeph></entry>
+                            <entry>Gives the box a preferred ratio between its width and its height. The first number is the width and the second is the height. A single number is a ratio to 1.</entry>
+                            <entry><codeph>auto</codeph>, a non-negative number or two non-negative numbers separated by <codeph>/</codeph>, such as <codeph>16 / 9</codeph>. <codeph>auto</codeph> can come before or after the ratio.</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-aspect-ratio" scope="external" format="html">CSS Sizing 4 §4.1</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-width" scope="external" format="html">
-                                    <codeph>contain-intrinsic-width</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Fallback intrinsic width under size containment.</entry>
-                            <entry namest="c3" nameend="c4">Optional <codeph>auto</codeph>; <codeph>none</codeph> or a non-negative length.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-width" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>contain-intrinsic-width</codeph></entry>
+                            <entry>Sets the width that a box with size containment has instead of the size of its content.</entry>
+                            <entry>An optional <codeph>auto</codeph>, then <codeph>none</codeph> or a non-negative length</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-width" scope="external" format="html">CSS Sizing 4 §5.2</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-height" scope="external" format="html">
-                                    <codeph>contain-intrinsic-height</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Fallback intrinsic height under size containment.</entry>
-                            <entry namest="c3" nameend="c4">Optional <codeph>auto</codeph>; <codeph>none</codeph> or a non-negative length.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-height" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>contain-intrinsic-height</codeph></entry>
+                            <entry>Sets the height that a box with size containment has instead of the size of its content.</entry>
+                            <entry>The values of <codeph>contain-intrinsic-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-height" scope="external" format="html">CSS Sizing 4 §5.2</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-inline-size" scope="external" format="html">
-                                    <codeph>contain-intrinsic-inline-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Fallback intrinsic inline size under size containment.</entry>
-                            <entry namest="c3" nameend="c4">Optional <codeph>auto</codeph>; <codeph>none</codeph> or a non-negative length.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-inline-size" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>contain-intrinsic-inline-size</codeph></entry>
+                            <entry>Sets the inline size that a box with size containment has instead of the size of its content.</entry>
+                            <entry>The values of <codeph>contain-intrinsic-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-inline-size" scope="external" format="html">CSS Sizing 4 §5.2</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-block-size" scope="external" format="html">
-                                    <codeph>contain-intrinsic-block-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Fallback intrinsic block size under size containment.</entry>
-                            <entry namest="c3" nameend="c4">Optional <codeph>auto</codeph>; <codeph>none</codeph> or a non-negative length.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-block-size" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>contain-intrinsic-block-size</codeph></entry>
+                            <entry>Sets the block size that a box with size containment has instead of the size of its content.</entry>
+                            <entry>The values of <codeph>contain-intrinsic-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-block-size" scope="external" format="html">CSS Sizing 4 §5.2</xref></entry>
                         </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-size" scope="external" format="html">
-                                    <codeph>contain-intrinsic-size</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Sets fallback intrinsic width and height.</entry>
-                            <entry namest="c3" nameend="c4">One or two longhand values; see below.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-size" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
+                        <row>
+                            <entry><codeph>contain-intrinsic-size</codeph></entry>
+                            <entry>Sets <codeph>contain-intrinsic-width</codeph> and <codeph>contain-intrinsic-height</codeph>. One value applies to both.</entry>
+                            <entry>One or two values of <codeph>contain-intrinsic-width</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-contain-intrinsic-size" scope="external" format="html">CSS Sizing 4 §5.2</xref></entry>
+                        </row>
+                        <!-- TODO: frame-sizing and min-intrinsic-sizing are read and have no effect in the PDF; check them when the engine uses them -->
+                        <row>
+                            <entry><codeph>frame-sizing</codeph></entry>
+                            <entry>Chooses the size of a replaced element that is used for its sizing.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>content-width</codeph>, <codeph>content-height</codeph>, <codeph>content-block-size</codeph> or <codeph>content-inline-size</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-frame-sizing" scope="external" format="html">CSS Sizing 4 §5.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>min-intrinsic-sizing</codeph></entry>
+                            <entry>Chooses when the minimum size that a box contributes to its container is compressed.</entry>
+                            <entry><codeph>legacy</codeph>, <codeph>zero-if-scroll</codeph>, <codeph>zero-if-extrinsic</codeph> or both of the last two</entry>
+                            <entry><codeph>legacy</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-sizing-4/#propdef-min-intrinsic-sizing" scope="external" format="html">CSS Sizing 4 §5.5</xref></entry>
                         </row>
                     </tbody>
                 </tgroup>
             </table>
-            <ul>
-                <li>For <codeph>aspect-ratio</codeph>, the first number is the width and the second is the height. If you give one number, the second number is <codeph>1</codeph>. For example, <codeph>1.5</codeph> means the same ratio as <codeph>1.5 / 1</codeph>.</li>
-                <li>Each <codeph>contain-intrinsic-*</codeph> longhand accepts an optional <codeph>auto</codeph>, followed by <codeph>none</codeph> or a non-negative length.</li>
-                <li>The <codeph>contain-intrinsic-size</codeph> shorthand takes one or two such values. One value applies to both dimensions.</li>
-            </ul>
-        </section>
-        <section id="replaced-elements-and-intrinsic-contributions">
-            <title>Replaced elements and intrinsic contributions</title>
-            <table id="dimension-properties__I_1v_">
-                <tgroup cols="5">
-                    <colspec colname="c1" />
-                    <colspec colname="c2" />
-                    <colspec colname="c3" />
-                    <colspec colname="c4" />
-                    <colspec colname="c5" />
-                    <thead>
-                        <row valign="middle">
-                            <entry align="center">Name</entry>
-                            <entry align="center">Description</entry>
-                            <entry align="center">Values</entry>
-                            <entry align="center">Default</entry>
-                            <entry align="center">Specification</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-frame-sizing" scope="external" format="html">
-                                    <codeph>frame-sizing</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Selects a replaced element’s content size for sizing.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>auto</codeph> or a <codeph>content-*</codeph> dimension.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-frame-sizing" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-min-intrinsic-sizing" scope="external" format="html">
-                                    <codeph>min-intrinsic-sizing</codeph>
-                                </xref>
-                            </entry>
-                            <entry>Controls min-content contribution compression.</entry>
-                            <entry namest="c3" nameend="c4">
-                                <codeph>legacy</codeph>, <codeph>zero-if-scroll</codeph>, <codeph>zero-if-extrinsic</codeph>, or both.</entry>
-                            <entry>
-                                <xref href="https://www.w3.org/TR/css-sizing-4/#propdef-min-intrinsic-sizing" scope="external" format="html">CSS Sizing 4</xref>
-                            </entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-            <ul>
-                <li>
-                    <codeph>frame-sizing</codeph> accepts <codeph>auto</codeph>, <codeph>content-width</codeph>, <codeph>content-height</codeph>, <codeph>content-block-size</codeph>, or <codeph>content-inline-size</codeph>.</li>
-            </ul>
         </section>
     </refbody>
 </reference>
-

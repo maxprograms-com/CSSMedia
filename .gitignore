@@ -2,6 +2,7 @@
 .claude/
 .github/
 .scannerwork/
+.vscode/
 dist/
 /fonts
 /specs

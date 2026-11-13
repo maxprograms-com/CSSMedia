@@ -12,6 +12,12 @@
                 <li>The <b>footnote marker</b> is the number at the start of the footnote body.</li>
                 <li>The <b>footnote area</b> is the box at the bottom of the page that holds the footnote bodies.</li>
             </ul>
+            <fig id="footnote-parts">
+                <title>A page with footnotes</title>
+                <image href="../images/footnote-area.svg" placement="break" scale="65">
+                    <alt>A page whose page area has lines of text, a footnote call in the text, and the footnote area at the bottom, with a short rule and two footnotes that start with their markers.</alt>
+                </image>
+            </fig>
             <p>The element names in the examples, such as <codeph>fn</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
         </context>
         <steps>

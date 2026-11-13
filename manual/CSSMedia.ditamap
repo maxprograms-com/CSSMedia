@@ -87,12 +87,11 @@
     </chapter>
 
     <chapter href="concepts/intro-boxes.dita">
-        <topicref href="concepts/box-sizing-and-spacing.dita"/>
-        <topicref href="concepts/box-dimensions.dita"/>
-        <topicref href="tasks/color-and-images.dita"/>
-        <topicref href="tasks/positioning-and-size.dita"/>
-        <topicref href="tasks/repetition-and-attachment.dita"/>
-        <topicref href="tasks/clipping-shorthand-and-blending.dita"/>
+        <topicref href="tasks/box-spacing.dita"/>
+        <topicref href="tasks/box-sizes.dita"/>
+        <topicref href="tasks/borders.dita"/>
+        <topicref href="tasks/backgrounds.dita"/>
+        <topicref href="references/box-chapter-reference.dita"/>
     </chapter>
 
     <chapter>
@@ -162,6 +161,8 @@
         <booklists>
             <glossarylist chunk="to-content">
                 <topicref href="glossaries/Bookmark.dita" type="glossentry"/>
+                <topicref href="glossaries/Box.dita" type="glossentry"/>
+                <topicref href="glossaries/ContainingBlock.dita" type="glossentry"/>
                 <topicref href="glossaries/CSS.dita" type="glossentry"/>
                 <topicref href="glossaries/DTD.dita" type="glossentry"/>
                 <topicref href="glossaries/FontFace.dita" type="glossentry"/>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="190" viewBox="0 0 480 190">
+    <g font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle">
+        <g transform="translate(20 20)">
+            <rect x="0" y="0" width="200" height="110" rx="30" ry="30" fill="#eef3f8" stroke="#336699" stroke-width="3"/>
+            <circle cx="30" cy="30" r="30" fill="none" stroke="#c98a3a" stroke-dasharray="4 3"/>
+            <circle cx="30" cy="30" r="2" fill="#c98a3a"/>
+            <text x="110" y="60" fill="#222222">border-radius: 30px</text>
+            <text x="100" y="134" fill="#222222">one value: the corner is a circle</text>
+        </g>
+        <g transform="translate(260 20)">
+            <rect x="0" y="0" width="200" height="110" rx="50" ry="25" fill="#eef3f8" stroke="#336699" stroke-width="3"/>
+            <ellipse cx="50" cy="25" rx="50" ry="25" fill="none" stroke="#c98a3a" stroke-dasharray="4 3"/>
+            <circle cx="50" cy="25" r="2" fill="#c98a3a"/>
+            <text x="110" y="70" fill="#222222">border-radius: 50px / 25px</text>
+            <text x="100" y="134" fill="#222222">horizontal / vertical: the corner is an ellipse</text>
+        </g>
+    </g>
+</svg>

@@ -6,8 +6,6 @@
     <keydef keys="ch-combinators"/>
     <keydef keys="ch-pseudo-classes"/>
     <keydef keys="ch-pseudo-elements"/>
-    <keydef keys="ch-box-sizing"/>
-    <keydef keys="ch-box-dimensions"/>
     <keydef keys="ch-named-strings"/>
     <keydef keys="ch-links"/>
     <keydef keys="ch-conditional-rules"/>

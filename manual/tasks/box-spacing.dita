@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="box-spacing">
+    <title>Margins and padding</title>
+    <shortdesc>Margins put space between a box and the boxes around it. Padding puts space between the content of a box and its border.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="set-margins">
+                <cmd>Set the margins</cmd>
+                <info>
+                    <p>The <codeph>margin</codeph> property sets the space outside the border. It takes one to four values:</p>
+                    <ul>
+                        <li>One value sets all four sides.</li>
+                        <li>Two values set the top and the bottom, then the left and the right.</li>
+                        <li>Three values set the top, then the left and the right, then the bottom.</li>
+                        <li>Four values set the top, the right, the bottom and the left, clockwise from the top.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    margin: 12pt 24pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Each side also has its own property: <codeph>margin-top</codeph>, <codeph>margin-right</codeph>, <codeph>margin-bottom</codeph> and <codeph>margin-left</codeph>. A margin can be a length, a percentage or <codeph>auto</codeph>, and it can be negative. The initial value is 0.</p>
+                    <p>A percentage is a part of the width of the <xref href="../glossaries/ContainingBlock.dita">containing block</xref>, also for the top and the bottom margins.</p>
+                    <p>An <codeph>auto</codeph> margin takes the free space that is left in the containing block. When a box has a width and both side margins are <codeph>auto</codeph>, the box is centered:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    width: 300pt;
+    margin: 0 auto;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <note>The vertical margins of boxes that follow each other collapse. The space between them is the larger of the two margins, not their sum. Two margins of 20pt leave 20pt, not 40pt.</note>
+                    <fig id="margin-collapse-samples">
+                        <title>Collapsing margins</title>
+                        <image href="../images/margin-collapse.svg" placement="break" scale="75">
+                            <alt>Two pairs of stacked boxes. In the first pair, the margins add up to a gap of 40pt, which is not what happens. In the second pair, the two margins overlap and the gap is 20pt.</alt>
+                        </image>
+                    </fig>
+                    <!-- TODO: margin-trim is read and has no effect in the PDF -->
+                </info>
+            </step>
+            <step id="set-logical-margins">
+                <cmd>Set the margins by the direction of the text</cmd>
+                <info>
+                    <p>The logical margin properties name the sides by the direction of the text, so they follow the writing mode of the element. <codeph>margin-block-start</codeph> and <codeph>margin-block-end</codeph> are the sides at the start and the end of the block axis. <codeph>margin-inline-start</codeph> and <codeph>margin-inline-end</codeph> are the sides at the start and the end of a line. <codeph>margin-block</codeph> and <codeph>margin-inline</codeph> set the two sides of an axis, the start first. With one value, both sides are equal.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">step {
+    margin-block: 6pt 12pt;
+    margin-inline: 18pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>In horizontal text that reads from left to right, this step has 6pt above, 12pt below and 18pt on the left and on the right.</p>
+                </info>
+            </step>
+            <step id="set-padding">
+                <cmd>Set the padding</cmd>
+                <info>
+                    <p>The <codeph>padding</codeph> property takes the same one to four values as <codeph>margin</codeph>, but it cannot be negative, <codeph>auto</codeph> does not exist for it, and the padding of two boxes never collapses. The background of a box is painted under its padding, and not under its margin.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    padding: 6pt 12pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The properties <codeph>padding-top</codeph>, <codeph>padding-right</codeph>, <codeph>padding-bottom</codeph> and <codeph>padding-left</codeph> set one side. The logical ones are <codeph>padding-block-start</codeph>, <codeph>padding-block-end</codeph>, <codeph>padding-inline-start</codeph>, <codeph>padding-inline-end</codeph>, and the pairs <codeph>padding-block</codeph> and <codeph>padding-inline</codeph>. The initial value is 0. A percentage is a part of the width of the containing block.</p>
+                </info>
+            </step>
+            <step id="margins-at-page-breaks">
+                <cmd>Choose what happens to a margin at a page break</cmd>
+                <info>
+                    <p>A box can break across two pages. The <codeph>margin-break</codeph> property decides what happens to the margins that touch the break:</p>
+                    <ul>
+                        <li><codeph>auto</codeph> is the initial value. At a break that CSSMedia chooses, a margin before the break is cut to the space that is left on the page and a margin after it is zero. At a break that you force, the margin before the break is cut and the margin after it stays.</li>
+                        <li><codeph>keep</codeph> keeps the margins.</li>
+                        <li><codeph>discard</codeph> removes the margins at the break, also at the top of the first page and at the bottom of the last one.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    margin-break: discard;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

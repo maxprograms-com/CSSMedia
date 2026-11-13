@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="Box">
+    <glossterm>Box</glossterm>
+    <glossdef>The rectangle that layout reserves on a page for an <xref href="XML.dita">XML</xref> element and its content. It has a content area, padding, a border and a margin. An element can make one box, more than one, or none, depending on its <codeph>display</codeph> value.</glossdef>
+</glossentry>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="170" viewBox="0 0 480 170">
+    <g font-family="Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle">
+        <g transform="translate(20 15)">
+            <rect x="0" y="0" width="120" height="90" fill="#9cc4ea"/>
+            <rect x="0" y="0" width="120" height="90" fill="none" stroke="#555555" stroke-width="12" opacity="0.55"/>
+            <rect x="12" y="12" width="96" height="66" fill="none" stroke="#333333" stroke-dasharray="3 2"/>
+            <rect x="30" y="30" width="60" height="30" fill="#9cc4ea" stroke="#333333"/>
+            <text x="60" y="118" fill="#222222">border-box</text>
+            <text x="60" y="134" fill="#666666" font-size="10">paints under the border</text>
+        </g>
+        <g transform="translate(180 15)">
+            <rect x="0" y="0" width="120" height="90" fill="#ffffff"/>
+            <rect x="0" y="0" width="120" height="90" fill="none" stroke="#555555" stroke-width="12" opacity="0.55"/>
+            <rect x="12" y="12" width="96" height="66" fill="#9cc4ea" stroke="#333333" stroke-dasharray="3 2"/>
+            <rect x="30" y="30" width="60" height="30" fill="#9cc4ea" stroke="#333333"/>
+            <text x="60" y="118" fill="#222222">padding-box</text>
+            <text x="60" y="134" fill="#666666" font-size="10">stops at the border</text>
+        </g>
+        <g transform="translate(340 15)">
+            <rect x="0" y="0" width="120" height="90" fill="#ffffff"/>
+            <rect x="0" y="0" width="120" height="90" fill="none" stroke="#555555" stroke-width="12" opacity="0.55"/>
+            <rect x="12" y="12" width="96" height="66" fill="none" stroke="#333333" stroke-dasharray="3 2"/>
+            <rect x="30" y="30" width="60" height="30" fill="#9cc4ea" stroke="#333333"/>
+            <text x="60" y="118" fill="#222222">content-box</text>
+            <text x="60" y="134" fill="#666666" font-size="10">paints the content only</text>
+        </g>
+    </g>
+</svg>

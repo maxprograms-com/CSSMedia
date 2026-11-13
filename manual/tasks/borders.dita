@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="borders">
+    <title>Borders and rounded corners</title>
+    <shortdesc>A border is a line around the padding of a box. Each side has a style, a width and a color, and the corners can be rounded.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="draw-a-border">
+                <cmd>Draw a border</cmd>
+                <info>
+                    <p>The <codeph>border</codeph> property sets the width, the style and the color of the four borders. Write the three values in any order:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    border: 1pt solid #336699;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The style is the value that turns a border on. The initial style is <codeph>none</codeph>, and a border with that style has no width, whatever width you set. If a border does not show, check that it has a style.</p>
+                </info>
+            </step>
+            <step id="choose-a-style">
+                <cmd>Choose a style</cmd>
+                <info>
+                    <p>The <codeph>border-style</codeph> property takes one to four of these values:</p>
+                    <ul>
+                        <li><codeph>none</codeph> and <codeph>hidden</codeph> draw nothing.</li>
+                        <li><codeph>solid</codeph> is a continuous line.</li>
+                        <li><codeph>dashed</codeph> is a line of dashes, and <codeph>dotted</codeph> a line of round dots.</li>
+                        <li><codeph>double</codeph> is two lines with a space between them. The lines and the space are a third of the width each.</li>
+                        <li><codeph>groove</codeph> and <codeph>ridge</codeph> are two lines of a lighter and a darker shade of the color. A groove looks cut into the page and a ridge looks raised.</li>
+                        <li><codeph>inset</codeph> and <codeph>outset</codeph> are one line, darker on the top and the left for an inset, and on the bottom and the right for an outset.</li>
+                    </ul>
+                    <fig id="border-style-samples">
+                        <title>The border styles</title>
+                        <image href="../images/border-styles.svg" placement="break" scale="75">
+                            <alt>Eight rectangles, each with a border of a different style: solid, dashed, dotted, double, groove, ridge, inset and outset.</alt>
+                        </image>
+                    </fig>
+                    <p>With two to four values, the sides take them as in <codeph>margin</codeph>: one value sets all sides, two values set top and bottom, then left and right, and so on.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    border-style: solid none;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This note has a border at the top and at the bottom only.</p>
+                </info>
+            </step>
+            <step id="set-the-width">
+                <cmd>Set the width</cmd>
+                <info>
+                    <p>The <codeph>border-width</codeph> property takes one to four widths. A width is a length that is not negative, or one of three keywords: <codeph>thin</codeph> is 1px, <codeph>medium</codeph> is 3px and <codeph>thick</codeph> is 5px. A pixel is 0.75pt. The initial width is <codeph>medium</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    border-style: solid;
+    border-width: 0.5pt 3pt;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="set-the-color">
+                <cmd>Set the color</cmd>
+                <info>
+                    <p>The <codeph>border-color</codeph> property takes one to four colors. Its initial value is <codeph>currentcolor</codeph>, which is the color of the text of the element, so a border that has no color is drawn in the color of the text.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    border: 2pt solid;
+    border-color: #336699 #999999;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Where two sides of different colors meet, the change of color is on the diagonal from the outer corner to the inner corner.</p>
+                </info>
+            </step>
+            <step id="set-one-side">
+                <cmd>Set one side</cmd>
+                <info>
+                    <p>Each side has properties of its own. The physical sides are <codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph> and <codeph>left</codeph>, and the logical sides, which follow the direction of the text, are <codeph>block-start</codeph>, <codeph>block-end</codeph>, <codeph>inline-start</codeph> and <codeph>inline-end</codeph>. For each side there are four properties:</p>
+                    <ul>
+                        <li><codeph>border-</codeph><varname>side</varname> sets the width, the style and the color, like <codeph>border</codeph>.</li>
+                        <li><codeph>border-</codeph><varname>side</varname><codeph>-width</codeph>, <codeph>border-</codeph><varname>side</varname><codeph>-style</codeph> and <codeph>border-</codeph><varname>side</varname><codeph>-color</codeph> set one part.</li>
+                    </ul>
+                    <p>The properties <codeph>border-block</codeph> and <codeph>border-inline</codeph> set the two sides of an axis. They also have the three parts, such as <codeph>border-inline-width</codeph>, which takes one or two values.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">heading {
+    border-block-end: 0.5pt solid gray;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This heading has a thin line under it in horizontal text, and a line at the end of the block axis in any other writing mode.</p>
+                </info>
+            </step>
+            <step id="round-the-corners">
+                <cmd>Round the corners</cmd>
+                <info>
+                    <p>The <codeph>border-radius</codeph> property sets the radius of the four corners. A radius is a length or a percentage that is not negative. A percentage is a part of the width of the box for the horizontal radius and of its height for the vertical one. The values are read like those of <codeph>margin</codeph>: one value sets all corners, and with more values the first is the top left corner and the rest follow clockwise.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    border: 1pt solid black;
+    border-radius: 6pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A corner can be an ellipse. Write the horizontal radii, a slash and the vertical radii. <codeph>border-radius: 12pt / 6pt</codeph> gives each corner a horizontal radius of 12pt and a vertical radius of 6pt.</p>
+                    <fig id="border-radius-samples">
+                        <title>A circular and an elliptical corner</title>
+                        <image href="../images/border-radius.svg" placement="break" scale="75">
+                            <alt>Two rounded rectangles. The first has corners that follow a dashed circle, and the second has corners that follow a dashed ellipse.</alt>
+                        </image>
+                    </fig>
+                    <p>To set one corner, use <codeph>border-top-left-radius</codeph>, <codeph>border-top-right-radius</codeph>, <codeph>border-bottom-right-radius</codeph> or <codeph>border-bottom-left-radius</codeph>. They take one value for a circle or two for an ellipse. The properties <codeph>border-start-start-radius</codeph>, <codeph>border-start-end-radius</codeph>, <codeph>border-end-start-radius</codeph> and <codeph>border-end-end-radius</codeph> name the corners by the direction of the text. The properties <codeph>border-top-radius</codeph>, <codeph>border-right-radius</codeph>, <codeph>border-bottom-radius</codeph>, <codeph>border-left-radius</codeph>, <codeph>border-block-start-radius</codeph>, <codeph>border-block-end-radius</codeph>, <codeph>border-inline-start-radius</codeph> and <codeph>border-inline-end-radius</codeph> set the two corners of one side.</p>
+                    <p>The <codeph>corner</codeph> property and the properties <codeph>corner-top-left</codeph>, <codeph>corner-top</codeph> and the like set the radius of a corner or of a side too.</p>
+                    <p>The rounded corner clips the background of the box, and the border follows the curve. If the radii of a side are larger than the side, CSSMedia makes all the radii of the box smaller in the same proportion, until they fit. The inner edge of a border has a radius that is the outer radius less the width of the border.</p>
+                    <!-- TODO: corner-shape and the corner-*-shape properties are read and ignored; the corners are always round -->
+                    <!-- TODO: border-image and its longhands, border-clip and its variants, border-limit and border-shape have no effect in the PDF -->
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

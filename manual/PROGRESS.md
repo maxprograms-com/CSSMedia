@@ -432,124 +432,124 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Borders and Box Decorations 4 (css-borders-4)
 
-- [ ] border
-- [ ] border-block
+- [x] border
+- [x] border-block
 - [ ] border-block-clip
-- [ ] border-block-color
-- [ ] border-block-end
+- [x] border-block-color
+- [x] border-block-end
 - [ ] border-block-end-clip
-- [ ] border-block-end-color
-- [ ] border-block-end-radius
-- [ ] border-block-end-style
-- [ ] border-block-end-width
-- [ ] border-block-start
+- [x] border-block-end-color
+- [x] border-block-end-radius
+- [x] border-block-end-style
+- [x] border-block-end-width
+- [x] border-block-start
 - [ ] border-block-start-clip
-- [ ] border-block-start-color
-- [ ] border-block-start-radius
-- [ ] border-block-start-style
-- [ ] border-block-start-width
-- [ ] border-block-style
-- [ ] border-block-width
-- [ ] border-bottom
+- [x] border-block-start-color
+- [x] border-block-start-radius
+- [x] border-block-start-style
+- [x] border-block-start-width
+- [x] border-block-style
+- [x] border-block-width
+- [x] border-bottom
 - [ ] border-bottom-clip
-- [ ] border-bottom-color
-- [ ] border-bottom-left-radius
-- [ ] border-bottom-radius
-- [ ] border-bottom-right-radius
-- [ ] border-bottom-style
-- [ ] border-bottom-width
+- [x] border-bottom-color
+- [x] border-bottom-left-radius
+- [x] border-bottom-radius
+- [x] border-bottom-right-radius
+- [x] border-bottom-style
+- [x] border-bottom-width
 - [ ] border-clip
-- [ ] border-color
-- [ ] border-end-end-radius
-- [ ] border-end-start-radius
+- [x] border-color
+- [x] border-end-end-radius
+- [x] border-end-start-radius
 - [ ] border-image
 - [ ] border-image-outset
 - [ ] border-image-repeat
 - [ ] border-image-slice
 - [ ] border-image-source
 - [ ] border-image-width
-- [ ] border-inline
+- [x] border-inline
 - [ ] border-inline-clip
-- [ ] border-inline-color
-- [ ] border-inline-end
+- [x] border-inline-color
+- [x] border-inline-end
 - [ ] border-inline-end-clip
-- [ ] border-inline-end-color
-- [ ] border-inline-end-radius
-- [ ] border-inline-end-style
-- [ ] border-inline-end-width
-- [ ] border-inline-start
+- [x] border-inline-end-color
+- [x] border-inline-end-radius
+- [x] border-inline-end-style
+- [x] border-inline-end-width
+- [x] border-inline-start
 - [ ] border-inline-start-clip
-- [ ] border-inline-start-color
-- [ ] border-inline-start-radius
-- [ ] border-inline-start-style
-- [ ] border-inline-start-width
-- [ ] border-inline-style
-- [ ] border-inline-width
-- [ ] border-left
+- [x] border-inline-start-color
+- [x] border-inline-start-radius
+- [x] border-inline-start-style
+- [x] border-inline-start-width
+- [x] border-inline-style
+- [x] border-inline-width
+- [x] border-left
 - [ ] border-left-clip
-- [ ] border-left-color
-- [ ] border-left-radius
-- [ ] border-left-style
-- [ ] border-left-width
+- [x] border-left-color
+- [x] border-left-radius
+- [x] border-left-style
+- [x] border-left-width
 - [ ] border-limit
-- [ ] border-radius
-- [ ] border-right
+- [x] border-radius
+- [x] border-right
 - [ ] border-right-clip
-- [ ] border-right-color
-- [ ] border-right-radius
-- [ ] border-right-style
-- [ ] border-right-width
+- [x] border-right-color
+- [x] border-right-radius
+- [x] border-right-style
+- [x] border-right-width
 - [ ] border-shape
-- [ ] border-start-end-radius
-- [ ] border-start-start-radius
-- [ ] border-style
-- [ ] border-top
+- [x] border-start-end-radius
+- [x] border-start-start-radius
+- [x] border-style
+- [x] border-top
 - [ ] border-top-clip
-- [ ] border-top-color
-- [ ] border-top-left-radius
-- [ ] border-top-radius
-- [ ] border-top-right-radius
-- [ ] border-top-style
-- [ ] border-top-width
-- [ ] border-width
+- [x] border-top-color
+- [x] border-top-left-radius
+- [x] border-top-radius
+- [x] border-top-right-radius
+- [x] border-top-style
+- [x] border-top-width
+- [x] border-width
 - [ ] box-shadow
 - [ ] box-shadow-blur
 - [ ] box-shadow-color
 - [ ] box-shadow-offset
 - [ ] box-shadow-position
 - [ ] box-shadow-spread
-- [ ] corner
-- [ ] corner-block-end
+- [~] corner
+- [~] corner-block-end
 - [ ] corner-block-end-shape
-- [ ] corner-block-start
+- [~] corner-block-start
 - [ ] corner-block-start-shape
-- [ ] corner-bottom
-- [ ] corner-bottom-left
+- [~] corner-bottom
+- [~] corner-bottom-left
 - [ ] corner-bottom-left-shape
-- [ ] corner-bottom-right
+- [~] corner-bottom-right
 - [ ] corner-bottom-right-shape
 - [ ] corner-bottom-shape
-- [ ] corner-end-end
+- [~] corner-end-end
 - [ ] corner-end-end-shape
-- [ ] corner-end-start
+- [~] corner-end-start
 - [ ] corner-end-start-shape
-- [ ] corner-inline-end
+- [~] corner-inline-end
 - [ ] corner-inline-end-shape
-- [ ] corner-inline-start
+- [~] corner-inline-start
 - [ ] corner-inline-start-shape
-- [ ] corner-left
+- [~] corner-left
 - [ ] corner-left-shape
-- [ ] corner-right
+- [~] corner-right
 - [ ] corner-right-shape
 - [ ] corner-shape
-- [ ] corner-start-end
+- [~] corner-start-end
 - [ ] corner-start-end-shape
-- [ ] corner-start-start
+- [~] corner-start-start
 - [ ] corner-start-start-shape
-- [ ] corner-top
-- [ ] corner-top-left
+- [~] corner-top
+- [~] corner-top-left
 - [ ] corner-top-left-shape
-- [ ] corner-top-right
+- [~] corner-top-right
 - [ ] corner-top-right-shape
 - [ ] corner-top-shape
 

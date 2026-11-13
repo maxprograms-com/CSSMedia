@@ -43,7 +43,7 @@ chapter { margin: 1em 2em 3em 4em; }
         </section>
         <section id="shorthand-definitions">
             <title>Shorthand definitions</title>
-            <p>Shorthands do not all use the same value order or number of values. Their property definitions specify the grammar, defaults for omitted values and reset-only sub-properties. The guides for <xref href="../tasks/color-and-images.dita#color-and-images">backgrounds</xref>, <xref href="../tasks/font-properties.dita#font-properties">fonts</xref> and other property groups describe the shorthands in those groups.</p>
+            <p>Shorthands do not all use the same value order or number of values. Their property definitions specify the grammar, defaults for omitted values and reset-only sub-properties. The guides for <xref href="../tasks/backgrounds.dita#backgrounds">backgrounds</xref>, <xref href="../tasks/borders.dita#borders">borders</xref>,<xref href="../tasks/font-properties.dita#font-properties">fonts</xref> and other property groups describe the shorthands in those groups.</p>
         </section>
     </conbody>
 </concept>

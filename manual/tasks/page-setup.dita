@@ -200,6 +200,12 @@ wide-table {
                 <cmd>Fill the page margins</cmd>
                 <info>
                     <p>A page-margin rule is an at-rule inside an <codeph>@page</codeph> rule, such as <codeph>@top-center</codeph> or <codeph>@bottom-right</codeph>. Each one defines a box in the margin. The box appears only if its <codeph>content</codeph> property has a value other than <codeph>none</codeph> or <codeph>normal</codeph>. Use <codeph>counter(page)</codeph> to show the page number.</p>
+                    <fig id="page-margin-boxes">
+                        <title>The page-margin boxes</title>
+                        <image href="../images/page-margin-boxes.svg" placement="break" scale="70">
+                            <alt>A page with its margin area divided into sixteen boxes around the page area: four corners, three boxes on each of the top and bottom sides, and three on each of the left and right sides. Each box shows the name of its at-rule.</alt>
+                        </image>
+                    </fig>
                     <p>For example, put a running title in the top-center box and the page number in the bottom-center box:</p>
                 </info>
                 <stepxmp>

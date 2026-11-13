@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="backgrounds">
+    <title>Backgrounds</title>
+    <shortdesc>A background is a color, one or more images, or both, painted behind the content of a box. Use it to fill a box, to add a texture or a watermark, and to repeat a drawing on every page.</shortdesc>
+    <taskbody>
+        <context>
+            <p>A background has up to two kinds of parts. The color is a single layer below everything else. The images are layers above the color, and you can have as many of them as you need. The first image of a list is the top layer.</p>
+        </context>
+        <steps>
+            <step id="background-color">
+                <cmd>Set the color</cmd>
+                <info>
+                    <p>The <codeph>background-color</codeph> property paints the whole background area with one color. It takes any <xref href="../glossaries/CSS.dita">CSS</xref> color, such as a name, a hexadecimal value or <codeph>rgb()</codeph>. The initial value is <codeph>transparent</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    background-color: #f2f2f2;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The background of the root element fills the page area, which is the part of the page inside the page margins. To paint the page margins too, set a background in an <codeph>@page</codeph> rule.</p>
+                </info>
+            </step>
+            <step id="background-image">
+                <cmd>Add images</cmd>
+                <info>
+                    <p>The <codeph>background-image</codeph> property takes a list of images separated by commas. An image can be a file, written as <codeph>url()</codeph>, or a gradient such as <codeph>linear-gradient()</codeph>, <codeph>radial-gradient()</codeph>, <codeph>conic-gradient()</codeph> and their repeating forms. The value <codeph>none</codeph> is a layer without an image, and it is the initial value.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-image: url("watermark.svg"), linear-gradient(white, #dddddd);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The watermark is above the gradient, and the background color is below both. A relative <codeph>url()</codeph> is found from the location of the stylesheet.</p>
+                    <!-- TODO: background-image is not complete: natural sizes of image() and image-set(), element() -->
+                </info>
+            </step>
+            <step id="place-an-image">
+                <cmd>Place an image</cmd>
+                <info>
+                    <p>An image is placed in the positioning area of the box. The <codeph>background-origin</codeph> property chooses it: <codeph>padding-box</codeph>, which is the initial value, <codeph>border-box</codeph> or <codeph>content-box</codeph>.</p>
+                    <p>The <codeph>background-position</codeph> property moves the image inside that area. A value can be a keyword (<codeph>left</codeph>, <codeph>center</codeph>, <codeph>right</codeph>, <codeph>top</codeph> and <codeph>bottom</codeph>), a length or a percentage. With one value, the second is <codeph>center</codeph>. With two values, the first is the horizontal position and the second is the vertical one. A keyword followed by a length is an offset from that side. The initial value is <codeph>0% 0%</codeph>, the top left corner.</p>
+                    <p>A percentage aligns the same point of the image and of the area. <codeph>50%</codeph> centers the image and <codeph>100%</codeph> puts its right edge on the right edge of the area.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-position: right 12pt bottom 12pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The properties <codeph>background-position-x</codeph> and <codeph>background-position-y</codeph> set one axis. <codeph>background-position-inline</codeph> and <codeph>background-position-block</codeph> set an axis by the direction of the text, with <codeph>start</codeph> and <codeph>end</codeph> instead of the side keywords.</p>
+                </info>
+            </step>
+            <step id="size-an-image">
+                <cmd>Size an image</cmd>
+                <info>
+                    <p>The <codeph>background-size</codeph> property sets the size of an image. The initial value, <codeph>auto</codeph>, is the size of the image. These are the other values:</p>
+                    <ul>
+                        <li>A length or a percentage of the positioning area sets the width. A second value sets the height. If you give only one, the height is <codeph>auto</codeph>, and CSSMedia keeps the proportions of the image.</li>
+                        <li><codeph>cover</codeph> makes the image as small as possible so that it covers the whole area. A part of the image can be left out.</li>
+                        <li><codeph>contain</codeph> makes the image as large as possible so that all of it fits in the area. A part of the area can stay empty.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-size: cover;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="repeat-an-image">
+                <cmd>Repeat an image</cmd>
+                <info>
+                    <p>An image repeats until it fills the area. The <codeph>background-repeat</codeph> property sets how, with one value for both axes, or two values for the horizontal and the vertical axis:</p>
+                    <ul>
+                        <li><codeph>repeat</codeph> is the initial value. It repeats the image and cuts the last copy at the edge.</li>
+                        <li><codeph>no-repeat</codeph> draws the image once.</li>
+                        <li><codeph>space</codeph> draws as many whole copies as fit and spreads them with equal space between them.</li>
+                        <li><codeph>round</codeph> draws as many whole copies as fit, and resizes them so that they fill the area exactly.</li>
+                    </ul>
+                    <fig id="background-repeat-samples">
+                        <title>The repeat styles</title>
+                        <image href="../images/background-repeat.svg" placement="break" scale="75">
+                            <alt>Four boxes filled with a square tile that has a white dot. With repeat, the last copies are cut at the edge. With no-repeat, there is one tile. With space, there are whole tiles with gaps between them. With round, whole tiles are stretched to fill the box.</alt>
+                        </image>
+                    </fig>
+                    <p>The values <codeph>repeat-x</codeph> and <codeph>repeat-y</codeph> repeat on one axis only, and <codeph>repeat-inline</codeph> and <codeph>repeat-block</codeph> do it by the direction of the text. The properties <codeph>background-repeat-x</codeph>, <codeph>background-repeat-y</codeph>, <codeph>background-repeat-inline</codeph> and <codeph>background-repeat-block</codeph> set one axis.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-image: url("watermark.svg");
+    background-repeat: no-repeat;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="attach-to-the-page">
+                <cmd>Attach an image to the page</cmd>
+                <info>
+                    <p>The <codeph>background-attachment</codeph> property is <codeph>scroll</codeph> by default, which attaches the image to its box. With <codeph>fixed</codeph>, the image is attached to the page, so it is placed the same way on every page where the box has a background. A value of <codeph>local</codeph> works as <codeph>scroll</codeph>, because a page does not scroll.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-attachment: fixed;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="clip-the-background">
+                <cmd>Clip the background</cmd>
+                <info>
+                    <p>The <codeph>background-clip</codeph> property chooses the area where the background is painted:</p>
+                    <ul>
+                        <li><codeph>border-box</codeph> is the initial value. The background goes under the border.</li>
+                        <li><codeph>padding-box</codeph> stops it at the inner edge of the border.</li>
+                        <li><codeph>content-box</codeph> paints only the content area.</li>
+                        <li><codeph>border-area</codeph> paints only under the border.</li>
+                        <li><codeph>text</codeph> paints only inside the shapes of the letters of the box, which makes text that is filled with an image or a gradient. You can combine <codeph>border-area</codeph> and <codeph>text</codeph>.</li>
+                    </ul>
+                    <fig id="background-area-samples">
+                        <title>The areas of background-origin and background-clip</title>
+                        <image href="../images/background-areas.svg" placement="break" scale="75">
+                            <alt>Three boxes with a border, padding and content. The background is painted under the border for border-box, up to the border for padding-box, and in the content area only for content-box.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    background-image: linear-gradient(#336699, #cc3333);
+    background-clip: text;
+    color: transparent;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="blend-the-layers">
+                <cmd>Blend the layers</cmd>
+                <info>
+                    <p>The <codeph>background-blend-mode</codeph> property sets how each image layer mixes with the layers below it and with the color. The modes are <codeph>normal</codeph>, which is the initial value, <codeph>multiply</codeph>, <codeph>screen</codeph>, <codeph>overlay</codeph>, <codeph>darken</codeph>, <codeph>lighten</codeph>, <codeph>color-dodge</codeph>, <codeph>color-burn</codeph>, <codeph>hard-light</codeph>, <codeph>soft-light</codeph>, <codeph>difference</codeph>, <codeph>exclusion</codeph>, <codeph>hue</codeph>, <codeph>saturation</codeph>, <codeph>color</codeph> and <codeph>luminosity</codeph>. Give one mode for each layer, separated by commas. When the list is shorter than the list of images, it repeats.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background-color: #ffeecc;
+    background-image: url("texture.png");
+    background-blend-mode: multiply;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="background-shorthand">
+                <cmd>Set everything at once</cmd>
+                <info>
+                    <p>The <codeph>background</codeph> property sets all the background properties in one declaration. Separate the layers with commas, and put the color in the last layer. In a layer, write a position, then a slash and a size, and in any order the image, the repeat style, the attachment and one or two boxes. One box sets the origin and the clip. Two boxes set the origin first and the clip second. A property that you leave out goes back to its initial value, <codeph>background-blend-mode</codeph> included.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter {
+    background: url("watermark.svg") right bottom / 120pt no-repeat, #f2f2f2;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The <codeph>background-tbd</codeph> property is like <codeph>background</codeph>, but it takes no color and leaves the color as it is.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

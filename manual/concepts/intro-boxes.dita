@@ -2,18 +2,83 @@
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
 <concept id="introBoxes">
     <title>Boxes, backgrounds and borders</title>
-    <shortdesc>Every element in your document generates a box that you can size, space and fill with
-        color.</shortdesc>
+    <shortdesc>Every element of your document makes a box on the page. This chapter explains how to space and size boxes, draw their borders and fill them with colors and images. The <xref href="../references/box-chapter-reference.dita#box-chapter-reference">boxes reference</xref> at the end lists every property.</shortdesc>
     <conbody>
-        <p>A box has content, padding, a border and a margin. These topics explain how to size and
-            space boxes and how to set their backgrounds:</p>
+        <p>A <xref href="../glossaries/Box.dita">box</xref> is the rectangle that CSSMedia reserves on the page for an element and its content. It has four areas, from the inside to the outside:</p>
         <ul>
-            <li><xref href="box-sizing-and-spacing.dita"/></li>
-            <li><xref href="box-dimensions.dita"/></li>
-            <li><xref href="../tasks/color-and-images.dita"/></li>
-            <li><xref href="../tasks/positioning-and-size.dita"/></li>
-            <li><xref href="../tasks/repetition-and-attachment.dita"/></li>
-            <li><xref href="../tasks/clipping-shorthand-and-blending.dita"/></li>
+            <li>The content is the text, the images and the child boxes.</li>
+            <li>The padding is the space around the content, inside the border.</li>
+            <li>The border is the line around the padding.</li>
+            <li>The margin is the space outside the border, between this box and the boxes around it.</li>
+        </ul>
+        <fig id="box-areas">
+            <title>The four areas of a box</title>
+            <image href="../images/box-areas.svg" placement="break" scale="80">
+                <alt>Four nested rectangles. From the outside to the inside they are the margin, the border, the padding and the content.</alt>
+            </image>
+        </fig>
+        <p>Any of the areas can be zero. The border, the padding and the margin are zero until you set them, and a box has no color until you give it a background.</p>
+        <p>The element names in the examples of this chapter, such as <codeph>note</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        <section id="lengths-and-percentages">
+            <title>Lengths and percentages</title>
+            <p>Most of the properties of this chapter take a length, which is a number with a unit, such as <codeph>12pt</codeph>. A length can be negative only where a property says so. A <codeph>0</codeph> needs no unit. These are the units that you will use most:</p>
+            <table frame="all">
+                <tgroup cols="2">
+                    <colspec colname="c1" colwidth="1*"/>
+                    <colspec colname="c2" colwidth="4*"/>
+                    <thead>
+                        <row>
+                            <entry>Unit</entry>
+                            <entry>Meaning</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><codeph>pt</codeph></entry>
+                            <entry>Point. 72pt are 1 inch.</entry>
+                        </row>
+                        <row>
+                            <entry><codeph>pc</codeph></entry>
+                            <entry>Pica. 1pc is 12pt.</entry>
+                        </row>
+                        <row>
+                            <entry><codeph>px</codeph></entry>
+                            <entry>CSS pixel. 96px are 1 inch, so 1px is 0.75pt.</entry>
+                        </row>
+                        <row>
+                            <entry><codeph>in</codeph>, <codeph>cm</codeph>, <codeph>mm</codeph>, <codeph>Q</codeph></entry>
+                            <entry>Inch, centimeter, millimeter and quarter millimeter.</entry>
+                        </row>
+                        <row>
+                            <entry><codeph>em</codeph></entry>
+                            <entry>The font size of the element. <codeph>1em</codeph> is a different length in elements with different font sizes.</entry>
+                        </row>
+                        <row>
+                            <entry><codeph>rem</codeph></entry>
+                            <entry>The font size of the root element.</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <p>A percentage is a part of another size, and the property decides which one. For the width of a box it is a part of the width of the <xref href="../glossaries/ContainingBlock.dita">containing block</xref>. The margins and the padding of all four sides also use the width of the containing block.</p>
+        </section>
+        <section id="logical-and-physical">
+            <title>Physical and logical sides</title>
+            <p>Many properties come in two forms. The physical form names a side of the page: <codeph>margin-left</codeph> is always on the left. The logical form names a side of the text: <codeph>margin-inline-start</codeph> is where a line of text starts. The inline axis is the direction of a line of text, and the block axis is the direction in which lines are stacked.</p>
+            <fig id="logical-axes-samples">
+                <title>The inline and block axes</title>
+                <image href="../images/logical-axes.svg" placement="break" scale="75">
+                    <alt>Two boxes with text. In horizontal text from left to right, the inline axis goes to the right and the block axis goes down. In vertical-rl text, the inline axis goes down and the block axis goes to the left.</alt>
+                </image>
+            </fig>
+            <p>In horizontal text that reads from left to right, the inline start is the left and the block start is the top. The writing mode and the direction of the text change that. Use the logical properties when a document has text in more than one writing mode or direction, so that the boxes follow the text.</p>
+        </section>
+        <p>The topics of this chapter follow the areas of a box:</p>
+        <ul>
+            <li><xref href="../tasks/box-spacing.dita"/></li>
+            <li><xref href="../tasks/box-sizes.dita"/></li>
+            <li><xref href="../tasks/borders.dita"/></li>
+            <li><xref href="../tasks/backgrounds.dita"/></li>
         </ul>
     </conbody>
 </concept>

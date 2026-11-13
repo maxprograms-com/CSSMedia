@@ -1,307 +1,764 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="box-model-properties">
-    <title>Box model properties</title>
-    <shortdesc>This table lists the box model properties described in <xref keyref="ch-box-sizing">Box sizing, margins and padding</xref>. A length is a number with a unit, such as <codeph>12pt</codeph> or <codeph>1em</codeph>. Margin and padding percentages are relative to the containing block’s logical width, or inline size.</shortdesc>
+    <title>Margins, padding and borders</title>
+    <shortdesc>This reference lists the properties that CSSMedia uses for the margins, padding, borders and rounded corners of a box.</shortdesc>
     <refbody>
-        <section>
-            <!-- TODO: fill the Default cells and describe how each property affects layout in the PDF -->
-            <p>These properties set the margins, padding and box sizing of the boxes of a document.</p>
-            <p>The CSS-wide keywords <codeph>inherit</codeph>, <codeph>initial</codeph>, <codeph>revert</codeph>, <codeph>revert-layer</codeph>, and <codeph>unset</codeph> can also be used with these properties.</p>
+        <section id="box-margins">
+            <title>Margins</title>
+            <table id="box-margins__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-margin">
+                            <entry><codeph>margin</codeph></entry>
+                            <entry>Sets the space outside the four sides of the box. One value applies to all sides. Two values set top and bottom, then left and right. Three set top, then left and right, then bottom. Four set top, right, bottom and left.</entry>
+                            <entry>One to four lengths or percentages, or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-margin" scope="external" format="html">CSS Box Model 4 §3.2</xref></entry>
+                        </row>
+                        <row id="row-margin-top">
+                            <entry><codeph>margin-top</codeph></entry>
+                            <entry>Sets the space above the box.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-top" scope="external" format="html">CSS Box Model 4 §3.1</xref></entry>
+                        </row>
+                        <row id="row-margin-right">
+                            <entry><codeph>margin-right</codeph></entry>
+                            <entry>Sets the space at the right of the box.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-right" scope="external" format="html">CSS Box Model 4 §3.1</xref></entry>
+                        </row>
+                        <row id="row-margin-bottom">
+                            <entry><codeph>margin-bottom</codeph></entry>
+                            <entry>Sets the space below the box.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-bottom" scope="external" format="html">CSS Box Model 4 §3.1</xref></entry>
+                        </row>
+                        <row id="row-margin-left">
+                            <entry><codeph>margin-left</codeph></entry>
+                            <entry>Sets the space at the left of the box.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-left" scope="external" format="html">CSS Box Model 4 §3.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-block</codeph></entry>
+                            <entry>Sets the margins at the start and the end of the block axis.</entry>
+                            <entry>One or two lengths, percentages or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-block" scope="external" format="html">CSS Logical Properties 1 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-block-start</codeph></entry>
+                            <entry>Sets the margin at the start of the block axis.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-block-start" scope="external" format="html">CSS Logical Properties 1 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-block-end</codeph></entry>
+                            <entry>Sets the margin at the end of the block axis.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-block-end" scope="external" format="html">CSS Logical Properties 1 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-inline</codeph></entry>
+                            <entry>Sets the margins at the start and the end of the inline axis.</entry>
+                            <entry>One or two lengths, percentages or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-inline" scope="external" format="html">CSS Logical Properties 1 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-inline-start</codeph></entry>
+                            <entry>Sets the margin at the start of the inline axis.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-inline-start" scope="external" format="html">CSS Logical Properties 1 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-inline-end</codeph></entry>
+                            <entry>Sets the margin at the end of the inline axis.</entry>
+                            <entry>A length, a percentage or <codeph>auto</codeph></entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-inline-end" scope="external" format="html">CSS Logical Properties 1 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-break</codeph></entry>
+                            <entry>Chooses what happens to the margins of a box where a page or column break touches them.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>keep</codeph> or <codeph>discard</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-break-4/#propdef-margin-break" scope="external" format="html">CSS Fragmentation 4 §5.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>margin-trim</codeph></entry>
+                            <entry>Removes the margins of the children that touch the edges of the container.</entry>
+                            <entry><codeph>none</codeph>, <codeph>block</codeph>, <codeph>inline</codeph>, or one or more of <codeph>block-start</codeph>, <codeph>block-end</codeph>, <codeph>inline-start</codeph> and <codeph>inline-end</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-trim" scope="external" format="html">CSS Box Model 4 §3.3</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
         </section>
-        <table id="box-model-properties__I_1g_">
-            <tgroup cols="5">
-                <thead>
-                    <row valign="middle">
-                        <entry align="center">Name</entry>
-                        <entry align="center">Description</entry>
-                        <entry align="center">Values</entry>
-                        <entry align="center">Default</entry>
-                        <entry align="center">Specification</entry>
-                    </row>
-                </thead>
-                <tbody>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>box-sizing</codeph>
-                        </entry>
-                        <entry>Chooses whether <codeph>width</codeph> and <codeph>height</codeph> measure the content area or the box including padding and border.</entry>
-                        <entry>
-                            <codeph>content-box</codeph> measures the content; <codeph>border-box</codeph> includes padding and border.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-sizing-3/#propdef-box-sizing" scope="external" format="html">CSS Sizing 3</xref>
-                        </entry>
-                    </row>
-                    <row id="row-margin" valign="middle">
-                        <entry>
-                            <codeph>margin</codeph>
-                        </entry>
-                        <entry>Sets the space outside all four sides of a box.</entry>
-                        <entry>One to four lengths or percentages, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-block</codeph>
-                        </entry>
-                        <entry>Sets the margins at the start and end of the block axis.</entry>
-                        <entry>One or two lengths, percentages, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph> values.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-block" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-block-end</codeph>
-                        </entry>
-                        <entry>Sets the margin at the end of the block axis.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-block-end" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-block-start</codeph>
-                        </entry>
-                        <entry>Sets the margin at the start of the block axis.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-block-start" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row id="row-margin-bottom" valign="middle">
-                        <entry>
-                            <codeph>margin-bottom</codeph>
-                        </entry>
-                        <entry>Sets the space outside the bottom side of a box.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-bottom" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-break</codeph>
-                        </entry>
-                        <entry>Controls whether a margin is kept or discarded when its box is split by a page break.</entry>
-                        <entry>
-                            <codeph>auto</codeph> follows the break rules; <codeph>keep</codeph> keeps the margin; <codeph>discard</codeph> removes it.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-break-4/#propdef-margin-break" scope="external" format="html">CSS Fragmentation 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-inline</codeph>
-                        </entry>
-                        <entry>Sets the margins at the start and end of the inline axis.</entry>
-                        <entry>One or two lengths, percentages, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph> values.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-inline" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-inline-end</codeph>
-                        </entry>
-                        <entry>Sets the margin at the end of the inline axis.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-inline-end" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-inline-start</codeph>
-                        </entry>
-                        <entry>Sets the margin at the start of the inline axis.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-margin-inline-start" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row id="row-margin-left" valign="middle">
-                        <entry>
-                            <codeph>margin-left</codeph>
-                        </entry>
-                        <entry>Sets the space outside the left side of a box.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-left" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row id="row-margin-right" valign="middle">
-                        <entry>
-                            <codeph>margin-right</codeph>
-                        </entry>
-                        <entry>Sets the space outside the right side of a box.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-right" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row id="row-margin-top" valign="middle">
-                        <entry>
-                            <codeph>margin-top</codeph>
-                        </entry>
-                        <entry>Sets the space outside the top side of a box.</entry>
-                        <entry>Length, percentage, <codeph>auto</codeph>, or <codeph>anchor-size()</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-top" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>margin-trim</codeph>
-                        </entry>
-                        <entry>Removes selected margins where child boxes meet the edges of their container.</entry>
-                        <entry>
-                            <codeph>none</codeph>; <codeph>block</codeph>, <codeph>inline</codeph>, or both; or one or more of <codeph>block-start</codeph>, <codeph>inline-start</codeph>, <codeph>block-end</codeph>, and <codeph>inline-end</codeph>.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-margin-trim" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding</codeph>
-                        </entry>
-                        <entry>Sets the space between the content and all four sides of its border.</entry>
-                        <entry>One to four non-negative lengths or percentages.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-padding" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-block</codeph>
-                        </entry>
-                        <entry>Sets the padding at the start and end of the block axis.</entry>
-                        <entry>One or two non-negative lengths or percentages.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-block" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-block-end</codeph>
-                        </entry>
-                        <entry>Sets the padding at the end of the block axis.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-block-end" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-block-start</codeph>
-                        </entry>
-                        <entry>Sets the padding at the start of the block axis.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-block-start" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-bottom</codeph>
-                        </entry>
-                        <entry>Sets the space between the content and the bottom border.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-bottom" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-inline</codeph>
-                        </entry>
-                        <entry>Sets the padding at the start and end of the inline axis.</entry>
-                        <entry>One or two non-negative lengths or percentages.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-inline" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-inline-end</codeph>
-                        </entry>
-                        <entry>Sets the padding at the end of the inline axis.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-inline-end" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-inline-start</codeph>
-                        </entry>
-                        <entry>Sets the padding at the start of the inline axis.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-inline-start" scope="external" format="html">CSS Logical Properties 1</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-left</codeph>
-                        </entry>
-                        <entry>Sets the space between the content and the left border.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-left" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-right</codeph>
-                        </entry>
-                        <entry>Sets the space between the content and the right border.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-right" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>padding-top</codeph>
-                        </entry>
-                        <entry>Sets the space between the content and the top border.</entry>
-                        <entry>Non-negative length or percentage.</entry>
-                        <entry />
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-top" scope="external" format="html">CSS Box Model 4</xref>
-                        </entry>
-                    </row>
-                </tbody>
-            </tgroup>
-        </table>
+        <section id="box-padding">
+            <title>Padding</title>
+            <table id="box-padding__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>padding</codeph></entry>
+                            <entry>Sets the space between the content and the border on the four sides. The values are read like those of <codeph>margin</codeph>.</entry>
+                            <entry>One to four non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-padding" scope="external" format="html">CSS Box Model 4 §4.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-top</codeph></entry>
+                            <entry>Sets the space between the content and the top border.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-top" scope="external" format="html">CSS Box Model 4 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-right</codeph></entry>
+                            <entry>Sets the space between the content and the right border.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-right" scope="external" format="html">CSS Box Model 4 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-bottom</codeph></entry>
+                            <entry>Sets the space between the content and the bottom border.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-bottom" scope="external" format="html">CSS Box Model 4 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-left</codeph></entry>
+                            <entry>Sets the space between the content and the left border.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-box-4/#propdef-padding-left" scope="external" format="html">CSS Box Model 4 §4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-block</codeph></entry>
+                            <entry>Sets the padding at the start and the end of the block axis.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-block" scope="external" format="html">CSS Logical Properties 1 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-block-start</codeph></entry>
+                            <entry>Sets the padding at the start of the block axis.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-block-start" scope="external" format="html">CSS Logical Properties 1 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-block-end</codeph></entry>
+                            <entry>Sets the padding at the end of the block axis.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-block-end" scope="external" format="html">CSS Logical Properties 1 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-inline</codeph></entry>
+                            <entry>Sets the padding at the start and the end of the inline axis.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-inline" scope="external" format="html">CSS Logical Properties 1 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-inline-start</codeph></entry>
+                            <entry>Sets the padding at the start of the inline axis.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-inline-start" scope="external" format="html">CSS Logical Properties 1 §4.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>padding-inline-end</codeph></entry>
+                            <entry>Sets the padding at the end of the inline axis.</entry>
+                            <entry>A non-negative length or percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-logical-1/#propdef-padding-inline-end" scope="external" format="html">CSS Logical Properties 1 §4.4</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="box-borders">
+            <title>Borders</title>
+            <table id="box-borders__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>border</codeph></entry>
+                            <entry>Sets the width, style and color of the four borders. It also resets <codeph>border-image</codeph>.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-width</codeph></entry>
+                            <entry>Sets the width of the four borders. The values are read like those of <codeph>margin</codeph>.</entry>
+                            <entry>One to four widths</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-style</codeph></entry>
+                            <entry>Sets the line style of the four borders. The values are read like those of <codeph>margin</codeph>.</entry>
+                            <entry>One to four styles</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-color</codeph></entry>
+                            <entry>Sets the color of the four borders. The values are read like those of <codeph>margin</codeph>.</entry>
+                            <entry>One to four colors</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-top</codeph></entry>
+                            <entry>Sets the width, style and color of the top border.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-right</codeph></entry>
+                            <entry>Sets the width, style and color of the right border.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-right" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-bottom</codeph></entry>
+                            <entry>Sets the width, style and color of the bottom border.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-left</codeph></entry>
+                            <entry>Sets the width, style and color of the left border.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-left" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block</codeph></entry>
+                            <entry>Sets the width, style and color of the borders at the start and the end of the block axis.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-start</codeph></entry>
+                            <entry>Sets the width, style and color of the border at the start of the block axis.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-start" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-end</codeph></entry>
+                            <entry>Sets the width, style and color of the border at the end of the block axis.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-end" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline</codeph></entry>
+                            <entry>Sets the width, style and color of the borders at the start and the end of the inline axis.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-start</codeph></entry>
+                            <entry>Sets the width, style and color of the border at the start of the inline axis.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-start" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-end</codeph></entry>
+                            <entry>Sets the width, style and color of the border at the end of the inline axis.</entry>
+                            <entry>A width, a style and a color, in any order</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-end" scope="external" format="html">CSS Borders 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-top-width</codeph></entry>
+                            <entry>Sets the width of the top border.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-right-width</codeph></entry>
+                            <entry>Sets the width of the right border.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-right-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-bottom-width</codeph></entry>
+                            <entry>Sets the width of the bottom border.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-left-width</codeph></entry>
+                            <entry>Sets the width of the left border.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-left-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-width</codeph></entry>
+                            <entry>Sets the width of the borders at the start and the end of the block axis.</entry>
+                            <entry>One or two widths</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-start-width</codeph></entry>
+                            <entry>Sets the width of the border at the start of the block axis.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-start-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-end-width</codeph></entry>
+                            <entry>Sets the width of the border at the end of the block axis.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-end-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-width</codeph></entry>
+                            <entry>Sets the width of the borders at the start and the end of the inline axis.</entry>
+                            <entry>One or two widths</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-start-width</codeph></entry>
+                            <entry>Sets the width of the border at the start of the inline axis.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-start-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-end-width</codeph></entry>
+                            <entry>Sets the width of the border at the end of the inline axis.</entry>
+                            <entry><codeph>thin</codeph>, <codeph>medium</codeph>, <codeph>thick</codeph> or a non-negative length</entry>
+                            <entry><codeph>medium</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-end-width" scope="external" format="html">CSS Borders 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-top-style</codeph></entry>
+                            <entry>Sets the line style of the top border.</entry>
+                            <entry><codeph>none</codeph>, <codeph>hidden</codeph>, <codeph>dotted</codeph>, <codeph>dashed</codeph>, <codeph>solid</codeph>, <codeph>double</codeph>, <codeph>groove</codeph>, <codeph>ridge</codeph>, <codeph>inset</codeph> or <codeph>outset</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-right-style</codeph></entry>
+                            <entry>Sets the line style of the right border.</entry>
+                            <entry>The values of <codeph>border-top-style</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-right-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-bottom-style</codeph></entry>
+                            <entry>Sets the line style of the bottom border.</entry>
+                            <entry>The values of <codeph>border-top-style</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-left-style</codeph></entry>
+                            <entry>Sets the line style of the left border.</entry>
+                            <entry>The values of <codeph>border-top-style</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-left-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-style</codeph></entry>
+                            <entry>Sets the line style of the borders at the start and the end of the block axis.</entry>
+                            <entry>One or two styles</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-start-style</codeph></entry>
+                            <entry>Sets the line style of the border at the start of the block axis.</entry>
+                            <entry>The values of <codeph>border-top-style</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-start-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-end-style</codeph></entry>
+                            <entry>Sets the line style of the border at the end of the block axis.</entry>
+                            <entry>The values of <codeph>border-top-style</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-end-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-style</codeph></entry>
+                            <entry>Sets the line style of the borders at the start and the end of the inline axis.</entry>
+                            <entry>One or two styles</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-start-style</codeph></entry>
+                            <entry>Sets the line style of the border at the start of the inline axis.</entry>
+                            <entry>The values of <codeph>border-top-style</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-start-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-end-style</codeph></entry>
+                            <entry>Sets the line style of the border at the end of the inline axis.</entry>
+                            <entry>The values of <codeph>border-top-style</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-end-style" scope="external" format="html">CSS Borders 4 §2.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-top-color</codeph></entry>
+                            <entry>Sets the color of the top border.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-right-color</codeph></entry>
+                            <entry>Sets the color of the right border.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-right-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-bottom-color</codeph></entry>
+                            <entry>Sets the color of the bottom border.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-left-color</codeph></entry>
+                            <entry>Sets the color of the left border.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-left-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-color</codeph></entry>
+                            <entry>Sets the color of the borders at the start and the end of the block axis.</entry>
+                            <entry>One or two colors</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-start-color</codeph></entry>
+                            <entry>Sets the color of the border at the start of the block axis.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-start-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-end-color</codeph></entry>
+                            <entry>Sets the color of the border at the end of the block axis.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-end-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-color</codeph></entry>
+                            <entry>Sets the color of the borders at the start and the end of the inline axis.</entry>
+                            <entry>One or two colors</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-start-color</codeph></entry>
+                            <entry>Sets the color of the border at the start of the inline axis.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-start-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-end-color</codeph></entry>
+                            <entry>Sets the color of the border at the end of the inline axis.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-end-color" scope="external" format="html">CSS Borders 4 §2.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="box-radii">
+            <title>Rounded corners</title>
+            <table id="box-radii__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>border-radius</codeph></entry>
+                            <entry>Sets the radius of the four corners. Values after a slash set the vertical radii.</entry>
+                            <entry>One to four non-negative lengths or percentages, optionally followed by <codeph>/</codeph> and one to four more</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-top-left-radius</codeph></entry>
+                            <entry>Sets the radius of the top left corner. One value is a circle and two values are an ellipse.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-left-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-top-right-radius</codeph></entry>
+                            <entry>Sets the radius of the top right corner.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-right-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-bottom-right-radius</codeph></entry>
+                            <entry>Sets the radius of the bottom right corner.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-right-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-bottom-left-radius</codeph></entry>
+                            <entry>Sets the radius of the bottom left corner.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-left-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-start-start-radius</codeph></entry>
+                            <entry>Sets the radius of the corner at the start of the block axis and the start of the inline axis.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-start-start-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-start-end-radius</codeph></entry>
+                            <entry>Sets the radius of the corner at the start of the block axis and the end of the inline axis.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-start-end-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-end-start-radius</codeph></entry>
+                            <entry>Sets the radius of the corner at the end of the block axis and the start of the inline axis.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-end-start-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-end-end-radius</codeph></entry>
+                            <entry>Sets the radius of the corner at the end of the block axis and the end of the inline axis.</entry>
+                            <entry>One or two non-negative lengths or percentages</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-end-end-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-top-radius</codeph></entry>
+                            <entry>Sets the radius of the two top corners.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-right-radius</codeph></entry>
+                            <entry>Sets the radius of the two right corners.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-right-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-bottom-radius</codeph></entry>
+                            <entry>Sets the radius of the two bottom corners.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-left-radius</codeph></entry>
+                            <entry>Sets the radius of the two left corners.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-left-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-start-radius</codeph></entry>
+                            <entry>Sets the radius of the two corners at the start of the block axis.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-start-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-block-end-radius</codeph></entry>
+                            <entry>Sets the radius of the two corners at the end of the block axis.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-end-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-start-radius</codeph></entry>
+                            <entry>Sets the radius of the two corners at the start of the inline axis.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-start-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>border-inline-end-radius</codeph></entry>
+                            <entry>Sets the radius of the two corners at the end of the inline axis.</entry>
+                            <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-end-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner</codeph></entry>
+                            <entry>Sets the radius and the shape of the four corners.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-top-left</codeph></entry>
+                            <entry>Sets the radius and the shape of the top left corner.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-top-left" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-top-right</codeph></entry>
+                            <entry>Sets the radius and the shape of the top right corner.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-top-right" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-bottom-right</codeph></entry>
+                            <entry>Sets the radius and the shape of the bottom right corner.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-bottom-right" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-bottom-left</codeph></entry>
+                            <entry>Sets the radius and the shape of the bottom left corner.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-bottom-left" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-start-start</codeph></entry>
+                            <entry>Sets the radius and the shape of the corner at the start of the block axis and the start of the inline axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-start-start" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-start-end</codeph></entry>
+                            <entry>Sets the radius and the shape of the corner at the start of the block axis and the end of the inline axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-start-end" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-end-start</codeph></entry>
+                            <entry>Sets the radius and the shape of the corner at the end of the block axis and the start of the inline axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-end-start" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-end-end</codeph></entry>
+                            <entry>Sets the radius and the shape of the corner at the end of the block axis and the end of the inline axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-end-end" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-top</codeph></entry>
+                            <entry>Sets the radius and the shape of the two top corners.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-top" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-right</codeph></entry>
+                            <entry>Sets the radius and the shape of the two right corners.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-right" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-bottom</codeph></entry>
+                            <entry>Sets the radius and the shape of the two bottom corners.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-bottom" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-left</codeph></entry>
+                            <entry>Sets the radius and the shape of the two left corners.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-left" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-block-start</codeph></entry>
+                            <entry>Sets the radius and the shape of the two corners at the start of the block axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-block-start" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-block-end</codeph></entry>
+                            <entry>Sets the radius and the shape of the two corners at the end of the block axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-block-end" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-inline-start</codeph></entry>
+                            <entry>Sets the radius and the shape of the two corners at the start of the inline axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-inline-start" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>corner-inline-end</codeph></entry>
+                            <entry>Sets the radius and the shape of the two corners at the end of the inline axis.</entry>
+                            <entry>A radius and a shape</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-corner-inline-end" scope="external" format="html">CSS Borders 4 §3.9</xref></entry>
+                        </row>
+                        <!-- TODO: the corner shape properties (corner-shape and the corner-*-shape properties) are read and ignored; add their rows to the table of corner shapes when CSSMedia paints them -->
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <!-- TODO: border-image and its longhands, border-clip and its variants, border-limit and border-shape have no rows until CSSMedia paints them -->
     </refbody>
 </reference>
-

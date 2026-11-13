@@ -1,339 +1,196 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="background-reference">
-    <title>Background and image reference</title>
+    <title>Backgrounds</title>
+    <shortdesc>This reference lists the properties that CSSMedia uses to paint the background of a box.</shortdesc>
     <refbody>
-        <table id="background-reference__I_28_">
-            <tgroup cols="5">
-                <thead>
-                    <row valign="middle">
-                        <entry align="center">Name</entry>
-                        <entry align="center">Description</entry>
-                        <entry align="center">Values</entry>
-                        <entry align="center">Default</entry>
-                        <entry align="center">Specification</entry>
-                    </row>
-                </thead>
-                <tbody>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background</codeph>
-                        </entry>
-                        <entry>Sets the background color and one or more background image layers. The color, if present, belongs to the final layer.</entry>
-                        <entry>Comma-separated layers with image, position and optional size, repeat, attachment, and clipping or positioning box values; optional color on the final layer</entry>
-                        <entry>See individual properties</entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background" scope="external" format="html">CSS Backgrounds 4, <codeph>background</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-attachment</codeph>
-                        </entry>
-                        <entry>Selects whether a background image is attached to its box, its contents, or the page box in paged media.</entry>
-                        <entry>
-                            <codeph>scroll</codeph>, <codeph>fixed</codeph>, or <codeph>local</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>fixed</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-attachment" scope="external" format="html">CSS Backgrounds 4, <codeph>background-attachment</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-blend-mode</codeph>
-                        </entry>
-                        <entry>Sets how each background image layer blends with the layers below it and the background color.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>darken</codeph>, <codeph>multiply</codeph>, <codeph>color-burn</codeph>, <codeph>lighten</codeph>, <codeph>screen</codeph>, <codeph>color-dodge</codeph>, <codeph>overlay</codeph>, <codeph>soft-light</codeph>, <codeph>hard-light</codeph>, <codeph>difference</codeph>, <codeph>exclusion</codeph>, <codeph>hue</codeph>, <codeph>saturation</codeph>, <codeph>color</codeph>, or <codeph>luminosity</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>normal</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/compositing-1/#propdef-background-blend-mode" scope="external" format="html">Compositing and Blending 1, <codeph>background-blend-mode</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-clip</codeph>
-                        </entry>
-                        <entry>Sets the box area where the background is painted.</entry>
-                        <entry>
-                            <codeph>border-box</codeph>, <codeph>padding-box</codeph>, <codeph>content-box</codeph>, <codeph>border-area</codeph>, <codeph>text</codeph>, or both <codeph>border-area</codeph> and <codeph>text</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>border-box</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-clip" scope="external" format="html">CSS Backgrounds 4, <codeph>background-clip</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-color</codeph>
-                        </entry>
-                        <entry>Sets the background color.</entry>
-                        <entry>
-                            <codeph>&lt;color&gt;</codeph>
-                        </entry>
-                        <entry>
-                            <codeph>transparent</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-color" scope="external" format="html">CSS Backgrounds 4, <codeph>background-color</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-image</codeph>
-                        </entry>
-                        <entry>Sets one or more background images or gradients.</entry>
-                        <entry>One or more comma-separated <codeph>none</codeph> or <codeph>&lt;image&gt;</codeph> values</entry>
-                        <entry>
-                            <codeph>none</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-image" scope="external" format="html">CSS Backgrounds 4, <codeph>background-image</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-origin</codeph>
-                        </entry>
-                        <entry>Sets the box used as the positioning area for each background image.</entry>
-                        <entry>
-                            <codeph>border-box</codeph>, <codeph>padding-box</codeph>, or <codeph>content-box</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>padding-box</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-origin" scope="external" format="html">CSS Backgrounds 4, <codeph>background-origin</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-position</codeph>
-                        </entry>
-                        <entry>Sets the position of each background image.</entry>
-                        <entry>One- to four-part position using keywords, lengths, or percentages; comma-separated list</entry>
-                        <entry>
-                            <codeph>0% 0%</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position" scope="external" format="html">CSS Backgrounds 4, <codeph>background-position</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-position-block</codeph>
-                        </entry>
-                        <entry>Sets the position of each background image on the block axis.</entry>
-                        <entry>
-                            <codeph>center</codeph>, or <codeph>start</codeph> or <codeph>end</codeph>, optionally combined with a length or percentage; comma-separated list</entry>
-                        <entry>
-                            <codeph>0%</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-block" scope="external" format="html">CSS Backgrounds 4, <codeph>background-position-block</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-position-inline</codeph>
-                        </entry>
-                        <entry>Sets the position of each background image on the inline axis.</entry>
-                        <entry>
-                            <codeph>center</codeph>, or <codeph>start</codeph> or <codeph>end</codeph>, optionally combined with a length or percentage; comma-separated list</entry>
-                        <entry>
-                            <codeph>0%</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-inline" scope="external" format="html">CSS Backgrounds 4, <codeph>background-position-inline</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-position-x</codeph>
-                        </entry>
-                        <entry>Sets the position of each background image on the physical horizontal axis.</entry>
-                        <entry>
-                            <codeph>center</codeph>; <codeph>left</codeph>, <codeph>right</codeph>, <codeph>x-start</codeph>, or <codeph>x-end</codeph>; a length or percentage; or a side keyword with a length or percentage; comma-separated list</entry>
-                        <entry>
-                            <codeph>0%</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-x" scope="external" format="html">CSS Backgrounds 4, <codeph>background-position-x</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-position-y</codeph>
-                        </entry>
-                        <entry>Sets the position of each background image on the physical vertical axis.</entry>
-                        <entry>
-                            <codeph>center</codeph>; <codeph>top</codeph>, <codeph>bottom</codeph>, <codeph>y-start</codeph>, or <codeph>y-end</codeph>; a length or percentage; or a side keyword with a length or percentage; comma-separated list</entry>
-                        <entry>
-                            <codeph>0%</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-y" scope="external" format="html">CSS Backgrounds 4, <codeph>background-position-y</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-repeat</codeph>
-                        </entry>
-                        <entry>Sets how each background image repeats along both axes.</entry>
-                        <entry>
-                            <codeph>repeat</codeph>, <codeph>space</codeph>, <codeph>round</codeph>, or <codeph>no-repeat</codeph>; optional second value; <codeph>repeat-x</codeph>, <codeph>repeat-y</codeph>, <codeph>repeat-block</codeph>, or <codeph>repeat-inline</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>repeat</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat" scope="external" format="html">CSS Backgrounds 4, <codeph>background-repeat</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-repeat-block</codeph>
-                        </entry>
-                        <entry>Sets how each background image repeats on the block axis.</entry>
-                        <entry>
-                            <codeph>repeat</codeph>, <codeph>space</codeph>, <codeph>round</codeph>, or <codeph>no-repeat</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>repeat</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-block" scope="external" format="html">CSS Backgrounds 4, <codeph>background-repeat-block</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-repeat-inline</codeph>
-                        </entry>
-                        <entry>Sets how each background image repeats on the inline axis.</entry>
-                        <entry>
-                            <codeph>repeat</codeph>, <codeph>space</codeph>, <codeph>round</codeph>, or <codeph>no-repeat</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>repeat</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-inline" scope="external" format="html">CSS Backgrounds 4, <codeph>background-repeat-inline</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-repeat-x</codeph>
-                        </entry>
-                        <entry>Sets how each background image repeats on the physical horizontal axis.</entry>
-                        <entry>
-                            <codeph>repeat</codeph>, <codeph>space</codeph>, <codeph>round</codeph>, or <codeph>no-repeat</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>repeat</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-x" scope="external" format="html">CSS Backgrounds 4, <codeph>background-repeat-x</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-repeat-y</codeph>
-                        </entry>
-                        <entry>Sets how each background image repeats on the physical vertical axis.</entry>
-                        <entry>
-                            <codeph>repeat</codeph>, <codeph>space</codeph>, <codeph>round</codeph>, or <codeph>no-repeat</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>repeat</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-y" scope="external" format="html">CSS Backgrounds 4, <codeph>background-repeat-y</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-size</codeph>
-                        </entry>
-                        <entry>Sets the size of each background image.</entry>
-                        <entry>One or two values, each <codeph>auto</codeph> or a non-negative length or percentage; or <codeph>cover</codeph> or <codeph>contain</codeph>; comma-separated list</entry>
-                        <entry>
-                            <codeph>auto</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-size" scope="external" format="html">CSS Backgrounds 4, <codeph>background-size</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>background-tbd</codeph>
-                        </entry>
-                        <entry>Sets background layer properties without setting the background color.</entry>
-                        <entry>One or more background layers</entry>
-                        <entry>See individual properties</entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-tbd" scope="external" format="html">CSS Backgrounds 4, <codeph>background-tbd</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>isolation</codeph>
-                        </entry>
-                        <entry>Controls whether an element forms an isolated group for blending.</entry>
-                        <entry>
-                            <codeph>auto</codeph> or <codeph>isolate</codeph>
-                        </entry>
-                        <entry>
-                            <codeph>auto</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/compositing-1/#propdef-isolation" scope="external" format="html">Compositing and Blending 1, <codeph>isolation</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                    <row valign="middle">
-                        <entry>
-                            <codeph>mix-blend-mode</codeph>
-                        </entry>
-                        <entry>Sets how an element blends with the content behind it.</entry>
-                        <entry>
-                            <codeph>normal</codeph>, <codeph>darken</codeph>, <codeph>multiply</codeph>, <codeph>color-burn</codeph>, <codeph>lighten</codeph>, <codeph>screen</codeph>, <codeph>color-dodge</codeph>, <codeph>overlay</codeph>, <codeph>soft-light</codeph>, <codeph>hard-light</codeph>, <codeph>difference</codeph>, <codeph>exclusion</codeph>, <codeph>hue</codeph>, <codeph>saturation</codeph>, <codeph>color</codeph>, or <codeph>luminosity</codeph>
-                        </entry>
-                        <entry>
-                            <codeph>normal</codeph>
-                        </entry>
-                        <entry>
-                            <xref href="https://www.w3.org/TR/compositing-1/#propdef-mix-blend-mode" scope="external" format="html">Compositing and Blending 1, <codeph>mix-blend-mode</codeph>
-                            </xref>
-                        </entry>
-                    </row>
-                </tbody>
-            </tgroup>
-        </table>
-        <section>
-        <ul>
-            <li>
-                <codeph>&lt;color&gt;</codeph> means a <xref href="../glossaries/CSS.dita">CSS</xref> color, such as <codeph>navy</codeph>, <codeph>#336699</codeph>, or <codeph>rgb(51 102 153)</codeph>.</li>
-            <li>
-                <codeph>&lt;image&gt;</codeph> means <codeph>none</codeph>, an image such as <codeph>url("paper.png")</codeph>, or a gradient such as <codeph>linear-gradient(white, gray)</codeph>.</li>
-        </ul>
+        <section id="background-layers">
+            <title>Color, images and shorthands</title>
+            <table id="background-layers__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>background</codeph></entry>
+                            <entry>Sets all the background properties in one declaration. Layers are separated by commas, and the color goes in the last layer. It resets the properties that you leave out.</entry>
+                            <entry>One or more layers, each with an image, a position, a size after <codeph>/</codeph>, a repeat style, an attachment and one or two boxes; and a color in the last layer</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background" scope="external" format="html">CSS Backgrounds 4 §2.12</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-tbd</codeph></entry>
+                            <entry>Sets the background layers like <codeph>background</codeph>, but takes no color and does not reset it.</entry>
+                            <entry>One or more layers</entry>
+                            <entry>See the individual properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-tbd" scope="external" format="html">CSS Backgrounds 4 §2.11</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-color</codeph></entry>
+                            <entry>Sets the solid color painted below the images.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>transparent</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-color" scope="external" format="html">CSS Backgrounds 4 §2.1</xref></entry>
+                        </row>
+                        <!-- TODO: background-image is not complete: natural sizes of image() and image-set(), element() -->
+                        <row>
+                            <entry><codeph>background-image</codeph></entry>
+                            <entry>Sets the images of the layers. The first image is the top layer.</entry>
+                            <entry>A comma-separated list of <codeph>none</codeph> or images: <codeph>url()</codeph>, gradients, <codeph>image()</codeph>, <codeph>image-set()</codeph> and <codeph>cross-fade()</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-image" scope="external" format="html">CSS Backgrounds 4 §2.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="background-placement">
+            <title>Position, size and repetition</title>
+            <table id="background-placement__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>background-position</codeph></entry>
+                            <entry>Sets where each image is placed in its positioning area.</entry>
+                            <entry>One to four values: <codeph>left</codeph>, <codeph>center</codeph>, <codeph>right</codeph>, <codeph>top</codeph>, <codeph>bottom</codeph>, lengths and percentages. A side keyword can be followed by an offset.</entry>
+                            <entry><codeph>0% 0%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position" scope="external" format="html">CSS Backgrounds 4 §2.7</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-position-x</codeph></entry>
+                            <entry>Sets the horizontal position of each image.</entry>
+                            <entry><codeph>center</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, <codeph>x-start</codeph>, <codeph>x-end</codeph>, a length or percentage, or a side keyword with an offset</entry>
+                            <entry><codeph>0%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-x" scope="external" format="html">CSS Backgrounds 4 §2.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-position-y</codeph></entry>
+                            <entry>Sets the vertical position of each image.</entry>
+                            <entry><codeph>center</codeph>, <codeph>top</codeph>, <codeph>bottom</codeph>, <codeph>y-start</codeph>, <codeph>y-end</codeph>, a length or percentage, or a side keyword with an offset</entry>
+                            <entry><codeph>0%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-y" scope="external" format="html">CSS Backgrounds 4 §2.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-position-inline</codeph></entry>
+                            <entry>Sets the position of each image along the inline axis.</entry>
+                            <entry><codeph>center</codeph>, <codeph>start</codeph> or <codeph>end</codeph>, a length or percentage, or a keyword with an offset</entry>
+                            <entry><codeph>0%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-inline" scope="external" format="html">CSS Backgrounds 4 §2.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-position-block</codeph></entry>
+                            <entry>Sets the position of each image along the block axis.</entry>
+                            <entry>The values of <codeph>background-position-inline</codeph></entry>
+                            <entry><codeph>0%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-position-block" scope="external" format="html">CSS Backgrounds 4 §2.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-size</codeph></entry>
+                            <entry>Sets the size of each image. <codeph>cover</codeph> makes the image cover the area, and <codeph>contain</codeph> makes the whole image fit in it.</entry>
+                            <entry><codeph>cover</codeph>, <codeph>contain</codeph>, or one or two values that are <codeph>auto</codeph> or non-negative lengths or percentages</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-size" scope="external" format="html">CSS Backgrounds 4 §2.10</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-repeat</codeph></entry>
+                            <entry>Sets how each image repeats on the two axes. One value applies to both axes, and two values are the horizontal and the vertical ones.</entry>
+                            <entry><codeph>repeat-x</codeph>, <codeph>repeat-y</codeph>, <codeph>repeat-inline</codeph>, <codeph>repeat-block</codeph>, or one or two of <codeph>repeat</codeph>, <codeph>no-repeat</codeph>, <codeph>space</codeph> and <codeph>round</codeph></entry>
+                            <entry><codeph>repeat</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat" scope="external" format="html">CSS Backgrounds 4 §2.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-repeat-x</codeph></entry>
+                            <entry>Sets how each image repeats on the horizontal axis.</entry>
+                            <entry><codeph>repeat</codeph>, <codeph>no-repeat</codeph>, <codeph>space</codeph> or <codeph>round</codeph></entry>
+                            <entry><codeph>repeat</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-x" scope="external" format="html">CSS Backgrounds 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-repeat-y</codeph></entry>
+                            <entry>Sets how each image repeats on the vertical axis.</entry>
+                            <entry>The values of <codeph>background-repeat-x</codeph></entry>
+                            <entry><codeph>repeat</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-y" scope="external" format="html">CSS Backgrounds 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-repeat-inline</codeph></entry>
+                            <entry>Sets how each image repeats along the inline axis.</entry>
+                            <entry>The values of <codeph>background-repeat-x</codeph></entry>
+                            <entry><codeph>repeat</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-inline" scope="external" format="html">CSS Backgrounds 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-repeat-block</codeph></entry>
+                            <entry>Sets how each image repeats along the block axis.</entry>
+                            <entry>The values of <codeph>background-repeat-x</codeph></entry>
+                            <entry><codeph>repeat</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-repeat-block" scope="external" format="html">CSS Backgrounds 4 §2.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-origin</codeph></entry>
+                            <entry>Chooses the box that is the positioning area of the images.</entry>
+                            <entry><codeph>border-box</codeph>, <codeph>padding-box</codeph> or <codeph>content-box</codeph></entry>
+                            <entry><codeph>padding-box</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-origin" scope="external" format="html">CSS Backgrounds 4 §2.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-clip</codeph></entry>
+                            <entry>Chooses the area that the background is painted in.</entry>
+                            <entry><codeph>border-box</codeph>, <codeph>padding-box</codeph>, <codeph>content-box</codeph>, <codeph>border-area</codeph>, <codeph>text</codeph>, or <codeph>border-area</codeph> and <codeph>text</codeph> together</entry>
+                            <entry><codeph>border-box</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-clip" scope="external" format="html">CSS Backgrounds 4 §2.8</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>background-attachment</codeph></entry>
+                            <entry>Chooses what the images are attached to. In a PDF, <codeph>fixed</codeph> attaches them to the page, so that they are drawn again on every page.</entry>
+                            <entry><codeph>scroll</codeph>, <codeph>local</codeph> or <codeph>fixed</codeph></entry>
+                            <entry><codeph>scroll</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-backgrounds-4/#propdef-background-attachment" scope="external" format="html">CSS Backgrounds 4 §2.5</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="background-blending">
+            <title>Blending</title>
+            <table id="background-blending__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>background-blend-mode</codeph></entry>
+                            <entry>Sets how each image layer blends with the layers below it and with the background color.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>multiply</codeph>, <codeph>screen</codeph>, <codeph>overlay</codeph>, <codeph>darken</codeph>, <codeph>lighten</codeph>, <codeph>color-dodge</codeph>, <codeph>color-burn</codeph>, <codeph>hard-light</codeph>, <codeph>soft-light</codeph>, <codeph>difference</codeph>, <codeph>exclusion</codeph>, <codeph>hue</codeph>, <codeph>saturation</codeph>, <codeph>color</codeph> or <codeph>luminosity</codeph>; a comma-separated list</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/compositing-1/#background-blend-mode" scope="external" format="html">Compositing 1 §3.4.3</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="background-compositing">
+            <title>Blending of whole boxes</title>
+            <table id="background-compositing__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>mix-blend-mode</codeph></entry>
+                            <entry>Sets how a box blends with what is behind it.</entry>
+                            <entry>The values of <codeph>background-blend-mode</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/compositing-1/#propdef-mix-blend-mode" scope="external" format="html">Compositing 1 §3.4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>isolation</codeph></entry>
+                            <entry>Chooses whether a box makes a group of its own for blending.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>isolate</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/compositing-1/#propdef-isolation" scope="external" format="html">Compositing 1 §3.4.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
         </section>
     </refbody>
 </reference>

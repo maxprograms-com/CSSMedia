@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="ContainingBlock">
+    <glossterm>Containing block</glossterm>
+    <glossdef>The <xref href="Box.dita">box</xref> that gives its size to the percentages of the boxes inside it. For a box in the normal flow, it is the content area of the nearest parent box that is a block.</glossdef>
+</glossentry>

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="box-sizes">
+    <title>Box sizes</title>
+    <shortdesc>By default a box is as wide as the box that contains it and as high as its content. Use the size properties to give a box another size, or to limit its size.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="set-width-and-height">
+                <cmd>Set the width and the height</cmd>
+                <info>
+                    <p>The <codeph>width</codeph> and <codeph>height</codeph> properties set the preferred size of a box. Their initial value is <codeph>auto</codeph>, which lets layout choose the size. A size can be a length, such as <codeph>200pt</codeph>, or a percentage of the size of the <xref href="../glossaries/ContainingBlock.dita">containing block</xref>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    width: 60%;
+    height: 120pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The properties <codeph>inline-size</codeph> and <codeph>block-size</codeph> do the same by the direction of the text: the inline size is the width and the block size is the height in horizontal text.</p>
+                </info>
+            </step>
+            <step id="choose-what-a-size-measures">
+                <cmd>Choose what the size measures</cmd>
+                <info>
+                    <p>The <codeph>box-sizing</codeph> property tells what a width or a height measures:</p>
+                    <ul>
+                        <li><codeph>content-box</codeph> is the initial value. The size is the size of the content. The padding and the border are added outside it.</li>
+                        <li><codeph>border-box</codeph> makes the size include the padding and the border, so the content is smaller.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    width: 200pt;
+    padding: 12pt;
+    border: 2pt solid black;
+    box-sizing: border-box;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This note is 200pt wide from the outside of one border to the outside of the other. With <codeph>content-box</codeph>, it would be 228pt wide.</p>
+                    <fig id="box-sizing-samples">
+                        <title>content-box and border-box</title>
+                        <image href="../images/box-sizing.svg" placement="break" scale="75">
+                            <alt>Two boxes with the same width of 200pt. With content-box the content is 200pt wide and the padding and border add to 228pt. With border-box the whole box is 200pt wide and the content is 172pt.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="size-from-content">
+                <cmd>Size a box from its content</cmd>
+                <info>
+                    <p>These keywords can replace a length in any size property:</p>
+                    <ul>
+                        <li><codeph>min-content</codeph> is the smallest size that the content can have without overflowing. For text, it is the width of the longest word.</li>
+                        <li><codeph>max-content</codeph> is the size that the content has when nothing wraps.</li>
+                        <li><codeph>fit-content</codeph> is the available space, but not less than <codeph>min-content</codeph> and not more than <codeph>max-content</codeph>. <codeph>fit-content(</codeph><varname>limit</varname><codeph>)</codeph> uses a length or a percentage as the available space.</li>
+                        <li><codeph>stretch</codeph> makes the margin box fill the available space.</li>
+                        <li><codeph>contain</codeph> fills the available space and keeps the aspect ratio of the box, if it has one.</li>
+                        <li><codeph>calc-size()</codeph> calculates a size from another size. <codeph>calc-size(auto, size / 2)</codeph> is half of the size that <codeph>auto</codeph> gives.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">label {
+    display: inline-block;
+    width: fit-content(150pt);
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="limit-the-size">
+                <cmd>Limit the size</cmd>
+                <info>
+                    <p>Minimum and maximum sizes limit the preferred size. <codeph>min-width</codeph>, <codeph>min-height</codeph>, <codeph>min-inline-size</codeph> and <codeph>min-block-size</codeph> take the same values as <codeph>width</codeph>. Their initial value is <codeph>auto</codeph>. <codeph>max-width</codeph>, <codeph>max-height</codeph>, <codeph>max-inline-size</codeph> and <codeph>max-block-size</codeph> take the same values, and <codeph>none</codeph> too, which is their initial value. When a minimum is larger than a maximum, the minimum wins.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">illustration {
+    width: 100%;
+    max-width: 40em;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This illustration fills the line, but is never wider than 40em.</p>
+                </info>
+            </step>
+            <step id="size-pairs">
+                <cmd>Set both sizes at once</cmd>
+                <info>
+                    <p>The <codeph>size</codeph> property sets the width and the height. <codeph>min-size</codeph> and <codeph>max-size</codeph> set the two minimum sizes and the two maximum sizes. They take one or two values, and one value applies to both. With two values, the width comes first.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">icon {
+    size: 24pt;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="keep-a-proportion">
+                <cmd>Keep a proportion</cmd>
+                <info>
+                    <p>The <codeph>aspect-ratio</codeph> property gives a box a ratio between its width and its height. When you set one of the two sizes, CSSMedia calculates the other. Write the ratio as two numbers separated by a slash, such as <codeph>16 / 9</codeph>, or as one number. A single number is a ratio to 1. The initial value is <codeph>auto</codeph>, which uses the ratio of an image if the box has one.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">video-frame {
+    width: 320pt;
+    aspect-ratio: 16 / 9;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This frame is 320pt wide and 180pt high.</p>
+                </info>
+            </step>
+            <step id="size-with-containment">
+                <cmd>Give a size to a box that ignores its content</cmd>
+                <info>
+                    <p>A box with <codeph>contain: size</codeph> is sized as if it were empty. Use <codeph>contain-intrinsic-width</codeph>, <codeph>contain-intrinsic-height</codeph>, <codeph>contain-intrinsic-inline-size</codeph>, <codeph>contain-intrinsic-block-size</codeph>, or <codeph>contain-intrinsic-size</codeph> for both, to give it the size that it should have instead. They take a length, or <codeph>none</codeph>, which is the initial value.</p>
+                    <!-- TODO: frame-sizing and min-intrinsic-sizing are read and have no effect in the PDF -->
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

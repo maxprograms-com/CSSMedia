@@ -813,6 +813,12 @@ ot-placeholder|toc {
     display: none;
 }
 
+/* Unicode line breaking never breaks before a colon, a comma or a period, even after a space, so a list of selectors
+   such as ":is(), :where()" would not wrap. Each code item in a cell may start a line. */
+*[class~="topic/entry"] *[class~="pr-d/codeph"]::before {
+    content: "\200B";
+}
+
 /* Tables: topic/simpletable (sthead/strow/stentry) */
 
 *[class~="topic/simpletable"] {
