@@ -168,29 +168,5 @@
                 </tgroup>
             </table>
         </section>
-        <section id="background-compositing">
-            <title>Blending of whole boxes</title>
-            <table id="background-compositing__table">
-                <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
-                    <tbody>
-                        <row>
-                            <entry><codeph>mix-blend-mode</codeph></entry>
-                            <entry>Sets how a box blends with what is behind it.</entry>
-                            <entry>The values of <codeph>background-blend-mode</codeph></entry>
-                            <entry><codeph>normal</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/compositing-1/#propdef-mix-blend-mode" scope="external" format="html">Compositing 1 §3.4.1</xref></entry>
-                        </row>
-                        <row>
-                            <entry><codeph>isolation</codeph></entry>
-                            <entry>Chooses whether a box makes a group of its own for blending.</entry>
-                            <entry><codeph>auto</codeph> or <codeph>isolate</codeph></entry>
-                            <entry><codeph>auto</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/compositing-1/#propdef-isolation" scope="external" format="html">Compositing 1 §3.4.2</xref></entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-        </section>
     </refbody>
 </reference>

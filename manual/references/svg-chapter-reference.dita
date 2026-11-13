@@ -7,8 +7,8 @@
         <section conkeyref="ref-svg/svg-elements"/>
         <section conkeyref="ref-svg/svg-geometry"/>
         <section conkeyref="ref-svg/svg-paint"/>
-        <section conkeyref="ref-svg/svg-effects"/>
-        <section conkeyref="ref-backgrounds/background-compositing"/>
+        <section conkeyref="ref-effects/effects-properties"/>
+        <section conkeyref="ref-effects/effects-blending"/>
         <section conkeyref="ref-svg/svg-text-properties"/>
     </refbody>
 </reference>

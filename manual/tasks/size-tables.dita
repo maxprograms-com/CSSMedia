@@ -27,7 +27,7 @@
             <step id="set-column-widths">
                 <cmd>Give widths to columns</cmd>
                 <info>
-                    <p>A <codeph>width</codeph> on a cell makes its column that wide, or wider if another cell of the column needs more. You can also set the <codeph>width</codeph> or the <codeph>min-width</codeph> on the <codeph>table-column</codeph> element of the column, as <xref href="build-tables.dita#describe-the-columns">Turn elements into a table</xref> shows. A column with a width does not take part in sharing the extra width of the table:</p>
+                    <p>A <codeph>width</codeph> on a cell makes its column that wide, or wider if another cell of the column needs more. You can also set the <codeph>width</codeph> or the <codeph>min-width</codeph> on the <codeph>table-column</codeph> element of the column, as <xref href="build-tables.dita#build-tables/describe-the-columns">Turn elements into a table</xref> shows. A column with a width does not take part in sharing the extra width of the table:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">cell:first-child {

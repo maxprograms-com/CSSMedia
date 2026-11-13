@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="effects-chapter-reference">
+    <title>Shadows, opacity, transforms and masks reference</title>
+    <shortdesc>This reference lists the properties that make an element transparent, move, turn or scale it, clip it or mask it, and mix it with what is behind it.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-effects/effects-properties"/>
+        <section conkeyref="ref-effects/effects-blending"/>
+    </refbody>
+</reference>

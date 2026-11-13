@@ -102,7 +102,8 @@
         <topicmeta>
             <navtitle>Shadows, opacity, transforms and masks</navtitle>
         </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+        <!-- TODO: placeholder, write the topics of this chapter; its reference lists the properties documented so far -->
+        <topicref href="references/effects-chapter-reference.dita"/>
     </chapter>
 
     <chapter href="tasks/page-setup.dita">

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="effects-reference">
+    <title>Shadows, opacity, transforms and masks</title>
+    <shortdesc>This reference lists the properties that make an element transparent, move, turn or scale it, clip it or mask it, and mix it with what is behind it.</shortdesc>
+    <refbody>
+        <section id="effects-properties">
+            <title>Opacity, clipping, masking and transform properties</title>
+            <table id="effects-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>opacity</codeph></entry>
+                            <entry>Makes an element and its children transparent as a group.</entry>
+                            <entry>A number from 0 to 1, or a percentage</entry>
+                            <entry><codeph>1</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-color-4/#transparency" scope="external" format="html">CSS Color 4 §3.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>clip-path</codeph></entry>
+                            <entry>Shows only the part of an element inside an area.</entry>
+                            <entry><codeph>none</codeph>, <codeph>url(#id)</codeph> of a <codeph>clipPath</codeph>, or a basic shape, with <codeph>fill-box</codeph>, <codeph>stroke-box</codeph> or <codeph>view-box</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-clip-path" scope="external" format="html">CSS Masking 1 §5.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>clip-rule</codeph></entry>
+                            <entry>Chooses which areas of a shape inside a <codeph>clipPath</codeph> are inside it.</entry>
+                            <entry><codeph>nonzero</codeph> or <codeph>evenodd</codeph></entry>
+                            <entry><codeph>nonzero</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-clip-rule" scope="external" format="html">CSS Masking 1 §6.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask</codeph></entry>
+                            <entry>Makes parts of an element transparent with a <codeph>mask</codeph> element.</entry>
+                            <entry><codeph>none</codeph> or <codeph>url(#id)</codeph> of a <codeph>mask</codeph> element</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask" scope="external" format="html">CSS Masking 1 §7.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-type</codeph></entry>
+                            <entry>Chooses whether a <codeph>mask</codeph> element uses the luminance or the opacity of what it holds.</entry>
+                            <entry><codeph>luminance</codeph> or <codeph>alpha</codeph></entry>
+                            <entry><codeph>luminance</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-type" scope="external" format="html">CSS Masking 1 §9.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>transform</codeph></entry>
+                            <entry>Moves, turns, scales or skews an element and its children.</entry>
+                            <entry><codeph>none</codeph> or a list of transform functions, 2D or 3D</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-1/#transform-property" scope="external" format="html">CSS Transforms 1 §4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>transform-origin</codeph></entry>
+                            <entry>Sets the point that <codeph>transform</codeph> turns and scales around. In a drawing it is the origin of the drawing.</entry>
+                            <entry>One to three lengths, percentages or keywords</entry>
+                            <entry><codeph>0 0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-1/#transform-origin-property" scope="external" format="html">CSS Transforms 1 §5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>translate</codeph>, <codeph>rotate</codeph>, <codeph>scale</codeph></entry>
+                            <entry>Move, turn or scale an element, each in a property of its own.</entry>
+                            <entry><codeph>none</codeph> or the arguments of the function of the same name</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-2/#individual-transforms" scope="external" format="html">CSS Transforms 2 §5</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="effects-blending">
+            <title>Blending</title>
+            <table id="effects-blending__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>mix-blend-mode</codeph></entry>
+                            <entry>Sets how an element blends with what is behind it.</entry>
+                            <entry>The values of <codeph>background-blend-mode</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/compositing-1/#propdef-mix-blend-mode" scope="external" format="html">Compositing 1 §3.4.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>isolation</codeph></entry>
+                            <entry>Chooses whether an element makes a group of its own for blending.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>isolate</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/compositing-1/#propdef-isolation" scope="external" format="html">Compositing 1 §3.4.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>
