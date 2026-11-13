@@ -3,7 +3,7 @@
 <bookmap>
     <booktitle>
         <mainbooktitle>
-            <ph>CSSMedia Complete Reference</ph>
+            <ph>CSSMedia CSS Reference</ph>
             <image href="images/CSSMedia-256.svg" placement="break"/>
         </mainbooktitle>
         <booktitlealt>
@@ -18,7 +18,7 @@
         </booklists>
     </frontmatter>
 
-    <chapter href="concepts/intro-reference.dita">
+    <chapter href="concepts/css-reference.dita">
         <mapref href="CompleteReference.ditamap"/>
     </chapter>
 

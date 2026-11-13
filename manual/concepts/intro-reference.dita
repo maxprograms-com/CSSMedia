@@ -4,8 +4,8 @@
     <title>Complete reference</title>
     <shortdesc>Look up every selector, property, value and at-rule by subject.</shortdesc>
     <conbody>
-        <p>Each table links to the <xref href="../glossaries/CSS.dita">CSS</xref> specification that defines its entries. The chapters of this guide end with a shorter reference that lists the entries they explain. The complete references are grouped by subject:</p>
-        <ul>
+        <p>This chapter is a complete reference for CSSMedia. Each table links to the <xref href="../glossaries/CSS.dita">CSS</xref> specification that defines its entries. The chapters of this guide end with a shorter reference that lists the entries they explain. The complete references are grouped by subject:</p>
+        <ul id="reference-list">
             <li><xref href="../references/selector-reference.dita"/></li>
             <li><xref href="../references/font-reference.dita"/></li>
             <li><xref href="../references/box-model-properties.dita"/></li>
