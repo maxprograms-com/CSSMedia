@@ -2,7 +2,7 @@
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="document-language">
     <title>Document language</title>
-    <shortdesc>The language of the text decides how CSSMedia hyphenates words, which quotation marks it uses, how it changes letter case and which elements the <codeph>:lang()</codeph> selector matches. CSSMedia reads the language from the <codeph>xml:lang</codeph> attribute. If your <xref href="../glossaries/XML.dita">XML</xref> names the language in another attribute, use the CSSMedia <codeph>-cssmedia-lang</codeph> property to say which one.</shortdesc>
+    <shortdesc>The language of the text decides how CSSMedia hyphenates words, which quotation marks it writes and which elements the <codeph>:lang()</codeph> selector matches. CSSMedia reads the language from the <codeph>xml:lang</codeph> attribute when your <xref href="../glossaries/XML.dita">XML</xref> vocabulary uses it. If your vocabulary names the language in another attribute, use the CSSMedia <codeph>-cssmedia-lang</codeph> property to say which one.</shortdesc>
     <taskbody>
         <context>
             <p>A language tag is a short code that names a language, such as <codeph>en</codeph> for English, <codeph>fr</codeph> for French or <codeph>zh-Hans</codeph> for Chinese in simplified characters. The <codeph>xml:lang</codeph> attribute is defined by the XML specification. It holds a language tag and applies to the element that carries it and to everything inside that element.</p>

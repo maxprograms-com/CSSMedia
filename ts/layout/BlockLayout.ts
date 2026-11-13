@@ -28,7 +28,7 @@ import type { FontMetrics } from "../pdf/FontMetrics.js";
 import type { InlineTextBuilder } from "../pdf/InlineTextBuilder.js";
 import type { NaturalSizes, Transform, UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
-import type { BoxFragment, BreakToken, LineFragment, Margins, ObjectArea, Sides } from "./Fragment.js";
+import type { BoxFragment, BreakToken, LineFragment, Margins, ObjectArea, PlainLine, Sides } from "./Fragment.js";
 import type { TextEdges } from "./InlineLayout.js";
 import { InlineLayout } from "./InlineLayout.js";
 import { TableLayout } from "./TableLayout.js";
@@ -119,6 +119,7 @@ export class BlockLayout {
 
     pageBreak?: Candidate;
     pageEarlier?: Candidate;
+    endsSpread: boolean = false;
     private bandOffset: number = 0;
     private readonly sizes: BoxSizes = new BoxSizes((anchor: CalcAnchor, block: boolean): number | undefined => this.anchorLength(anchor, block));
     private readonly inline: InlineLayout;
@@ -1373,7 +1374,20 @@ export class BlockLayout {
                 }
                 if (kept < lines.length) {
                     this.restore(children, marks[kept]);
-                    token = this.token(box, start, sequence - 1, lines[kept].start, undefined, undefined);
+                    let resumeAt: number = lines[kept].start;
+                    const plain: PlainLine | undefined = kept > 0 && this.keepsBreak(box) ? lines[kept - 1].plain : undefined;
+                    if (plain !== undefined) {
+                        // CSS Text 4 §6.3.5: the last line before a page break is laid out without its hyphen, and the next page
+                        // starts with the word that the hyphen cut.
+                        const replaced: LineFragment = lines[kept - 1];
+                        plain.line.block = replaced.block;
+                        if (replaced.inline !== undefined) {
+                            plain.line.inline = replaced.inline;
+                        }
+                        lines[kept - 1] = plain.line;
+                        resumeAt = plain.next;
+                    }
+                    token = this.token(box, start, sequence - 1, resumeAt, undefined, undefined);
                     lines.length = kept;
                 }
             }
@@ -2053,6 +2067,13 @@ export class BlockLayout {
             path.pop();
         }
         return total;
+    }
+
+    private keepsBreak(box: ElementBox): boolean {
+        // CSS Text 4 §6.3.5: always, column and page apply to a page break, since a column is not fragmented; spread applies to the
+        // break after the page that ends a spread, which is the recto page.
+        const limit: string = this.keyword(box.style.values["hyphenate-limit-last"]);
+        return limit === "always" || limit === "column" || limit === "page" || (limit === "spread" && this.endsSpread);
     }
 
     private count(value?: CssValue): number {

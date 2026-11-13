@@ -72,14 +72,16 @@
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-bookmark-state" scope="external" format="html">CSS Content 3 §3.3</xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-quotes" valign="middle">
                             <entry>
                                 <codeph>quotes</codeph>
                             </entry>
-                            <entry>Selects the quotation marks used by generated <codeph>open-quote</codeph> and <codeph>close-quote</codeph> content.</entry>
+                            <entry>Selects the quotation marks used by generated <codeph>open-quote</codeph> and <codeph>close-quote</codeph> content. With <codeph>auto</codeph>, the marks depend on the language of the text.</entry>
                             <entry>
                                 <codeph>auto</codeph>, <codeph>none</codeph>, <codeph>match-parent</codeph>, or one or more pairs of quoted strings</entry>
-                            <entry />
+                            <entry>
+                                <codeph>auto</codeph>
+                            </entry>
                             <entry>
                                 <xref href="https://www.w3.org/TR/css-content-3/#propdef-quotes" scope="external" format="html">CSS Content 3 §2.4.1</xref>
                             </entry>

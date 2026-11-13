@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="language-chapter-reference">
+    <title>Languages and hyphenation reference</title>
+    <shortdesc>This reference lists the property, the selector and the properties that CSSMedia uses for the language of the text, hyphenation and quotation marks.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-language/language-properties"/>
+        <section conkeyref="ref-language/language-selectors"/>
+    </refbody>
+</reference>

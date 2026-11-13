@@ -221,7 +221,8 @@ export class InlineLayout {
         // CSS Text 4 §6.3.5: hyphenate-limit-lines is "the maximum number of successive hyphenated lines in an element".
         const lineLimit: CssValue | undefined = values["hyphenate-limit-lines"];
         const limit: number = lineLimit !== undefined && lineLimit.kind === "number" ? lineLimit.value : Number.POSITIVE_INFINITY;
-        const keepsLast: boolean = this.keyword("none", values["hyphenate-limit-last"]) === "always";
+        const limitLast: string = this.keyword("none", values["hyphenate-limit-last"]);
+        const keepsLast: boolean = limitLast === "always";
         const later: number = indent[1] ? indent[0] : 0;
         const balances: boolean = this.keyword("auto", values["text-wrap-style"]) === "balance";
         const lines: Array<LineFragment> = [];
@@ -320,6 +321,15 @@ export class InlineLayout {
                 last = { ...last, line: built[0], end: built[1], natural: built[2] };
                 parts[parts.length - 1] = last;
                 after = next === last.measured ? last.end : this.text.position(sequence, last.end);
+            }
+            if (limitLast !== "none" && this.isHyphenated(last.measured, last.end)) {
+                // §6.3.5: "The last line before any column, page, or spread break inside the element should not be hyphenated", and
+                // only the fragmentation knows where a page ends, so the line without its hyphen is kept for it to use.
+                const plain: readonly [LineFragment, number, number] = this.broken(last.measured, last.start, last.indent, fitted, last.width, values, last.fresh, last.first, false,
+                    cut);
+                if (plain[1] > last.start) {
+                    last.line.plain = { line: plain[0], next: next === last.measured ? plain[1] : this.text.position(sequence, plain[1]) };
+                }
             }
             this.equalize(parts);
             for (const part of parts) {

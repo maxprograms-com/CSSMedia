@@ -87,6 +87,11 @@ export interface TextPiece {
     leader?: boolean;
 }
 
+export interface PlainLine {
+    line: LineFragment;
+    next: number;
+}
+
 export interface LineFragment {
     kind: "line";
     sequence: InlineSequence;
@@ -97,4 +102,5 @@ export interface LineFragment {
     blockSize: number;
     baseline: number;
     pieces: Array<TextPiece | BoxFragment>;
+    plain?: PlainLine;
 }

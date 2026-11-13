@@ -250,7 +250,7 @@
                             <entry>Matches</entry>
                             <entry><xref href="https://www.w3.org/TR/selectors-4/#relational" scope="external" format="html">Selectors 4 §4.5</xref></entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-lang" valign="middle">
                             <entry><codeph>:lang()</codeph></entry>
                             <entry>Elements in a language. The language comes from <codeph>xml:lang</codeph> or the <codeph>-cssmedia-lang</codeph> property.</entry>
                             <entry>One or more language ranges, as identifiers or strings.</entry>

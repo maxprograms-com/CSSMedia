@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="language-reference">
+    <title>Languages and hyphenation</title>
+    <shortdesc>This reference lists the property, the selector and the properties that CSSMedia uses for the language of the text, hyphenation and quotation marks.</shortdesc>
+    <refbody>
+        <section id="language-properties">
+            <title>Properties</title>
+            <table id="language-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>-cssmedia-lang</codeph></entry>
+                            <entry>Sets the language of the elements from a value of your <xref href="../glossaries/XML.dita">XML</xref>, such as an attribute. CSSMedia extension.</entry>
+                            <entry><codeph>none</codeph> or a string with a language tag. <codeph>attr()</codeph> reads the tag from an attribute.</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry>CSSMedia extension</entry>
+                        </row>
+                        <row>
+                            <entry><codeph>hyphens</codeph></entry>
+                            <entry>Chooses how words are broken at the end of a line. <codeph>manual</codeph> breaks only at the soft hyphens that the text has, <codeph>auto</codeph> also uses the hyphenation patterns of the language, and <codeph>none</codeph> never breaks inside a word.</entry>
+                            <entry><codeph>none</codeph>, <codeph>manual</codeph> or <codeph>auto</codeph></entry>
+                            <entry><codeph>manual</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-hyphens" scope="external" format="html">CSS Text 4 §6.3.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>hyphenate-character</codeph></entry>
+                            <entry>Sets the string that CSSMedia writes at the end of a line that it breaks inside a word.</entry>
+                            <entry><codeph>auto</codeph> or a string. <codeph>auto</codeph> is U+2010 when the font has it, and U+002D otherwise.</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-hyphenate-character" scope="external" format="html">CSS Text 4 §6.3.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>hyphenate-limit-chars</codeph></entry>
+                            <entry>Sets the shortest word that CSSMedia hyphenates, and the least number of letters before and after the hyphen.</entry>
+                            <entry>One to three values, each <codeph>auto</codeph> or an integer. The values are the word length, the letters before and the letters after. A missing third value is the second, and a missing second value is <codeph>auto</codeph>.</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-hyphenate-limit-chars" scope="external" format="html">CSS Text 4 §6.3.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>hyphenate-limit-lines</codeph></entry>
+                            <entry>Sets the largest number of consecutive lines of an element that end with a hyphen.</entry>
+                            <entry><codeph>no-limit</codeph> or an integer</entry>
+                            <entry><codeph>no-limit</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-hyphenate-limit-lines" scope="external" format="html">CSS Text 4 §6.3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>hyphenate-limit-last</codeph></entry>
+                            <entry>Stops CSSMedia from ending a line with a hyphen at the end of an element or before a page break. <codeph>always</codeph> applies to the last full line of the element and to the last line before a page break. <codeph>column</codeph> and <codeph>page</codeph> apply to the last line before a page break, and <codeph>spread</codeph> to the last line before a spread break.</entry>
+                            <entry><codeph>none</codeph>, <codeph>always</codeph>, <codeph>column</codeph>, <codeph>page</codeph> or <codeph>spread</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-hyphenate-limit-last" scope="external" format="html">CSS Text 4 §6.3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>hyphenate-limit-zone</codeph></entry>
+                            <entry>Sets how much empty space a line can have before CSSMedia hyphenates a word to fill it. A percentage is relative to the width of the line.</entry>
+                            <entry>A length or a percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-hyphenate-limit-zone" scope="external" format="html">CSS Text 4 §6.3.3</xref></entry>
+                        </row>
+                        <row conkeyref="ref-content/row-quotes"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="language-selectors">
+            <title>Selector</title>
+            <table id="language-selectors__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <tbody>
+                        <row conkeyref="ref-selectors/row-lang"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

@@ -7,6 +7,7 @@
     <keydef keys="ref-links" href="references/link-reference.dita"/>
     <keydef keys="ref-named-strings" href="references/named-strings-reference.dita"/>
     <keydef keys="ref-toc" href="references/toc-reference.dita"/>
+    <keydef keys="ref-language" href="references/language-reference.dita"/>
     <keydef keys="ref-selectors" href="references/selector-reference.dita"/>
     <keydef keys="ref-fonts" href="references/font-reference.dita"/>
     <keydef keys="ref-box-model" href="references/box-model-properties.dita"/>

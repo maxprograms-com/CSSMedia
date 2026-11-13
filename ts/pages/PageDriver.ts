@@ -477,6 +477,8 @@ export class PageDriver {
         const area: Rectangle = canvas.pageArea;
         const inline: number = this.horizontal ? area.width : area.height;
         const extent: number = this.horizontal ? area.height : area.width;
+        // CSS Fragmentation 4 §3.1: recto is the second page of a spread, so a spread break follows it.
+        this.setup.layout.endsSpread = canvas.context.side === this.setup.recto;
         if (!this.setup.builder.footnotes) {
             return { content: this.content(root, inline, extent, NO_CALLS, token, end) };
         }

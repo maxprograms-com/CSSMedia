@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introLanguages">
+    <title>Languages and hyphenation</title>
+    <shortdesc>CSSMedia formats text differently for each language. The <xref href="../references/language-chapter-reference.dita#language-chapter-reference">languages and hyphenation reference</xref> at the end of this chapter lists the property, the selector and the properties that you use.</shortdesc>
+    <conbody>
+        <p>A document can have text in many languages, and each language has its own rules. The language of the text decides where CSSMedia can hyphenate a word, which quotation marks it writes, and which elements the <codeph>:lang()</codeph> selector matches.</p>
+        <p>CSSMedia reads the language from the <codeph>xml:lang</codeph> attribute when your <xref href="../glossaries/XML.dita">XML</xref> uses it. When your vocabulary names the language in another way, you tell CSSMedia where to find it with the <codeph>-cssmedia-lang</codeph> property.</p>
+        <p>Hyphenation breaks a long word at the end of a line and writes a hyphen, so that lines are fuller and the spaces between words are more even. CSSMedia includes hyphenation patterns for many languages. The topics of this chapter follow the order in which you work:</p>
+        <ul>
+            <li><xref href="../tasks/document-language.dita"/></li>
+            <li><xref href="../tasks/hyphenation.dita"/></li>
+            <li><xref href="../tasks/quotation-marks.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

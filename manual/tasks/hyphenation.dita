@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="hyphenation">
+    <title>Hyphenation</title>
+    <shortdesc>Hyphenation breaks a word at the end of a line and writes a hyphen after the first part. Turn it on with the <codeph>hyphens</codeph> property, and set limits so that the breaks look good.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>para</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="turn-hyphenation-on">
+                <cmd>Turn hyphenation on</cmd>
+                <info>
+                    <p>The <codeph>hyphens</codeph> property has three values:</p>
+                    <ul>
+                        <li><codeph>manual</codeph> is the initial value. CSSMedia breaks a word only at a soft hyphen, which is the invisible character U+00AD that you put in the text where a word can break.</li>
+                        <li><codeph>auto</codeph> also breaks words with the hyphenation patterns of the language of the text.</li>
+                        <li><codeph>none</codeph> never breaks a word, not even at a soft hyphen.</li>
+                    </ul>
+                    <p>It is inherited, so set it once on the root element or on the element that holds the text:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    hyphens: auto;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="check-the-language">
+                <cmd>Check that the language has patterns</cmd>
+                <info>
+                    <p>CSSMedia hyphenates only text with a known language. Mark the language as <xref href="document-language.dita#document-language">Document language</xref> explains. A soft hyphen in a word makes the automatic breaks of that word a second choice, used only when nothing else fits.</p>
+                    <p>CSSMedia includes hyphenation patterns for these languages:Afrikaans, Assamese, Belarusian, Bulgarian, Bengali, Catalan, Church Slavonic, Welsh, Danish, German, Greek, English, Esperanto, Spanish, Estonian, Basque, Finnish, French, Friulian, Irish, Galician, Gujarati, Hindi, Croatian, Upper Sorbian, Hungarian, Interlingua, Icelandic, Italian, Georgian, Kazakh, Kannada, Latin, Lithuanian, Malayalam, Mongolian, Marathi, Norwegian Bokmål and Nynorsk, Dutch, Occitan, Oriya, Punjabi, Pali, Polish, Portuguese, Romansh, Romanian, Russian, Sanskrit, Slovak, Slovenian, Albanian, Serbian, Bosnian, Swedish, Tamil, Telugu, Thai, Turkmen, Turkish and Ukrainian. English has American and British patterns, for the tags <codeph>en-US</codeph> and <codeph>en-GB</codeph>.</p>
+                    <p>CSSMedia uses the patterns of the nearest tag, without regard to case. It looks for the whole tag first, such as <codeph>en-GB</codeph> or <codeph>de-CH</codeph>. If there are no patterns for it, it looks for the tag without its region, so <codeph>pt-AO</codeph> uses the patterns of <codeph>pt</codeph> when it has none of its own.</p>
+                    <p>CSSMedia does not drop a script or a variant, because they name another writing or another spelling. Serbian in Latin script, <codeph>sr-Latn</codeph>, has its own patterns, and so does <codeph>sr-Latn-ME</codeph>. A tag such as <codeph>mn-Mong</codeph> has none, because the patterns of Mongolian are for the Cyrillic script. BCP 47 allows a script subtag that the language does not need, such as <codeph>en-Latn-US</codeph>, but says that it should not be used, because English is almost always written in Latin script and the tag adds nothing to <codeph>en-US</codeph>. CSSMedia ignores such tags. A text with an ignored tag, or with a tag without patterns, is not hyphenated. To give it other patterns, set another tag with <codeph>-cssmedia-lang</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    -cssmedia-lang: "en-US";
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="choose-the-hyphen">
+                <cmd>Choose the hyphen</cmd>
+                <info>
+                    <p>Use <codeph>hyphenate-character</codeph> to choose the string that CSSMedia writes at the end of a broken line. The value <codeph>auto</codeph> is the hyphen U+2010 when the font of the text has it, and the hyphen-minus U+002D otherwise. You can also write your own string:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    hyphenate-character: "-";
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="limit-hyphenation">
+                <cmd>Limit hyphenation</cmd>
+                <info>
+                    <p>Four properties keep the hyphens from being too many or too short:</p>
+                    <ul>
+                        <li><codeph>hyphenate-limit-chars</codeph> sets the shortest word that CSSMedia hyphenates, the letters before the hyphen and the letters after it. The first value is the length of the word, and its default is 5. The two other values are the letters before and after the hyphen. When you write them as <codeph>auto</codeph> or omit them, CSSMedia uses the values of the patterns of the language. With one value you set only the length of the word, and with two values the third one is the same as the second.</li>
+                        <li><codeph>hyphenate-limit-lines</codeph> is the largest number of consecutive lines of an element that end with a hyphen. The initial value is <codeph>no-limit</codeph>.</li>
+                        <li><codeph>hyphenate-limit-last</codeph> keeps hyphens away from the last lines. With <codeph>always</codeph>, the last full line of an element and the last line before a page break do not end with a hyphen. With <codeph>page</codeph> or <codeph>column</codeph>, only the last line before a page break is kept free of a hyphen, and with <codeph>spread</codeph> only the last line before a spread break, which is the break after a right-hand page. A spread is two facing pages. The initial value is <codeph>none</codeph>.</li>
+                        <li><codeph>hyphenate-limit-zone</codeph> is the empty space that a line can have before CSSMedia hyphenates a word to fill it. It is a length, or a percentage of the width of the line. The initial value is 0.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    hyphens: auto;
+    hyphenate-limit-chars: 7 3 3;
+    hyphenate-limit-lines: 2;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>This rule hyphenates words of at least 7 letters, leaves at least 3 letters on each side of the hyphen, and never has more than 2 hyphenated lines in a row.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

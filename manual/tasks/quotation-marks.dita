@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="quotation-marks">
+    <title>Quotation marks</title>
+    <shortdesc>Each language has its own quotation marks. CSSMedia writes the marks of the language of the text when you generate quotes with <codeph>open-quote</codeph> and <codeph>close-quote</codeph>.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element name <codeph>q</codeph> in the examples is a placeholder. Use the name of the elements that hold quotations in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="generate-the-quotes">
+                <cmd>Generate the quotes</cmd>
+                <info>
+                    <p>Your XML does not have the quotation marks as text. Generate them with the <codeph>content</codeph> property of the pseudo-elements <codeph>::before</codeph> and <codeph>::after</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">q::before {
+    content: open-quote;
+}
+
+q::after {
+    content: close-quote;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A <codeph>q</codeph> inside another <codeph>q</codeph> gets the marks of the next level. For English, the outer quotes are “ ” and the inner quotes are ‘ ’. German text gets „ “ and ‚ ‘, and Japanese text gets 「 」.</p>
+                </info>
+            </step>
+            <step id="choose-the-marks">
+                <cmd>Choose the marks yourself</cmd>
+                <info>
+                    <p>The <codeph>quotes</codeph> property has the initial value <codeph>auto</codeph>, which uses the marks of the language. To use other marks, write pairs of strings. The first pair is for the outer level, the second pair for the next level, and so on. The last pair is used for the deeper levels. The value <codeph>none</codeph> writes no marks, and <codeph>match-parent</codeph> uses the marks of the parent element:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">q {
+    quotes: "«" "»" "‹" "›";
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

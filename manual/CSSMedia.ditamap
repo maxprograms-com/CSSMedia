@@ -72,12 +72,11 @@
         <topicref href="references/font-chapter-reference.dita"/>
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>Languages and hyphenation</navtitle>
-        </topicmeta>
+    <chapter href="concepts/intro-languages.dita">
         <topicref href="tasks/document-language.dita"/>
-        <!-- TODO: placeholder, write this chapter -->
+        <topicref href="tasks/hyphenation.dita"/>
+        <topicref href="tasks/quotation-marks.dita"/>
+        <topicref href="references/language-chapter-reference.dita"/>
     </chapter>
 
     <chapter>

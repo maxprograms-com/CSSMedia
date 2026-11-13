@@ -723,12 +723,12 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### CSS Text 4 (css-text-4)
 
 - [ ] hanging-punctuation
-- [ ] hyphenate-character
-- [ ] hyphenate-limit-chars
-- [ ] hyphenate-limit-last
-- [ ] hyphenate-limit-lines
-- [ ] hyphenate-limit-zone
-- [ ] hyphens
+- [x] hyphenate-character
+- [x] hyphenate-limit-chars
+- [x] hyphenate-limit-last
+- [x] hyphenate-limit-lines
+- [x] hyphenate-limit-zone
+- [x] hyphens
 - [ ] letter-spacing
 - [ ] line-break
 - [ ] line-padding
@@ -1349,7 +1349,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSSMedia extensions
 
-- [~] -cssmedia-lang
+- [x] -cssmedia-lang
 - [x] -cssmedia-link
 - [x] -cssmedia-toc-depth
 - [x] -cssmedia-toc-divider
