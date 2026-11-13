@@ -915,6 +915,59 @@
                     <codeph>&lt;resolution&gt;</codeph> is a pixel density, such as <codeph>300dpi</codeph>.</li>
             </ul>
         </section>
+        <section id="container-features">
+            <title>Container size features</title>
+            <p>A size query in <codeph>@container</codeph> tests the size of the nearest ancestor that has <codeph>container-type</codeph>. An ancestor with <codeph>size</codeph> answers all these features, and an ancestor with <codeph>inline-size</codeph> answers only the features of the inline axis.</p>
+            <table id="container-features__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>width</codeph></entry>
+                            <entry>The width of the content box of the container.</entry>
+                            <entry>A length, alone or in a comparison or a range</entry>
+                            <entry>The size of the container</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-conditional-5/#descdef-container-width" scope="external" format="html">CSS Conditional 5 §6.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>height</codeph></entry>
+                            <entry>The height of the content box of the container.</entry>
+                            <entry>A length, alone or in a comparison or a range</entry>
+                            <entry>The size of the container</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-conditional-5/#descdef-container-height" scope="external" format="html">CSS Conditional 5 §6.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>inline-size</codeph></entry>
+                            <entry>The size of the content box of the container along the lines of text.</entry>
+                            <entry>A length, alone or in a comparison or a range</entry>
+                            <entry>The size of the container</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-conditional-5/#descdef-container-inline-size" scope="external" format="html">CSS Conditional 5 §6.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>block-size</codeph></entry>
+                            <entry>The size of the content box of the container across the lines of text.</entry>
+                            <entry>A length, alone or in a comparison or a range</entry>
+                            <entry>The size of the container</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-conditional-5/#descdef-container-block-size" scope="external" format="html">CSS Conditional 5 §6.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>aspect-ratio</codeph></entry>
+                            <entry>The ratio of the width to the height of the container.</entry>
+                            <entry>A ratio, alone or in a comparison or a range</entry>
+                            <entry>The ratio of the container</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-conditional-5/#descdef-container-aspect-ratio" scope="external" format="html">CSS Conditional 5 §6.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>orientation</codeph></entry>
+                            <entry>Whether the container is wider than high.</entry>
+                            <entry><codeph>landscape</codeph> | <codeph>portrait</codeph></entry>
+                            <entry>The orientation of the container</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-conditional-5/#descdef-container-orientation" scope="external" format="html">CSS Conditional 5 §6.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
         <section id="container-style-queries">
             <title>Container style queries</title>
             <p>A container style query uses <codeph>style()</codeph> to test a computed style or custom property on an ancestor. See <xref keyref="ch-conditional-rules/container-queries-with-container">Conditional rules</xref>.</p>

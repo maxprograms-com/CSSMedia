@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="200" viewBox="0 0 460 200" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <defs>
+        <marker id="up" viewBox="0 0 10 10" markerWidth="6" markerHeight="6" refX="5" refY="1" orient="auto">
+            <path d="M0 10 L5 0 L10 10 Z" fill="#555555"/>
+        </marker>
+    </defs>
+    <g fill="#222222" text-anchor="middle" font-weight="bold">
+        <text x="115" y="16">Normal declarations</text>
+        <text x="345" y="16">Important declarations</text>
+    </g>
+    <g stroke="#1d4f7a">
+        <rect x="30" y="28" width="170" height="34" rx="4" fill="#cfe3f5"/>
+        <rect x="30" y="68" width="170" height="34" rx="4" fill="#e3eef8"/>
+        <rect x="30" y="108" width="170" height="34" rx="4" fill="#f1f6fb"/>
+        <rect x="260" y="28" width="170" height="34" rx="4" fill="#f1f6fb"/>
+        <rect x="260" y="68" width="170" height="34" rx="4" fill="#e3eef8"/>
+        <rect x="260" y="108" width="170" height="34" rx="4" fill="#cfe3f5"/>
+    </g>
+    <g fill="#222222" text-anchor="middle">
+        <text x="115" y="49">No layer</text>
+        <text x="115" y="89">Layer theme (the later one)</text>
+        <text x="115" y="129">Layer base (the earlier one)</text>
+        <text x="345" y="49">No layer</text>
+        <text x="345" y="89">Layer theme (the later one)</text>
+        <text x="345" y="129">Layer base (the earlier one)</text>
+    </g>
+    <g stroke="#555555" stroke-width="1.5" fill="none">
+        <path d="M14 142 V34" marker-end="url(#up)"/>
+        <path d="M444 142 V34" marker-end="url(#up)"/>
+    </g>
+    <g fill="#222222" text-anchor="middle" font-size="10">
+        <text x="230" y="164">The arrows point up to the declaration that wins, in the darkest box.</text>
+        <text x="230" y="178">With @layer base, theme; the layer base comes first.</text>
+    </g>
+</svg>

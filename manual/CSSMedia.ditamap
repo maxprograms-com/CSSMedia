@@ -18,7 +18,7 @@
         </booklists>
     </frontmatter>
 
-    <chapter href="concepts/features.dita"/>n
+    <chapter href="concepts/features.dita"/>
 
     <chapter href="concepts/intro-get-started.dita">
         <topicref href="tasks/install-cssmedia.dita"/>
@@ -35,6 +35,73 @@
         <topicref href="concepts/pseudo-elements.dita"/>
         <topicref href="concepts/specificity.dita"/>
         <topicref href="references/selector-chapter-reference.dita"/>
+    </chapter>
+
+    <chapter href="concepts/cascade-and-declarations.dita">
+        <topicref href="concepts/cascade-order.dita"/>
+        <topicref href="concepts/inheritance-and-defaults.dita"/>
+        <topicref href="concepts/shorthand-properties.dita"/>
+        <topicref href="tasks/custom-properties.dita"/>
+        <topicref href="tasks/conditional-rules.dita"/>
+        <topicref href="references/cascade-chapter-reference.dita"/>
+    </chapter>
+
+    <chapter href="concepts/intro-boxes.dita">
+        <topicref href="tasks/box-spacing.dita"/>
+        <topicref href="tasks/box-sizes.dita"/>
+        <topicref href="tasks/borders.dita"/>
+        <topicref href="tasks/backgrounds.dita"/>
+        <topicref href="references/box-chapter-reference.dita"/>
+    </chapter>
+
+    <chapter href="concepts/intro-text-and-fonts.dita">
+        <topicref href="tasks/font-properties.dita"/>
+        <topicref href="tasks/font-faces.dita"/>
+        <topicref href="tasks/font-variants.dita"/>
+        <topicref href="tasks/variable-and-color-fonts.dita"/>
+        <topicref href="references/font-chapter-reference.dita"/>
+    </chapter>
+
+    <chapter href="concepts/intro-languages.dita">
+        <topicref href="tasks/document-language.dita"/>
+        <topicref href="tasks/hyphenation.dita"/>
+        <topicref href="tasks/quotation-marks.dita"/>
+        <topicref href="references/language-chapter-reference.dita"/>
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Ruby and vertical text</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Tables</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Multi-column layout</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Flexbox and grid</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
+    <chapter>
+        <topicmeta>
+            <navtitle>Shadows, opacity, transforms and masks</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
     </chapter>
 
     <chapter href="tasks/page-setup.dita">
@@ -64,57 +131,6 @@
         <topicref href="references/toc-chapter-reference.dita"/>
     </chapter>
 
-    <chapter href="concepts/intro-text-and-fonts.dita">
-        <topicref href="tasks/font-properties.dita"/>
-        <topicref href="tasks/font-faces.dita"/>
-        <topicref href="tasks/font-variants.dita"/>
-        <topicref href="tasks/variable-and-color-fonts.dita"/>
-        <topicref href="references/font-chapter-reference.dita"/>
-    </chapter>
-
-    <chapter href="concepts/intro-languages.dita">
-        <topicref href="tasks/document-language.dita"/>
-        <topicref href="tasks/hyphenation.dita"/>
-        <topicref href="tasks/quotation-marks.dita"/>
-        <topicref href="references/language-chapter-reference.dita"/>
-    </chapter>
-
-    <chapter>
-        <topicmeta>
-            <navtitle>Ruby and vertical text</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
-    </chapter>
-
-    <chapter href="concepts/intro-boxes.dita">
-        <topicref href="tasks/box-spacing.dita"/>
-        <topicref href="tasks/box-sizes.dita"/>
-        <topicref href="tasks/borders.dita"/>
-        <topicref href="tasks/backgrounds.dita"/>
-        <topicref href="references/box-chapter-reference.dita"/>
-    </chapter>
-
-    <chapter>
-        <topicmeta>
-            <navtitle>Shadows, opacity, transforms and masks</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
-    </chapter>
-
-    <chapter>
-        <topicmeta>
-            <navtitle>Multi-column layout</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
-    </chapter>
-
-    <chapter>
-        <topicmeta>
-            <navtitle>Flexbox and grid</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
-    </chapter>
-
     <chapter href="concepts/intro-images.dita">
         <topicref href="tasks/place-images.dita"/>
         <topicref href="tasks/fit-images.dita"/>
@@ -136,21 +152,6 @@
             <navtitle>MathML</navtitle>
         </topicmeta>
         <!-- TODO: placeholder, write this chapter -->
-    </chapter>
-
-    <chapter>
-        <topicmeta>
-            <navtitle>Tables</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
-    </chapter>
-
-    <chapter href="concepts/cascade-and-declarations.dita">
-        <topicref href="concepts/cascade-order.dita"/>
-        <topicref href="concepts/inheritance-and-defaults.dita"/>
-        <topicref href="concepts/shorthand-properties.dita"/>
-        <topicref href="tasks/custom-properties.dita"/>
-        <topicref href="tasks/conditional-rules.dita"/>
     </chapter>
 
     <chapter href="concepts/intro-reference.dita">

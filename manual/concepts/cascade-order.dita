@@ -1,92 +1,41 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
 <concept id="cascade-order">
-    <title>Cascade order and layers</title>
-    <shortdesc>When declarations set the same property on the same element, <xref href="../glossaries/CSS.dita">CSS</xref> sorts them by precedence. It compares one criterion at a time. The first criterion that differs decides which declaration wins.</shortdesc>
+    <title>Decide which rule wins</title>
+    <shortdesc>When two declarations set the same property on the same element, CSSMedia compares them one criterion at a time. The first criterion that tells them apart decides which one wins.</shortdesc>
     <conbody>
-        <section id="sorting-declarations">
-            <title>Sorting declarations</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-6/#cascade-sort" scope="external" format="html">CSS Cascade 6 §2.1, Cascade Sorting Order</xref>; <xref href="https://www.w3.org/TR/css-cascade-5/#cascade-sort" scope="external" format="html">CSS Cascade 5 §6.1, Cascade Sorting Order</xref>; <xref href="https://www.w3.org/TR/selectors-4/#specificity-rules" scope="external" format="html">Selectors 4 §15, Calculating a selector’s specificity</xref>.</p>
-            <p>The cascade compares declarations in this order:</p>
-            <ol>
-                <li>Origin and importance.</li>
-                <li>Encapsulation context.</li>
-                <li>Element-attached style declarations.</li>
-                <li>Cascade layer order.</li>
-                <li>Selector specificity.</li>
-                <li>Scope proximity.</li>
-                <li>Source order.</li>
-            </ol>
-            <p>Each step matters only when the declarations tie at every preceding step.</p>
-            <div outputclass="role-h3" id="origin-and-importance">Origin and importance</div>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-5/#cascade-sort" scope="external" format="html">CSS Cascade 5 §6.1, Cascade Sorting Order</xref>.</p>
-            <p>An origin identifies the source of a declaration. CSS defines user-agent, user, and author origins, plus animation and transition origins. Within the author, user, and user-agent origins, important declarations and normal declarations have different priorities. From highest to lowest, the CSS cascade order is:</p>
-            <table id="cascade-order__I_2x_">
-                <tgroup cols="2">
-                    <thead>
-                        <row valign="middle">
-                            <entry align="center">Priority</entry>
-                            <entry align="center">Declaration</entry>
-                        </row>
-                    </thead>
-                    <tbody>
-                        <row valign="middle">
-                            <entry>1</entry>
-                            <entry>Transition</entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>2</entry>
-                            <entry>Important user-agent</entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>3</entry>
-                            <entry>Important user</entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>4</entry>
-                            <entry>Important author</entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>5</entry>
-                            <entry>Animation</entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>6</entry>
-                            <entry>Normal author</entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>7</entry>
-                            <entry>Normal user</entry>
-                        </row>
-                        <row valign="middle">
-                            <entry>8</entry>
-                            <entry>Normal user-agent</entry>
-                        </row>
-                    </tbody>
-                </tgroup>
-            </table>
-            <ul>
-                <li>
-                    <codeph>!important</codeph> follows the value and raises that declaration above normal declarations in its origin. It does not make a declaration universally unbeatable. A higher-priority origin can still win.</li>
-                <li>CSSMedia’s stylesheet input consists of author stylesheets and built-in user-agent rules. It does not load a user-origin stylesheet.</li>
-            </ul>
-            <div outputclass="role-h3" id="encapsulation-context">Encapsulation context</div>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-6/#cascade-sort" scope="external" format="html">CSS Cascade 6 §2.1, Cascade Sorting Order</xref>.</p>
-            <p>Some host environments divide a document into nested encapsulation contexts, such as shadow trees. For normal declarations, the outer context wins a tie against an inner context. For important declarations, the inner context wins. This comparison occurs after origin and importance, and before layers.</p>
-            <div outputclass="role-h3" id="element-attached-styles">Element-attached styles</div>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-6/#cascade-sort" scope="external" format="html">CSS Cascade 6 §2.1, Cascade Sorting Order</xref>; <xref href="https://www.w3.org/TR/css-style-attr/#interpret" scope="external" format="html">CSS Style Attributes §2, CSS Style Attributes</xref>.</p>
-            <p>When a host language defines a style attribute, declarations attached directly to an element take precedence over declarations from style rules at the same origin and importance. This rule is separate from selector specificity.</p>
-            <div outputclass="role-h3" id="cascade-layers">Cascade layers</div>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-5/#layering" scope="external" format="html">CSS Cascade 5 §6.4, Cascade Layers</xref>; <xref href="https://www.w3.org/TR/css-cascade-5/#layer-ordering" scope="external" format="html">CSS Cascade 5 §6.4.3, Layer Ordering</xref>.</p>
-            <p>
-                <codeph>@layer</codeph> groups declarations within an origin. A layer’s order is established when its name first appears. A layer statement establishes order without adding rules. A layer block establishes a layer and contains its rules. Layers can be nested; a dotted name such as <codeph>components.buttons</codeph> identifies a sublayer.</p>
-            <p>For normal declarations, later layers outrank earlier layers. Unlayered declarations form an implicit final layer and outrank normal declarations in every named layer. For important declarations, this order is reversed: earlier layers outrank later layers, and layered important declarations outrank unlayered important declarations.</p>
-            <p>Within a parent layer, declarations assigned directly to the parent are ordered after its sublayers for normal declarations. Important declarations reverse that order as well.</p>
+        <p>These are the criteria, in the order CSSMedia checks them:</p>
+        <ol>
+            <li>Whether the declaration is <codeph>!important</codeph>.</li>
+            <li>The cascade layer of the rule.</li>
+            <li>The specificity of the selector.</li>
+            <li>The distance to the root of a scope.</li>
+            <li>The position in the stylesheet.</li>
+        </ol>
+        <fig id="cascade-steps-figure">
+            <title>The order of the criteria</title>
+            <image href="../images/cascade-steps.svg" placement="break" scale="75">
+                <alt>Five boxes in a row, joined by arrows: importance, layer, specificity, scope and position. The first criterion in which two declarations differ decides, and the criteria after it are not used.</alt>
+            </image>
+        </fig>
+        <p>A criterion matters only when the declarations are equal in all the criteria before it. A rule that comes later in the stylesheet does not win against a more specific rule, and a more specific rule does not win against an important one.</p>
+        <p>CSSMedia has a few rules of its own for the markers of lists, the footnote calls and the attribute <codeph>xml:space</codeph>. Any rule you write wins over them, so you never need <codeph>!important</codeph> to override them.</p>
+        <section id="important-declarations">
+            <title>Important declarations</title>
+            <p>Write <codeph>!important</codeph> after the value to make a declaration win against the normal declarations of other rules, whatever their layer, specificity or position:</p>
+            <pre outputclass="language-css21">title {
+    color: red !important;
+}
+
+chapter title {
+    color: blue;
+}
+</pre>
+            <p>The title is red, although the second selector is more specific. Between two important declarations, the usual criteria decide. <codeph>!important</codeph> belongs to the one declaration that carries it, not to the rule.</p>
+        </section>
+        <section id="cascade-layers">
+            <title>Cascade layers</title>
+            <p>A cascade layer is a group of rules that ranks together. Layers let you order whole groups of rules, for example the rules of a base design and the rules of a customer, without raising the specificity of any selector. Write the rules in <codeph>@layer</codeph> blocks, and name the layers first to set their order:</p>
             <pre outputclass="language-css21">@layer base, theme;
 
 @layer base {
@@ -96,43 +45,62 @@
 @layer theme {
     chapter { color: navy; }
 }
-
-chapter { color: gray; }
 </pre>
-            <p>All three declarations are normal and have the same specificity. The unlayered <codeph>gray</codeph> declaration wins. If all three declarations were important, the <codeph>base</codeph> layer would win.</p>
-            <div outputclass="role-h3" id="specificity">Specificity</div>
-            <p>
-                <xref href="https://www.w3.org/TR/selectors-4/#specificity-rules" scope="external" format="html">Selectors 4 §15, Calculating a selector’s specificity</xref>.</p>
-            <p>Specificity compares the selector that matched. It is a three-part weight: ID selectors, class/attribute/pseudo-class selectors, and type/pseudo-element selectors. Compare the parts from left to right. A larger earlier part takes precedence, regardless of the later parts.</p>
-            <p>For a selector list, the matching selector with the greatest specificity supplies the rule’s specificity. Specificity does not override origin, importance or layer order. See <xref href="specificity.dita#specificity">Specificity</xref> for how each selector form contributes.</p>
-            <div outputclass="role-h3" id="scope-proximity">Scope proximity</div>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-6/#scoped-styles" scope="external" format="html">CSS Cascade 6 §2.5, Scoping Styles: the @scope rule</xref>.</p>
-            <p>When declarations tie on origin, importance, layer and specificity, a declaration from a scope whose root is closer to the matched element wins. Count the ancestor steps from the element to each matching scope root. The smaller count is closer. An unscoped rule has no scope root and loses this tie-breaker to a scoped rule.</p>
-            <div outputclass="role-h3" id="source-order">Source order</div>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-6/#cascade-sort" scope="external" format="html">CSS Cascade 6 §2.1, Cascade Sorting Order</xref>.</p>
-            <p>If declarations still tie, the one that appears later wins. Imported rules take part at the position of their <codeph>@import</codeph>. Within one declaration block, the later declaration for the same property wins.</p>
+            <p>The layers rank in the order in which their names first appear, so <codeph>theme</codeph> is above <codeph>base</codeph>. A normal declaration in a later layer wins against a normal declaration in an earlier layer, even if the selector of the earlier one is more specific. Rules that are not in a layer rank above every layer:</p>
+            <pre outputclass="language-css21">@layer base {
+    chapter title { color: red; }
+}
+
+title {
+    color: blue;
+}
+</pre>
+            <p>The title is blue.</p>
+            <fig id="cascade-layers-figure">
+                <title>The order of layers</title>
+                <image href="../images/cascade-layers.svg" placement="break" scale="75">
+                    <alt>Two stacks of three boxes. For normal declarations, the box with no layer is on top and wins, then the layer theme, then the layer base. For important declarations the stack is reversed: the layer base is on top and wins, then the layer theme, then no layer.</alt>
+                </image>
+            </fig>
+            <p>For important declarations the order is reversed: an important declaration in an earlier layer wins against one in a later layer, and an important declaration in a layer wins against an important declaration outside the layers. This lets the first layer, which is usually the base design, protect the rules that must not change.</p>
+            <p>A layer can have layers inside it. Write the inner layer in the block of the outer one, or name it with a dot, as in <codeph>@layer outer.inner</codeph>. A block without a name makes a layer that no other rule can add to. Writing the name of a layer again adds more rules to the same layer. The <codeph>@import</codeph> rule can put a whole stylesheet in a layer, as <xref href="../tasks/conditional-rules.dita#conditional-rules">Apply rules on conditions</xref> explains.</p>
+        </section>
+        <section id="specificity-in-the-cascade">
+            <title>Specificity</title>
+            <p>When the importance and the layer are the same, the more specific selector wins. A selector with an ID counts more than a selector with a class or an attribute, and that counts more than a selector with only element names. <xref href="specificity.dita#specificity">Specificity</xref> explains how CSSMedia counts.</p>
+            <pre outputclass="language-css21">title {
+    color: red;
+}
+
+chapter title {
+    color: blue;
+}
+</pre>
+            <p>Both rules come from the same stylesheet and neither is important, so the specificity decides: the title is blue, even if you write the rules in the opposite order.</p>
         </section>
         <section id="scoped-rules">
-            <title>Scoped rules</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-6/#scoped-styles" scope="external" format="html">CSS Cascade 6 §2.5, Scoping Styles: the @scope rule</xref>.</p>
-            <p>
-                <codeph>@scope</codeph> limits the elements matched by its nested rules. The optional start selector identifies the scope root. The optional <codeph>to</codeph> selector identifies a scope limit: matching elements at the limit, and their descendants, are outside that scope.</p>
+            <title>Scopes</title>
+            <p>An <codeph>@scope</codeph> block limits the rules inside it to the descendants of a root element. The selector in parentheses is the root. An optional <codeph>to</codeph> selector marks a limit: the elements that match it, and everything inside them, are outside the scope:</p>
             <pre outputclass="language-css21">@scope (chapter) to (appendix) {
     title { color: navy; }
 }
 </pre>
-            <p>This rule matches <codeph>title</codeph> elements inside a <codeph>chapter</codeph> scope, but not inside an <codeph>appendix</codeph> boundary. If the start selector is omitted, the document root is the scope root. A nested scope is relative to its enclosing scope.</p>
-            <p>Scope proximity affects precedence only after origin, importance, layer and specificity tie. It does not make a less-specific selector outrank a more-specific one.</p>
+            <p>This rule colors the titles inside a <codeph>chapter</codeph>, except the titles inside an <codeph>appendix</codeph> that is in the chapter. If you leave out the root, the scope is the whole document.</p>
+            <fig id="cascade-scope-figure">
+                <title>A scope with a limit</title>
+                <image href="../images/cascade-scope.svg" placement="break" scale="75">
+                    <alt>A chapter drawn as a large dashed box. It holds a title, which is in the scope and is red, and an appendix, the limit, drawn as a dashed box that holds another title, which is outside the scope and is not red.</alt>
+                </image>
+            </fig>
+            <p>A scope also breaks ties. When two declarations have the same importance, layer and specificity, the one from the root that is nearer to the element wins, whatever the position of the rules. A rule in a scope wins against a rule outside every scope. The selectors inside an <codeph>@scope</codeph> do not get more specificity from the root.</p>
+        </section>
+        <section id="source-order">
+            <title>Position in the stylesheet</title>
+            <p>If everything else is equal, the declaration that comes last wins. The same holds inside one block: when a block sets a property twice, the second declaration wins. An imported stylesheet counts as being at the position of its <codeph>@import</codeph> rule, which is always before the rules of the stylesheet that imports it.</p>
         </section>
         <section id="page-context-declarations">
-            <title>Page-context declarations</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-page-3/#cascading-and-page-context" scope="external" format="html">CSS Paged Media 3 §4.4, Cascading in the page context</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#document-page-selectors" scope="external" format="html">CSS GCPM 3 §3.1, Page Selectors</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#document-sequence-selectors" scope="external" format="html">§3.2, Page groups</xref>.</p>
-            <p>Declarations in <codeph>@page</codeph> rules and page-margin rules cascade within their page context. Page selectors have their own specificity. A page type name contributes to the first component; <codeph>:first</codeph> and <codeph>:blank</codeph> contribute to the second; <codeph>:left</codeph> and <codeph>:right</codeph> contribute to the third. Each occurrence counts, including repeated pseudo-classes. The <codeph>:nth()</codeph> page pseudo-class contributes no specificity. It selects a page by its position in the document or, with a page-group name, its position in that group. When matching page rules tie on origin, importance, layer and specificity, source order decides. These declarations do not compete with declarations for an <xref href="../glossaries/XML.dita">XML</xref> element.</p>
+            <title>Declarations of pages</title>
+            <p>The declarations in <codeph>@page</codeph> rules and in the rules of the page-margin boxes cascade among themselves with the same criteria. Their selectors have a specificity of their own, which <xref href="../tasks/page-setup.dita#page-setup">Page setup</xref> explains. They never compete with the declarations that style the elements of your XML.</p>
         </section>
     </conbody>
 </concept>
-

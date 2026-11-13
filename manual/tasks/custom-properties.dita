@@ -1,93 +1,111 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="custom-properties">
-    <title>Custom properties and substitution</title>
-    <shortdesc>Custom properties store values that can be substituted into other declarations. The cascade selects their values like it selects values for other properties.</shortdesc>
+    <title>Reuse values with custom properties and functions</title>
+    <shortdesc>A custom property holds a value that you write once and use in many declarations. You can give it a type, read values from the attributes of your XML, and define your own functions.</shortdesc>
     <taskbody>
         <steps>
             <step id="defining-custom-properties">
-                <cmd>Defining custom properties</cmd>
+                <cmd>Define a custom property</cmd>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-variables-1/#defining-variables" scope="external" format="html">CSS Variables 1 §2, Defining Custom Properties: the --* family of properties</xref>.</p>
-                    <p>A custom property name is a dashed identifier that begins with two hyphens, such as <codeph>--accent</codeph>. Names are case-sensitive. An unregistered custom property accepts a sequence of <xref href="../glossaries/CSS.dita">CSS</xref> component values rather than a property’s normal value grammar.</p>
+                    <p>The name of a custom property starts with two hyphens, as in <codeph>--accent</codeph>. Names are case sensitive, so <codeph>--Accent</codeph> and <codeph>--accent</codeph> are two properties. The value can be any text. A custom property is inherited, so define it on the root element or on any element, and every element below it can use it:</p>
                 </info>
                 <stepxmp>
-                    <pre outputclass="language-css21">chapter {
+                    <pre outputclass="language-css21">doc {
     --accent: navy;
-    --space: 1em;
+    --gap: 1em;
 }
 </pre>
                 </stepxmp>
-                <info>
-                    <p>Custom properties participate in the cascade. Unregistered custom properties inherit by default, and their initial value is the guaranteed-invalid value. This value is different from an empty string and cannot be substituted unless a fallback is provided.</p>
-                </info>
             </step>
             <step id="substituting-values-with-var">
-                <cmd>Substituting values with <codeph>var()</codeph>
-                </cmd>
+                <cmd>Use the value with var()</cmd>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-variables-1/#using-variables" scope="external" format="html">CSS Variables 1 §3, Using Cascading Variables: the var() notation</xref>; <xref href="https://www.w3.org/TR/css-variables-1/#cycles" scope="external" format="html">CSS Variables 1 §2.3, Resolving Dependency Cycles</xref>; <xref href="https://www.w3.org/TR/css-variables-1/#invalid-variables" scope="external" format="html">CSS Variables 1 §3.1, Invalid Variables</xref>.</p>
-                    <p>Use <codeph>var()</codeph> with a custom property name. An optional fallback follows a comma:</p>
+                    <p>Write <codeph>var()</codeph> with the name of the property. A second argument, after a comma, is the fallback for when the property has no value on that element. The fallback can use <codeph>var()</codeph> too:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">title {
     color: var(--accent, black);
-    margin-left: var(--space, 0);
+    margin-left: calc(var(--gap) * 2);
 }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The fallback is used when the referenced custom property has the guaranteed-invalid value. A fallback can contain another <codeph>var()</codeph> call. The fallback is not used merely because the substituted text fails the consuming property’s grammar.</p>
-                    <p>Custom properties can refer to one another. CSS resolves their dependencies for each element. A cycle makes every custom property in that cycle invalid on that element. Descendants inherit the parent’s computed custom-property values; they do not re-evaluate the parent’s declarations in the descendant’s context.</p>
-                    <p>Substitution happens after the cascade. If the resulting value does not match the consuming property’s grammar, the winning declaration becomes invalid at computed-value time and acts as <codeph>unset</codeph>. The cascade does not select an earlier declaration instead.</p>
+                    <p>CSSMedia replaces <codeph>var()</codeph> with the text of the property, so a custom property can hold part of a declaration, such as <codeph>20pt 0</codeph> for <codeph>margin</codeph>. Custom properties can use each other. If they use each other in a circle, none of them has a value, and the fallbacks are used.</p>
+                    <p>A <codeph>var()</codeph> that has no value and no fallback makes the declaration invalid when it is computed, and the property takes the value <codeph>unset</codeph>. <xref href="../concepts/inheritance-and-defaults.dita#inheritance-and-defaults/invalid-after-the-cascade">Inherit, reset and roll back values</xref> explains it.</p>
                 </info>
             </step>
             <step id="registering-a-custom-property-with-property">
-                <cmd>Registering a custom property with <codeph>@property</codeph>
-                </cmd>
+                <cmd>Give a custom property a type</cmd>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-properties-values-api-1/#at-property-rule" scope="external" format="html">CSS Properties and Values API 1 §3, The @property Rule</xref>; <xref href="https://www.w3.org/TR/css-properties-values-api-1/#the-syntax-descriptor" scope="external" format="html">§3.1, The syntax Descriptor</xref>; <xref href="https://www.w3.org/TR/css-properties-values-api-1/#inherits-descriptor" scope="external" format="html">§3.2, The inherits Descriptor</xref>; <xref href="https://www.w3.org/TR/css-properties-values-api-1/#initial-value-descriptor" scope="external" format="html">§3.3, The initial-value Descriptor</xref>.</p>
-                    <p>
-                        <codeph>@property</codeph> registers a custom property with a syntax, an inheritance setting and, for typed syntax, an initial value:</p>
+                    <p>An <codeph>@property</codeph> rule registers a custom property. It has these descriptors:</p>
+                    <ul>
+                        <li><codeph>syntax</codeph> is the type of the value, written as a string: <codeph>"&lt;length&gt;"</codeph>, <codeph>"&lt;color&gt;"</codeph>, <codeph>"&lt;number&gt;"</codeph>, <codeph>"&lt;percentage&gt;"</codeph> and the other types of CSS. A bar between types, as in <codeph>"&lt;length&gt; | auto"</codeph>, allows either. A plus sign after a type, as in <codeph>"&lt;length&gt;+"</codeph>, allows a list. <codeph>"*"</codeph> allows any value.</li>
+                        <li><codeph>inherits</codeph> is <codeph>true</codeph> or <codeph>false</codeph>. With <codeph>false</codeph> the elements below do not take the value, and they use the initial value.</li>
+                        <li><codeph>initial-value</codeph> is the value used when no rule sets the property.</li>
+                    </ul>
                 </info>
                 <stepxmp>
-                    <pre outputclass="language-css21">@property --accent {
-    syntax: "&lt;color&gt;";
-    inherits: true;
-    initial-value: navy;
+                    <pre outputclass="language-css21">@property --size {
+    syntax: "&lt;length&gt;";
+    inherits: false;
+    initial-value: 20pt;
+}
+
+title {
+    margin-left: var(--size);
 }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The <codeph>syntax</codeph> descriptor is a string containing the property’s accepted grammar. <codeph>"*"</codeph> accepts an arbitrary token sequence. A typed syntax uses component types such as <codeph>"&lt;length&gt;"</codeph>, which accepts a length such as <codeph>12pt</codeph>, or <codeph>"&lt;color&gt;"</codeph>, which accepts a CSS color. It can combine alternatives with <codeph>|</codeph> and use <codeph>+</codeph> or <codeph>#</codeph> multipliers. The <codeph>inherits</codeph> descriptor is required and must be <codeph>true</codeph> or <codeph>false</codeph>. A typed syntax requires an <codeph>initial-value</codeph> that matches the syntax and is computationally independent. With <codeph>"*"</codeph>, <codeph>initial-value</codeph> may be omitted.</p>
-                    <p>A registered property’s value is checked against its syntax when computed. Its <codeph>inherits</codeph> descriptor controls whether it inherits when no value is specified. Its <codeph>initial-value</codeph> supplies the default when it does not inherit or has no inherited value. If more than one valid registration names the same custom property, the last one in stylesheet order is used.</p>
+                    <p>A value that does not match the type is replaced by the initial value. A registered length is computed where you write it: if you write <codeph>--size: 2em</codeph> on the chapter, the titles inherit the length in pixels that 2em is for the chapter, whatever the font size of the title is. If you write the same <codeph>@property</codeph> rule more than once, the last one is used.</p>
                 </info>
             </step>
             <step id="reading-xml-attributes-with-attr">
-                <cmd>Reading <xref href="../glossaries/XML.dita">XML</xref> attributes with <codeph>attr()</codeph>
-                </cmd>
+                <cmd>Read the attributes of your XML with attr()</cmd>
                 <info>
-                    <p>
-                        <xref href="https://www.w3.org/TR/css-values-5/#attr-notation" scope="external" format="html">CSS Values 5 §7.7, Attribute References: the attr() notation</xref>.</p>
-                    <p>
-                        <codeph>attr()</codeph> reads an attribute from the XML element being styled. Without a type, it produces a string. A syntax can request a parsed CSS value, and an optional fallback supplies a value when the attribute is absent or cannot be parsed:</p>
+                    <p>The function <codeph>attr()</codeph> takes the value of an attribute of the element that you style. Without a type it gives a string, which fits <codeph>content</codeph>. After the name of the attribute you can write the type of the value, in angle brackets, and CSSMedia reads the attribute as that type. The last argument is the fallback, used when the attribute is missing or cannot be read as the type:</p>
                 </info>
                 <stepxmp>
-                    <pre outputclass="language-css21">figure {
+                    <pre outputclass="language-css21">figure::before {
     content: attr(title);
+}
+
+figure {
     width: attr(data-width &lt;length&gt;, 100pt);
+    border-color: attr(tint &lt;color&gt;, black);
 }
 </pre>
                 </stepxmp>
                 <info>
-                    <p>In <codeph>attr(data-width &lt;length&gt;, 100pt)</codeph>, <codeph>&lt;length&gt;</codeph> means a CSS length such as <codeph>12pt</codeph>. An untyped <codeph>attr()</codeph> has an empty-string fallback when none is written. A typed <codeph>attr()</codeph> has no implicit fallback. Attribute references can include a namespace prefix declared by <codeph>@namespace</codeph>.</p>
-                    <p>An attribute-derived value is tainted. If it is used as or within a URL, the declaration becomes invalid at computed-value time. After substitution, the resulting declaration must still match the property’s grammar.</p>
+                    <p>A string without a fallback is empty when the attribute is missing, and a value with a type has no fallback unless you write one. <xref href="../tasks/place-images.dita#place-images">Place an image</xref> shows <codeph>attr()</codeph> with the type <codeph>url</codeph>.</p>
+                </info>
+            </step>
+            <step id="defining-functions">
+                <cmd>Define your own functions with @function</cmd>
+                <info>
+                    <p>A <codeph>@function</codeph> rule defines a function whose name starts with two hyphens. The arguments have a name, and they can have a type and a default value. The descriptor <codeph>result</codeph> gives the value that the function returns, and it can use the arguments with <codeph>var()</codeph>. After <codeph>returns</codeph> you can write the type of the result. Inside the rule you can define custom properties for the steps of a calculation:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@function --double(--x &lt;length&gt;) returns &lt;length&gt; {
+    result: calc(var(--x) * 2);
+}
+
+@function --pad(--x &lt;length&gt;: 4pt) returns &lt;length&gt; {
+    --y: calc(var(--x) * 2);
+    result: var(--y);
+}
+
+title {
+    margin-left: --double(10pt);
+    margin-right: --pad();
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A function can take several arguments, separated by commas, and can call other functions. An argument can be the value of a custom property, as in <codeph>--double(var(--gap))</codeph>. If an argument does not match its type, the declaration is invalid when it is computed.</p>
                 </info>
             </step>
         </steps>
     </taskbody>
 </task>
-

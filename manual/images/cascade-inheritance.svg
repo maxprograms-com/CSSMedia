@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="215" viewBox="0 0 440 215" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <g stroke="#555555" stroke-width="1.5" fill="none">
+        <path d="M220 60 V78 M110 78 H330 M110 78 V96 M330 78 V96"/>
+    </g>
+    <g stroke="#1d4f7a" fill="#cfe3f5">
+        <rect x="150" y="10" width="140" height="50" rx="6"/>
+        <rect x="30" y="96" width="160" height="60" rx="6" fill="#e3eef8"/>
+        <rect x="250" y="96" width="160" height="60" rx="6" fill="#e3eef8"/>
+    </g>
+    <g fill="#222222" text-anchor="middle">
+        <text x="220" y="30" font-weight="bold">chapter</text>
+        <text x="220" y="46" font-size="10">color: navy; margin-left: 20pt</text>
+        <text x="110" y="116" font-weight="bold">title</text>
+        <text x="110" y="132" font-size="10">color: navy (inherited)</text>
+        <text x="110" y="146" font-size="10">margin-left: 0 (initial)</text>
+        <text x="330" y="116" font-weight="bold">para</text>
+        <text x="330" y="132" font-size="10">color: navy (inherited)</text>
+        <text x="330" y="146" font-size="10">margin-left: 0 (initial)</text>
+        <text x="220" y="184" font-size="10">The color flows down the tree. The margin does not:</text>
+        <text x="220" y="198" font-size="10">margin-left is not inherited, so the children use its initial value.</text>
+    </g>
+</svg>

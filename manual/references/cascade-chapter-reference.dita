@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="cascade-chapter-reference">
+    <title>Cascade and declarations reference</title>
+    <shortdesc>This reference lists the property <codeph>all</codeph>, the at-rules of a stylesheet, the media features and the container features.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-cascade/property-and-at-rule-reference"/>
+        <section conkeyref="ref-cascade/media-features"/>
+        <section conkeyref="ref-cascade/container-features"/>
+        <section conkeyref="ref-cascade/container-style-queries"/>
+    </refbody>
+</reference>

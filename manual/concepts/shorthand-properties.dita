@@ -1,50 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
 <concept id="shorthand-properties">
-    <title>Shorthand properties</title>
-    <shortdesc>A shorthand sets several related longhand properties in one declaration. The longhands are the properties that hold the individual values.</shortdesc>
+    <title>Set many properties with a shorthand</title>
+    <shortdesc>A shorthand property sets several properties in one declaration. Use it to write less CSS, and know what it does to the properties you leave out.</shortdesc>
     <conbody>
-        <section id="shorthands-set-every-sub-property">
-            <title>Shorthands set every sub-property</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-5/#shorthand" scope="external" format="html">CSS Cascade 5 §3, Shorthand Properties</xref>.</p>
-            <p>A shorthand sets all of its sub-properties, including properties whose values are omitted from the shorthand. Unless the shorthand’s definition says otherwise, each omitted sub-property receives its initial value.</p>
-            <p>For example, <codeph>margin</codeph> sets the four side margins:</p>
-            <pre outputclass="language-css21">chapter { margin: 1em; }
+        <p>The properties that a shorthand sets are its longhands. The shorthand <codeph>margin</codeph>, for example, sets the four longhands <codeph>margin-top</codeph>, <codeph>margin-right</codeph>, <codeph>margin-bottom</codeph> and <codeph>margin-left</codeph>. The number of values you write decides how they are shared:</p>
+        <pre outputclass="language-css21">chapter { margin: 1em; }
 chapter { margin: 1em 2em; }
+chapter { margin: 1em 2em 3em; }
 chapter { margin: 1em 2em 3em 4em; }
 </pre>
-            <p>One value sets all four sides. Two values set the top and bottom margins, then the right and left margins. Three values set top, horizontal sides and bottom. Four values set top, right, bottom and left, respectively.</p>
-            <p>Some shorthands also reset sub-properties that do not appear in their syntax. Such a sub-property is reset-only. For example, the <codeph>border</codeph> shorthand resets border-image properties even though its syntax cannot set their other values. Consult each shorthand’s property definition to see its full set of sub-properties and reset behavior.</p>
+        <p>One value is for all four sides. Two values are for top and bottom, then right and left. Three values are for top, right and left, then bottom. Four values go clockwise from the top: top, right, bottom, left.</p>
+        <p>The shorthands <codeph>border</codeph>, <codeph>background</codeph>, <codeph>font</codeph>, <codeph>padding</codeph> and many others work in the same way, each with its own order of values. The topics <xref href="../tasks/box-spacing.dita"/>, <xref href="../tasks/borders.dita"/>, <xref href="../tasks/backgrounds.dita"/> and <xref href="../tasks/font-properties.dita"/> explain the shorthands of their properties.</p>
+        <section id="shorthands-reset-what-you-leave-out">
+            <title>A shorthand resets what you leave out</title>
+            <p>A shorthand always sets all its longhands. The longhands that you do not write get their initial value, and that can replace a value that an earlier rule gave:</p>
+            <pre outputclass="language-css21">title {
+    background-image: linear-gradient(white, silver);
+}
+
+title {
+    background: yellow;
+}
+</pre>
+            <p>The second rule sets <codeph>background-image</codeph> to <codeph>none</codeph> too, so the title has a plain yellow background. Write the longhand after the shorthand when you need both.</p>
         </section>
-        <section id="shorthand-values-and-importance">
-            <title>Shorthand values and importance</title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-5/#shorthand" scope="external" format="html">CSS Cascade 5 §3, Shorthand Properties</xref>.</p>
-            <p>The shorthand is expanded into its longhands at the location of its declaration. Those longhands then compete in the cascade like declarations written separately.</p>
+        <section id="shorthands-in-the-cascade">
+            <title>Shorthands in the cascade</title>
+            <p>CSSMedia replaces a shorthand with its longhands at the position of the declaration. They compete with the other declarations like longhands that you wrote one by one:</p>
             <pre outputclass="language-css21">chapter {
     margin-left: 2em;
     margin: 1em;
 }
+
+title {
+    margin: 1em;
+    margin-left: 2em;
+}
 </pre>
-            <p>The <codeph>margin</codeph> shorthand comes later and sets <codeph>margin-left</codeph> to <codeph>1em</codeph>. If a later declaration sets <codeph>margin-left</codeph> directly, that later longhand can win.</p>
-            <p>An invalid shorthand contributes no longhand declarations. If a shorthand is declared <codeph>!important</codeph>, its sub-properties are important too. A CSS-wide keyword used as the shorthand’s entire value applies to every sub-property, including reset-only sub-properties. A CSS-wide keyword cannot be combined with other shorthand values.</p>
-        </section>
-        <section id="resetting-properties-with-all">
-            <title>Resetting properties with <codeph>all</codeph>
-            </title>
-            <p>
-                <xref href="https://www.w3.org/TR/css-cascade-5/#all-shorthand" scope="external" format="html">CSS Cascade 5 §3.2, Resetting All Properties: the all property</xref>.</p>
-            <p>
-                <codeph>all</codeph> is a shorthand that sets almost every property to one CSS-wide keyword. It excludes <codeph>direction</codeph>, <codeph>unicode-bidi</codeph> and custom properties.</p>
-            <pre outputclass="language-css21">title { all: initial; }
+            <p>In the chapter, the shorthand comes later, so the left margin is 1em. In the title, the longhand comes later, so the left margin is 2em and the other margins are 1em.</p>
+            <p>If you write <codeph>!important</codeph> after a shorthand, all its longhands are important. A declaration with a value that is not valid for the shorthand sets none of its longhands, and the earlier declarations stay. If you write a keyword such as <codeph>inherit</codeph> as the whole value of a shorthand, it applies to every longhand:</p>
+            <pre outputclass="language-css21">title {
+    margin: inherit;
+}
 </pre>
-            <p>This sets the included properties to their initial values. Use <codeph>inherit</codeph>, <codeph>unset</codeph>, <codeph>revert</codeph> or <codeph>revert-layer</codeph> to apply the corresponding CSS-wide behavior to those properties. See <xref href="inheritance-and-defaults.dita#inheritance-and-defaults">Inheritance and default values</xref> for the meaning of each keyword.</p>
         </section>
-        <section id="shorthand-definitions">
-            <title>Shorthand definitions</title>
-            <p>Shorthands do not all use the same value order or number of values. Their property definitions specify the grammar, defaults for omitted values and reset-only sub-properties. The guides for <xref href="../tasks/backgrounds.dita#backgrounds">backgrounds</xref>, <xref href="../tasks/borders.dita#borders">borders</xref>,<xref href="../tasks/font-properties.dita#font-properties">fonts</xref> and other property groups describe the shorthands in those groups.</p>
+        <section id="the-all-shorthand">
+            <title>The shorthand for everything</title>
+            <p>The property <codeph>all</codeph> is a shorthand for all the properties. <xref href="inheritance-and-defaults.dita#inheritance-and-defaults/the-all-property">Inherit, reset and roll back values</xref> explains it.</p>
         </section>
     </conbody>
 </concept>
-

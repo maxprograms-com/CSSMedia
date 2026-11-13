@@ -69,17 +69,17 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 
 ### @container
 
-- [ ] @container / aspect-ratio
-- [ ] @container / block-size
+- [x] @container / aspect-ratio
+- [x] @container / block-size
 - [ ] @container / fallback
-- [ ] @container / height
-- [ ] @container / inline-size
-- [ ] @container / orientation
+- [x] @container / height
+- [x] @container / inline-size
+- [x] @container / orientation
 - [-] @container / scrollable
 - [-] @container / scrolled
 - [-] @container / snapped
 - [-] @container / stuck
-- [ ] @container / width
+- [x] @container / width
 
 ### @counter-style
 

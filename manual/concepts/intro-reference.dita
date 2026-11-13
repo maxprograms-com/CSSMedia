@@ -7,21 +7,21 @@
         <p>This chapter is a complete reference for CSSMedia. Each table links to the <xref href="../glossaries/CSS.dita">CSS</xref> specification that defines its entries. The chapters of this guide end with a shorter reference that lists the entries they explain. The complete references are grouped by subject:</p>
         <ul id="reference-list">
             <li><xref href="../references/selector-reference.dita"/></li>
-            <li><xref href="../references/font-reference.dita"/></li>
+            <li><xref href="../references/cascade-reference.dita"/></li>
             <li><xref href="../references/box-model-properties.dita"/></li>
             <li><xref href="../references/dimension-properties.dita"/></li>
             <li><xref href="../references/background-reference.dita"/></li>
-            <li><xref href="../references/image-reference.dita"/></li>
-            <li><xref href="../references/svg-reference.dita"/></li>
             <li><xref href="../references/display-and-positioning.dita"/></li>
+            <li><xref href="../references/font-reference.dita"/></li>
+            <li><xref href="../references/language-reference.dita"/></li>
             <li><xref href="../references/page-reference.dita"/></li>
             <li><xref href="../references/content-reference.dita"/></li>
-            <li><xref href="../references/footnote-reference.dita"/></li>
-            <li><xref href="../references/link-reference.dita"/></li>
             <li><xref href="../references/named-strings-reference.dita"/></li>
+            <li><xref href="../references/link-reference.dita"/></li>
+            <li><xref href="../references/footnote-reference.dita"/></li>
             <li><xref href="../references/toc-reference.dita"/></li>
-            <li><xref href="../references/language-reference.dita"/></li>
-            <li><xref href="../references/cascade-reference.dita"/></li>
+            <li><xref href="../references/image-reference.dita"/></li>
+            <li><xref href="../references/svg-reference.dita"/></li>
         </ul>
     </conbody>
 </concept>
