@@ -1,0 +1,1212 @@
+@namespace m url("http://www.w3.org/1998/Math/MathML");
+@namespace xlink url("http://www.w3.org/1999/xlink");
+
+/* ------------------------------------------------------------------ */
+/* Fonts                                                              */
+/* ------------------------------------------------------------------ */
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-Regular.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-Bold.ttf");
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-Italic.ttf");
+    font-weight: normal;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Sans";
+    src: url("./fonts/NotoSans-BoldItalic.ttf");
+    font-weight: bold;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: "Noto Sans Mono";
+    src: url("./fonts/NotoSansMono-VariableFont_wdth,wght.ttf");
+    font-weight: 100 900;
+    font-stretch: 62.5% 100%;
+}
+
+@font-face {
+    font-family: "Noto Sans Arabic UI";
+    src: url("./fonts/NotoSansArabicUI-Regular.ttf");
+}
+
+@font-face {
+    font-family: "Noto Sans Hebrew";
+    src: url("./fonts/NotoSansHebrew-Regular.ttf");
+}
+
+@font-face {
+    font-family: "Noto Sans Thai";
+    src: url("./fonts/NotoSansThai-Regular.ttf");
+}
+
+@font-face {
+    font-family: "Noto Sans CJK JP";
+    src: url("./fonts/NotoSansCJKjp-Regular.otf");
+}
+
+@font-face {
+    font-family: "Noto Sans Math";
+    src: url("./fonts/NotoSansMath-Regular.ttf");
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                               */
+/* ------------------------------------------------------------------ */
+
+@page {
+    size: A4;
+    margin: 2.5cm 2cm;
+
+    @bottom-left {
+        content: string(doc-title);
+        font-family: "Noto Sans", "Noto Sans Arabic UI", "Noto Sans Hebrew", "Noto Sans Thai", "Noto Sans CJK JP", sans-serif;
+        font-size: 8pt;
+        color: #5B5B5B;
+    }
+
+    @bottom-right {
+        content: counter(page);
+        font-family: "Noto Sans", sans-serif;
+        font-size: 8pt;
+        color: #5B5B5B;
+    }
+
+    @footnote {
+        border-top: 0.5pt solid #5B5B5B;
+        margin-top: 12pt;
+        padding-top: 4pt;
+    }
+}
+
+/* ------------------------------------------------------------------ */
+/* Document and language                                              */
+/* ------------------------------------------------------------------ */
+
+/* DocBook 4 gives the language in lang, and DocBook 5 in xml:lang,
+   which CSSMedia reads by itself */
+* {
+    -cssmedia-lang: attr(lang);
+}
+
+article,
+book,
+set {
+    display: block;
+    font-family: "Noto Sans", sans-serif;
+    font-size: 10.5pt;
+    line-height: 1.5;
+    color: #000000;
+    counter-reset: section eqnum table;
+}
+
+article:lang(en),
+article:lang(ru),
+book:lang(en),
+book:lang(ru) {
+    hyphens: auto;
+}
+
+article:lang(ar),
+book:lang(ar) {
+    font-family: "Noto Sans Arabic UI", "Noto Sans", sans-serif;
+    direction: rtl;
+    font-synthesis-style: none;
+}
+
+article:lang(he),
+book:lang(he) {
+    font-family: "Noto Sans Hebrew", "Noto Sans", sans-serif;
+    direction: rtl;
+    font-synthesis-style: none;
+}
+
+article:lang(th),
+book:lang(th) {
+    font-family: "Noto Sans Thai", "Noto Sans", sans-serif;
+}
+
+article:lang(ja),
+book:lang(ja) {
+    font-family: "Noto Sans CJK JP", "Noto Sans", sans-serif;
+    line-break: strict;
+    font-synthesis-style: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Structure                                                          */
+/* ------------------------------------------------------------------ */
+
+part,
+chapter,
+appendix,
+preface,
+dedication,
+colophon,
+glossary,
+bibliography,
+section,
+sect1,
+sect2,
+sect3,
+sect4,
+sect5,
+simplesect,
+sidebar,
+partintro,
+acknowledgements {
+    display: block;
+}
+
+part,
+chapter,
+appendix,
+preface,
+glossary,
+bibliography {
+    break-before: page;
+}
+
+part > title,
+part > info > title,
+partinfo > title {
+    display: block;
+    font-weight: lighter;
+    font-size: 28pt;
+    color: #005393;
+    margin: 0 0 20pt 0;
+}
+
+chapter > title,
+chapter > info > title,
+chapterinfo > title,
+appendix > title,
+appendix > info > title,
+appendixinfo > title,
+preface > title,
+preface > info > title,
+prefaceinfo > title,
+glossary > title,
+glossary > info > title,
+glossaryinfo > title,
+bibliography > title,
+bibliography > info > title,
+bibliographyinfo > title {
+    display: block;
+    break-after: avoid;
+    font-weight: lighter;
+    font-size: 24pt;
+    color: #005393;
+    margin: 0 0 14pt 0;
+}
+
+section > title,
+section > info > title,
+sectioninfo > title,
+sect1 > title,
+sect1 > info > title,
+sect1info > title,
+simplesect > title,
+partintro > title,
+dedication > title,
+colophon > title {
+    display: block;
+    break-after: avoid;
+    font-weight: 400;
+    font-size: 18pt;
+    color: #005393;
+    margin-top: 20pt;
+    margin-bottom: 10pt;
+}
+
+section section > title,
+section section > info > title,
+sect2 > title,
+sect2 > info > title,
+sect2info > title {
+    font-size: 14pt;
+    margin-top: 14pt;
+    margin-bottom: 8pt;
+}
+
+section section section > title,
+section section section > info > title,
+sect3 > title,
+sect3 > info > title,
+sect3info > title,
+sect4 > title,
+sect4 > info > title,
+sect5 > title,
+sect5 > info > title,
+bridgehead {
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 12pt;
+    margin-bottom: 6pt;
+}
+
+bridgehead {
+    display: block;
+    color: #005393;
+    break-after: avoid;
+}
+
+/* ------------------------------------------------------------------ */
+/* Front matter                                                       */
+/* ------------------------------------------------------------------ */
+
+articleinfo,
+bookinfo,
+article > info,
+book > info,
+set > info,
+setinfo {
+    display: block;
+}
+
+/* the metadata that a reader does not need on the page stays out */
+articleinfo > *,
+bookinfo > *,
+setinfo > *,
+article > info > *,
+book > info > *,
+set > info > *,
+chapterinfo > *,
+appendixinfo > *,
+prefaceinfo > *,
+sectioninfo > *,
+sect1info > *,
+sect2info > *,
+sect3info > *,
+chapter > info > *,
+appendix > info > *,
+preface > info > *,
+section > info > *,
+part > info > * {
+    display: none;
+}
+
+article > title,
+articleinfo > title,
+article > info > title,
+book > title,
+bookinfo > title,
+book > info > title {
+    string-set: doc-title content();
+    display: block;
+    font-weight: lighter;
+    font-size: 24pt;
+    color: #005393;
+    margin-top: 0;
+    margin-bottom: 12pt;
+}
+
+book > title,
+bookinfo > title,
+book > info > title {
+    font-size: 32pt;
+    margin-top: 80pt;
+    margin-bottom: 20pt;
+}
+
+articleinfo > subtitle,
+article > info > subtitle,
+article > subtitle,
+bookinfo > subtitle,
+book > info > subtitle,
+book > subtitle {
+    display: block;
+    font-size: 14pt;
+    color: #5B5B5B;
+    margin-bottom: 10pt;
+}
+
+articleinfo > abstract,
+article > info > abstract,
+article > abstract,
+chapter > abstract,
+section > abstract,
+bookinfo > abstract,
+book > info > abstract {
+    display: block;
+    font-style: italic;
+    margin: 8pt 0;
+}
+
+articleinfo > authorgroup,
+articleinfo > author,
+article > info > authorgroup,
+article > info > author,
+bookinfo > authorgroup,
+bookinfo > author,
+book > info > authorgroup,
+book > info > author {
+    display: block;
+}
+
+articleinfo > pubdate,
+articleinfo > date,
+article > info > pubdate,
+article > info > date,
+bookinfo > pubdate,
+bookinfo > date,
+book > info > pubdate,
+book > info > date {
+    display: block;
+    color: #5B5B5B;
+    font-size: 9pt;
+}
+
+articleinfo > copyright,
+article > info > copyright,
+bookinfo > copyright,
+book > info > copyright {
+    display: block;
+    color: #5B5B5B;
+    font-size: 9pt;
+}
+
+copyright::before {
+    content: "\00a9 ";
+}
+
+year,
+holder {
+    display: inline;
+}
+
+year::after {
+    content: " ";
+}
+
+/* ------------------------------------------------------------------ */
+/* Text blocks                                                        */
+/* ------------------------------------------------------------------ */
+
+para,
+simpara {
+    display: block;
+    margin: 0 0 10pt 0;
+}
+
+formalpara {
+    display: block;
+    margin: 0 0 10pt 0;
+}
+
+formalpara > title {
+    display: inline;
+    font-weight: bold;
+}
+
+formalpara > title::after {
+    content: ". ";
+}
+
+formalpara > para {
+    display: inline;
+}
+
+blockquote,
+epigraph {
+    display: block;
+    margin: 10pt 0 10pt 16pt;
+    padding-inline-start: 10pt;
+    border-inline-start: 2pt solid #005393;
+}
+
+blockquote > title,
+epigraph > title {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 4pt;
+}
+
+attribution {
+    display: block;
+    text-align: end;
+    font-style: italic;
+}
+
+attribution::before {
+    content: "\2014 ";
+}
+
+address {
+    display: block;
+    font-style: normal;
+    white-space: pre-line;
+    margin: 0 0 10pt 0;
+}
+
+affiliation > address {
+    display: inline;
+    white-space: normal;
+    margin: 0;
+}
+
+note,
+tip,
+important,
+warning,
+caution {
+    display: block;
+    margin: 10pt 0;
+    padding: 8pt 12pt;
+    border-inline-start: 3pt solid #005393;
+    background: #F2F6FA;
+}
+
+important,
+warning,
+caution {
+    border-inline-start-color: #B22222;
+    background: #FBF1F1;
+}
+
+note > title,
+tip > title,
+important > title,
+warning > title,
+caution > title {
+    display: block;
+    font-weight: bold;
+    color: #005393;
+    margin-bottom: 4pt;
+}
+
+important > title,
+warning > title,
+caution > title {
+    color: #B22222;
+}
+
+note > para:last-child,
+tip > para:last-child,
+important > para:last-child,
+warning > para:last-child,
+caution > para:last-child {
+    margin-bottom: 0;
+}
+
+sidebar {
+    margin: 10pt 0;
+    padding: 8pt 12pt;
+    border: 0.5pt solid #B0B0B0;
+    background: #F7F7F7;
+}
+
+sidebar > title {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 4pt;
+}
+
+example,
+informalexample,
+figure,
+informalfigure {
+    display: block;
+    margin: 10pt 0;
+}
+
+example > title,
+figure > title {
+    display: block;
+    font-weight: bold;
+    color: #005393;
+    margin-bottom: 6pt;
+}
+
+figure > title {
+    margin-top: 6pt;
+    margin-bottom: 0;
+    text-align: center;
+    caption-side: bottom;
+}
+
+figure > mediaobject,
+informalfigure > mediaobject {
+    float: none;
+    text-align: center;
+    margin: 0 auto;
+}
+
+/* ------------------------------------------------------------------ */
+/* Inline text                                                        */
+/* ------------------------------------------------------------------ */
+
+emphasis,
+firstterm,
+foreignphrase,
+citetitle,
+wordasword,
+replaceable,
+varname,
+property,
+parameter,
+classname {
+    font-style: italic;
+}
+
+emphasis[role="strong"],
+emphasis[role="bold"],
+b,
+guibutton,
+guilabel,
+guimenu,
+guimenuitem,
+guisubmenu,
+userinput,
+command,
+option {
+    font-weight: bold;
+}
+
+b {
+    color: #005393;
+}
+
+emphasis[role="strong"],
+emphasis[role="bold"] {
+    font-style: normal;
+}
+
+literal,
+code,
+filename,
+computeroutput,
+userinput,
+command,
+option,
+envar,
+function,
+constant,
+type,
+methodname,
+sgmltag,
+tag,
+varname,
+parameter,
+property,
+classname,
+interfacename,
+markup,
+prompt {
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: "Noto Sans Mono", monospace;
+}
+
+userinput {
+    font-weight: bold;
+}
+
+quote::before {
+    content: open-quote;
+}
+
+quote::after {
+    content: close-quote;
+}
+
+sub {
+    vertical-align: sub;
+    font-size: 0.75em;
+}
+
+sup {
+    vertical-align: super;
+    font-size: 0.75em;
+}
+
+trademark::after {
+    content: "\2122";
+    vertical-align: super;
+    font-size: 0.75em;
+}
+
+keycap {
+    font-family: "Noto Sans Mono", monospace;
+    font-size: 0.9em;
+    padding: 0 3pt;
+    border: 0.5pt solid #8A8A8A;
+    border-radius: 3pt;
+}
+
+menuchoice > * + *::before {
+    content: " \25B8 ";
+}
+
+acronym,
+abbrev {
+    font-variant: normal;
+}
+
+indexterm,
+anchor,
+beginpage,
+remark,
+comment {
+    display: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Lists                                                              */
+/* ------------------------------------------------------------------ */
+
+itemizedlist,
+orderedlist {
+    display: block;
+    margin: 0 0 10pt 0;
+    padding-inline-start: 24pt;
+}
+
+itemizedlist {
+    list-style-type: disc;
+}
+
+itemizedlist itemizedlist {
+    list-style-type: circle;
+}
+
+orderedlist {
+    list-style-type: decimal;
+}
+
+orderedlist[numeration="loweralpha"] {
+    list-style-type: lower-alpha;
+}
+
+orderedlist[numeration="upperalpha"] {
+    list-style-type: upper-alpha;
+}
+
+orderedlist[numeration="lowerroman"] {
+    list-style-type: lower-roman;
+}
+
+orderedlist[numeration="upperroman"] {
+    list-style-type: upper-roman;
+}
+
+listitem {
+    display: list-item;
+    margin: 0 0 8pt 0;
+}
+
+itemizedlist[mark="none"],
+orderedlist[mark="none"] {
+    list-style-type: none;
+}
+
+procedure {
+    display: block;
+    margin: 0 0 10pt 0;
+    padding-inline-start: 24pt;
+    list-style-type: decimal;
+}
+
+procedure > title {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 6pt;
+    margin-inline-start: -24pt;
+}
+
+procedure > step,
+substeps > step {
+    display: list-item;
+    margin: 0 0 8pt 0;
+}
+
+substeps {
+    display: block;
+    padding-inline-start: 24pt;
+    list-style-type: lower-alpha;
+}
+
+stepalternatives {
+    display: block;
+    padding-inline-start: 24pt;
+    list-style-type: disc;
+}
+
+stepalternatives > step {
+    display: list-item;
+}
+
+variablelist {
+    display: block;
+    margin: 0 0 10pt 0;
+}
+
+varlistentry {
+    display: block;
+    margin: 0 0 8pt 0;
+}
+
+varlistentry > term {
+    display: block;
+    font-weight: bold;
+}
+
+varlistentry > listitem {
+    display: block;
+    margin: 0 0 0 24pt;
+}
+
+simplelist {
+    display: block;
+    margin: 0 0 10pt 0;
+    padding: 0;
+}
+
+simplelist[type="inline"] {
+    display: inline;
+}
+
+simplelist > member {
+    display: block;
+}
+
+simplelist[type="inline"] > member {
+    display: inline;
+}
+
+simplelist[type="inline"] > member + member::before {
+    content: ", ";
+}
+
+glosslist,
+glossary > glossdiv {
+    display: block;
+}
+
+glossentry {
+    display: block;
+    margin: 0 0 8pt 0;
+}
+
+glossentry > glossterm {
+    display: block;
+    font-weight: bold;
+}
+
+glossentry > glossdef,
+glossentry > glosssee {
+    display: block;
+    margin: 0 0 0 24pt;
+}
+
+glossdiv > title {
+    display: block;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #005393;
+    margin: 14pt 0 8pt 0;
+}
+
+bibliodiv,
+biblioentry,
+bibliomixed {
+    display: block;
+    margin: 0 0 8pt 0;
+}
+
+qandaset,
+qandadiv,
+qandaentry {
+    display: block;
+}
+
+question,
+answer {
+    display: block;
+    margin: 0 0 8pt 0;
+}
+
+question {
+    font-weight: bold;
+}
+
+question > label,
+answer > label {
+    display: inline;
+    margin-inline-end: 6pt;
+}
+
+/* ------------------------------------------------------------------ */
+/* Footnotes                                                          */
+/* ------------------------------------------------------------------ */
+
+/* footnotes go to the footnote area at the bottom of the page; a label
+   replaces the number, and a footnoteref shows the mark of the footnote
+   it points to */
+footnote {
+    float: footnote;
+    font-size: 8.5pt;
+    font-weight: normal;
+    font-style: normal;
+    line-height: 1.4;
+}
+
+footnote::footnote-call,
+footnoteref {
+    font-size: 0.7em;
+    font-variant-position: normal;
+    vertical-align: super;
+}
+
+footnote[label] {
+    counter-increment: footnote -1;
+}
+
+footnote[label]::footnote-call {
+    content: attr(label);
+}
+
+footnote[label]::footnote-marker {
+    content: attr(label) ". ";
+}
+
+/* the mark starts the first paragraph of the footnote */
+footnote > para,
+footnote > simpara {
+    margin: 0 0 4pt 0;
+}
+
+footnote > para:first-child,
+footnote > simpara:first-child {
+    display: inline;
+}
+
+footnoteref {
+    content: -cssmedia-link-counter(footnote);
+    -cssmedia-link: "#" attr(linkend);
+}
+
+footnoteref[label] {
+    content: attr(label);
+}
+
+/* ------------------------------------------------------------------ */
+/* Links                                                              */
+/* ------------------------------------------------------------------ */
+
+ulink {
+    -cssmedia-link: attr(url);
+    color: #3367e1;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+link[linkend],
+olink[targetptr] {
+    -cssmedia-link: "#" attr(linkend);
+    color: #3367e1;
+}
+
+link[xlink|href],
+link[href] {
+    -cssmedia-link: attr(xlink|href);
+    color: #3367e1;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+link[href] {
+    -cssmedia-link: attr(href);
+}
+
+xref {
+    -cssmedia-link: "#" attr(linkend);
+    color: #3367e1;
+}
+
+/* the text of a cross reference follows its xrefstyle: the number of an
+   equation, or of a section; without one, the ID it points to */
+xref::after {
+    content: "[" attr(linkend) "]";
+}
+
+xref[xrefstyle="equation"]::after {
+    content: "(" -cssmedia-link-counter(eqnum) ")";
+}
+
+xref[xrefstyle="section"]::after {
+    content: "Section " -cssmedia-link-counter(section);
+}
+
+/* ------------------------------------------------------------------ */
+/* Code                                                               */
+/* ------------------------------------------------------------------ */
+
+programlisting,
+screen,
+synopsis,
+literallayout[class="monospaced"] {
+    display: block;
+    direction: ltr;
+    unicode-bidi: isolate;
+    font-family: "Noto Sans Mono", monospace;
+    font-size: 9pt;
+    white-space: pre;
+    background: #000000;
+    color: #FFFFFF;
+    padding: 16pt;
+    margin: 10pt 0 10pt 16pt;
+}
+
+screen,
+synopsis {
+    background: #F2F2F2;
+    color: #000000;
+}
+
+literallayout {
+    display: block;
+    white-space: pre;
+    margin: 0 0 10pt 0;
+}
+
+programlisting > emphasis,
+screen > emphasis {
+    color: #FFD866;
+    font-style: normal;
+    font-weight: bold;
+}
+
+/* ------------------------------------------------------------------ */
+/* Images                                                             */
+/* ------------------------------------------------------------------ */
+
+mediaobject {
+    display: block;
+    float: inline-start;
+    margin: 0 16pt 8pt 0;
+}
+
+inlinemediaobject {
+    display: inline;
+}
+
+imageobject,
+videoobject,
+audioobject {
+    display: contents;
+}
+
+imagedata {
+    content: attr(fileref url);
+    max-width: 100%;
+}
+
+inlinemediaobject imagedata {
+    vertical-align: middle;
+}
+
+textobject,
+audioobject,
+videoobject,
+caption {
+    display: none;
+}
+
+mediaobject > caption,
+figure > mediaobject + caption {
+    display: block;
+    font-size: 9pt;
+    color: #5B5B5B;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tables                                                             */
+/* ------------------------------------------------------------------ */
+
+table,
+informaltable {
+    display: table;
+    border-collapse: collapse;
+    margin: 10pt auto;
+    font-size: 9.5pt;
+}
+
+table > title,
+table > caption {
+    display: table-caption;
+    caption-side: top;
+    font-weight: bold;
+    color: #005393;
+    margin-bottom: 6pt;
+}
+
+table {
+    counter-increment: table;
+}
+
+table > title::before {
+    content: "Table " counter(table) ". ";
+}
+
+tgroup {
+    display: contents;
+}
+
+colspec,
+spanspec {
+    display: none;
+}
+
+thead {
+    display: table-header-group;
+    font-weight: bold;
+}
+
+tfoot {
+    display: table-footer-group;
+}
+
+tbody {
+    display: table-row-group;
+}
+
+row,
+tr {
+    display: table-row;
+}
+
+entry,
+th,
+td {
+    display: table-cell;
+    padding: 3pt 10pt;
+    border-bottom: 0.5pt solid #B0B0B0;
+    text-align: start;
+}
+
+entry[align="center"],
+th[align="center"],
+td[align="center"] {
+    text-align: center;
+}
+
+entry[align="right"],
+th[align="right"],
+td[align="right"] {
+    text-align: right;
+}
+
+entry[valign="middle"] {
+    vertical-align: middle;
+}
+
+entry[valign="bottom"] {
+    vertical-align: bottom;
+}
+
+thead > row > entry,
+thead > tr > th {
+    border-bottom: 1pt solid #005393;
+}
+
+/* ------------------------------------------------------------------ */
+/* Equations and MathML                                               */
+/* ------------------------------------------------------------------ */
+
+equation,
+informalequation {
+    display: block;
+    margin: 8pt 0;
+    counter-increment: eqnum;
+}
+
+/* an empty cell at the end of the row of an equation shows its number */
+m|mtd.eqnum {
+    text-align: right;
+}
+
+m|mtd.eqnum::before {
+    content: "(" counter(eqnum) ")";
+    font-family: "Noto Sans", sans-serif;
+}
+
+equation > title {
+    display: block;
+    font-weight: bold;
+    color: #005393;
+    margin-bottom: 4pt;
+}
+
+inlineequation {
+    display: inline;
+}
+
+m|math {
+    font-family: "Noto Sans Math", "Noto Sans", sans-serif;
+}
+
+m|math[display="block"] {
+    font-size: 12pt;
+}
+
+/* ------------------------------------------------------------------ */
+/* Numbered sections, theorems and proofs                             */
+/* ------------------------------------------------------------------ */
+
+/* the sections of an article with role="numbered" show their number */
+article > section,
+article > sect1 {
+    counter-increment: section;
+}
+
+article[role~="numbered"] > section > title::before,
+article[role~="numbered"] > sect1 > title::before {
+    content: counter(section) ". ";
+}
+
+/* an example with role="theorem" is a theorem, and a paragraph with
+   role="proof" is part of a proof, which role="end" closes */
+example[role="theorem"] {
+    margin: 10pt 0 10pt 16pt;
+    padding-inline-start: 10pt;
+    border-inline-start: 2pt solid #005393;
+}
+
+example[role="theorem"] > title {
+    display: inline;
+    margin: 0;
+}
+
+example[role="theorem"] > title::after {
+    content: ". ";
+}
+
+example[role="theorem"] > para {
+    display: inline;
+    font-style: italic;
+}
+
+para[role~="proof"] {
+    margin-inline-start: 16pt;
+}
+
+para[role~="end"]::after {
+    content: " \220E";
+    font-family: "Noto Sans Math", sans-serif;
+}

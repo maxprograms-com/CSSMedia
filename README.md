@@ -48,7 +48,7 @@ After [installing](#installation) CSSMedia, run it on the English sample from th
 
 ```bash
 cd samples
-cssmedia -x xml_gap/xml_gap.xml -c xml_gap.css -p xml_gap/xml_gap.pdf
+cssmedia -x xml_gap/xml_gap.xml -c docbook.css -p xml_gap/xml_gap.pdf
 ```
 
 The command prints a warning about the DocBook DTD and generates `xml_gap/xml_gap.pdf`. See [xml_gap](#xml_gap) for the explanation and for the stylesheet techniques that the sample shows.
@@ -84,7 +84,7 @@ The [samples](samples/) folder has XML files, stylesheets and the fonts they use
 
 ### xml_gap
 
-A DocBook article in four languages, all formatted with [xml_gap.css](samples/xml_gap.css). The Arabic, Japanese and Russian files were translated automatically with DeepL. The goal of the samples is to test typesetting, not to provide perfect localization.
+A DocBook article in four languages, all formatted with [docbook.css](samples/docbook.css). The Arabic, Japanese and Russian files were translated automatically with DeepL. The goal of the samples is to test typesetting, not to provide perfect localization.
 
 | Language | XML | PDF |
 | -------- | --- | --- |
@@ -101,14 +101,39 @@ These are the techniques that the stylesheet uses:
 | ------ | --- |
 | Local fonts | `@font-face` rules with `src: url("./fonts/NotoSans-Regular.ttf")` |
 | Page size, margins and a footer with the document title and the page number | `@page` with `@bottom-left` and `@bottom-right`, `string-set: doc-title content()` on the title and `counter(page)` |
-| A different font for each language | selectors such as `article[lang\|="ar"]` and `article[lang\|="ja"]` |
+| The language of each element | DocBook 5 gives it in `xml:lang`, which CSSMedia reads by itself. DocBook 4 gives it in `lang`, so `* { -cssmedia-lang: attr(lang); }` makes that attribute the language of each element |
+| A different font for each language | the pseudo-class `:lang()`, with selectors such as `article:lang(ar)` and `article:lang(ja)`. It matches the elements in that language, and the ones inside them |
 | Right-to-left text in Arabic | `direction: rtl` |
 | Stricter line breaking in Japanese | `line-break: strict` |
 | Links from an XML attribute | `-cssmedia-link: attr(url)` on `ulink` |
 | An image from an XML attribute | `content: attr(fileref url)` on `imagedata` |
 | The photo at the start side of the text, on the right in Arabic and on the left in the other languages | `float: inline-start` on `mediaobject` |
-| An arrow after each link | `ulink::after { content: " \2197"; }` |
 | Code listings in a monospace font | `font-family: "Noto Sans Mono", monospace` with `white-space: pre` |
+
+### mathml
+
+A DocBook 5 article with mathematics, "From Basel to Gauss: Sums, Products and Integrals". It is a math text, with formulas written in MathML inside the paragraphs and as numbered display equations. It is formatted with [docbook.css](samples/docbook.css), the same stylesheet as the xml_gap articles.
+
+| XML | Stylesheet | PDF |
+| --- | ---------- | --- |
+| [mathml.xml](samples/mathml/mathml.xml) | [docbook.css](samples/docbook.css) | [mathml.pdf](samples/mathml/mathml.pdf) |
+
+Run the command from the `samples` folder:
+
+```bash
+cssmedia -x mathml/mathml.xml -c docbook.css -p mathml/mathml.pdf
+```
+
+The article is a DocBook 5 document, so it has no DTD and the command prints no warning. These are the techniques that the stylesheet uses for it:
+
+| Result | CSS |
+| ------ | --- |
+| Formulas in a math font | `@font-face` for Noto Sans Math, and `font-family` on `m\|math` with the MathML namespace declared by `@namespace` |
+| Display equations numbered at the right margin | an empty `mtd` with `class="eqnum"` at the end of the row of each equation, `counter-increment` on `informalequation` and `m\|mtd.eqnum::before { content: "(" counter(eqnum) ")"; }` |
+| References that show the number of an equation or of a section | `-cssmedia-link-counter()` in the `content` of `xref[xrefstyle="equation"]::after` and `xref[xrefstyle="section"]::after`, with the link from `-cssmedia-link: "#" attr(linkend)` |
+| Numbered section headings, only in an article with `role="numbered"` | `counter-increment` on `section` and `counter()` in `article[role~="numbered"] > section > title::before` |
+| Theorems and proofs | `example[role="theorem"]` and `para[role~="proof"]` |
+| Table captions numbered in order | `counter-increment` on `table` and `counter(table)` in `table > title::before` |
 
 ### Swordfish
 

@@ -613,7 +613,7 @@ export class MathLayout {
         // that the cells carry as CSS (alignments, spacings, lines) and the table as data (align, equal rows and columns, fit).
         const math: MathElement = this.data(box) as MathElement;
         // MathML 4 §3.5.1.2: a percentage width is "relative to the horizontal space that a MathML renderer has available".
-        const sizes: UsedSizes = this.sizes.of(box.style, this.target, undefined, 0);
+        const sizes: UsedSizes = this.sizes.of(box.style, this.target, undefined, this.target);
         const inlineEdges: number = this.sizes.edges(sizes, BoxSizes.INLINE_START) + this.sizes.edges(sizes, BoxSizes.INLINE_END);
         const cells: Array<TableCell> = this.tableCells(box, sizes.inlineSize);
         const rowCount: number = cells.reduce((count: number, cell: TableCell) => Math.max(count, cell.row + cell.rows), 0);
@@ -665,7 +665,7 @@ export class MathLayout {
                 const spans: readonly [number, number] = cell.spans ?? [1, 1];
                 const rowSpan: number = spans[1] === 0 ? rows.length - index : spans[1];
                 // §3.5.1.2: a percentage columnwidth "is relative to the width of the table".
-                const sizes: UsedSizes = this.sizes.of(cell.style, tableWidth, undefined, 0);
+                const sizes: UsedSizes = this.sizes.of(cell.style, tableWidth, undefined, tableWidth);
                 const content: ElementBox | undefined = this.inFlow(cell)[0];
                 const entry: TableCell = { box: cell, row: index, column, rows: rowSpan, columns: spans[0], sizes };
                 if (content !== undefined) {

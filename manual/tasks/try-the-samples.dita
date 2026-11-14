@@ -18,7 +18,7 @@
                 <strow>
                     <stentry>xml_gap</stentry>
                     <stentry>A DocBook article in English, Arabic, Japanese and Russian, formatted
-                        with one stylesheet, <filepath>xml_gap.css</filepath>.</stentry>
+                        with one stylesheet, <filepath>docbook.css</filepath>.</stentry>
                 </strow>
                 <strow>
                     <stentry>Swordfish</stentry>
@@ -42,7 +42,7 @@
             <step>
                 <cmd>Generate the PDF of the English article:</cmd>
                 <stepxmp>
-                    <pre>cssmedia -x xml_gap/xml_gap.xml -c xml_gap.css -p xml_gap/xml_gap.pdf</pre>
+                    <pre>cssmedia -x xml_gap/xml_gap.xml -c docbook.css -p xml_gap/xml_gap.pdf</pre>
                 </stepxmp>
                 <info>
                     <p>The XML files declare a DocBook <xref href="../glossaries/DTD.dita">DTD</xref>. Without a catalog, CSSMedia prints the
@@ -57,7 +57,7 @@
                 <cmd>Open the PDF and compare it with the one in the repository.</cmd>
             </step>
             <step>
-                <cmd>Edit <filepath>xml_gap.css</filepath> and run the command again.</cmd>
+                <cmd>Edit <filepath>docbook.css</filepath> and run the command again.</cmd>
                 <info>
                     <p>For example, change the <codeph>font-size</codeph> of <codeph>article</codeph>
                         or the <codeph>color</codeph> of <codeph>section > title</codeph>, and see
@@ -72,7 +72,7 @@
             </step>
         </steps>
         <result>
-            <p>The <filepath>xml_gap.css</filepath> stylesheet uses these techniques:</p>
+            <p>The <filepath>docbook.css</filepath> stylesheet uses these techniques:</p>
             <simpletable>
                 <sthead>
                     <stentry>Result</stentry>

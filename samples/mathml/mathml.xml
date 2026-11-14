@@ -1,0 +1,874 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns="http://docbook.org/ns/docbook" xmlns:m="http://www.w3.org/1998/Math/MathML" version="5.0" xml:lang="en-US" role="numbered">
+  <info>
+    <title>From Basel to Gauss: Sums, Products and Integrals</title>
+    <author>
+      <orgname>Maxprograms</orgname>
+    </author>
+    <pubdate>14 November 2026</pubdate>
+    <copyright>
+      <year>2026</year>
+      <holder>Maxprograms</holder>
+    </copyright>
+    <abstract>
+      <para>A short walk through classical results of analysis: telescoping sums, the geometric
+        series, Euler’s product for the sine, the Gaussian integral, an eigenvalue problem and
+        the binomial theorem. Each result is stated, proved in a few lines and checked against
+        numbers.</para>
+    </abstract>
+  </info>
+
+  <section xml:id="sec-intro">
+    <title>Introduction</title>
+    <para>In 1734 Leonhard Euler found the exact value of the sum of the reciprocals of the squares
+      of the natural numbers, a problem that had resisted the best mathematicians for almost a
+      century:</para>
+    <informalequation xml:id="eq-basel">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mrow><m:mi>ζ</m:mi><m:mo>(</m:mo><m:mn>2</m:mn><m:mo>)</m:mo></m:mrow>
+              <m:mo>=</m:mo>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>n</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow>
+                <m:mi>∞</m:mi>
+              </m:munderover>
+              <m:mfrac>
+                <m:mn>1</m:mn>
+                <m:msup><m:mi>n</m:mi><m:mn>2</m:mn></m:msup>
+              </m:mfrac>
+              <m:mo>=</m:mo>
+              <m:mfrac>
+                <m:msup><m:mi>π</m:mi><m:mn>2</m:mn></m:msup>
+                <m:mn>6</m:mn>
+              </m:mfrac>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>The series converges, because its terms behave like
+      <inlineequation><m:math><m:mn>1</m:mn><m:mo>/</m:mo><m:msup><m:mi>n</m:mi><m:mn>2</m:mn></m:msup></m:math></inlineequation>
+      for large <inlineequation><m:math><m:mi>n</m:mi></m:math></inlineequation>, but it converges
+      slowly: after <inlineequation><m:math><m:mi>n</m:mi></m:math></inlineequation> terms the
+      error is about
+      <inlineequation><m:math><m:mn>1</m:mn><m:mo>/</m:mo><m:mi>n</m:mi></m:math></inlineequation>,
+      as the table in <xref linkend="sec-numbers" xrefstyle="section"/> shows. This article collects
+      proofs of nearby facts that use the same tools, from the first year of calculus to a little
+      linear algebra. Equation <xref linkend="eq-basel" xrefstyle="equation"/> is the destination of the walk.</para>
+  </section>
+
+  <section xml:id="sec-telescoping">
+    <title>Telescoping sums</title>
+    <example role="theorem">
+      <title>Theorem 1</title>
+      <para>For every natural number
+        <inlineequation><m:math><m:mi>n</m:mi><m:mo>≥</m:mo><m:mn>1</m:mn></m:math></inlineequation>,</para>
+      <informalequation xml:id="eq-telescoping">
+        <m:math display="block">
+          <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+            <m:mtr>
+              <m:mtd/>
+              <m:mtd>
+                <m:munderover>
+                  <m:mo>∑</m:mo>
+                  <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow>
+                  <m:mi>n</m:mi>
+                </m:munderover>
+                <m:mfrac>
+                  <m:mn>1</m:mn>
+                  <m:mrow><m:mi>k</m:mi><m:mo>(</m:mo><m:mi>k</m:mi><m:mo>+</m:mo><m:mn>1</m:mn><m:mo>)</m:mo></m:mrow>
+                </m:mfrac>
+                <m:mo>=</m:mo>
+                <m:mfrac>
+                  <m:mi>n</m:mi>
+                  <m:mrow><m:mi>n</m:mi><m:mo>+</m:mo><m:mn>1</m:mn></m:mrow>
+                </m:mfrac>
+              </m:mtd>
+              <m:mtd class="eqnum"/>
+            </m:mtr>
+          </m:mtable>
+        </m:math>
+      </informalequation>
+    </example>
+    <para role="proof"><emphasis>Proof.</emphasis> Each term can be split into two fractions:</para>
+    <informalequation xml:id="eq-partial-fractions">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mfrac>
+                <m:mn>1</m:mn>
+                <m:mrow><m:mi>k</m:mi><m:mo>(</m:mo><m:mi>k</m:mi><m:mo>+</m:mo><m:mn>1</m:mn><m:mo>)</m:mo></m:mrow>
+              </m:mfrac>
+              <m:mo>=</m:mo>
+              <m:mfrac><m:mn>1</m:mn><m:mi>k</m:mi></m:mfrac>
+              <m:mo>−</m:mo>
+              <m:mfrac>
+                <m:mn>1</m:mn>
+                <m:mrow><m:mi>k</m:mi><m:mo>+</m:mo><m:mn>1</m:mn></m:mrow>
+              </m:mfrac>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para role="proof end">so the sum telescopes: every term cancels with the next one, and only the
+      first and the last survive. What remains is
+      <inlineequation><m:math>
+        <m:mn>1</m:mn><m:mo>−</m:mo>
+        <m:mfrac><m:mn>1</m:mn><m:mrow><m:mi>n</m:mi><m:mo>+</m:mo><m:mn>1</m:mn></m:mrow></m:mfrac>
+        <m:mo>=</m:mo>
+        <m:mi>n</m:mi><m:mo>/</m:mo><m:mo>(</m:mo><m:mi>n</m:mi><m:mo>+</m:mo><m:mn>1</m:mn><m:mo>)</m:mo>
+      </m:math></inlineequation>.</para>
+    <para>Letting
+      <inlineequation><m:math><m:mi>n</m:mi><m:mo>→</m:mo><m:mi>∞</m:mi></m:math></inlineequation>
+      gives a sum of exactly 1. The same idea bounds the series of <xref linkend="eq-basel" xrefstyle="equation"/>: for
+      <inlineequation><m:math><m:mi>k</m:mi><m:mo>≥</m:mo><m:mn>2</m:mn></m:math></inlineequation>
+      we have
+      <inlineequation><m:math>
+        <m:mn>1</m:mn><m:mo>/</m:mo><m:msup><m:mi>k</m:mi><m:mn>2</m:mn></m:msup>
+        <m:mo>&lt;</m:mo>
+        <m:mn>1</m:mn><m:mo>/</m:mo><m:mo>(</m:mo><m:mi>k</m:mi><m:mo>(</m:mo><m:mi>k</m:mi><m:mo>−</m:mo><m:mn>1</m:mn><m:mo>)</m:mo><m:mo>)</m:mo>
+      </m:math></inlineequation>, and the second sum telescopes as above, so</para>
+    <informalequation xml:id="eq-bound">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow>
+                <m:mi>n</m:mi>
+              </m:munderover>
+              <m:mfrac>
+                <m:mn>1</m:mn>
+                <m:msup><m:mi>k</m:mi><m:mn>2</m:mn></m:msup>
+              </m:mfrac>
+              <m:mo>&lt;</m:mo>
+              <m:mn>2</m:mn><m:mo>−</m:mo><m:mfrac><m:mn>1</m:mn><m:mi>n</m:mi></m:mfrac>
+              <m:mo>&lt;</m:mo>
+              <m:mn>2</m:mn>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>The partial sums grow and stay below 2, so the series converges.</para>
+  </section>
+
+  <section xml:id="sec-geometric">
+    <title>The geometric series</title>
+    <para>For a real number
+      <inlineequation><m:math><m:mi>r</m:mi><m:mo>≠</m:mo><m:mn>1</m:mn></m:math></inlineequation>
+      the partial sums of the powers of
+      <inlineequation><m:math><m:mi>r</m:mi></m:math></inlineequation> have a closed form:</para>
+    <informalequation xml:id="eq-geometric">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:apply>
+                <m:eq/>
+                <m:apply>
+                  <m:sum/>
+                  <m:bvar><m:ci>k</m:ci></m:bvar>
+                  <m:lowlimit><m:cn>0</m:cn></m:lowlimit>
+                  <m:uplimit><m:ci>n</m:ci></m:uplimit>
+                  <m:apply><m:power/><m:ci>r</m:ci><m:ci>k</m:ci></m:apply>
+                </m:apply>
+                <m:apply>
+                  <m:divide/>
+                  <m:apply>
+                    <m:minus/>
+                    <m:cn>1</m:cn>
+                    <m:apply><m:power/><m:ci>r</m:ci><m:apply><m:plus/><m:ci>n</m:ci><m:cn>1</m:cn></m:apply></m:apply>
+                  </m:apply>
+                  <m:apply><m:minus/><m:cn>1</m:cn><m:ci>r</m:ci></m:apply>
+                </m:apply>
+              </m:apply>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>To see this, multiply the sum by
+      <inlineequation><m:math><m:mn>1</m:mn><m:mo>−</m:mo><m:mi>r</m:mi></m:math></inlineequation>:
+      all the intermediate powers cancel in pairs and only
+      <inlineequation><m:math><m:mn>1</m:mn><m:mo>−</m:mo><m:msup><m:mi>r</m:mi><m:mrow><m:mi>n</m:mi><m:mo>+</m:mo><m:mn>1</m:mn></m:mrow></m:msup></m:math></inlineequation>
+      is left. When
+      <inlineequation><m:math><m:mrow><m:mo>|</m:mo><m:mi>r</m:mi><m:mo>|</m:mo></m:mrow><m:mo>&lt;</m:mo><m:mn>1</m:mn></m:math></inlineequation>
+      the power
+      <inlineequation><m:math><m:msup><m:mi>r</m:mi><m:mrow><m:mi>n</m:mi><m:mo>+</m:mo><m:mn>1</m:mn></m:mrow></m:msup></m:math></inlineequation>
+      tends to 0, and the series has a sum:</para>
+    <informalequation xml:id="eq-geometric-series">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>0</m:mn></m:mrow>
+                <m:mi>∞</m:mi>
+              </m:munderover>
+              <m:msup><m:mi>r</m:mi><m:mi>k</m:mi></m:msup>
+              <m:mo>=</m:mo>
+              <m:mfrac>
+                <m:mn>1</m:mn>
+                <m:mrow><m:mn>1</m:mn><m:mo>−</m:mo><m:mi>r</m:mi></m:mrow>
+              </m:mfrac>
+              <m:mo>,</m:mo>
+              <m:mspace width="1.5em"/>
+              <m:mrow><m:mo>|</m:mo><m:mi>r</m:mi><m:mo>|</m:mo></m:mrow>
+              <m:mo>&lt;</m:mo>
+              <m:mn>1</m:mn>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>With
+      <inlineequation><m:math><m:mi>r</m:mi><m:mo>=</m:mo><m:mn>1</m:mn><m:mo>/</m:mo><m:mn>2</m:mn></m:math></inlineequation>
+      this says that
+      <inlineequation><m:math><m:mn>1</m:mn><m:mo>+</m:mo><m:mn>1</m:mn><m:mo>/</m:mo><m:mn>2</m:mn><m:mo>+</m:mo><m:mn>1</m:mn><m:mo>/</m:mo><m:mn>4</m:mn><m:mo>+</m:mo><m:mn>1</m:mn><m:mo>/</m:mo><m:mn>8</m:mn><m:mo>+</m:mo><m:mo>⋯</m:mo></m:math></inlineequation>
+      adds up to 2, the picture of a segment that is halved again and again.</para>
+  </section>
+
+  <section xml:id="sec-euler">
+    <title>Euler’s product for the sine</title>
+    <para>Euler’s idea was to treat the sine as a polynomial of infinite degree whose roots are the
+      integers. Written as a product over its roots, and scaled so that its value at 0 is 1, it
+      becomes<footnote><para>The product converges for every real
+      <inlineequation><m:math><m:mi>x</m:mi></m:math></inlineequation>. Taking
+      <inlineequation><m:math><m:mi>x</m:mi><m:mo>=</m:mo><m:mn>1</m:mn><m:mo>/</m:mo><m:mn>2</m:mn></m:math></inlineequation>
+      gives the product of Wallis,
+      <inlineequation><m:math>
+        <m:mi>π</m:mi><m:mo>/</m:mo><m:mn>2</m:mn><m:mo>=</m:mo>
+        <m:munderover>
+          <m:mo>∏</m:mo>
+          <m:mrow><m:mi>n</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow>
+          <m:mi>∞</m:mi>
+        </m:munderover>
+        <m:mfrac>
+          <m:mrow><m:mn>4</m:mn><m:msup><m:mi>n</m:mi><m:mn>2</m:mn></m:msup></m:mrow>
+          <m:mrow><m:mn>4</m:mn><m:msup><m:mi>n</m:mi><m:mn>2</m:mn></m:msup><m:mo>−</m:mo><m:mn>1</m:mn></m:mrow>
+        </m:mfrac>
+      </m:math></inlineequation>. A rigorous proof of the product needs the factorization theorem
+      of Weierstrass.</para></footnote></para>
+    <informalequation xml:id="eq-product">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mfrac>
+                <m:mrow><m:mi>sin</m:mi><m:mo>&#x2061;</m:mo><m:mo>(</m:mo><m:mi>π</m:mi><m:mi>x</m:mi><m:mo>)</m:mo></m:mrow>
+                <m:mrow><m:mi>π</m:mi><m:mi>x</m:mi></m:mrow>
+              </m:mfrac>
+              <m:mo>=</m:mo>
+              <m:munderover>
+                <m:mo>∏</m:mo>
+                <m:mrow><m:mi>n</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow>
+                <m:mi>∞</m:mi>
+              </m:munderover>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mn>1</m:mn><m:mo>−</m:mo>
+                <m:mfrac>
+                  <m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup>
+                  <m:msup><m:mi>n</m:mi><m:mn>2</m:mn></m:msup>
+                </m:mfrac>
+                <m:mo>)</m:mo>
+              </m:mrow>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>On the other hand, the Taylor series of the sine, divided by
+      <inlineequation><m:math><m:mi>π</m:mi><m:mi>x</m:mi></m:math></inlineequation>, gives</para>
+    <informalequation xml:id="eq-taylor">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mfrac>
+                <m:mrow><m:mi>sin</m:mi><m:mo>&#x2061;</m:mo><m:mo>(</m:mo><m:mi>π</m:mi><m:mi>x</m:mi><m:mo>)</m:mo></m:mrow>
+                <m:mrow><m:mi>π</m:mi><m:mi>x</m:mi></m:mrow>
+              </m:mfrac>
+              <m:mo>=</m:mo>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>0</m:mn></m:mrow>
+                <m:mi>∞</m:mi>
+              </m:munderover>
+              <m:mfrac>
+                <m:mrow>
+                  <m:msup><m:mrow><m:mo>(</m:mo><m:mrow><m:mo>−</m:mo><m:mn>1</m:mn></m:mrow><m:mo>)</m:mo></m:mrow><m:mi>k</m:mi></m:msup>
+                  <m:msup><m:mrow><m:mo>(</m:mo><m:mi>π</m:mi><m:mi>x</m:mi><m:mo>)</m:mo></m:mrow><m:mrow><m:mn>2</m:mn><m:mi>k</m:mi></m:mrow></m:msup>
+                </m:mrow>
+                <m:mrow><m:mo>(</m:mo><m:mn>2</m:mn><m:mi>k</m:mi><m:mo>+</m:mo><m:mn>1</m:mn><m:mo>)</m:mo><m:mo>!</m:mo></m:mrow>
+              </m:mfrac>
+              <m:mo>=</m:mo>
+              <m:mn>1</m:mn><m:mo>−</m:mo>
+              <m:mfrac>
+                <m:mrow><m:msup><m:mi>π</m:mi><m:mn>2</m:mn></m:msup><m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup></m:mrow>
+                <m:mn>6</m:mn>
+              </m:mfrac>
+              <m:mo>+</m:mo>
+              <m:mfrac>
+                <m:mrow><m:msup><m:mi>π</m:mi><m:mn>4</m:mn></m:msup><m:msup><m:mi>x</m:mi><m:mn>4</m:mn></m:msup></m:mrow>
+                <m:mn>120</m:mn>
+              </m:mfrac>
+              <m:mo>−</m:mo>
+              <m:mo>⋯</m:mo>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>Compare the coefficients of
+      <inlineequation><m:math><m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup></m:math></inlineequation>
+      in <xref linkend="eq-product" xrefstyle="equation"/> and <xref linkend="eq-taylor" xrefstyle="equation"/>. Multiplying out the
+      product, the only way to get
+      <inlineequation><m:math><m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup></m:math></inlineequation>
+      is to take one factor
+      <inlineequation><m:math><m:mo>−</m:mo><m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup><m:mo>/</m:mo><m:msup><m:mi>n</m:mi><m:mn>2</m:mn></m:msup></m:math></inlineequation>
+      and 1 from all the others, so the coefficient is
+      <inlineequation><m:math>
+        <m:mo>−</m:mo>
+        <m:munderover>
+          <m:mo>∑</m:mo>
+          <m:mrow><m:mi>n</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow>
+          <m:mi>∞</m:mi>
+        </m:munderover>
+        <m:mn>1</m:mn><m:mo>/</m:mo><m:msup><m:mi>n</m:mi><m:mn>2</m:mn></m:msup>
+      </m:math></inlineequation>. In the series it is
+      <inlineequation><m:math><m:mo>−</m:mo><m:msup><m:mi>π</m:mi><m:mn>2</m:mn></m:msup><m:mo>/</m:mo><m:mn>6</m:mn></m:math></inlineequation>.
+      Equating them gives <xref linkend="eq-basel" xrefstyle="equation"/>.</para>
+  </section>
+
+  <section xml:id="sec-gauss">
+    <title>The Gaussian integral</title>
+    <example role="theorem">
+      <title>Theorem 2</title>
+      <para>The area under the bell curve is</para>
+      <informalequation xml:id="eq-gauss">
+        <m:math display="block">
+          <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+            <m:mtr>
+              <m:mtd/>
+              <m:mtd>
+                <m:msubsup>
+                  <m:mo>∫</m:mo>
+                  <m:mrow><m:mo>−</m:mo><m:mi>∞</m:mi></m:mrow>
+                  <m:mi>∞</m:mi>
+                </m:msubsup>
+                <m:msup><m:mi>e</m:mi><m:mrow><m:mo>−</m:mo><m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup></m:mrow></m:msup>
+                <m:mspace width="0.2em"/>
+                <m:mi>d</m:mi><m:mi>x</m:mi>
+                <m:mo>=</m:mo>
+                <m:msqrt><m:mi>π</m:mi></m:msqrt>
+              </m:mtd>
+              <m:mtd class="eqnum"/>
+            </m:mtr>
+          </m:mtable>
+        </m:math>
+      </informalequation>
+    </example>
+    <para role="proof"><emphasis>Proof.</emphasis> Call the integral
+      <inlineequation><m:math><m:mi>I</m:mi></m:math></inlineequation>. The trick is to square it and
+      to read the product of two integrals as an integral over the plane:</para>
+    <informalequation xml:id="eq-plane">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:msup><m:mi>I</m:mi><m:mn>2</m:mn></m:msup>
+              <m:mo>=</m:mo>
+              <m:msub>
+                <m:mo>∬</m:mo>
+                <m:msup><m:mi mathvariant="double-struck">R</m:mi><m:mn>2</m:mn></m:msup>
+              </m:msub>
+              <m:msup>
+                <m:mi>e</m:mi>
+                <m:mrow>
+                  <m:mo>−</m:mo><m:mo>(</m:mo>
+                  <m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup><m:mo>+</m:mo><m:msup><m:mi>y</m:mi><m:mn>2</m:mn></m:msup>
+                  <m:mo>)</m:mo>
+                </m:mrow>
+              </m:msup>
+              <m:mspace width="0.2em"/>
+              <m:mi>d</m:mi><m:mi>x</m:mi><m:mspace width="0.15em"/><m:mi>d</m:mi><m:mi>y</m:mi>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para role="proof">In polar coordinates the area element is
+      <inlineequation><m:math><m:mi>r</m:mi><m:mspace width="0.2em"/><m:mi>d</m:mi><m:mi>r</m:mi><m:mspace width="0.15em"/><m:mi>d</m:mi><m:mi>θ</m:mi></m:math></inlineequation>,
+      and the integral becomes elementary:</para>
+    <informalequation xml:id="eq-polar">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:msup><m:mi>I</m:mi><m:mn>2</m:mn></m:msup>
+              <m:mo>=</m:mo>
+              <m:msubsup>
+                <m:mo>∫</m:mo><m:mn>0</m:mn><m:mrow><m:mn>2</m:mn><m:mi>π</m:mi></m:mrow>
+              </m:msubsup>
+              <m:msubsup>
+                <m:mo>∫</m:mo><m:mn>0</m:mn><m:mi>∞</m:mi>
+              </m:msubsup>
+              <m:msup><m:mi>e</m:mi><m:mrow><m:mo>−</m:mo><m:msup><m:mi>r</m:mi><m:mn>2</m:mn></m:msup></m:mrow></m:msup>
+              <m:mspace width="0.2em"/>
+              <m:mi>r</m:mi><m:mspace width="0.2em"/><m:mi>d</m:mi><m:mi>r</m:mi><m:mspace width="0.15em"/><m:mi>d</m:mi><m:mi>θ</m:mi>
+              <m:mo>=</m:mo>
+              <m:mn>2</m:mn><m:mi>π</m:mi><m:mo>⋅</m:mo><m:mfrac><m:mn>1</m:mn><m:mn>2</m:mn></m:mfrac>
+              <m:mo>=</m:mo>
+              <m:mi>π</m:mi>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para role="proof end">Since <inlineequation><m:math><m:mi>I</m:mi></m:math></inlineequation> is
+      positive,
+      <inlineequation><m:math><m:mi>I</m:mi><m:mo>=</m:mo><m:msqrt><m:mi>π</m:mi></m:msqrt></m:math></inlineequation>.</para>
+    <para>Statisticians use this result every day. Dividing the bell curve by its area, and
+      allowing a mean <inlineequation><m:math><m:mi>μ</m:mi></m:math></inlineequation> and a standard
+      deviation <inlineequation><m:math><m:mi>σ</m:mi></m:math></inlineequation>, gives the density
+      of the normal distribution, whose total probability is 1 as it should be:</para>
+    <informalequation xml:id="eq-normal">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:msubsup>
+                <m:mo>∫</m:mo>
+                <m:mrow><m:mo>−</m:mo><m:mi>∞</m:mi></m:mrow>
+                <m:mi>∞</m:mi>
+              </m:msubsup>
+              <m:mfrac>
+                <m:mn>1</m:mn>
+                <m:mrow><m:mi>σ</m:mi><m:msqrt><m:mn>2</m:mn><m:mi>π</m:mi></m:msqrt></m:mrow>
+              </m:mfrac>
+              <m:msup>
+                <m:mi>e</m:mi>
+                <m:mrow>
+                  <m:mo>−</m:mo>
+                  <m:mfrac>
+                    <m:msup><m:mrow><m:mo>(</m:mo><m:mi>x</m:mi><m:mo>−</m:mo><m:mi>μ</m:mi><m:mo>)</m:mo></m:mrow><m:mn>2</m:mn></m:msup>
+                    <m:mrow><m:mn>2</m:mn><m:msup><m:mi>σ</m:mi><m:mn>2</m:mn></m:msup></m:mrow>
+                  </m:mfrac>
+                </m:mrow>
+              </m:msup>
+              <m:mspace width="0.2em"/>
+              <m:mi>d</m:mi><m:mi>x</m:mi>
+              <m:mo>=</m:mo>
+              <m:mn>1</m:mn>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+  </section>
+
+  <section xml:id="sec-matrix">
+    <title>A small eigenvalue problem</title>
+    <para>Linear algebra has its own sums. Take the symmetric matrix</para>
+    <informalequation xml:id="eq-matrix">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mi>A</m:mi>
+              <m:mo>=</m:mo>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mtable>
+                  <m:mtr><m:mtd><m:mn>2</m:mn></m:mtd><m:mtd><m:mn>1</m:mn></m:mtd></m:mtr>
+                  <m:mtr><m:mtd><m:mn>1</m:mn></m:mtd><m:mtd><m:mn>2</m:mn></m:mtd></m:mtr>
+                </m:mtable>
+                <m:mo>)</m:mo>
+              </m:mrow>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>Its eigenvalues <inlineequation><m:math><m:mi>λ</m:mi></m:math></inlineequation> are the
+      roots of the characteristic polynomial:</para>
+    <informalequation xml:id="eq-characteristic">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mrow>
+                <m:mi>det</m:mi><m:mo>&#x2061;</m:mo>
+                <m:mo>(</m:mo><m:mi>A</m:mi><m:mo>−</m:mo><m:mi>λ</m:mi><m:mi>I</m:mi><m:mo>)</m:mo>
+              </m:mrow>
+              <m:mo>=</m:mo>
+              <m:mrow>
+                <m:mo>|</m:mo>
+                <m:mtable>
+                  <m:mtr>
+                    <m:mtd><m:mn>2</m:mn><m:mo>−</m:mo><m:mi>λ</m:mi></m:mtd>
+                    <m:mtd><m:mn>1</m:mn></m:mtd>
+                  </m:mtr>
+                  <m:mtr>
+                    <m:mtd><m:mn>1</m:mn></m:mtd>
+                    <m:mtd><m:mn>2</m:mn><m:mo>−</m:mo><m:mi>λ</m:mi></m:mtd>
+                  </m:mtr>
+                </m:mtable>
+                <m:mo>|</m:mo>
+              </m:mrow>
+              <m:mo>=</m:mo>
+              <m:msup><m:mrow><m:mo>(</m:mo><m:mn>2</m:mn><m:mo>−</m:mo><m:mi>λ</m:mi><m:mo>)</m:mo></m:mrow><m:mn>2</m:mn></m:msup>
+              <m:mo>−</m:mo><m:mn>1</m:mn>
+              <m:mo>=</m:mo>
+              <m:msup><m:mi>λ</m:mi><m:mn>2</m:mn></m:msup><m:mo>−</m:mo><m:mn>4</m:mn><m:mi>λ</m:mi><m:mo>+</m:mo><m:mn>3</m:mn>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>The quadratic formula gives the roots of any polynomial
+      <inlineequation><m:math>
+        <m:mi>a</m:mi><m:msup><m:mi>x</m:mi><m:mn>2</m:mn></m:msup><m:mo>+</m:mo><m:mi>b</m:mi><m:mi>x</m:mi><m:mo>+</m:mo><m:mi>c</m:mi>
+      </m:math></inlineequation>:</para>
+    <informalequation xml:id="eq-quadratic">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mi>x</m:mi>
+              <m:mo>=</m:mo>
+              <m:mfrac>
+                <m:mrow>
+                  <m:mo>−</m:mo><m:mi>b</m:mi><m:mo>±</m:mo>
+                  <m:msqrt><m:msup><m:mi>b</m:mi><m:mn>2</m:mn></m:msup><m:mo>−</m:mo><m:mn>4</m:mn><m:mi>a</m:mi><m:mi>c</m:mi></m:msqrt>
+                </m:mrow>
+                <m:mrow><m:mn>2</m:mn><m:mi>a</m:mi></m:mrow>
+              </m:mfrac>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>For <xref linkend="eq-characteristic" xrefstyle="equation"/> it gives
+      <inlineequation><m:math><m:mi>λ</m:mi><m:mo>=</m:mo><m:mo>(</m:mo><m:mn>4</m:mn><m:mo>±</m:mo><m:mn>2</m:mn><m:mo>)</m:mo><m:mo>/</m:mo><m:mn>2</m:mn></m:math></inlineequation>,
+      that is, <inlineequation><m:math><m:mi>λ</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:math></inlineequation>
+      and <inlineequation><m:math><m:mi>λ</m:mi><m:mo>=</m:mo><m:mn>3</m:mn></m:math></inlineequation>.
+      A check with the vector
+      <inlineequation><m:math>
+        <m:msup>
+          <m:mrow><m:mo>(</m:mo><m:mn>1</m:mn><m:mo>,</m:mo><m:mn>1</m:mn><m:mo>)</m:mo></m:mrow>
+          <m:mi>T</m:mi>
+        </m:msup>
+      </m:math></inlineequation> confirms the larger one:</para>
+    <informalequation xml:id="eq-eigen">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mtable>
+                  <m:mtr><m:mtd><m:mn>2</m:mn></m:mtd><m:mtd><m:mn>1</m:mn></m:mtd></m:mtr>
+                  <m:mtr><m:mtd><m:mn>1</m:mn></m:mtd><m:mtd><m:mn>2</m:mn></m:mtd></m:mtr>
+                </m:mtable>
+                <m:mo>)</m:mo>
+              </m:mrow>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mtable>
+                  <m:mtr><m:mtd><m:mn>1</m:mn></m:mtd></m:mtr>
+                  <m:mtr><m:mtd><m:mn>1</m:mn></m:mtd></m:mtr>
+                </m:mtable>
+                <m:mo>)</m:mo>
+              </m:mrow>
+              <m:mo>=</m:mo>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mtable>
+                  <m:mtr><m:mtd><m:mn>3</m:mn></m:mtd></m:mtr>
+                  <m:mtr><m:mtd><m:mn>3</m:mn></m:mtd></m:mtr>
+                </m:mtable>
+                <m:mo>)</m:mo>
+              </m:mrow>
+              <m:mo>=</m:mo>
+              <m:mn>3</m:mn>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mtable>
+                  <m:mtr><m:mtd><m:mn>1</m:mn></m:mtd></m:mtr>
+                  <m:mtr><m:mtd><m:mn>1</m:mn></m:mtd></m:mtr>
+                </m:mtable>
+                <m:mo>)</m:mo>
+              </m:mrow>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>In the same way
+      <inlineequation><m:math><m:msup><m:mrow><m:mo>(</m:mo><m:mn>1</m:mn><m:mo>,</m:mo><m:mrow><m:mo>−</m:mo><m:mn>1</m:mn></m:mrow><m:mo>)</m:mo></m:mrow><m:mi>T</m:mi></m:msup></m:math></inlineequation>
+      is an eigenvector for
+      <inlineequation><m:math><m:mi>λ</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:math></inlineequation>. The
+      two eigenvectors are orthogonal, as they must be for a symmetric matrix.</para>
+  </section>
+
+  <section xml:id="sec-binomial">
+    <title>The binomial theorem</title>
+    <para>Expanding the power of a sum gives the coefficients that Pascal’s triangle lists:</para>
+    <informalequation xml:id="eq-binomial">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:msup>
+                <m:mrow><m:mo>(</m:mo><m:mi>a</m:mi><m:mo>+</m:mo><m:mi>b</m:mi><m:mo>)</m:mo></m:mrow>
+                <m:mi>n</m:mi>
+              </m:msup>
+              <m:mo>=</m:mo>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>0</m:mn></m:mrow>
+                <m:mi>n</m:mi>
+              </m:munderover>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mfrac linethickness="0"><m:mi>n</m:mi><m:mi>k</m:mi></m:mfrac>
+                <m:mo>)</m:mo>
+              </m:mrow>
+              <m:msup><m:mi>a</m:mi><m:mrow><m:mi>n</m:mi><m:mo>−</m:mo><m:mi>k</m:mi></m:mrow></m:msup>
+              <m:msup><m:mi>b</m:mi><m:mi>k</m:mi></m:msup>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>The binomial coefficient counts the subsets with
+      <inlineequation><m:math><m:mi>k</m:mi></m:math></inlineequation> elements of a set with
+      <inlineequation><m:math><m:mi>n</m:mi></m:math></inlineequation> elements:</para>
+    <informalequation xml:id="eq-coefficient">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mfrac linethickness="0"><m:mi>n</m:mi><m:mi>k</m:mi></m:mfrac>
+                <m:mo>)</m:mo>
+              </m:mrow>
+              <m:mo>=</m:mo>
+              <m:mfrac>
+                <m:mrow><m:mi>n</m:mi><m:mo>!</m:mo></m:mrow>
+                <m:mrow><m:mi>k</m:mi><m:mo>!</m:mo><m:mo>(</m:mo><m:mi>n</m:mi><m:mo>−</m:mo><m:mi>k</m:mi><m:mo>)</m:mo><m:mo>!</m:mo></m:mrow>
+              </m:mfrac>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>Two choices of <inlineequation><m:math><m:mi>a</m:mi></m:math></inlineequation> and
+      <inlineequation><m:math><m:mi>b</m:mi></m:math></inlineequation> in
+      <xref linkend="eq-binomial" xrefstyle="equation"/> give identities that are worth remembering. With
+      <inlineequation><m:math><m:mi>a</m:mi><m:mo>=</m:mo><m:mi>b</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:math></inlineequation>
+      the coefficients add up to
+      <inlineequation><m:math><m:msup><m:mn>2</m:mn><m:mi>n</m:mi></m:msup></m:math></inlineequation>,
+      the number of all subsets:</para>
+    <informalequation xml:id="eq-subsets">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>0</m:mn></m:mrow>
+                <m:mi>n</m:mi>
+              </m:munderover>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mfrac linethickness="0"><m:mi>n</m:mi><m:mi>k</m:mi></m:mfrac>
+                <m:mo>)</m:mo>
+              </m:mrow>
+              <m:mo>=</m:mo>
+              <m:msup><m:mn>2</m:mn><m:mi>n</m:mi></m:msup>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>With
+      <inlineequation><m:math><m:mi>a</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:math></inlineequation> and
+      <inlineequation><m:math><m:mi>b</m:mi><m:mo>=</m:mo><m:mrow><m:mo>−</m:mo><m:mn>1</m:mn></m:mrow></m:math></inlineequation>
+      the signs alternate, and for
+      <inlineequation><m:math><m:mi>n</m:mi><m:mo>≥</m:mo><m:mn>1</m:mn></m:math></inlineequation> the
+      sum is zero:</para>
+    <informalequation xml:id="eq-alternating">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>0</m:mn></m:mrow>
+                <m:mi>n</m:mi>
+              </m:munderover>
+              <m:msup><m:mrow><m:mo>(</m:mo><m:mrow><m:mo>−</m:mo><m:mn>1</m:mn></m:mrow><m:mo>)</m:mo></m:mrow><m:mi>k</m:mi></m:msup>
+              <m:mrow>
+                <m:mo>(</m:mo>
+                <m:mfrac linethickness="0"><m:mi>n</m:mi><m:mi>k</m:mi></m:mfrac>
+                <m:mo>)</m:mo>
+              </m:mrow>
+              <m:mo>=</m:mo>
+              <m:mn>0</m:mn>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+  </section>
+
+  <section xml:id="sec-e">
+    <title>The number e</title>
+    <para>The binomial theorem also leads to the number
+      <inlineequation><m:math><m:mi>e</m:mi></m:math></inlineequation>. Take
+      <inlineequation><m:math><m:mi>b</m:mi><m:mo>=</m:mo><m:mn>1</m:mn><m:mo>/</m:mo><m:mi>n</m:mi></m:math></inlineequation>
+      and <inlineequation><m:math><m:mi>a</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:math></inlineequation>
+      in <xref linkend="eq-binomial" xrefstyle="equation"/>: the coefficient of each power grows towards
+      <inlineequation><m:math><m:mn>1</m:mn><m:mo>/</m:mo><m:mi>k</m:mi><m:mo>!</m:mo></m:math></inlineequation>
+      as <inlineequation><m:math><m:mi>n</m:mi></m:math></inlineequation> grows, and in the
+      limit</para>
+    <informalequation xml:id="eq-e-limit">
+      <m:math display="block">
+        <m:mtable width="100%" columnwidth="fit auto fit" columnalign="center center right">
+          <m:mtr>
+            <m:mtd/>
+            <m:mtd>
+              <m:mi>e</m:mi>
+              <m:mo>=</m:mo>
+              <m:munder>
+                <m:mi>lim</m:mi>
+                <m:mrow><m:mi>n</m:mi><m:mo>→</m:mo><m:mi>∞</m:mi></m:mrow>
+              </m:munder>
+              <m:msup>
+                <m:mrow>
+                  <m:mo>(</m:mo>
+                  <m:mn>1</m:mn><m:mo>+</m:mo><m:mfrac><m:mn>1</m:mn><m:mi>n</m:mi></m:mfrac>
+                  <m:mo>)</m:mo>
+                </m:mrow>
+                <m:mi>n</m:mi>
+              </m:msup>
+              <m:mo>=</m:mo>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>0</m:mn></m:mrow>
+                <m:mi>∞</m:mi>
+              </m:munderover>
+              <m:mfrac>
+                <m:mn>1</m:mn>
+                <m:mrow><m:mi>k</m:mi><m:mo>!</m:mo></m:mrow>
+              </m:mfrac>
+            </m:mtd>
+            <m:mtd class="eqnum"/>
+          </m:mtr>
+        </m:mtable>
+      </m:math>
+    </informalequation>
+    <para>so that
+      <inlineequation><m:math><m:mi>e</m:mi><m:mo>≈</m:mo><m:mn>2.71828</m:mn></m:math></inlineequation>.
+      Both expressions converge, but the series is far faster: its seventh partial sum already has
+      four correct decimals.</para>
+  </section>
+
+  <section xml:id="sec-numbers">
+    <title>Checking the numbers</title>
+    <para>The table lists the partial sums of the series of <xref linkend="eq-basel" xrefstyle="equation"/> and their
+      distance to the limit
+      <inlineequation><m:math><m:msup><m:mi>π</m:mi><m:mn>2</m:mn></m:msup><m:mo>/</m:mo><m:mn>6</m:mn><m:mo>≈</m:mo><m:mn>1.6449</m:mn></m:math></inlineequation>.
+      The error shrinks like
+      <inlineequation><m:math><m:mn>1</m:mn><m:mo>/</m:mo><m:mi>n</m:mi></m:math></inlineequation>,
+      and every row respects the bound of <xref linkend="eq-bound" xrefstyle="equation"/>.</para>
+    <table>
+      <title>Partial sums of the series for ζ(2)</title>
+      <tgroup cols="4">
+        <colspec colname="n"/>
+        <colspec colname="sum"/>
+        <colspec colname="error"/>
+        <colspec colname="bound"/>
+        <thead>
+          <row>
+            <entry><inlineequation><m:math><m:mi>n</m:mi></m:math></inlineequation></entry>
+            <entry><inlineequation><m:math>
+              <m:msub><m:mi>s</m:mi><m:mi>n</m:mi></m:msub><m:mo>=</m:mo>
+              <m:munderover>
+                <m:mo>∑</m:mo>
+                <m:mrow><m:mi>k</m:mi><m:mo>=</m:mo><m:mn>1</m:mn></m:mrow>
+                <m:mi>n</m:mi>
+              </m:munderover>
+              <m:mn>1</m:mn><m:mo>/</m:mo><m:msup><m:mi>k</m:mi><m:mn>2</m:mn></m:msup>
+            </m:math></inlineequation></entry>
+            <entry><inlineequation><m:math>
+              <m:msup><m:mi>π</m:mi><m:mn>2</m:mn></m:msup><m:mo>/</m:mo><m:mn>6</m:mn>
+              <m:mo>−</m:mo><m:msub><m:mi>s</m:mi><m:mi>n</m:mi></m:msub>
+            </m:math></inlineequation></entry>
+            <entry><inlineequation><m:math>
+              <m:mn>2</m:mn><m:mo>−</m:mo><m:mn>1</m:mn><m:mo>/</m:mo><m:mi>n</m:mi>
+            </m:math></inlineequation></entry>
+          </row>
+        </thead>
+        <tbody>
+          <row><entry>1</entry><entry>1.0000</entry><entry>0.6449</entry><entry>1.0000</entry></row>
+          <row><entry>2</entry><entry>1.2500</entry><entry>0.3949</entry><entry>1.5000</entry></row>
+          <row><entry>3</entry><entry>1.3611</entry><entry>0.2838</entry><entry>1.6667</entry></row>
+          <row><entry>4</entry><entry>1.4236</entry><entry>0.2213</entry><entry>1.7500</entry></row>
+          <row><entry>5</entry><entry>1.4636</entry><entry>0.1813</entry><entry>1.8000</entry></row>
+          <row><entry>10</entry><entry>1.5498</entry><entry>0.0952</entry><entry>1.9000</entry></row>
+        </tbody>
+      </tgroup>
+    </table>
+    <para>Euler’s result, the integral of Gauss and the binomial theorem are three views of the
+      same landscape: sums that look infinite until one finds the right way to fold them.</para>
+  </section>
+</article>

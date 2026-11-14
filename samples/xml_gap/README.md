@@ -1,6 +1,6 @@
 # xml_gap
 
-A DocBook article in four languages. The same stylesheet, [xml_gap.css](../xml_gap.css), formats all of them.
+A DocBook article in four languages. The same stylesheet, [docbook.css](../docbook.css), formats all of them.
 
 The Arabic, Japanese and Russian files were translated automatically with DeepL. The goal of the samples is to test typesetting, not to provide perfect localization.
 
@@ -16,7 +16,7 @@ The Arabic, Japanese and Russian files were translated automatically with DeepL.
 Run the command from the `samples` folder, the parent of this one:
 
 ```bash
-cssmedia -x xml_gap/xml_gap.xml -c xml_gap.css -p xml_gap/xml_gap.pdf
+cssmedia -x xml_gap/xml_gap.xml -c docbook.css -p xml_gap/xml_gap.pdf
 ```
 
 The files declare a DocBook DTD. Without a catalog, CSSMedia prints the warning `External subset not found: docbook/docbookx.dtd` and still generates the PDF. To avoid the warning, pass a catalog that resolves the DTD with `-g`.
