@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block" class="numbered">
+    <mtable columnalign="left right" width="7cm">
+        <mtr><mtd><mi>a</mi><mo>=</mo><mi>b</mi><mo>+</mo><mi>c</mi></mtd><mtd class="eqnum"/></mtr>
+        <mtr><mtd><mi>d</mi><mo>=</mo><msup><mi>a</mi><mn>2</mn></msup></mtd><mtd class="eqnum"/></mtr>
+    </mtable>
+</math>

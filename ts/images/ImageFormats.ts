@@ -20,11 +20,13 @@
 
 import { closeSync, openSync, readFileSync, readSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import type { ContainerQuery, DeclaredValue } from "../css/Stylesheet.js";
 import { CssUnits } from "../css/values/CssUnits.js";
 import type { CssValue } from "../css/values/CssValue.js";
 import { RemoteResource } from "../net/RemoteResource.js";
 import type { SourceElement } from "../parse/SourceElement.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
+import type { BoxNode } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import type { Size } from "../pdf/PageCanvas.js";
 import type { QueryContainer } from "../pdf/StyleComputer.js";
@@ -43,9 +45,15 @@ interface Registration {
     format?: ImageFormat;
 }
 
+export interface GeneratedBoxes {
+    before?: Array<BoxNode>;
+    after?: Array<BoxNode>;
+}
+
 export interface ElementSource {
     element: SourceElement;
     style: ComputedStyle;
+    generated?: ReadonlyMap<SourceElement, GeneratedBoxes>;
 }
 
 export interface ImageSize {
@@ -92,6 +100,8 @@ export interface ImageFormat {
     alpha(href: string, data: Buffer): ImageAlpha | undefined;
     style?(element: SourceElement, parent: ComputedStyle | undefined, root: ComputedStyle | undefined, viewport: Size, containers: () => Iterable<QueryContainer>): ComputedStyle;
     replaces?(source: ElementSource): boolean;
+    generates?(): boolean;
+    pseudo?(element: SourceElement, name: string, holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): Map<string, DeclaredValue>;
     viewportUsed?(): boolean;
     unclipped?(): boolean;
     glyph?(href: string, data: Buffer, id: string, size: number, scale: number, host: ComputedStyle, pdf: PdfPage, ctm: readonly [number, number, number, number, number, number],
@@ -217,6 +227,24 @@ export class ImageFormats {
 
     source(href: string): ElementSource | undefined {
         return this.sources.get(href);
+    }
+
+    generates(element: SourceElement): boolean {
+        // A format that styles its elements can generate content for them, which the document's builder makes in document order.
+        const registration: Registration | undefined = this.elementRegistration(element);
+        return registration !== undefined && this.instance(registration).generates?.() === true;
+    }
+
+    elementPseudo(element: SourceElement, name: string, holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): Map<string, DeclaredValue> | undefined {
+        const registration: Registration | undefined = this.elementRegistration(element);
+        return registration === undefined ? undefined : this.instance(registration).pseudo?.(element, name, holds);
+    }
+
+    keepGenerated(href: string, generated: ReadonlyMap<SourceElement, GeneratedBoxes>): void {
+        const source: ElementSource | undefined = this.sources.get(href);
+        if (source !== undefined) {
+            source.generated = generated;
+        }
     }
 
     restart(): void {

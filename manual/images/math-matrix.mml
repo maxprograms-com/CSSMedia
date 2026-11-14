@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mrow>
+        <mo>[</mo>
+        <mtable>
+            <mtr><mtd><mi>a</mi></mtd><mtd><mi>b</mi></mtd></mtr>
+            <mtr><mtd><mi>c</mi></mtd><mtd><mi>d</mi></mtd></mtr>
+        </mtable>
+        <mo>]</mo>
+    </mrow>
+</math>

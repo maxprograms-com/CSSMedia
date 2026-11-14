@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <cn type="rational">1<sep/>3</cn><mspace width="1.5em"/>
+    <cn base="2">101</cn><mspace width="1.5em"/>
+    <cn type="complex-cartesian">1<sep/>2</cn><mspace width="1.5em"/>
+    <cn type="complex-polar">2<sep/>3</cn><mspace width="1.5em"/>
+    <cn type="e-notation">1.5<sep/>3</cn><mspace width="1.5em"/>
+    <cn type="hexdouble">FF</cn><mspace width="1.5em"/>
+    <pi/><mspace width="1em"/><exponentiale/><mspace width="1em"/><infinity/><mspace width="1em"/><reals/><mspace width="1em"/><emptyset/>
+</math>

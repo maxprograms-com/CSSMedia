@@ -1,0 +1,43 @@
+@namespace m url("http://www.w3.org/1998/Math/MathML");
+
+@font-face {
+    font-family: "Noto Sans Math";
+    src: url("../fonts/NotoSansMath-Regular.ttf");
+}
+
+m|math {
+    font-family: "Noto Sans Math";
+    font-size: 10pt;
+}
+
+m|math[display="block"] {
+    font-size: 12pt;
+}
+
+m|mtd {
+    padding: 0.4ex 0.4em;
+}
+
+m|math.numbered {
+    counter-reset: eqnum;
+}
+
+m|mtd.eqnum {
+    counter-increment: eqnum;
+    text-align: right;
+    padding-inline-start: 3em;
+}
+
+m|mtd.eqnum::before {
+    content: "(" counter(eqnum) ")";
+}
+
+m|mi.note::before {
+    content: "[";
+    color: #b22222;
+}
+
+m|mi.note::after {
+    content: "]";
+    color: #b22222;
+}

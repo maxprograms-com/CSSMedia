@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mrow>
+        <mo>(</mo>
+        <mfrac><mrow><mi>a</mi><mo>+</mo><mi>b</mi></mrow><mrow><mi>c</mi><mo>+</mo><mi>d</mi></mrow></mfrac>
+        <mo>)</mo>
+    </mrow>
+    <mspace width="2em"/>
+    <mfenced open="[" close="]" separators=";"><mi>a</mi><mi>b</mi><mi>c</mi></mfenced>
+</math>

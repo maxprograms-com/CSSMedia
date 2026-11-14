@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <set><ci>a</ci><ci>b</ci><ci>c</ci></set>
+    <mspace width="2em"/>
+    <interval closure="open"><ci>a</ci><ci>b</ci></interval>
+    <mspace width="2em"/>
+    <vector><ci>x</ci><ci>y</ci></vector>
+    <mspace width="2em"/>
+    <matrix>
+        <matrixrow><ci>a</ci><ci>b</ci></matrixrow>
+        <matrixrow><ci>c</ci><ci>d</ci></matrixrow>
+    </matrix>
+    <mspace width="2em"/>
+    <piecewise>
+        <piece><cn>0</cn><apply><lt/><ci>x</ci><cn>0</cn></apply></piece>
+        <otherwise><cn>1</cn></otherwise>
+    </piecewise>
+</math>

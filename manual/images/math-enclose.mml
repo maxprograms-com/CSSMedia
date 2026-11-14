@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <menclose notation="box"><mi>x</mi><mo>+</mo><mi>y</mi></menclose>
+    <mspace width="2em"/>
+    <menclose notation="circle"><mi>z</mi></menclose>
+    <mspace width="2em"/>
+    <menclose notation="updiagonalstrike"><mn>12</mn></menclose>
+    <mspace width="2em"/>
+    <menclose notation="longdiv"><mn>345</mn></menclose>
+</math>

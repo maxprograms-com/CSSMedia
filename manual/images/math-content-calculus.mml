@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <apply><sum/>
+        <bvar><ci>i</ci></bvar><lowlimit><cn>1</cn></lowlimit><uplimit><ci>n</ci></uplimit>
+        <apply><power/><ci>i</ci><cn>2</cn></apply>
+    </apply>
+    <mspace width="2em"/>
+    <apply><int/>
+        <bvar><ci>x</ci></bvar><lowlimit><cn>0</cn></lowlimit><uplimit><cn>1</cn></uplimit>
+        <apply><sin/><ci>x</ci></apply>
+    </apply>
+    <mspace width="2em"/>
+    <apply><diff/><bvar><ci>x</ci></bvar><apply><ci>f</ci><ci>x</ci></apply></apply>
+    <mspace width="2em"/>
+    <apply><limit/><bvar><ci>x</ci></bvar><lowlimit><cn>0</cn></lowlimit><apply><divide/><apply><sin/><ci>x</ci></apply><ci>x</ci></apply></apply>
+</math>

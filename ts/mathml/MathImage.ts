@@ -21,11 +21,14 @@
 import type { ContainerQuery, Declaration, DeclaredValue, DescriptorRule, PropertyRule, StyleRule, Stylesheet } from "../css/Stylesheet.js";
 import { StylesheetReader } from "../css/StylesheetReader.js";
 import type { CssValue } from "../css/values/CssValue.js";
-import type { ElementSource, ImageAlpha, ImageDrawing, ImageFormat, ImageFormats, ImageReader, ImageRequest, ImageSamples, ImageSize } from "../images/ImageFormats.js";
+import type { ElementSource, GeneratedBoxes, ImageAlpha, ImageDrawing, ImageFormat, ImageReader, ImageRequest, ImageSamples, ImageSize } from "../images/ImageFormats.js";
+import { ImageFormats } from "../images/ImageFormats.js";
 import { BlockLayout } from "../layout/BlockLayout.js";
 import type { Transform } from "../layout/BoxSizes.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
 import type { BoxFragment } from "../layout/Fragment.js";
+import { BoxBuilder } from "../pdf/BoxBuilder.js";
+import { QuoteSystems } from "../pdf/QuoteSystems.js";
 import type { PaletteRule } from "../paint/ColorGlyphPainter.js";
 import { ColorGlyphPainter } from "../paint/ColorGlyphPainter.js";
 import type { SourceElement } from "../parse/SourceElement.js";
@@ -49,6 +52,7 @@ import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { ImageResource, PageRectangle, PdfPage } from "../writer/PdfPage.js";
 import { MathBoxes } from "./MathBoxes.js";
 import { MathLayout } from "./MathLayout.js";
+import type { MathElement } from "./MathMarkup.js";
 import { MathMarkup } from "./MathMarkup.js";
 import type { Area } from "./MathPainter.js";
 import { MathPainter } from "./MathPainter.js";
@@ -60,6 +64,9 @@ interface Formula {
     metrics: FontMetrics;
     palettes: ReadonlyArray<PaletteRule>;
     kept: boolean;
+    factor: number;
+    clipped: boolean;
+    boxWidth: number;
 }
 
 type Language = readonly [MathMarkup, Cascade, StyleComputer];
@@ -71,6 +78,7 @@ const PHYSICAL: number = 0;
 export class MathImage implements ImageFormat {
 
     static readonly NAMESPACE: string = MathMarkup.NAMESPACE;
+    private static readonly TOLERANCE: number = 0.001;
 
     private readonly document: PdfDocument;
     private readonly images: ImageFormats;
@@ -146,6 +154,15 @@ export class MathImage implements ImageFormat {
         return computer.compute(StyleComputer.input(cascaded, viewport, containers, parent, root, element));
     }
 
+    generates(): boolean {
+        return true;
+    }
+
+    pseudo(element: SourceElement, name: string, holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): Map<string, DeclaredValue> {
+        // The ::before and ::after rules of an element of the document's formulas, which only the formula's cascade can match.
+        return this.documentLanguage()[1].element(element, holds, name);
+    }
+
     viewportUsed(): boolean {
         return this.own?.[2].viewportUsed === true;
     }
@@ -171,12 +188,14 @@ export class MathImage implements ImageFormat {
             return undefined;
         }
         const fragment: BoxFragment = formula.fragment;
-        const size: ImageSize = { width: fragment.inlineSize, height: fragment.blockSize, turned: false, raster: false };
-        if (this.images.source(href) === undefined && fragment.inlineSize > 0 && fragment.blockSize > 0) {
-            size.ratio = fragment.inlineSize / fragment.blockSize;
+        const width: number = formula.boxWidth;
+        const height: number = fragment.blockSize * formula.factor;
+        const size: ImageSize = { width, height, turned: false, raster: false };
+        if (this.images.source(href) === undefined && width > 0 && height > 0) {
+            size.ratio = width / height;
         }
         if (fragment.firstBaseline !== undefined) {
-            size.baseline = fragment.firstBaseline;
+            size.baseline = fragment.firstBaseline * formula.factor;
         }
         return size;
     }
@@ -206,9 +225,11 @@ export class MathImage implements ImageFormat {
         const transform: Transform = this.sizes.between(frame, PHYSICAL, fragment.inlineSize, fragment.blockSize);
         // The form's box is what is painted and not the size of the formula, and it is in the form's own space, where y goes up.
         const painted: Area | undefined = painter.extent(fragment, formula.layout.graphics, transform);
-        // A file is drawn at its natural size, and the form's matrix scales everything in it, glyphs included.
-        const width: number = inFile ? fragment.inlineSize : request.width;
-        const height: number = inFile ? fragment.blockSize : request.height;
+        // A file is drawn at its natural size, and the form's matrix scales everything in it, glyphs included; so is a formula that
+        // overflow="scale" shrinks, and a clipped one is as wide as the width that clips it.
+        const natural: boolean = formula.factor < 1 || (inFile && !formula.clipped);
+        const width: number = natural ? fragment.inlineSize : (inFile ? formula.boxWidth : request.width);
+        const height: number = natural || inFile ? fragment.blockSize : request.height;
         if (painted === undefined && (width <= 0 || height <= 0)) {
             return undefined;
         }
@@ -218,7 +239,7 @@ export class MathImage implements ImageFormat {
         // A renderer rounds the edges of a clip to its pixels, which can lose a row of ink lying on an edge, so the box ends past it.
         const left: number = Math.floor(Math.min(0, ink[0])) - MathPainter.EDGE;
         const top: number = Math.floor(Math.min(0, ink[1])) - MathPainter.EDGE;
-        const right: number = Math.ceil(Math.max(width, ink[0] + ink[2])) + MathPainter.EDGE;
+        const right: number = Math.ceil(formula.clipped ? width : Math.max(width, ink[0] + ink[2])) + MathPainter.EDGE;
         const bottom: number = Math.ceil(Math.max(height, ink[1] + ink[3])) + MathPainter.EDGE;
         const across: number = width > 0 ? width : 1;
         const down: number = height > 0 ? height : 1;
@@ -241,6 +262,16 @@ export class MathImage implements ImageFormat {
         throw this.images.missing(href, "the rendering of a formula into an alpha channel");
     }
 
+    private fileContent(root: SourceElement, style: ComputedStyle, language: Language, setup: PageSetup): ReadonlyMap<SourceElement, GeneratedBoxes> | undefined {
+        // A formula file is a document of its own, so its ::before and ::after rules and its counters are those of its own builder.
+        if (!language[1].usesPseudoElement("before") && !language[1].usesPseudoElement("after")) {
+            return undefined;
+        }
+        const builder: BoxBuilder = new BoxBuilder(language[1], language[2], new ImageFormats(this.document), setup.viewport, this.input.counterStyles, new QuoteSystems(), false, false,
+            setup.references, [], false);
+        return builder.formulaBoxes(root, style);
+    }
+
     private formula(href: string, available: number | undefined, read: ImageReader): Formula | undefined {
         // The boxes of the formula take their styles from its cascade, their text is prepared as all text is, and math layout
         // places them; only the last layout is kept, the one that its drawing usually follows.
@@ -256,6 +287,7 @@ export class MathImage implements ImageFormat {
         let root: ComputedStyle;
         let fonts: DocumentFonts = this.input.fonts;
         let palettes: ReadonlyArray<PaletteRule> = setup.palettes;
+        let generated: ReadonlyMap<SourceElement, GeneratedBoxes> | undefined;
         // Fonts of a file's own rules serve only that file, so a document with many such files does not keep them all.
         let kept: boolean = true;
         if (source === undefined) {
@@ -275,16 +307,18 @@ export class MathImage implements ImageFormat {
             language = this.language(element, tree.getPrefixes(), href, fonts[0], sheet);
             style = language[2].compute(StyleComputer.input(language[1].element(element, () => false), setup.viewport, StyleComputer.NO_CONTAINERS, undefined, undefined, element));
             root = style;
+            generated = this.fileContent(element, style, language, setup);
             palettes = sheet.fontPalettes.map((rule: DescriptorRule) => ColorGlyphPainter.fromRule(rule, language[2], root, setup.viewport));
         } else {
             language = this.documentLanguage();
             element = source.element;
             style = source.style;
             root = setup.root;
+            generated = source.generated;
         }
         const [metrics, text]: DocumentFonts = fonts;
         const [markup, cascade, computer]: Language = language;
-        const boxes: MathBoxes = new MathBoxes(markup, cascade, computer, setup.references);
+        const boxes: MathBoxes = new MathBoxes(markup, cascade, computer, setup.references, generated);
         const box: ElementBox | undefined = boxes.build(element, style, setup.viewport, root);
         if (box === undefined) {
             return undefined;
@@ -294,7 +328,16 @@ export class MathImage implements ImageFormat {
         const host: BlockLayout = new BlockLayout(metrics, text, this.images);
         const layout: MathLayout = new MathLayout(host, new BoxSizes((): number | undefined => undefined), metrics, boxes.elements);
         const fragment: BoxFragment = layout.formula(box, {}, available);
-        this.last = { key, fragment, layout, metrics, palettes, kept };
+        // MathML 4 §2.2.1: by overflow, a formula wider than the width available is scaled to fit or cut off at it, as scroll shows
+        // it too in a PDF; linebreak and elide have laid it out in that width already.
+        const math: MathElement | undefined = boxes.elements.get(box);
+        const limit: number | undefined = math?.maxWidth ?? available;
+        const wide: boolean = limit !== undefined && fragment.inlineSize > limit + MathImage.TOLERANCE;
+        const scaled: boolean = wide && math?.overflow === "scale";
+        const clipped: boolean = wide && (math?.overflow === "truncate" || math?.overflow === "scroll");
+        const factor: number = scaled ? (limit as number) / fragment.inlineSize : 1;
+        const boxWidth: number = scaled || clipped ? limit as number : fragment.inlineSize;
+        this.last = { key, fragment, layout, metrics, palettes, kept, factor, clipped, boxWidth };
         return this.last;
     }
 }

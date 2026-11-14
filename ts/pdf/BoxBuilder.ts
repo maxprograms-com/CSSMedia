@@ -35,7 +35,7 @@ import type { DisplayType } from "./DisplayTypes.js";
 import { DisplayTypes } from "./DisplayTypes.js";
 import type { ContentState } from "./GeneratedContent.js";
 import { GeneratedContent } from "./GeneratedContent.js";
-import type { ImageFormats } from "../images/ImageFormats.js";
+import type { GeneratedBoxes, ImageFormats } from "../images/ImageFormats.js";
 import type { NamedValues } from "../pages/NamedValues.js";
 import type { Size } from "./PageCanvas.js";
 import type { QuotePair, QuoteSystems } from "./QuoteSystems.js";
@@ -58,6 +58,7 @@ interface Context {
     generated?: Record<string, ReadonlyArray<BoxNode>>;
     scope?: number;
     size?: Size;
+    formula?: boolean;
 }
 
 interface Deferral {
@@ -307,6 +308,9 @@ export class BoxBuilder {
         const scope: number | undefined = (containment & DisplayTypes.STYLE_CONTAINMENT) !== 0 ? node : parent?.scope;
         if (scope !== undefined) {
             context.scope = scope;
+        }
+        if (image !== undefined && this.images.generates(element)) {
+            this.images.keepGenerated(image, this.formulaContent(context));
         }
         const deferred: boolean = (containment & DisplayTypes.SIZE_QUERIES) !== 0;
         if (entries !== undefined || bookmarked) {
@@ -953,8 +957,10 @@ export class BoxBuilder {
             return undefined;
         }
         const candidates: () => Iterable<QueryContainer> = (): Iterable<QueryContainer> => this.containers(context);
-        const cascaded: Map<string, DeclaredValue> = this.cascade.element(context.element, (queries: ReadonlyArray<ContainerQuery>) =>
-            this.computer.containersHold(queries, candidates, this.viewport), name);
+        const holds: (queries: ReadonlyArray<ContainerQuery>) => boolean = (queries: ReadonlyArray<ContainerQuery>): boolean => this.computer.containersHold(queries, candidates, this.viewport);
+        // The elements of a formula have the rules of the language of the formula, with its attributes and its classes.
+        const cascaded: Map<string, DeclaredValue> = (context.formula === true ? this.images.elementPseudo(context.element, name, holds) : undefined)
+            ?? this.cascade.element(context.element, holds, name);
         if (!cascaded.has("content")) {
             return undefined;
         }
@@ -962,6 +968,64 @@ export class BoxBuilder {
         const display: DisplayType = this.displays.parse(style.values["display"]);
         const items: Array<CssValue> | undefined = this.contentValues.items(style.values["content"]);
         return items === undefined || display.box === "none" ? undefined : { name, style, display, items };
+    }
+
+    formulaBoxes(root: SourceElement, style: ComputedStyle): Map<SourceElement, GeneratedBoxes> {
+        // A formula in a file of its own is a document, whose counters start from nothing.
+        const node: number = this.scopes.node(undefined);
+        const counters: Array<Counter> = this.scopes.inherit(node, undefined, undefined, this.previous);
+        this.applyCounters(counters, node, style, false);
+        this.previous = counters;
+        return this.formulaContent({ element: root, style, root: style, usedPage: "", node, counters, placement: "in-flow" });
+    }
+
+    private formulaContent(context: Context): Map<SourceElement, GeneratedBoxes> {
+        // MathML 4 §3.5.2.3 numbers equations with counters and ::before on the elements of a formula; these are built where the
+        // document builds its own, so the counters of the document go through them, and the format of the formula lays them out.
+        const generated: Map<SourceElement, GeneratedBoxes> = new Map<SourceElement, GeneratedBoxes>();
+        this.formulaElement({ ...context, formula: true }, generated);
+        return generated;
+    }
+
+    private formulaElement(context: Context, generated: Map<SourceElement, GeneratedBoxes>): void {
+        const boxes: GeneratedBoxes = {};
+        let sibling: CounterSet | undefined;
+        const before: PseudoElement | undefined = this.pseudoElement(context, "before");
+        if (before !== undefined) {
+            const built: Built = this.pseudoBoxes(context, before, false, context, sibling);
+            boxes.before = built.nodes;
+            sibling = built.counters;
+        }
+        for (const child of context.element.getChildren()) {
+            sibling = this.formulaChild(child, context, sibling, generated);
+        }
+        const after: PseudoElement | undefined = this.pseudoElement(context, "after");
+        if (after !== undefined) {
+            boxes.after = this.pseudoBoxes(context, after, false, context, sibling).nodes;
+        }
+        if (boxes.before !== undefined || boxes.after !== undefined) {
+            generated.set(context.element, boxes);
+        }
+    }
+
+    private formulaChild(element: SourceElement, parent: Context, sibling: CounterSet | undefined, generated: Map<SourceElement, GeneratedBoxes>): CounterSet {
+        const style: ComputedStyle = this.style(element, parent.style, parent.root, undefined, parent);
+        const node: number = this.scopes.node(parent.node);
+        const counters: Array<Counter> = this.scopes.inherit(node, parent.counters, sibling, this.previous);
+        const display: DisplayType = this.displays.parse(style.values["display"]);
+        this.previous = counters;
+        if (display.box === "none") {
+            return counters;
+        }
+        if (display.box === undefined) {
+            this.applyCounters(counters, node, style, false, parent.scope);
+        }
+        const context: Context = { element, style, root: parent.root, usedPage: parent.usedPage, node, counters, placement: "in-flow", parent, formula: true };
+        if (parent.scope !== undefined) {
+            context.scope = parent.scope;
+        }
+        this.formulaElement(context, generated);
+        return counters;
     }
 
     private pseudoBoxes(context: Context, pseudo: PseudoElement, takesContents: boolean, holder?: Context, sibling?: CounterSet): Built {

@@ -22,6 +22,7 @@ import { TextNode } from "typesxml";
 import { PropertyTable } from "../css/PropertyTable.js";
 import type { ContainerQuery, DeclaredValue } from "../css/Stylesheet.js";
 import type { CssValue } from "../css/values/CssValue.js";
+import type { GeneratedBoxes } from "../images/ImageFormats.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import type { BoxNode, ElementBox, Placement, TextSequence } from "../pdf/BoxTree.js";
 import type { Cascade } from "../pdf/Cascade.js";
@@ -37,6 +38,7 @@ import { MathMarkup } from "./MathMarkup.js";
 import { MathOperators } from "./MathOperators.js";
 
 const MATH_BOX: DisplayType = { outer: "block", inner: "math", listItem: false };
+const ATOMIC: DisplayType = { outer: "inline", inner: "flow-root", listItem: false };
 const MATH_WHITE_SPACE: RegExp = /[ \t\n\r]+/g;
 const APPLY_FUNCTION: string = "\u2061";
 const INVISIBLE_TIMES: string = "\u2062";
@@ -102,6 +104,7 @@ export class MathBoxes {
     private readonly cascade: Cascade;
     private readonly computer: StyleComputer;
     private readonly references: CrossReferences;
+    private readonly generated?: ReadonlyMap<SourceElement, GeneratedBoxes>;
     private readonly displays: DisplayTypes = new DisplayTypes();
     private readonly contentValues: ContentValues = new ContentValues();
     private readonly dictionary: MathOperators = new MathOperators();
@@ -112,11 +115,32 @@ export class MathBoxes {
     private rootElement?: SourceElement;
     private nextGroup: number = 0;
 
-    constructor(markup: MathMarkup, cascade: Cascade, computer: StyleComputer, references: CrossReferences) {
+    constructor(markup: MathMarkup, cascade: Cascade, computer: StyleComputer, references: CrossReferences, generated?: ReadonlyMap<SourceElement, GeneratedBoxes>) {
         this.markup = markup;
         this.cascade = cascade;
         this.computer = computer;
         this.references = references;
+        if (generated !== undefined) {
+            this.generated = generated;
+        }
+    }
+
+    private around(nodes: ReadonlyArray<BoxNode>, generated?: GeneratedBoxes): Array<BoxNode> {
+        // MathML Core §3.1.2: a box that is not a MathML one among the children of a MathML element is laid out as a CSS box of
+        // its own, so the boxes of ::before and ::after are atomic inline-level boxes, before and after the other children.
+        if (generated === undefined) {
+            return [...nodes];
+        }
+        const atomic: (parts?: ReadonlyArray<BoxNode>) => Array<BoxNode> = (parts: ReadonlyArray<BoxNode> = []): Array<BoxNode> => parts.map((part: BoxNode): BoxNode => {
+            if (part.kind === "box" && part.placement === "in-flow") {
+                return { ...part, display: ATOMIC };
+            }
+            return part.kind === "text" ? {
+                kind: "box", style: part.style, display: ATOMIC, placement: "in-flow", replaced: false, hasStartEdge: true, hasEndEdge: true, usedPage: "", startPage: "", endPage: "",
+                children: [part]
+            } : part;
+        });
+        return [...atomic(generated.before), ...nodes, ...atomic(generated.after)];
     }
 
     build(element: SourceElement, style: ComputedStyle, viewport: Size, root: ComputedStyle): ElementBox | undefined {
@@ -189,8 +213,9 @@ export class MathBoxes {
             box.children = [{ kind: "deferred", value: items[0], style: this.anonymous(style) }];
             return box;
         }
+        const generated: GeneratedBoxes | undefined = this.generated?.get(element);
         if (MathMarkup.TOKENS.has(local)) {
-            box.children = this.tokenChildren(element, style, viewport, root);
+            box.children = this.around(this.tokenChildren(element, style, viewport, root), generated);
             return box;
         }
         const children: Array<ElementBox> = [];
@@ -203,7 +228,12 @@ export class MathBoxes {
                 children.push(built);
             }
         }
-        box.children = this.arranged(element, local, box, children);
+        if (local === "mtd" && generated !== undefined) {
+            // The content of a cell is the anonymous mrow that MathML Core §3.5.3 gives it, which holds the generated boxes too.
+            box.children = [this.anonymousBox(box.style, "mrow", this.around(children, generated))];
+            return box;
+        }
+        box.children = this.around(this.arranged(element, local, box, children), generated);
         return box;
     }
 

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mi>x</mi><mspace width="1em"/>
+    <mstyle scriptlevel="1"><mi>x</mi></mstyle><mspace width="1em"/>
+    <mstyle scriptlevel="2"><mi>x</mi></mstyle><mspace width="2em"/>
+    <mi mathsize="150%">x</mi><mspace width="1em"/>
+    <mi mathsize="big">x</mi>
+</math>

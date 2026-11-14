@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="place-formulas">
+    <title>Put a formula in your document</title>
+    <shortdesc>You write a formula in your XML, or you show a formula from a file. Then you choose its font, its size and its color, and you decide whether it sits in a line of text or on a line of its own.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="write-the-formula">
+                <cmd>Write the formula in your XML</cmd>
+                <info>
+                    <p>Add a <codeph>math</codeph> element in the MathML namespace where the formula must appear. CSSMedia draws it on the line of the text that surrounds it, and the baseline of the formula is the baseline of the line:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;para>Then &lt;math xmlns="http://www.w3.org/1998/Math/MathML">
+    &lt;mi>a&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>b&lt;/mi>
+&lt;/math> is the sum.&lt;/para>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>You can declare the namespace with a prefix instead, as in <codeph>&lt;m:math xmlns:m="http://www.w3.org/1998/Math/MathML"></codeph>, and write <codeph>m:mi</codeph>, <codeph>m:mo</codeph> and so on. A <codeph>math</codeph> element in another namespace is an ordinary element of your XML, and CSSMedia does not draw it as a formula.</p>
+                </info>
+            </step>
+            <step id="inline-or-display">
+                <cmd>Choose a line of text or a line of its own</cmd>
+                <info>
+                    <p>A formula is <term>inline</term> by default: it is part of a line, and its parts are compact so that the line stays even. Set <codeph>display="block"</codeph> on the <codeph>math</codeph> element to put the formula on a line of its own. A block formula is in <term>display style</term>: fractions, limits and big operators take more room and get their full size. Compare the same fraction in both styles:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;math xmlns="http://www.w3.org/1998/Math/MathML">
+    &lt;mfrac>&lt;mn>1&lt;/mn>&lt;mrow>&lt;mn>1&lt;/mn>&lt;mo>+&lt;/mo>&lt;mi>x&lt;/mi>&lt;/mrow>&lt;/mfrac>
+&lt;/math>
+</pre>
+                    <p>In a line of text, the fraction is <image href="../images/math-fraction-inline.mml" placement="inline"><alt>one over one plus x, small</alt></image>. With <codeph>display="block"</codeph> it is on a line of its own and has its full size:</p>
+                    <fig id="math-display-sample">
+                        <title>A block formula</title>
+                        <image href="../images/math-fraction-block.mml" placement="break">
+                            <alt>One over one plus x, in full size.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>The attribute <codeph>displaystyle</codeph> of <codeph>mstyle</codeph> changes the style for the elements it holds. <xref href="style-formulas.dita#style-formulas">Style a formula</xref> explains it.</p>
+                </info>
+            </step>
+            <step id="show-a-formula-from-a-file">
+                <cmd>Or show a formula from a file</cmd>
+                <info>
+                    <p>A file with one <codeph>math</codeph> element is an image. Make an element of your XML show it with <codeph>content</codeph>, as for any other image. This stylesheet shows the file named by the <codeph>src</codeph> attribute of a <codeph>formula</codeph> element, inline:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">formula {
+    display: inline;
+    content: attr(src url);
+}
+</pre>
+                    <pre outputclass="language-xml">&lt;para>Pythagoras: &lt;formula src="pythagoras.mml"/>.&lt;/para>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The file is a document of its own. The style sheets of your document do not reach into it, so the file names its own style sheet with an <codeph>xml-stylesheet</codeph> instruction, and that sheet declares the font. A file without such an instruction has no style sheet:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;?xml version="1.0" encoding="UTF-8"?>
+&lt;?xml-stylesheet href="math.css" type="text/css"?>
+&lt;math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    &lt;mi>x&lt;/mi>&lt;mo>=&lt;/mo>
+    &lt;mfrac>
+        &lt;mrow>&lt;mo>&amp;#x2212;&lt;/mo>&lt;mi>b&lt;/mi>&lt;mo>&amp;#xB1;&lt;/mo>
+            &lt;msqrt>&lt;msup>&lt;mi>b&lt;/mi>&lt;mn>2&lt;/mn>&lt;/msup>&lt;mo>&amp;#x2212;&lt;/mo>&lt;mn>4&lt;/mn>&lt;mi>a&lt;/mi>&lt;mi>c&lt;/mi>&lt;/msqrt>
+        &lt;/mrow>
+        &lt;mrow>&lt;mn>2&lt;/mn>&lt;mi>a&lt;/mi>&lt;/mrow>
+    &lt;/mfrac>
+&lt;/math>
+</pre>
+                    <fig id="math-quadratic-sample">
+                        <title>A formula from a file</title>
+                        <image href="../images/math-quadratic.mml" placement="break">
+                            <alt>x equals minus b plus or minus the square root of b squared minus four a c, over two a.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>A file is drawn at its natural size, and the <codeph>width</codeph> and <codeph>height</codeph> of the element scale it with everything in it, glyphs included. An inline formula sits on the baseline of its line.</p>
+                </info>
+            </step>
+            <step id="choose-the-font">
+                <cmd>Choose the font</cmd>
+                <info>
+                    <p>Declare a font with a MATH table in your style sheet and set it for the <codeph>math</codeph> element. The rule needs the MathML namespace, so declare it first with <codeph>@namespace</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@namespace m url("http://www.w3.org/1998/Math/MathML");
+
+@font-face {
+    font-family: "Noto Sans Math";
+    src: url("fonts/NotoSansMath-Regular.ttf");
+}
+
+m|math {
+    font-family: "Noto Sans Math";
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>With a font that has no MATH table, CSSMedia uses the fallback values of MathML Core for the bar of a fraction, the height of scripts and the like. Operators keep their normal glyphs, and nothing stretches.</p>
+                    <p>An <codeph>mi</codeph> element that holds one letter is drawn in the mathematical italic style, as MathML asks for. Write <codeph>mathvariant="normal"</codeph> on the element to get an upright letter.</p>
+                </info>
+            </step>
+            <step id="size-and-color">
+                <cmd>Set the size and the color</cmd>
+                <info>
+                    <p>The <codeph>font-size</codeph> of the <codeph>math</codeph> element is the size of the text in the formula, and <codeph>color</codeph> is its color. Scripts, such as the exponent in <codeph>x²</codeph>, are smaller than the text, as <xref href="style-formulas.dita#style-formulas/set-the-script-level">Style a formula</xref> explains:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">m|math {
+    font-size: 14pt;
+    color: #1d4f7a;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="link-a-formula">
+                <cmd>Link a part of the formula</cmd>
+                <info>
+                    <p>An <codeph>a</codeph> element with an <codeph>href</codeph> attribute makes the formula inside it a link, and so does any other MathML element that has an <codeph>href</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;math xmlns="http://www.w3.org/1998/Math/MathML">
+    &lt;mi>f&lt;/mi>&lt;mo>=&lt;/mo>
+    &lt;a href="https://www.w3.org/TR/mathml-core/">&lt;mi>x&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>y&lt;/mi>&lt;/a>
+&lt;/math>
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

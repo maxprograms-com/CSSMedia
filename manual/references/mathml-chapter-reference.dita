@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="mathml-chapter-reference">
+    <title>MathML reference</title>
+    <shortdesc>This reference lists the properties and values that CSS has for math, and the elements and attributes of MathML that CSSMedia lays out.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-mathml/math-properties"/>
+        <section conkeyref="ref-mathml/math-elements"/>
+        <section conkeyref="ref-mathml/math-attributes"/>
+        <section conkeyref="ref-mathml/math-content-elements"/>
+        <section conkeyref="ref-mathml/math-content-operators"/>
+    </refbody>
+</reference>

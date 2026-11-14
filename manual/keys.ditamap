@@ -16,6 +16,7 @@
     <keydef keys="ref-images" href="references/image-reference.dita"/>
     <keydef keys="ref-svg" href="references/svg-reference.dita"/>
     <keydef keys="ref-effects" href="references/effects-reference.dita"/>
+    <keydef keys="ref-mathml" href="references/mathml-reference.dita"/>
     <keydef keys="ref-tables" href="references/table-reference.dita"/>
     <keydef keys="ref-display" href="references/display-and-positioning.dita"/>
     <keydef keys="ref-page" href="references/page-reference.dita"/>

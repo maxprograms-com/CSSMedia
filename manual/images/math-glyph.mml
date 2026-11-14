@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mi>a</mi><mglyph src="../images/math-glyph.svg" alt="check" width="1em" height="1em"/><mi>b</mi>
+    <mspace width="2em"/>
+    <mi>a</mi><mglyph src="../images/math-glyph.svg" alt="check" width="1em" height="1em" valign="0.5em"/><mi>b</mi>
+    <mspace width="2em"/>
+    <mi>a</mi><mglyph src="../images/math-glyph.svg" alt="check" width="1em" height="1em" valign="-0.5em"/><mi>b</mi>
+</math>

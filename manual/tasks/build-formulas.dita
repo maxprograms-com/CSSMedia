@@ -1,0 +1,302 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="build-formulas">
+    <title>Build the structures of a formula</title>
+    <shortdesc>You write the parts of a formula with the token elements, and you build fractions, roots, scripts, limits, matrices and enclosures by nesting elements.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="write-the-tokens">
+                <cmd>Write the tokens</cmd>
+                <info>
+                    <p>The smallest parts of a formula are the <term>tokens</term>. Each token holds text and no other elements:</p>
+                    <ul>
+                        <li><codeph>mi</codeph> is an identifier, such as <codeph>x</codeph>, <codeph>f</codeph> or <codeph>sin</codeph>.</li>
+                        <li><codeph>mn</codeph> is a number.</li>
+                        <li><codeph>mo</codeph> is an operator, a fence or a separator, such as <codeph>+</codeph>, <codeph>(</codeph> or <codeph>,</codeph>.</li>
+                        <li><codeph>mtext</codeph> is text that is not math, and <codeph>ms</codeph> is a string.</li>
+                    </ul>
+                    <p>CSSMedia puts the space around an operator that the language asks for: a binary operator such as <codeph>+</codeph> gets space on both sides, and a minus sign at the start of a group is a sign and gets none. To change this, set the <codeph>form</codeph> of the operator to <codeph>prefix</codeph>, <codeph>infix</codeph> or <codeph>postfix</codeph>, or set <codeph>lspace</codeph> and <codeph>rspace</codeph> to lengths.</p>
+                    <p>Use the minus sign <codeph>&amp;#x2212;</codeph> and not a hyphen for a minus.</p>
+                </info>
+            </step>
+            <step id="group-with-mrow">
+                <cmd>Group parts with mrow</cmd>
+                <info>
+                    <p>An <codeph>mrow</codeph> puts its children in a row and makes them one part of the formula. Elements that take a fixed number of children, such as <codeph>mfrac</codeph>, take one part for each, so you group the tokens of a numerator with an <codeph>mrow</codeph>.</p>
+                </info>
+            </step>
+            <step id="write-fractions-and-roots">
+                <cmd>Write fractions and roots</cmd>
+                <info>
+                    <p><codeph>mfrac</codeph> takes a numerator and a denominator. <codeph>msqrt</codeph> takes any number of children under a radical sign. <codeph>mroot</codeph> takes a base and an index.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;msqrt>&lt;mi>x&lt;/mi>&lt;mo>+&lt;/mo>&lt;mn>1&lt;/mn>&lt;/msqrt>
+&lt;mroot>&lt;mn>8&lt;/mn>&lt;mn>3&lt;/mn>&lt;/mroot>
+</pre>
+                    <fig id="math-roots-sample">
+                        <title>A square root and a cube root</title>
+                        <image href="../images/math-roots.mml" placement="break">
+                            <alt>The square root of x plus 1, and the cube root of 8.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>The attribute <codeph>linethickness</codeph> of <codeph>mfrac</codeph> sets the thickness of the bar: a length, or <codeph>thin</codeph>, <codeph>medium</codeph> or <codeph>thick</codeph>. With <codeph>0</codeph> there is no bar, which is how you write a binomial. The attributes <codeph>numalign</codeph> and <codeph>denomalign</codeph> align the numerator and the denominator to the <codeph>left</codeph>, the <codeph>center</codeph> or the <codeph>right</codeph>, and <codeph>bevelled="true"</codeph> writes the fraction with a slash.</p>
+                </info>
+            </step>
+            <step id="write-scripts">
+                <cmd>Write scripts</cmd>
+                <info>
+                    <p><codeph>msub</codeph>, <codeph>msup</codeph> and <codeph>msubsup</codeph> take a base followed by a subscript, a superscript, or both. <codeph>mmultiscripts</codeph> takes a base and pairs of subscripts and superscripts, and the pairs after <codeph>mprescripts</codeph> go before the base. An <codeph>mrow</codeph> makes a script of several parts. Scripts are smaller than the base.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;msub>&lt;mi>a&lt;/mi>&lt;mi>i&lt;/mi>&lt;/msub>
+&lt;msup>&lt;mi>e&lt;/mi>&lt;mrow>&lt;mi>i&lt;/mi>&lt;mi>&amp;#x3C0;&lt;/mi>&lt;/mrow>&lt;/msup>
+&lt;msubsup>&lt;mi>x&lt;/mi>&lt;mn>1&lt;/mn>&lt;mn>2&lt;/mn>&lt;/msubsup>
+&lt;mmultiscripts>&lt;mi>X&lt;/mi>&lt;mn>1&lt;/mn>&lt;mn>2&lt;/mn>&lt;mprescripts/>&lt;mi>a&lt;/mi>&lt;mi>b&lt;/mi>&lt;/mmultiscripts>
+</pre>
+                    <fig id="math-scripts-sample">
+                        <title>Subscripts and superscripts</title>
+                        <image href="../images/math-scripts.mml" placement="break">
+                            <alt>a with subscript i, e to the power of i pi, x with subscript 1 and superscript 2, and X with scripts after it and before it.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>The attributes <codeph>subscriptshift</codeph> and <codeph>superscriptshift</codeph> set the least distance by which a script is moved from the baseline of the base.</p>
+                </info>
+            </step>
+            <step id="write-limits-and-accents">
+                <cmd>Write limits and accents</cmd>
+                <info>
+                    <p><codeph>munder</codeph>, <codeph>mover</codeph> and <codeph>munderover</codeph> put a part under or over a base. Use them for the limits of a sum, for an accent and for a brace. An operator in the base, or in the overscript, stretches to the width of the other part. In display style the limits of a big operator, such as a sum, go under and over it. In a line of text they become subscript and superscript, so that the line stays even. Set <codeph>movablelimits="false"</codeph> on the operator to keep them under and over, and <codeph>largeop="false"</codeph> to keep the operator at the size of the text.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;munderover>&lt;mo>&amp;#x2211;&lt;/mo>&lt;mrow>&lt;mi>i&lt;/mi>&lt;mo>=&lt;/mo>&lt;mn>1&lt;/mn>&lt;/mrow>&lt;mi>n&lt;/mi>&lt;/munderover>
+&lt;msub>&lt;mi>a&lt;/mi>&lt;mi>i&lt;/mi>&lt;/msub>
+</pre>
+                    <fig id="math-limits-sample">
+                        <title>Limits in display style</title>
+                        <image href="../images/math-limits.mml" placement="break">
+                            <alt>A sum from i equals 1 to n of a sub i, and the integral from 0 to 1 of f of x dx.</alt>
+                        </image>
+                    </fig>
+                    <p>The same sum in a line of text is <image href="../images/math-sum-inline.mml" placement="inline"><alt>a sum with limits as scripts</alt></image>.</p>
+                </stepxmp>
+                <info>
+                    <p>For an accent, set <codeph>accent="true"</codeph> on <codeph>mover</codeph>, or <codeph>accentunder="true"</codeph> on <codeph>munder</codeph>. The accent is then set close to the base, at the size of the text. The attribute <codeph>align</codeph> aligns the scripts to the <codeph>left</codeph>, the <codeph>center</codeph> or the <codeph>right</codeph>.</p>
+                    <fig id="math-accents-sample">
+                        <title>An accent, an arrow and a brace</title>
+                        <image href="../images/math-accents.mml" placement="break">
+                            <alt>A hat over x, an arrow over A B, and a brace under a plus b plus c with the text 3 terms below it.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="write-fences">
+                <cmd>Write fences</cmd>
+                <info>
+                    <p>An operator that is a fence stretches to the height of what is between the fences, and it is centered on the math axis, the line of the bar of a fraction. Put the fences and their content in an <codeph>mrow</codeph>. Set <codeph>stretchy="false"</codeph> on a fence to keep it at the size of the text. The attributes <codeph>minsize</codeph> and <codeph>maxsize</codeph> set the least and the greatest size of a stretchy operator, and <codeph>symmetric="false"</codeph> stops it from being centered on the axis.</p>
+                    <p>The element <codeph>mfenced</codeph> writes the fences and the separators for you. Its attributes are <codeph>open</codeph> and <codeph>close</codeph>, with <codeph>(</codeph> and <codeph>)</codeph> as defaults, and <codeph>separators</codeph>, with <codeph>,</codeph> as default. The last separator is repeated when there are more children than separators.</p>
+                    <fig id="math-fences-sample">
+                        <title>Fences</title>
+                        <image href="../images/math-fences.mml" placement="break">
+                            <alt>A fraction between two tall parentheses, and the list a, b, c between square brackets with semicolons as separators.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="write-tables">
+                <cmd>Write tables and matrices</cmd>
+                <info>
+                    <p><codeph>mtable</codeph> holds rows, <codeph>mtr</codeph> elements, and each row holds cells, <codeph>mtd</codeph> elements. A table is laid out like a CSS table, so the cell and table properties of <xref href="../concepts/intro-tables.dita#introTables">Tables</xref> work on the elements, and a cell can span columns and rows. Put a table between two stretchy brackets to write a matrix:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;mrow>
+    &lt;mo>[&lt;/mo>
+    &lt;mtable>
+        &lt;mtr>&lt;mtd>&lt;mi>a&lt;/mi>&lt;/mtd>&lt;mtd>&lt;mi>b&lt;/mi>&lt;/mtd>&lt;/mtr>
+        &lt;mtr>&lt;mtd>&lt;mi>c&lt;/mi>&lt;/mtd>&lt;mtd>&lt;mi>d&lt;/mi>&lt;/mtd>&lt;/mtr>
+    &lt;/mtable>
+    &lt;mo>]&lt;/mo>
+&lt;/mrow>
+</pre>
+                    <fig id="math-matrix-sample">
+                        <title>A matrix</title>
+                        <image href="../images/math-matrix.mml" placement="break">
+                            <alt>A matrix of a, b, c and d between square brackets.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>These attributes of <codeph>mtable</codeph> set the look of the table. A list of values, separated by spaces, applies to the rows or columns in turn, and the last value repeats:</p>
+                    <ul>
+                        <li><codeph>columnalign</codeph> is <codeph>left</codeph>, <codeph>center</codeph> or <codeph>right</codeph>, and <codeph>rowalign</codeph> is <codeph>top</codeph>, <codeph>center</codeph>, <codeph>bottom</codeph> or <codeph>baseline</codeph>. The same attributes on an <codeph>mtr</codeph> or an <codeph>mtd</codeph> apply to the row or to the cell.</li>
+                        <li><codeph>columnspacing</codeph> and <codeph>rowspacing</codeph> are the distances between columns and rows.</li>
+                        <li><codeph>columnlines</codeph> and <codeph>rowlines</codeph> are <codeph>solid</codeph>, <codeph>dashed</codeph> or <codeph>none</codeph>, and <codeph>frame</codeph> is the line around the table, with <codeph>framespacing</codeph> as the space between the frame and the table.</li>
+                        <li><codeph>width</codeph> is the width of the table, <codeph>columnwidth</codeph> is the width of each column, and <codeph>equalrows</codeph> and <codeph>equalcolumns</codeph> give all rows or columns the same size.</li>
+                        <li><codeph>align</codeph> sets the row of the table, <codeph>top</codeph>, <codeph>center</codeph>, <codeph>bottom</codeph>, <codeph>baseline</codeph> or <codeph>axis</codeph>, that is on the baseline of the line.</li>
+                        <li><codeph>columnspan</codeph> and <codeph>rowspan</codeph> on an <codeph>mtd</codeph> make a cell cover several columns or rows.</li>
+                    </ul>
+                    <fig id="math-table-sample">
+                        <title>Lines, alignment and a spanning cell</title>
+                        <image href="../images/math-table-attributes.mml" placement="break">
+                            <alt>A framed table with solid column lines and dashed row lines. The first row is one cell over two columns. The first column is aligned left and the second is aligned right.</alt>
+                        </image>
+                    </fig>
+                    <p>The elements are also styled by CSS. The rule <codeph>m|mtd { border: 1pt solid black; }</codeph> draws a line around each cell.</p>
+                </info>
+            </step>
+            <step id="adjust-space">
+                <cmd>Adjust the space</cmd>
+                <info>
+                    <p><codeph>mspace</codeph> is an empty space of the <codeph>width</codeph>, <codeph>height</codeph> and <codeph>depth</codeph> you give. <codeph>mpadded</codeph> changes the size of its content: <codeph>width</codeph>, <codeph>height</codeph> and <codeph>depth</codeph> set the size of its box, <codeph>lspace</codeph> moves the content from the start of the box, and <codeph>voffset</codeph> raises or lowers it. <codeph>mphantom</codeph> takes the room of its content and shows nothing.</p>
+                    <fig id="math-spaces-sample">
+                        <title>Spaces</title>
+                        <image href="../images/math-spaces.mml" placement="break">
+                            <alt>The letters a and b with a gap between them, the letter c on a light blue box that is wider than the letter, and the letters d and e with a gap between them that has the width of the hidden word.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="enclose-parts">
+                <cmd>Enclose parts</cmd>
+                <info>
+                    <p><codeph>menclose</codeph> draws lines around its content. The attribute <codeph>notation</codeph> holds the names of the notations, separated by spaces. A notation that is not in the list draws nothing. These are the names:</p>
+                    <ul>
+                        <li><codeph>box</codeph>, <codeph>roundedbox</codeph> and <codeph>circle</codeph> enclose the content.</li>
+                        <li><codeph>left</codeph>, <codeph>right</codeph>, <codeph>top</codeph>, <codeph>bottom</codeph>, <codeph>actuarial</codeph>, <codeph>madruwb</codeph>, <codeph>phasorangle</codeph> and <codeph>longdiv</codeph> draw lines on some sides.</li>
+                        <li><codeph>radical</codeph> draws a radical sign.</li>
+                        <li><codeph>updiagonalstrike</codeph>, <codeph>downdiagonalstrike</codeph>, <codeph>verticalstrike</codeph> and <codeph>horizontalstrike</codeph> strike the content out.</li>
+                        <li><codeph>uparrow</codeph>, <codeph>downarrow</codeph>, <codeph>leftarrow</codeph>, <codeph>rightarrow</codeph>, <codeph>updownarrow</codeph>, <codeph>leftrightarrow</codeph>, <codeph>northeastarrow</codeph>, <codeph>northwestarrow</codeph>, <codeph>southeastarrow</codeph>, <codeph>southwestarrow</codeph>, <codeph>northwestsoutheastarrow</codeph> and <codeph>northeastsouthwestarrow</codeph> draw arrows.</li>
+                    </ul>
+                    <fig id="math-enclose-sample">
+                        <title>Enclosures</title>
+                        <image href="../images/math-enclose.mml" placement="break">
+                            <alt>x plus y in a box, z in a circle, 12 struck out by a rising line, and 345 under a long division sign.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="stack-numbers">
+                <cmd>Stack numbers</cmd>
+                <info>
+                    <p>For elementary arithmetic, <codeph>mstack</codeph> aligns numbers in columns, as you write them on paper. Its children are rows:</p>
+                    <ul>
+                        <li><codeph>msrow</codeph> is a row of digits. A number in it, such as <codeph>&lt;mn>199.5&lt;/mn></codeph>, is split into its digits, and each digit takes a column. Any other child, such as the <codeph>+</codeph> of an addition, takes one column.</li>
+                        <li><codeph>msline</codeph> is a horizontal line over the width of the stack.</li>
+                        <li><codeph>mscarries</codeph> is a row of carries over the row that follows it, one child for each column. A child that is <codeph>&lt;none/></codeph>, or an empty <codeph>mrow</codeph>, is a column without a carry.</li>
+                        <li><codeph>msgroup</codeph> groups rows that share a position.</li>
+                    </ul>
+                    <p>A child of <codeph>mstack</codeph> that is none of these is a row of its own, as if it were inside an <codeph>msrow</codeph>.</p>
+                    <fig id="math-stack-sample">
+                        <title>Two additions</title>
+                        <image href="../images/math-stack.mml" placement="break">
+                            <alt>The sum 199.5 plus 25.25 equals 224.75 with the decimal points in one column, and the sum 199 plus 25 equals 224 with a carry of 1 above each of the first two columns.</alt>
+                        </image>
+                    </fig>
+                    <p>These attributes of <codeph>mstack</codeph> set the alignment of the columns. <codeph>mstyle</codeph> and <codeph>math</codeph> can set them for all the stacks they hold:</p>
+                    <ul>
+                        <li><codeph>stackalign</codeph> chooses the column on which the rows are aligned: <codeph>decimalpoint</codeph> (the default), <codeph>left</codeph>, <codeph>center</codeph> or <codeph>right</codeph>. With <codeph>decimalpoint</codeph>, a row is aligned on its decimal point, or on the right of its first number when it has none. The attribute <codeph>decimalcharacter</codeph> is the character of the decimal point, <codeph>.</codeph> by default.</li>
+                        <li><codeph>charalign</codeph> places a digit that is narrower than its column at the <codeph>left</codeph>, the <codeph>center</codeph> or the <codeph>right</codeph> of the column, which is the default.</li>
+                        <li><codeph>charspacing</codeph> is a length: the space between columns. Without it, CSSMedia spaces the columns so that carries that are wider than a digit do not overlap.</li>
+                        <li><codeph>align</codeph> is the row of the stack that is on the baseline of the line: <codeph>baseline</codeph>, which is the default, <codeph>center</codeph>, <codeph>axis</codeph>, <codeph>top</codeph> or <codeph>bottom</codeph>, and after a space the number of a row, counted from the bottom when it is negative. <codeph>center</codeph> and <codeph>baseline</codeph> put the middle of the stack on the baseline.</li>
+                    </ul>
+                    <p>These attributes work on the rows:</p>
+                    <ul>
+                        <li><codeph>position</codeph>, on <codeph>msrow</codeph>, <codeph>msgroup</codeph>, <codeph>mscarries</codeph> and <codeph>msline</codeph>, is an integer number of columns by which the row, or the rows of the group, are moved to the left.</li>
+                        <li><codeph>shift</codeph>, on <codeph>msgroup</codeph>, is an integer number of columns by which each row after the first of the group is moved from the row before it. The rows of a long division use it to step to the left.</li>
+                        <li><codeph>location</codeph>, on <codeph>mscarries</codeph> and on <codeph>mscarry</codeph>, puts a carry at a point of the compass around its digit: <codeph>n</codeph> (the default), <codeph>ne</codeph>, <codeph>e</codeph>, <codeph>se</codeph>, <codeph>s</codeph>, <codeph>sw</codeph>, <codeph>w</codeph> or <codeph>nw</codeph>.</li>
+                        <li><codeph>crossout</codeph>, on <codeph>mscarries</codeph> and on <codeph>mscarry</codeph>, is a list of <codeph>updiagonalstrike</codeph>, <codeph>downdiagonalstrike</codeph>, <codeph>verticalstrike</codeph> and <codeph>horizontalstrike</codeph>, or <codeph>none</codeph>. The lines strike out the digit under the carry, as in a subtraction that borrows. An <codeph>mscarry</codeph> holds one carry and overrides the attributes of its <codeph>mscarries</codeph>.</li>
+                        <li><codeph>length</codeph>, on <codeph>msline</codeph>, is the number of columns that the line covers, ending at the alignment column. Without it, the line covers the stack. <codeph>leftoverhang</codeph> and <codeph>rightoverhang</codeph> are lengths that make the line longer at each end, and <codeph>mslinethickness</codeph> is <codeph>thin</codeph>, <codeph>medium</codeph> or <codeph>thick</codeph>, or a length.</li>
+                        <li>Carries in <codeph>mscarries</codeph> are drawn at 60% of the size of the text. The attribute <codeph>scriptsizemultiplier</codeph> changes that.</li>
+                    </ul>
+                </info>
+            </step>
+            <step id="write-long-division">
+                <cmd>Write a long division</cmd>
+                <info>
+                    <p><codeph>mlongdiv</codeph> is an <codeph>mstack</codeph> with two more children before its rows: the divisor and the quotient. The first row after them is the dividend, and the other rows are the steps of the division, with <codeph>msgroup</codeph> and <codeph>msline</codeph> to move and underline them. It accepts the attributes of <codeph>mstack</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;mlongdiv longdivstyle="lefttop">
+    &lt;mn>3&lt;/mn> &lt;mn>12&lt;/mn> &lt;mn>36&lt;/mn>
+    &lt;msgroup position="2" shift="-1">&lt;mn>3&lt;/mn> &lt;msline length="2"/>&lt;/msgroup>
+    &lt;msgroup>&lt;mn>6&lt;/mn> &lt;msline length="1"/>&lt;/msgroup>
+    &lt;msgroup>&lt;mn>6&lt;/mn> &lt;msline length="1"/>&lt;/msgroup>
+    &lt;mn>0&lt;/mn>
+&lt;/mlongdiv>
+</pre>
+                    <fig id="math-longdiv-sample">
+                        <title>A long division</title>
+                        <image href="../images/math-longdiv.mml" placement="break">
+                            <alt>The division of 36 by 3. The divisor 3 is at the left of the dividend 36 with a parenthesis between them, the quotient 12 is over the dividend, and the steps of the division are under it.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>The attribute <codeph>longdivstyle</codeph> chooses where the divisor and the quotient go. A value that is not in the list gives <codeph>lefttop</codeph>:</p>
+                    <ul>
+                        <li><codeph>lefttop</codeph>, the default: the divisor at the left of the dividend, after a closing parenthesis, and the quotient over it.</li>
+                        <li><codeph>righttop</codeph>: the divisor at the right of the dividend, with a line at its left and under it, and the quotient over the dividend.</li>
+                        <li><codeph>stackedleftlinetop</codeph>: the divisor at the left of the dividend, with a line under it and a line between them, and the quotient over the dividend.</li>
+                        <li><codeph>stackedrightright</codeph>, <codeph>mediumstackedrightright</codeph> and <codeph>shortstackedrightright</codeph>: the divisor over the quotient, at the right of the dividend, after a vertical line. The line is as long as the stack, as the two rows, or as the divisor.</li>
+                        <li><codeph>stackedleftleft</codeph>: the same, at the left of the dividend.</li>
+                        <li><codeph>left/\right</codeph>, <codeph>left)(right</codeph> and <codeph>:right=right</codeph>: the divisor, the dividend and the quotient on one row, separated by <codeph>/</codeph> and <codeph>\</codeph>, by <codeph>)</codeph> and <codeph>(</codeph>, or written as <codeph>36 : 3 = 12</codeph>.</li>
+                    </ul>
+                    <fig id="math-longdiv-styles-sample">
+                        <title>The styles of long division</title>
+                        <image href="../images/math-longdiv-styles.mml" placement="break">
+                            <alt>The division of 36 by 3 written in each of the ten styles.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="write-strings">
+                <cmd>Write a string</cmd>
+                <info>
+                    <p><codeph>ms</codeph> is a string literal, for formulas that a computer algebra system reads. It shows its text between double quotes, and a quote inside the text is escaped with a backslash. Spaces at the ends are removed and runs of spaces become one. The attributes <codeph>lquote</codeph> and <codeph>rquote</codeph> replace the quotes, and an empty value removes one:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;ms>say "hi"&lt;/ms>
+&lt;ms lquote="[" rquote="]">hi&lt;/ms>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The first string is shown as <codeph>"say \"hi\""</codeph> and the second as <codeph>[hi]</codeph>. For ordinary text in a formula, use <codeph>mtext</codeph>.</p>
+                </info>
+            </step>
+            <step id="write-images">
+                <cmd>Put an image in a formula</cmd>
+                <info>
+                    <p><codeph>mglyph</codeph> shows an image where a character would go, in a token or in a row. Its attribute <codeph>src</codeph> is the file of the image, which can be of any format that <xref href="../concepts/intro-images.dita#introImages">Images</xref> lists, and <codeph>alt</codeph> is its alternative text. The attributes <codeph>width</codeph> and <codeph>height</codeph> set the size, and the proportions are kept when you give only one. The attribute <codeph>valign</codeph> is a length that raises the bottom of the image above the baseline, or lowers it when it is negative:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;mi>a&lt;/mi>
+&lt;mglyph src="check.svg" alt="check" width="1em" height="1em"/>
+&lt;mi>b&lt;/mi>
+</pre>
+                    <fig id="math-glyph-sample">
+                        <title>An image on the baseline, raised and lowered</title>
+                        <image href="../images/math-glyph.mml" placement="break">
+                            <alt>The letters a and b with a round check mark between them on the baseline, then raised by half an em, then lowered by half an em.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+            </step>
+            <step id="use-named-spaces">
+                <cmd>Use named spaces</cmd>
+                <info>
+                    <p>Where a formula takes a length, such as <codeph>width</codeph> in <codeph>mspace</codeph> and <codeph>mpadded</codeph>, or <codeph>lspace</codeph> in <codeph>mo</codeph>, you can write a named space instead. Each is a number of eighteenths of an em: <codeph>veryverythinmathspace</codeph> is 1/18 em, then <codeph>verythinmathspace</codeph>, <codeph>thinmathspace</codeph>, <codeph>mediummathspace</codeph>, <codeph>thickmathspace</codeph>, <codeph>verythickmathspace</codeph> and <codeph>veryverythickmathspace</codeph>, which is 7/18 em. Put <codeph>negative</codeph> before a name for the same distance in the other direction.</p>
+                </info>
+            </step>
+            <step id="hide-and-select">
+                <cmd>Show only one of several forms</cmd>
+                <info>
+                    <p>CSSMedia draws one child of <codeph>semantics</codeph>, the first, and ignores the annotations. It draws one child of <codeph>maction</codeph>, the one that <codeph>selection</codeph> chooses, and the first when the attribute is missing or wrong.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

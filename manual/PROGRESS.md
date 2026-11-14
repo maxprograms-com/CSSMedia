@@ -1020,9 +1020,9 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### MathML Core (mathml-core)
 
-- [ ] math-depth
-- [ ] math-shift
-- [ ] math-style
+- [x] math-depth
+- [x] math-shift
+- [x] math-style
 
 ### Motion Path 1 (motion-1)
 

@@ -24,6 +24,7 @@
             <li><xref href="../references/toc-reference.dita"/></li>
             <li><xref href="../references/image-reference.dita"/></li>
             <li><xref href="../references/svg-reference.dita"/></li>
+            <li><xref href="../references/mathml-reference.dita"/></li>
         </ul>
     </conbody>
 </concept>

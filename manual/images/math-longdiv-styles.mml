@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mtable columnspacing="2em" rowspacing="1em">
+        <mtr>
+            <mtd><mlongdiv longdivstyle="lefttop"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+            <mtd><mlongdiv longdivstyle="righttop"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+            <mtd><mlongdiv longdivstyle="stackedleftlinetop"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+        </mtr>
+        <mtr>
+            <mtd><mlongdiv longdivstyle="stackedrightright"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+            <mtd><mlongdiv longdivstyle="mediumstackedrightright"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+            <mtd><mlongdiv longdivstyle="shortstackedrightright"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+        </mtr>
+        <mtr>
+            <mtd><mlongdiv longdivstyle="stackedleftleft"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+            <mtd><mlongdiv longdivstyle="left/\right"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+            <mtd><mlongdiv longdivstyle="left)(right"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+        </mtr>
+        <mtr>
+            <mtd><mlongdiv longdivstyle=":right=right"><mn>3</mn><mn>12</mn><mn>36</mn></mlongdiv></mtd>
+        </mtr>
+    </mtable>
+</math>

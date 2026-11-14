@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introMathml">
+    <title>MathML</title>
+    <shortdesc>With <xref href="../glossaries/MathML.dita">MathML</xref> you write mathematical formulas in <xref href="../glossaries/XML.dita">XML</xref>. CSSMedia lays them out with the rules of the language and draws them as vector graphics and text in the PDF. This chapter explains how to put a formula in your document, how to build the common structures and how to style them. The <xref href="../references/mathml-chapter-reference.dita#mathml-chapter-reference">MathML reference</xref> at the end lists the properties, elements and attributes.</shortdesc>
+    <conbody>
+        <p>A MathML formula describes the structure of an expression, not its look. A fraction is a <codeph>mfrac</codeph> with a numerator and a denominator, and CSSMedia decides where the bar goes, how big the parts are and how far apart. For example, the equation <image href="../images/math-pythagoras.mml" placement="inline"><alt>x squared plus y squared equals z squared</alt></image> is part of this line of text, and its baseline is the baseline of the text.</p>
+        <p>MathML elements belong to a namespace, so a formula starts with a <codeph>math</codeph> element that declares it:</p>
+        <pre outputclass="language-xml">&lt;math xmlns="http://www.w3.org/1998/Math/MathML">
+    &lt;msup>&lt;mi>x&lt;/mi>&lt;mn>2&lt;/mn>&lt;/msup>
+    &lt;mo>+&lt;/mo>
+    &lt;msup>&lt;mi>y&lt;/mi>&lt;mn>2&lt;/mn>&lt;/msup>
+    &lt;mo>=&lt;/mo>
+    &lt;msup>&lt;mi>z&lt;/mi>&lt;mn>2&lt;/mn>&lt;/msup>
+&lt;/math>
+</pre>
+        <p>You can put a formula in two places:</p>
+        <ul>
+            <li>In your own XML, at the place where it must appear. A <codeph>math</codeph> element in the MathML namespace is part of the text that surrounds it.</li>
+            <li>In a file of its own, which an element of your XML shows as an image. The file holds one <codeph>math</codeph> element, and CSSMedia knows it is a formula from that element, not from the name of the file.</li>
+        </ul>
+        <p><xref href="../tasks/place-formulas.dita#place-formulas">Put a formula in your document</xref> explains both. The formulas in this chapter are files of the second kind, and each one is shown with the XML that makes it.</p>
+        <p>These are the elements that CSSMedia lays out:</p>
+        <table frame="all">
+            <tgroup cols="2">
+                <colspec colname="c1" colwidth="1*"/>
+                <colspec colname="c2" colwidth="3*"/>
+                <thead>
+                    <row>
+                        <entry>Element</entry>
+                        <entry>What it does</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><codeph>math</codeph></entry>
+                        <entry>Holds a formula.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>mi</codeph>, <codeph>mn</codeph>, <codeph>mo</codeph>, <codeph>mtext</codeph>, <codeph>ms</codeph>, <codeph>mspace</codeph></entry>
+                        <entry>Hold the identifiers, numbers, operators, text, strings and spaces of the formula.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>mrow</codeph>, <codeph>mstyle</codeph>, <codeph>mpadded</codeph>, <codeph>mphantom</codeph>, <codeph>merror</codeph></entry>
+                        <entry>Group other elements, change their style, adjust the space around them, hide them or mark them as an error.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>mfrac</codeph>, <codeph>msqrt</codeph>, <codeph>mroot</codeph>, <codeph>mfenced</codeph>, <codeph>menclose</codeph></entry>
+                        <entry>Make fractions, roots, fences and enclosures.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>msub</codeph>, <codeph>msup</codeph>, <codeph>msubsup</codeph>, <codeph>mmultiscripts</codeph>, <codeph>munder</codeph>, <codeph>mover</codeph>, <codeph>munderover</codeph></entry>
+                        <entry>Put scripts, limits and accents around a base.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>mtable</codeph>, <codeph>mtr</codeph>, <codeph>mtd</codeph></entry>
+                        <entry>Make tables and matrices.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>mstack</codeph>, <codeph>mlongdiv</codeph>, <codeph>msgroup</codeph>, <codeph>msrow</codeph>, <codeph>mscarries</codeph>, <codeph>mscarry</codeph>, <codeph>msline</codeph></entry>
+                        <entry>Stack numbers for elementary arithmetic and long division.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>semantics</codeph>, <codeph>annotation</codeph>, <codeph>annotation-xml</codeph>, <codeph>maction</codeph></entry>
+                        <entry>Add other representations of a formula. CSSMedia draws the first child of <codeph>semantics</codeph>, and the child of <codeph>maction</codeph> that <codeph>selection</codeph> chooses.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>mglyph</codeph></entry>
+                        <entry>Shows an image where a character would go.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>a</codeph></entry>
+                        <entry>Makes a link. CSSMedia also makes a link of any MathML element that has an <codeph>href</codeph> attribute.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>cn</codeph>, <codeph>ci</codeph>, <codeph>csymbol</codeph>, <codeph>cs</codeph>, <codeph>apply</codeph>, <codeph>bind</codeph>, <codeph>bvar</codeph>, <codeph>set</codeph>, <codeph>list</codeph>, <codeph>vector</codeph>, <codeph>matrix</codeph>, <codeph>piecewise</codeph>, the operator elements such as <codeph>plus</codeph> and <codeph>sin</codeph>, and the other elements of Content MathML</entry>
+                        <entry>Describe what a formula means, and CSSMedia draws the usual notation for it.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <p>An element of the MathML namespace that is not in this list is laid out as an <codeph>mrow</codeph>.</p>
+        <p>The topics of this chapter explain how to do each of these things:</p>
+        <ul>
+            <li><xref href="../tasks/place-formulas.dita#place-formulas">Put a formula in your document</xref> shows where a formula goes, how it gets its font and how it is linked.</li>
+            <li><xref href="../tasks/build-formulas.dita#build-formulas">Build the structures of a formula</xref> shows each presentation element.</li>
+            <li><xref href="../tasks/content-formulas.dita#content-formulas">Write a formula with Content MathML</xref> shows the elements that describe meaning.</li>
+            <li><xref href="../tasks/break-formulas.dita#break-formulas">Break a long formula into lines</xref> shows how a wide formula is broken, scaled, elided or cut.</li>
+            <li><xref href="../tasks/style-formulas.dita#style-formulas">Style a formula</xref> shows the attributes, the CSS rules, the math properties, the generated content and the equation numbers.</li>
+        </ul>
+        <note>A formula is drawn with a font that has a <term>MATH table</term>: the data that tells a layout engine how high to raise a superscript, how thick a fraction bar is and which glyphs build a tall bracket. Choose that font in your style sheet, as <xref href="../tasks/place-formulas.dita#place-formulas/choose-the-font">Put a formula in your document</xref> shows.</note>
+    </conbody>
+</concept>

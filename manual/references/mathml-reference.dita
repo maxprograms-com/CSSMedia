@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="mathml-reference">
+    <title>MathML</title>
+    <shortdesc>This reference lists the properties, the elements and the attributes that CSSMedia uses to lay out and draw MathML formulas.</shortdesc>
+    <refbody>
+        <section id="math-properties">
+            <title>Math properties and values</title>
+            <table id="math-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-math-depth">
+                            <entry><codeph>math-depth</codeph></entry>
+                            <entry>The script level of an element: how many steps of script size it is below the text. It is inherited. The attribute <codeph>scriptlevel</codeph> sets it.</entry>
+                            <entry><codeph>auto-add</codeph>, <codeph>add(</codeph>an integer<codeph>)</codeph> or an integer</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-math-script-level-property" scope="external" format="html">MathML Core §4.5</xref></entry>
+                        </row>
+                        <row id="row-math-shift">
+                            <entry><codeph>math-shift</codeph></entry>
+                            <entry>Chooses how high the superscripts of an element are raised. <codeph>compact</codeph> raises them less, to keep them clear of what is above.</entry>
+                            <entry><codeph>normal</codeph> or <codeph>compact</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-math-shift" scope="external" format="html">MathML Core §4.4</xref></entry>
+                        </row>
+                        <row id="row-math-style">
+                            <entry><codeph>math-style</codeph></entry>
+                            <entry>Chooses display style or compact style. <codeph>normal</codeph> gives fractions, limits and big operators their full size and room. The attribute <codeph>displaystyle</codeph> sets it.</entry>
+                            <entry><codeph>normal</codeph> or <codeph>compact</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-math-style-property" scope="external" format="html">MathML Core §4.3</xref></entry>
+                        </row>
+                        <row id="row-math-display">
+                            <entry><codeph>display</codeph></entry>
+                            <entry>The values <codeph>block math</codeph> and <codeph>inline math</codeph> make an element a formula that is a block or inline. On an element that is not a MathML element, they compute to <codeph>block flow</codeph> and <codeph>inline flow</codeph>.</entry>
+                            <entry><codeph>block math</codeph> or <codeph>inline math</codeph></entry>
+                            <entry><codeph>inline math</codeph> on <codeph>math</codeph>, <codeph>block math</codeph> on other MathML elements</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#new-display-math-value" scope="external" format="html">MathML Core §4.1</xref></entry>
+                        </row>
+                        <row id="row-math-font-size">
+                            <entry><codeph>font-size</codeph></entry>
+                            <entry>The value <codeph>math</codeph> gives the size that the script level of the element calls for.</entry>
+                            <entry><codeph>math</codeph></entry>
+                            <entry><codeph>math</codeph> on MathML elements</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-math-script-level-property" scope="external" format="html">MathML Core §4.5</xref></entry>
+                        </row>
+                        <row id="row-math-auto">
+                            <entry><codeph>text-transform</codeph></entry>
+                            <entry>The value <codeph>math-auto</codeph> turns a single letter into its mathematical italic form.</entry>
+                            <entry><codeph>math-auto</codeph></entry>
+                            <entry><codeph>math-auto</codeph> on <codeph>mi</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#math-auto-transform" scope="external" format="html">MathML Core §4.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="math-elements">
+            <title>MathML elements</title>
+            <table id="math-elements__table">
+                <tgroup cols="3">
+                    <colspec colname="c1" colwidth="1*"/>
+                    <colspec colname="c2" colwidth="2*"/>
+                    <colspec colname="c3" colwidth="3*"/>
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Element</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Attributes</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-top-level-math-element" scope="external" format="html"><codeph>math</codeph></xref></entry>
+                            <entry>A formula. It is a block or inline. It accepts the attributes of <codeph>mstyle</codeph>.</entry>
+                            <entry><codeph>xmlns</codeph>, <codeph>display</codeph>, <codeph>dir</codeph>, <codeph>maxwidth</codeph>, <codeph>overflow</codeph>, <codeph>indentalignfirst</codeph>, <codeph>indentshiftfirst</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-mi-element" scope="external" format="html"><codeph>mi</codeph></xref></entry>
+                            <entry>An identifier. One letter is drawn in italic.</entry>
+                            <entry><codeph>mathvariant</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#number-mn" scope="external" format="html"><codeph>mn</codeph></xref></entry>
+                            <entry>A number.</entry>
+                            <entry><codeph>mathvariant</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#operator-fence-separator-or-accent-mo" scope="external" format="html"><codeph>mo</codeph></xref></entry>
+                            <entry>An operator, a fence, a separator or an accent. It has space around it, and it stretches.</entry>
+                            <entry><codeph>form</codeph>, <codeph>stretchy</codeph>, <codeph>symmetric</codeph>, <codeph>largeop</codeph>, <codeph>movablelimits</codeph>, <codeph>accent</codeph>, <codeph>lspace</codeph>, <codeph>rspace</codeph>, <codeph>minsize</codeph>, <codeph>maxsize</codeph>, <codeph>mathvariant</codeph>, <codeph>linebreak</codeph>, <codeph>linebreakstyle</codeph>, <codeph>linebreakmultchar</codeph>, <codeph>lineleading</codeph>, <codeph>indentalign</codeph>, <codeph>indentshift</codeph>, <codeph>indenttarget</codeph>, <codeph>indentalignfirst</codeph>, <codeph>indentshiftfirst</codeph>, <codeph>indentalignlast</codeph>, <codeph>indentshiftlast</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#text-mtext" scope="external" format="html"><codeph>mtext</codeph></xref></entry>
+                            <entry>Text that is not math.</entry>
+                            <entry><codeph>mathvariant</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#string-literal-ms" scope="external" format="html"><codeph>ms</codeph></xref></entry>
+                            <entry>A string, shown between quotes with the quotes inside it escaped.</entry>
+                            <entry><codeph>lquote</codeph>, <codeph>rquote</codeph>, <codeph>mathvariant</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#space-mspace" scope="external" format="html"><codeph>mspace</codeph></xref></entry>
+                            <entry>An empty space.</entry>
+                            <entry><codeph>width</codeph>, <codeph>height</codeph>, <codeph>depth</codeph>, <codeph>linebreak</codeph>, <codeph>indentalign</codeph>, <codeph>indentshift</codeph>, <codeph>indenttarget</codeph>, <codeph>indentalignfirst</codeph>, <codeph>indentshiftfirst</codeph>, <codeph>indentalignlast</codeph>, <codeph>indentshiftlast</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#presm_mglyph" scope="external" format="html"><codeph>mglyph</codeph></xref></entry>
+                            <entry>An image, in a token or in a row.</entry>
+                            <entry><codeph>src</codeph>, <codeph>alt</codeph>, <codeph>width</codeph>, <codeph>height</codeph>, <codeph>valign</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#horizontally-group-sub-expressions-mrow" scope="external" format="html"><codeph>mrow</codeph></xref></entry>
+                            <entry>A group of elements in a row. An element that is not in this table is laid out as an <codeph>mrow</codeph>.</entry>
+                            <entry>None</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#style-change-mstyle" scope="external" format="html"><codeph>mstyle</codeph></xref></entry>
+                            <entry>A group that sets styles for what it holds.</entry>
+                            <entry><codeph>scriptlevel</codeph>, <codeph>displaystyle</codeph>, <codeph>scriptminsize</codeph>, <codeph>scriptsizemultiplier</codeph>, and the style attributes of the other elements</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#adjust-space-around-content-mpadded" scope="external" format="html"><codeph>mpadded</codeph></xref></entry>
+                            <entry>Changes the size of the box of its content.</entry>
+                            <entry><codeph>width</codeph>, <codeph>height</codeph>, <codeph>depth</codeph>, <codeph>lspace</codeph>, <codeph>voffset</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#making-sub-expressions-invisible-mphantom" scope="external" format="html"><codeph>mphantom</codeph></xref></entry>
+                            <entry>Takes the room of its content and does not show it.</entry>
+                            <entry>None</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#error-message-merror" scope="external" format="html"><codeph>merror</codeph></xref></entry>
+                            <entry>Shows its content in a box with a red border and a light yellow background.</entry>
+                            <entry>None</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#fractions-mfrac" scope="external" format="html"><codeph>mfrac</codeph></xref></entry>
+                            <entry>A fraction.</entry>
+                            <entry><codeph>linethickness</codeph>, <codeph>numalign</codeph>, <codeph>denomalign</codeph>, <codeph>bevelled</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#radicals-msqrt-mroot" scope="external" format="html"><codeph>msqrt</codeph>, <codeph>mroot</codeph></xref></entry>
+                            <entry>A square root, and a root with an index.</entry>
+                            <entry>None</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#subscripts-and-superscripts-msub-msup-msubsup" scope="external" format="html"><codeph>msub</codeph>, <codeph>msup</codeph>, <codeph>msubsup</codeph></xref></entry>
+                            <entry>A base with a subscript, a superscript, or both.</entry>
+                            <entry><codeph>subscriptshift</codeph>, <codeph>superscriptshift</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#prescripts-and-tensor-indices-mmultiscripts" scope="external" format="html"><codeph>mmultiscripts</codeph>, <codeph>mprescripts</codeph></xref></entry>
+                            <entry>A base with pairs of scripts after it and, after <codeph>mprescripts</codeph>, before it.</entry>
+                            <entry><codeph>subscriptshift</codeph>, <codeph>superscriptshift</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#underscripts-and-overscripts-munder-mover-munderover" scope="external" format="html"><codeph>munder</codeph>, <codeph>mover</codeph>, <codeph>munderover</codeph></xref></entry>
+                            <entry>A base with a part under it, over it, or both.</entry>
+                            <entry><codeph>accent</codeph>, <codeph>accentunder</codeph>, <codeph>align</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#table-or-matrix-mtable" scope="external" format="html"><codeph>mtable</codeph></xref></entry>
+                            <entry>A table or a matrix, laid out as an inline table.</entry>
+                            <entry><codeph>columnalign</codeph>, <codeph>rowalign</codeph>, <codeph>columnspacing</codeph>, <codeph>rowspacing</codeph>, <codeph>columnlines</codeph>, <codeph>rowlines</codeph>, <codeph>frame</codeph>, <codeph>framespacing</codeph>, <codeph>width</codeph>, <codeph>columnwidth</codeph>, <codeph>equalrows</codeph>, <codeph>equalcolumns</codeph>, <codeph>align</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#row-in-table-or-matrix-mtr" scope="external" format="html"><codeph>mtr</codeph></xref></entry>
+                            <entry>A row of a table.</entry>
+                            <entry><codeph>columnalign</codeph>, <codeph>rowalign</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#entry-in-table-or-matrix-mtd" scope="external" format="html"><codeph>mtd</codeph></xref></entry>
+                            <entry>A cell of a table.</entry>
+                            <entry><codeph>columnspan</codeph>, <codeph>rowspan</codeph>, <codeph>columnalign</codeph>, <codeph>rowalign</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#expression-inside-pair-of-fences-mfenced" scope="external" format="html"><codeph>mfenced</codeph></xref></entry>
+                            <entry>An expression between fences, with separators between its children.</entry>
+                            <entry><codeph>open</codeph>, <codeph>close</codeph>, <codeph>separators</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#enclose-expression-inside-notation-menclose" scope="external" format="html"><codeph>menclose</codeph></xref></entry>
+                            <entry>Draws lines, arrows or strikes around its content.</entry>
+                            <entry><codeph>notation</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#stacks-of-characters-mstack" scope="external" format="html"><codeph>mstack</codeph>, <codeph>mlongdiv</codeph>, <codeph>msgroup</codeph>, <codeph>msrow</codeph>, <codeph>mscarries</codeph>, <codeph>mscarry</codeph>, <codeph>msline</codeph></xref></entry>
+                            <entry>Stacks of numbers for elementary arithmetic, and long division.</entry>
+                            <entry><codeph>mstack</codeph> and <codeph>mlongdiv</codeph>: <codeph>stackalign</codeph>, <codeph>charalign</codeph>, <codeph>charspacing</codeph>, <codeph>align</codeph>, <codeph>decimalcharacter</codeph> (or <codeph>decimalpoint</codeph>), and <codeph>longdivstyle</codeph> on <codeph>mlongdiv</codeph>. <codeph>msgroup</codeph>: <codeph>position</codeph>, <codeph>shift</codeph>. <codeph>msrow</codeph>: <codeph>position</codeph>. <codeph>mscarries</codeph>: <codeph>position</codeph>, <codeph>location</codeph>, <codeph>crossout</codeph>, <codeph>scriptsizemultiplier</codeph>. <codeph>mscarry</codeph>: <codeph>location</codeph>, <codeph>crossout</codeph>. <codeph>msline</codeph>: <codeph>position</codeph>, <codeph>length</codeph>, <codeph>leftoverhang</codeph>, <codeph>rightoverhang</codeph>, <codeph>mslinethickness</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#semantics-and-presentation" scope="external" format="html"><codeph>semantics</codeph>, <codeph>annotation</codeph>, <codeph>annotation-xml</codeph></xref></entry>
+                            <entry>A formula with other representations. Only the first child of <codeph>semantics</codeph> is drawn.</entry>
+                            <entry><codeph>encoding</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#enlivening-expressions-0" scope="external" format="html"><codeph>maction</codeph></xref></entry>
+                            <entry>Shows one of its children.</entry>
+                            <entry><codeph>actiontype</codeph>, <codeph>selection</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#attributes-common-to-html-and-mathml-elements" scope="external" format="html"><codeph>a</codeph></xref></entry>
+                            <entry>A link. Any MathML element with an <codeph>href</codeph> is a link.</entry>
+                            <entry><codeph>href</codeph></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="math-attributes">
+            <title>MathML attributes of any element</title>
+            <table id="math-attributes__table">
+                <tgroup cols="3">
+                    <colspec colname="c1" colwidth="1*"/>
+                    <colspec colname="c2" colwidth="3*"/>
+                    <colspec colname="c3" colwidth="2*"/>
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Attribute</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Values</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#attributes-common-to-html-and-mathml-elements" scope="external" format="html"><codeph>class</codeph></xref></entry>
+                            <entry>A list of class names for the selectors of the style sheet.</entry>
+                            <entry>Names separated by spaces</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#attributes-common-to-html-and-mathml-elements" scope="external" format="html"><codeph>style</codeph></xref></entry>
+                            <entry>Declarations for the element. They win over the rules of the style sheet.</entry>
+                            <entry>A list of CSS declarations</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#legacy-mathml-style-attributes" scope="external" format="html"><codeph>mathcolor</codeph></xref></entry>
+                            <entry>The color of the text.</entry>
+                            <entry>A color</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#legacy-mathml-style-attributes" scope="external" format="html"><codeph>mathbackground</codeph></xref></entry>
+                            <entry>The color behind the element.</entry>
+                            <entry>A color</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#legacy-mathml-style-attributes" scope="external" format="html"><codeph>mathsize</codeph></xref></entry>
+                            <entry>The size of the text.</entry>
+                            <entry>A length, a percentage, <codeph>small</codeph>, <codeph>normal</codeph> or <codeph>big</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-mathvariant-attribute" scope="external" format="html"><codeph>mathvariant</codeph></xref></entry>
+                            <entry>The style of the letters of a token.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>italic</codeph>, <codeph>bold</codeph>, <codeph>bold-italic</codeph>, <codeph>double-struck</codeph>, <codeph>script</codeph>, <codeph>bold-script</codeph>, <codeph>fraktur</codeph>, <codeph>bold-fraktur</codeph>, <codeph>sans-serif</codeph>, <codeph>bold-sans-serif</codeph>, <codeph>sans-serif-italic</codeph>, <codeph>sans-serif-bold-italic</codeph>, <codeph>monospace</codeph>, <codeph>initial</codeph>, <codeph>tailed</codeph>, <codeph>looped</codeph>, <codeph>stretched</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-displaystyle-and-scriptlevel-attributes" scope="external" format="html"><codeph>displaystyle</codeph></xref></entry>
+                            <entry>Display style or compact style. It sets <codeph>math-style</codeph>.</entry>
+                            <entry><codeph>true</codeph> or <codeph>false</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#the-displaystyle-and-scriptlevel-attributes" scope="external" format="html"><codeph>scriptlevel</codeph></xref></entry>
+                            <entry>The script level. It sets <codeph>math-depth</codeph>.</entry>
+                            <entry>An unsigned integer, or an integer with a sign that is added to the level of the parent</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#attributes-common-to-html-and-mathml-elements" scope="external" format="html"><codeph>dir</codeph></xref></entry>
+                            <entry>The direction of the text.</entry>
+                            <entry><codeph>ltr</codeph> or <codeph>rtl</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml-core/#attributes-common-to-html-and-mathml-elements" scope="external" format="html"><codeph>href</codeph></xref></entry>
+                            <entry>The target of a link.</entry>
+                            <entry>A URL</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#presm_mstyle" scope="external" format="html"><codeph>scriptminsize</codeph></xref></entry>
+                            <entry>The least size of the text of a script, 8pt by default.</entry>
+                            <entry>A length</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#presm_mstyle" scope="external" format="html"><codeph>scriptsizemultiplier</codeph></xref></entry>
+                            <entry>The factor from the size of a level of script to the size of the next one.</entry>
+                            <entry>A number</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#presm_linebreaking" scope="external" format="html"><codeph>infixlinebreakstyle</codeph></xref></entry>
+                            <entry>Where an operator goes when a line breaks at it, for the operators that have <codeph>linebreakstyle="infixlinebreakstyle"</codeph>.</entry>
+                            <entry><codeph>before</codeph>, <codeph>after</codeph> or <codeph>duplicate</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#presm_linebreaking" scope="external" format="html"><codeph>indentalign</codeph>, <codeph>indentshift</codeph>, <codeph>indenttarget</codeph>, <codeph>indentalignfirst</codeph>, <codeph>indentshiftfirst</codeph>, <codeph>indentalignlast</codeph>, <codeph>indentshiftlast</codeph>, <codeph>lineleading</codeph></xref></entry>
+                            <entry>The indentation and the spacing of the lines of a broken formula. On <codeph>mstyle</codeph> and <codeph>math</codeph> they are the defaults of the breaks inside.</entry>
+                            <entry>As on <codeph>mo</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#presm_elementary_att" scope="external" format="html"><codeph>decimalcharacter</codeph></xref> (and <codeph>decimalpoint</codeph>)</entry>
+                            <entry>The character that is the decimal point of a stack.</entry>
+                            <entry>One character</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="math-content-elements">
+            <title>Content MathML elements</title>
+            <table id="math-content-elements__table">
+                <tgroup cols="3">
+                    <colspec colname="c1" colwidth="1*"/>
+                    <colspec colname="c2" colwidth="3*"/>
+                    <colspec colname="c3" colwidth="2*"/>
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Element</entry>
+                            <entry align="center">Description</entry>
+                            <entry align="center">Attributes</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_cn_sec" scope="external" format="html"><codeph>cn</codeph>, <codeph>sep</codeph></xref></entry>
+                            <entry>A number, and the separator of its parts.</entry>
+                            <entry><codeph>type</codeph>, <codeph>base</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_ci_sec" scope="external" format="html"><codeph>ci</codeph></xref>, <xref href="https://www.w3.org/TR/mathml4/#contm_csymbol_sec" scope="external" format="html"><codeph>csymbol</codeph></xref></entry>
+                            <entry>A variable and a symbol. A <codeph>csymbol</codeph> that names a symbol of a content dictionary is that operator.</entry>
+                            <entry><codeph>cd</codeph>, <codeph>definitionURL</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_cs_sec" scope="external" format="html"><codeph>cs</codeph></xref></entry>
+                            <entry>A string, shown between quotes.</entry>
+                            <entry><codeph>lquote</codeph>, <codeph>rquote</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_apply_sec" scope="external" format="html"><codeph>apply</codeph></xref>, <xref href="https://www.w3.org/TR/mathml4/#contm_binding" scope="external" format="html"><codeph>bind</codeph></xref></entry>
+                            <entry>An operator applied to arguments, and a binder applied to bound variables and an expression.</entry>
+                            <entry>None</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_qualifiers" scope="external" format="html"><codeph>bvar</codeph>, <codeph>lowlimit</codeph>, <codeph>uplimit</codeph>, <codeph>interval</codeph>, <codeph>condition</codeph>, <codeph>domainofapplication</codeph>, <codeph>degree</codeph>, <codeph>momentabout</codeph>, <codeph>logbase</codeph></xref></entry>
+                            <entry>A bound variable, and the qualifiers of an operator.</entry>
+                            <entry><codeph>closure</codeph> on <codeph>interval</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_constructors" scope="external" format="html"><codeph>set</codeph>, <codeph>list</codeph>, <codeph>vector</codeph>, <codeph>matrix</codeph>, <codeph>matrixrow</codeph>, <codeph>piecewise</codeph>, <codeph>piece</codeph>, <codeph>otherwise</codeph>, <codeph>lambda</codeph></xref></entry>
+                            <entry>Collections, matrices, piecewise functions and lambda expressions.</entry>
+                            <entry>None</entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_share" scope="external" format="html"><codeph>share</codeph></xref>, <codeph>cerror</codeph>, <codeph>cbytes</codeph></entry>
+                            <entry>A reference to another element of the formula, an error, and bytes, which are not drawn.</entry>
+                            <entry><codeph>src</codeph> on <codeph>share</codeph></entry>
+                        </row>
+                        <row>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_constants" scope="external" format="html">The empty operator, constant and set elements</xref></entry>
+                            <entry>The operators, the constants and the number sets of Content MathML, which the next table lists with their notation.</entry>
+                            <entry><codeph>type</codeph> on <codeph>tendsto</codeph></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="math-content-operators">
+            <title>Content MathML operators, constants and sets</title>
+            <table id="math-content-operators__table">
+                <tgroup cols="3">
+                    <colspec colname="c1" colwidth="2*"/>
+                    <colspec colname="c2" colwidth="3*"/>
+                    <colspec colname="c3" colwidth="1*"/>
+                    <thead>
+                        <row valign="middle">
+                            <entry align="center">Elements</entry>
+                            <entry align="center">Notation</entry>
+                            <entry align="center">Specification</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry><codeph>plus</codeph>, <codeph>minus</codeph>, <codeph>divide</codeph>, <codeph>rem</codeph>, <codeph>compose</codeph></entry>
+                            <entry>+, −, /, mod and ∘ between the arguments. <codeph>minus</codeph> with one argument is a sign. A sum that is an operand of a product or of a negation is in parentheses.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_binary_arith" scope="external" format="html">MathML 4 §4.3.6.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>times</codeph>, <codeph>power</codeph>, <codeph>root</codeph>, <codeph>exp</codeph>, <codeph>factorial</codeph>, <codeph>quotient</codeph></entry>
+                            <entry>The arguments next to each other; a superscript; a radical, with the index of a <codeph>degree</codeph> qualifier; e with a superscript; ! after the argument; ⌊a/b⌋.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_nary_arith" scope="external" format="html">MathML 4 §4.3.5.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>and</codeph>, <codeph>or</codeph>, <codeph>implies</codeph>, <codeph>xor</codeph>, <codeph>not</codeph></entry>
+                            <entry>∧, ∨ and ⇒ between the arguments, <codeph>xor</codeph> as a function, and ¬ before the argument.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_binary_logical" scope="external" format="html">MathML 4 §4.3.6.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>eq</codeph>, <codeph>neq</codeph>, <codeph>lt</codeph>, <codeph>gt</codeph>, <codeph>leq</codeph>, <codeph>geq</codeph>, <codeph>approx</codeph>, <codeph>equivalent</codeph>, <codeph>factorof</codeph>, <codeph>tendsto</codeph></entry>
+                            <entry>=, ≠, &lt;, >, ≤, ≥, ≃, ≡, | and → between the arguments. <codeph>tendsto</codeph> with <codeph>type="above"</codeph> raises a + over its last argument.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_binary_reln" scope="external" format="html">MathML 4 §4.3.6.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>union</codeph>, <codeph>intersect</codeph>, <codeph>setdiff</codeph>, <codeph>cartesianproduct</codeph>, <codeph>subset</codeph>, <codeph>prsubset</codeph>, <codeph>notsubset</codeph>, <codeph>notprsubset</codeph>, <codeph>in</codeph>, <codeph>notin</codeph></entry>
+                            <entry>∪, ∩, ∖, ×, ⊆, ⊂, ⊈, ⊄, ∈ and ∉ between the arguments.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_binary_set" scope="external" format="html">MathML 4 §4.3.6.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>vectorproduct</codeph>, <codeph>scalarproduct</codeph>, <codeph>outerproduct</codeph>, <codeph>transpose</codeph>, <codeph>inverse</codeph>, <codeph>conjugate</codeph>, <codeph>determinant</codeph></entry>
+                            <entry>×, a dot and ⊗ between the arguments; a superscript T; a superscript (−1); a bar over the argument; det with its argument.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_binary_linalg" scope="external" format="html">MathML 4 §4.3.6.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>abs</codeph>, <codeph>card</codeph>, <codeph>floor</codeph>, <codeph>ceiling</codeph>, <codeph>mean</codeph></entry>
+                            <entry>The argument between |…|, |…|, ⌊…⌋, ⌈…⌉ and ⟨…⟩.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_unary_arith" scope="external" format="html">MathML 4 §4.3.7.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>sin</codeph>, <codeph>cos</codeph>, <codeph>tan</codeph>, <codeph>sec</codeph>, <codeph>csc</codeph>, <codeph>cot</codeph>, <codeph>sinh</codeph>, <codeph>cosh</codeph>, <codeph>tanh</codeph>, <codeph>sech</codeph>, <codeph>csch</codeph>, <codeph>coth</codeph>, <codeph>arcsin</codeph>, <codeph>arccos</codeph>, <codeph>arctan</codeph>, <codeph>arcsec</codeph>, <codeph>arccsc</codeph>, <codeph>arccot</codeph>, <codeph>arcsinh</codeph>, <codeph>arccosh</codeph>, <codeph>arctanh</codeph>, <codeph>arcsech</codeph>, <codeph>arccsch</codeph>, <codeph>arccoth</codeph>, <codeph>ln</codeph>, <codeph>log</codeph></entry>
+                            <entry>The name of the function and its argument, without parentheses when the argument is a single token. <codeph>log</codeph> takes the base of a <codeph>logbase</codeph> qualifier as a subscript.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_unary_elementary" scope="external" format="html">MathML 4 §4.3.7.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>gcd</codeph>, <codeph>lcm</codeph>, <codeph>median</codeph>, <codeph>mode</codeph>, <codeph>arg</codeph>, <codeph>domain</codeph>, <codeph>codomain</codeph>, <codeph>image</codeph>, <codeph>selector</codeph></entry>
+                            <entry>The name and its arguments in parentheses. <codeph>selector</codeph> is the first argument with the others as a subscript.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_nary_functional" scope="external" format="html">MathML 4 §4.3.5.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>min</codeph>, <codeph>max</codeph>, <codeph>variance</codeph>, <codeph>sdev</codeph>, <codeph>real</codeph>, <codeph>imaginary</codeph>, <codeph>moment</codeph></entry>
+                            <entry>The name and the arguments in braces, or a body and a condition; σ² and σ; ℜ and ℑ; ⟨x^n⟩ with the <codeph>momentabout</codeph> point under it.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_nary_unary_minmax" scope="external" format="html">MathML 4 §4.3.5.12</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>sum</codeph>, <codeph>product</codeph>, <codeph>and</codeph>, <codeph>union</codeph>, <codeph>intersect</codeph> with a <codeph>bvar</codeph> or a qualifier</entry>
+                            <entry>∑, ∏, ⋀, ⋃ and ⋂ with the limits, the condition or the domain under and over the sign, then the body.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_nary" scope="external" format="html">MathML 4 §4.3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>int</codeph>, <codeph>diff</codeph>, <codeph>partialdiff</codeph>, <codeph>limit</codeph></entry>
+                            <entry>An integral with its limits, d and the variable after the body; f′ or d(body)/dx and its higher orders; ∂ with the order of each variable; lim with the variable and its limit under it.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_int_sec" scope="external" format="html">MathML 4 §4.3.8.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>divergence</codeph>, <codeph>grad</codeph>, <codeph>curl</codeph>, <codeph>laplacian</codeph></entry>
+                            <entry>div, grad, curl and ∇² applied to the argument. With a <codeph>bvar</codeph> the argument is a function of the variables.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_unary_veccalc" scope="external" format="html">MathML 4 §4.3.7.7</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>forall</codeph>, <codeph>exists</codeph>, <codeph>lambda</codeph></entry>
+                            <entry>∀, ∃ and λ, the variables, a dot, and the expression in parentheses. A condition or a domain restricts the variables.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_quantifier" scope="external" format="html">MathML 4 §4.3.10.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>set</codeph>, <codeph>list</codeph>, <codeph>vector</codeph>, <codeph>matrix</codeph>, <codeph>matrixrow</codeph>, <codeph>interval</codeph>, <codeph>piecewise</codeph>, <codeph>piece</codeph>, <codeph>otherwise</codeph></entry>
+                            <entry>{…}, (…), a column in parentheses, a table in parentheses, the row of a matrix, an interval with the ends that <codeph>closure</codeph> chooses, and a brace with a table of values and conditions.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_nary" scope="external" format="html">MathML 4 §4.3.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>exponentiale</codeph>, <codeph>imaginaryi</codeph>, <codeph>notanumber</codeph>, <codeph>true</codeph>, <codeph>false</codeph>, <codeph>pi</codeph>, <codeph>eulergamma</codeph>, <codeph>infinity</codeph>, <codeph>emptyset</codeph>, <codeph>ident</codeph></entry>
+                            <entry>e, i, NaN, true, false, π, γ, ∞, ∅ and id.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_constant_arith" scope="external" format="html">MathML 4 §4.3.9.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>integers</codeph>, <codeph>reals</codeph>, <codeph>rationals</codeph>, <codeph>naturalnumbers</codeph>, <codeph>complexes</codeph>, <codeph>primes</codeph></entry>
+                            <entry>Z, R, Q, N, C and P in double-struck letters.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_constant_set" scope="external" format="html">MathML 4 §4.3.9.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry>Any operator, constant or set above, written alone, without <codeph>apply</codeph></entry>
+                            <entry>The name of the operator.</entry>
+                            <entry><xref href="https://www.w3.org/TR/mathml4/#contm_core" scope="external" format="html">MathML 4 §4.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

@@ -312,6 +312,9 @@ export class MathLayout {
         const width: number = math.maxWidth ?? (Number.isFinite(inlineSize) ? inlineSize : whole.width);
         const items: Array<ElementBox> = this.breakItems(this.inFlow(box));
         const forced: boolean = items.some((item: ElementBox) => this.breakMode(item) === "newline");
+        if (!forced && math.overflow === "elide" && whole.width > width + TOLERANCE && items.length > 2) {
+            return this.elided(box, items, width);
+        }
         if (!forced && (math.overflow !== "linebreak" || whole.width <= width + TOLERANCE)) {
             return undefined;
         }
@@ -369,6 +372,59 @@ export class MathLayout {
             opener = cut;
         }
         return this.lineContent(box, items, laid, ranges, width);
+    }
+
+    private elided(box: ElementBox, items: ReadonlyArray<ElementBox>, width: number): MathContent {
+        // MathML 4 §2.2.1: elide removes "enough of it so that the remainder fits", the parts kept being taken from both ends in
+        // turn with an ellipsis between them, and one at least removed.
+        const laid: Array<Laid> = items.map((item: ElementBox): Laid => this.laid(item));
+        const dots: Shaped | undefined = this.separator(box, "…");
+        const advance: (index: number) => number = (index: number): number => laid[index].width + (laid[index].operator === undefined ? 0 : laid[index].operator.lspace + laid[index].operator.rspace);
+        let head: number = 0;
+        let tail: number = 0;
+        const space: number = this.metrics.fontSize(box.style.values) * 3 / 18;
+        let used: number = (dots?.width ?? 0) + 2 * space;
+        let fromStart: boolean = true;
+        while (head + tail < items.length - 1) {
+            const next: number = fromStart ? head : items.length - 1 - tail;
+            if (used + advance(next) > width + TOLERANCE) {
+                break;
+            }
+            used += advance(next);
+            if (fromStart) {
+                head++;
+            } else {
+                tail++;
+            }
+            fromStart = !fromStart;
+        }
+        const kept: Array<readonly [Laid, number]> = [];
+        let pen: number = 0;
+        let ascent: number = dots?.ascent ?? 0;
+        let descent: number = dots?.descent ?? 0;
+        const put: (piece: Laid) => void = (piece: Laid): void => {
+            pen += piece.operator?.lspace ?? 0;
+            kept.push([piece, pen]);
+            pen += piece.width + (piece.operator?.rspace ?? 0);
+            ascent = Math.max(ascent, piece.ascent);
+            descent = Math.max(descent, piece.descent);
+        };
+        for (let index: number = 0; index < head; index++) {
+            put(laid[index]);
+        }
+        const dotsAt: number = pen + space;
+        pen += (dots?.width ?? 0) + 2 * space;
+        for (let index: number = items.length - tail; index < items.length; index++) {
+            put(laid[index]);
+        }
+        const content: MathContent = { width: pen, ascent, descent, inkAscent: ascent, inkDescent: descent, children: [], centered: true };
+        for (const [piece, x] of kept) {
+            this.place(content.children, piece, x, ascent);
+        }
+        if (dots !== undefined) {
+            content.glyphs = dots.glyphs.map((glyph: MathGlyph): MathGlyph => ({ ...glyph, inline: glyph.inline + dotsAt, baseline: glyph.baseline + ascent }));
+        }
+        return content;
     }
 
     private breakItems(boxes: ReadonlyArray<ElementBox>): Array<ElementBox> {
@@ -534,8 +590,22 @@ export class MathLayout {
         const fragment: BoxFragment = placed[0];
         const top: number = this.marginOf(fragment.marginBefore);
         const height: number = top + fragment.blockSize + this.marginOf(fragment.marginAfter);
-        const ascent: number = fragment.firstBaseline === undefined ? height : top + fragment.firstBaseline;
+        const raise: number = this.raised(box);
+        const ascent: number = (fragment.firstBaseline === undefined ? height : top + fragment.firstBaseline) + raise;
         return { box, fragment, start: fragment.inline, top, width: placed[1], ascent, descent: height - ascent, inkAscent: ascent, inkDescent: height - ascent };
+    }
+
+    private raised(box: ElementBox): number {
+        // CSS Inline 3 §4.2.3: a box is raised by its baseline-shift, sub dropping it by a fifth of the font size and super raising it
+        // by a third, a percentage referring to the line-height; MathML 4 §3.2.1.1.2 gives mglyph's valign as vertical-align.
+        const shift: CssValue | undefined = box.style.values["baseline-shift"];
+        if (shift === undefined) {
+            return 0;
+        }
+        if (shift.kind === "ident") {
+            return shift.lower === "sub" ? -this.metrics.fontSize(box.style.values) / 5 : (shift.lower === "super" ? this.metrics.fontSize(box.style.values) / 3 : 0);
+        }
+        return this.sizes.pixels(shift, this.metrics.lineHeight(box.style.values));
     }
 
     private table(box: ElementBox): Laid {

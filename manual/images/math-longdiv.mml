@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mlongdiv longdivstyle="lefttop">
+        <mn>3</mn><mn>12</mn><mn>36</mn>
+        <msgroup position="2" shift="-1"><mn>3</mn><msline length="2"/></msgroup>
+        <msgroup><mn>6</mn><msline length="1"/></msgroup>
+        <msgroup><mn>6</mn><msline length="1"/></msgroup>
+        <mn>0</mn>
+    </mlongdiv>
+</math>

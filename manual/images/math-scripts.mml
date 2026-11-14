@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <msub><mi>a</mi><mi>i</mi></msub>
+    <mspace width="2em"/>
+    <msup><mi>e</mi><mrow><mi>i</mi><mi>&#x3C0;</mi></mrow></msup>
+    <mspace width="2em"/>
+    <msubsup><mi>x</mi><mn>1</mn><mn>2</mn></msubsup>
+    <mspace width="2em"/>
+    <mmultiscripts><mi>X</mi><mn>1</mn><mn>2</mn><mprescripts/><mi>a</mi><mi>b</mi></mmultiscripts>
+</math>

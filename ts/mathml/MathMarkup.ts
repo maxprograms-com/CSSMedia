@@ -149,7 +149,7 @@ const CHAR_ALIGNS: ReadonlySet<string> = new Set<string>(["left", "center", "rig
 const LOCATIONS: ReadonlySet<string> = new Set<string>(["w", "nw", "n", "ne", "e", "se", "s", "sw"]);
 const CROSSOUTS: ReadonlySet<string> = new Set<string>(["none", "updiagonalstrike", "downdiagonalstrike", "verticalstrike", "horizontalstrike"]);
 const LINE_THICKNESSES: ReadonlySet<string> = new Set<string>(["thin", "medium", "thick"]);
-const LINE_BREAKS: ReadonlySet<string> = new Set<string>(["auto", "newline", "nobreak", "goodbreak", "badbreak"]);
+const LINE_BREAKS: ReadonlySet<string> = new Set<string>(["auto", "newline", "nobreak", "goodbreak", "badbreak", "indentingnewline"]);
 const LINE_BREAK_STYLES: ReadonlySet<string> = new Set<string>(["before", "after", "duplicate", "infixlinebreakstyle"]);
 const INFIX_STYLES: ReadonlySet<string> = new Set<string>(["before", "after", "duplicate"]);
 const INDENT_ALIGNS: ReadonlySet<string> = new Set<string>(["left", "center", "right", "auto", "id", "indentalign"]);
@@ -416,15 +416,15 @@ export class MathMarkup {
     }
 
     private scopedAttribute(element: SourceElement, name: string): string | undefined {
-        // §3.3.4.1: an mstyle changes "the default value for all elements within its scope", which an explicit value overrides;
-        // MSTYLE_TARGETS holds the attributes that apply only to some elements, or that mstyle cannot set.
+        // §3.3.4.1: an mstyle changes "the default value for all elements within its scope", which an explicit value overrides, and
+        // math accepts the attributes of mstyle (math.attributes &= mstyle.generalattributes); MSTYLE_TARGETS holds those that mstyle cannot set.
         const own: string | undefined = element.getAttributeValue(name);
         const targets: ReadonlySet<string> | undefined = MSTYLE_TARGETS.get(name);
         if (own !== undefined || (targets !== undefined && !targets.has(element.getLocalName()))) {
             return own;
         }
         for (let ancestor: SourceElement | undefined = element.getParent(); ancestor !== undefined && this.isMath(ancestor); ancestor = ancestor.getParent()) {
-            const value: string | undefined = ancestor.getLocalName() === "mstyle" ? ancestor.getAttributeValue(name) : undefined;
+            const value: string | undefined = ancestor.getLocalName() === "mstyle" || ancestor.getLocalName() === "math" ? ancestor.getAttributeValue(name) : undefined;
             if (value !== undefined) {
                 return value;
             }
@@ -623,7 +623,8 @@ export class MathMarkup {
         // infixlinebreakstyle is an attribute of §3.1.9.2; §2.2.1: maxwidth and overflow on math, overflow linebreak by default.
         const own: string | undefined = this.choice(this.scopedAttribute(element, "linebreak"), LINE_BREAKS);
         if (own !== undefined) {
-            math.lineBreak = own;
+            // MathML 4 lists the MathML 3 value indentingnewline of mspace as "equivalent to newline".
+            math.lineBreak = own === "indentingnewline" ? "newline" : own;
         }
         const style: string | undefined = this.choice(this.scopedAttribute(element, "linebreakstyle"), LINE_BREAK_STYLES);
         math.lineBreakStyle = style === "infixlinebreakstyle" || style === undefined
@@ -724,7 +725,9 @@ export class MathMarkup {
         // MathML 4 §3.6.1.2 and §3.6.2.2; the decimal character, one character, is an attribute of §3.1.9.2.
         math.stackAlign = this.choice(this.scopedAttribute(element, "stackalign"), STACK_ALIGNS) ?? "decimalpoint";
         math.charAlign = this.choice(this.scopedAttribute(element, "charalign"), CHAR_ALIGNS) ?? "right";
-        math.decimalCharacter = this.inheritedAttribute(element, "decimalcharacter", (text: string) => [...text].length === 1) ?? ".";
+        // §3.6.1.2 names the attribute decimalcharacter, and its grammar and the example of §3.1.9.2 write decimalpoint.
+        const single: (text: string) => boolean = (text: string): boolean => [...text].length === 1;
+        math.decimalCharacter = this.inheritedAttribute(element, "decimalcharacter", single) ?? this.inheritedAttribute(element, "decimalpoint", single) ?? ".";
         const spacing: number | undefined = this.pixels(this.scopedAttribute(element, "charspacing"), computed);
         if (spacing !== undefined) {
             math.charSpacing = Math.max(0, spacing);

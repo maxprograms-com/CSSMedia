@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="content-formulas">
+    <title>Write a formula with Content MathML</title>
+    <shortdesc>Content MathML describes what a formula means, not how it looks. You write the operator and its arguments, and CSSMedia draws the usual notation for them.</shortdesc>
+    <taskbody>
+        <context>
+            <p>With <term>Content MathML</term>, the formula <codeph>a + b</codeph> is an <codeph>apply</codeph> element that holds the operator <codeph>plus</codeph> and two arguments. CSSMedia draws each element as the presentation markup that MathML 4 gives for it, so you can mix both kinds in one formula. The elements are in the same namespace as the presentation elements.</p>
+            <fig id="math-content-arithmetic-sample">
+                <title>An equation written with Content MathML</title>
+                <image href="../images/math-content-arithmetic.mml" placement="break">
+                    <alt>y equals a x squared plus the product of b plus c and x plus the negative of d, with parentheses where the formula needs them.</alt>
+                </image>
+            </fig>
+            <pre outputclass="language-xml">&lt;apply>&lt;eq/>
+    &lt;ci>y&lt;/ci>
+    &lt;apply>&lt;plus/>
+        &lt;apply>&lt;times/>&lt;ci>a&lt;/ci>&lt;apply>&lt;power/>&lt;ci>x&lt;/ci>&lt;cn>2&lt;/cn>&lt;/apply>&lt;/apply>
+        &lt;apply>&lt;times/>&lt;apply>&lt;plus/>&lt;ci>b&lt;/ci>&lt;ci>c&lt;/ci>&lt;/apply>&lt;ci>x&lt;/ci>&lt;/apply>
+        &lt;apply>&lt;minus/>&lt;ci>d&lt;/ci>&lt;/apply>
+    &lt;/apply>
+&lt;/apply>
+</pre>
+        </context>
+        <steps>
+            <step id="write-numbers-and-names">
+                <cmd>Write numbers, names and constants</cmd>
+                <info>
+                    <p><codeph>cn</codeph> is a number, <codeph>ci</codeph> is the name of a variable, <codeph>csymbol</codeph> is a symbol, and <codeph>cs</codeph> is a string, which is shown in quotes. When these hold presentation markup, such as an <codeph>msup</codeph>, CSSMedia uses that markup as it is. Otherwise it draws the text of a <codeph>ci</codeph> or a <codeph>csymbol</codeph> as an identifier.</p>
+                    <p>The attribute <codeph>type</codeph> of <codeph>cn</codeph> chooses how a number is written. The element <codeph>sep</codeph> separates its parts, and the attribute <codeph>base</codeph> gives a base other than 10:</p>
+                    <table frame="all">
+                        <tgroup cols="3">
+                            <colspec colname="c1" colwidth="2*"/>
+                            <colspec colname="c2" colwidth="3*"/>
+                            <colspec colname="c3" colwidth="2*"/>
+                            <thead>
+                                <row>
+                                    <entry>Markup</entry>
+                                    <entry>What it is</entry>
+                                    <entry>Drawn as</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>&lt;cn>12&lt;/cn></codeph>, <codeph>type="integer"</codeph> or <codeph>type="real"</codeph></entry>
+                                    <entry>A number, which is the default.</entry>
+                                    <entry>12</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>&lt;cn type="rational">1&lt;sep/>3&lt;/cn></codeph></entry>
+                                    <entry>A numerator and a denominator.</entry>
+                                    <entry>1/3</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>&lt;cn type="e-notation">1.5&lt;sep/>3&lt;/cn></codeph></entry>
+                                    <entry>A mantissa and an exponent.</entry>
+                                    <entry>1.5e3</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>&lt;cn type="complex-cartesian">1&lt;sep/>2&lt;/cn></codeph></entry>
+                                    <entry>A real part and an imaginary part.</entry>
+                                    <entry>1 + 2i</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>&lt;cn type="complex-polar">2&lt;sep/>3&lt;/cn></codeph></entry>
+                                    <entry>A modulus and an argument.</entry>
+                                    <entry>2e<sup>i3</sup></entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>&lt;cn type="hexdouble">FF&lt;/cn></codeph></entry>
+                                    <entry>Hexadecimal digits.</entry>
+                                    <entry>0xFF</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>&lt;cn base="2">101&lt;/cn></codeph></entry>
+                                    <entry>A number with a base.</entry>
+                                    <entry>101 with a subscript 2</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <p>These empty elements are constants. <codeph>exponentiale</codeph> is e, <codeph>imaginaryi</codeph> is i, <codeph>pi</codeph> is π, <codeph>eulergamma</codeph> is γ, <codeph>infinity</codeph> is ∞, <codeph>emptyset</codeph> is ∅, <codeph>notanumber</codeph> is NaN, <codeph>true</codeph> and <codeph>false</codeph> are written out, and <codeph>ident</codeph> is id. These are number sets, in double-struck letters: <codeph>integers</codeph> (Z), <codeph>reals</codeph> (R), <codeph>rationals</codeph> (Q), <codeph>naturalnumbers</codeph> (N), <codeph>complexes</codeph> (C) and <codeph>primes</codeph> (P).</p>
+                    <fig id="math-content-numbers-sample">
+                        <title>Numbers, constants and sets</title>
+                        <image href="../images/math-content-numbers.mml" placement="break">
+                            <alt>The numbers 1/3, 101 in base 2, 1 plus 2i, 2 e to the i 3, 1.5e3 and 0xFF, followed by pi, e, infinity, the real numbers and the empty set.</alt>
+                        </image>
+                    </fig>
+                    <p><codeph>cerror</codeph> shows an error: the name of its first child, a colon and the other children. <codeph>share</codeph> shows another element of the formula, the one with the <codeph>id</codeph> that its <codeph>src</codeph> names. <codeph>cbytes</codeph> draws nothing.</p>
+                </info>
+            </step>
+            <step id="apply-an-operator">
+                <cmd>Apply an operator</cmd>
+                <info>
+                    <p><codeph>apply</codeph> holds an operator and its arguments. When a sum is an operand of a product, or a negation, CSSMedia puts it in parentheses, as the notation requires. These operators are written between their arguments:</p>
+                    <table frame="all">
+                        <tgroup cols="2">
+                            <colspec colname="c1" colwidth="2*"/>
+                            <colspec colname="c2" colwidth="3*"/>
+                            <thead>
+                                <row>
+                                    <entry>Operator</entry>
+                                    <entry>Symbol</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>plus</codeph>, <codeph>minus</codeph>, <codeph>divide</codeph></entry>
+                                    <entry>+, −, /. With one argument, <codeph>minus</codeph> is a sign.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>times</codeph></entry>
+                                    <entry>The invisible times: the arguments are written next to each other.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>rem</codeph>, <codeph>compose</codeph></entry>
+                                    <entry>mod, ∘</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>eq</codeph>, <codeph>neq</codeph>, <codeph>lt</codeph>, <codeph>gt</codeph>, <codeph>leq</codeph>, <codeph>geq</codeph>, <codeph>approx</codeph>, <codeph>equivalent</codeph></entry>
+                                    <entry>=, ≠, &lt;, >, ≤, ≥, ≃, ≡</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>and</codeph>, <codeph>or</codeph>, <codeph>implies</codeph></entry>
+                                    <entry>∧, ∨, ⇒</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>union</codeph>, <codeph>intersect</codeph>, <codeph>setdiff</codeph>, <codeph>cartesianproduct</codeph></entry>
+                                    <entry>∪, ∩, ∖, ×</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>subset</codeph>, <codeph>prsubset</codeph>, <codeph>notsubset</codeph>, <codeph>notprsubset</codeph>, <codeph>in</codeph>, <codeph>notin</codeph></entry>
+                                    <entry>⊆, ⊂, ⊈, ⊄, ∈, ∉</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>tendsto</codeph>, <codeph>factorof</codeph></entry>
+                                    <entry>→, |. With <codeph>type="above"</codeph>, <codeph>tendsto</codeph> raises a + over its last argument.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>vectorproduct</codeph>, <codeph>scalarproduct</codeph>, <codeph>outerproduct</codeph></entry>
+                                    <entry>×, a dot, ⊗</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <p>These operators have another notation:</p>
+                    <table frame="all">
+                        <tgroup cols="2">
+                            <colspec colname="c1" colwidth="2*"/>
+                            <colspec colname="c2" colwidth="3*"/>
+                            <thead>
+                                <row>
+                                    <entry>Operator</entry>
+                                    <entry>Notation</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>not</codeph></entry>
+                                    <entry>¬ before its argument.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>factorial</codeph></entry>
+                                    <entry>! after its argument.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>power</codeph>, <codeph>exp</codeph></entry>
+                                    <entry>A superscript on the base, and e with a superscript.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>root</codeph></entry>
+                                    <entry>A radical, with the index that a <codeph>degree</codeph> qualifier gives.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>abs</codeph>, <codeph>card</codeph>, <codeph>floor</codeph>, <codeph>ceiling</codeph>, <codeph>mean</codeph></entry>
+                                    <entry>The argument between |…|, |…|, ⌊…⌋, ⌈…⌉ and ⟨…⟩.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>quotient</codeph></entry>
+                                    <entry>⌊a/b⌋</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>selector</codeph></entry>
+                                    <entry>The first argument with the others as a subscript.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>transpose</codeph>, <codeph>inverse</codeph>, <codeph>conjugate</codeph></entry>
+                                    <entry>A superscript T, a superscript (−1), and a bar over the argument.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>min</codeph>, <codeph>max</codeph></entry>
+                                    <entry>The name and the arguments in braces, or a body and a condition: max{x | x &lt; 3}.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>variance</codeph>, <codeph>sdev</codeph>, <codeph>real</codeph>, <codeph>imaginary</codeph></entry>
+                                    <entry>σ² and σ, ℜ and ℑ, applied to the arguments.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>laplacian</codeph>, <codeph>divergence</codeph>, <codeph>grad</codeph>, <codeph>curl</codeph></entry>
+                                    <entry>∇², div, grad and curl, applied to the argument. With a <codeph>bvar</codeph> the argument is a function of the variables.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>moment</codeph>, <codeph>log</codeph></entry>
+                                    <entry>⟨x^n⟩ with the point under it, and log with a base under it.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <p>The elementary functions are written by name, and their argument has no parentheses when it is a single token: <codeph>sin</codeph>, <codeph>cos</codeph>, <codeph>tan</codeph>, <codeph>sec</codeph>, <codeph>csc</codeph>, <codeph>cot</codeph>, their hyperbolic forms <codeph>sinh</codeph>, <codeph>cosh</codeph>, <codeph>tanh</codeph>, <codeph>sech</codeph>, <codeph>csch</codeph> and <codeph>coth</codeph>, the inverse forms <codeph>arcsin</codeph>, <codeph>arccos</codeph>, <codeph>arctan</codeph>, <codeph>arcsec</codeph>, <codeph>arccsc</codeph>, <codeph>arccot</codeph>, <codeph>arcsinh</codeph>, <codeph>arccosh</codeph>, <codeph>arctanh</codeph>, <codeph>arcsech</codeph>, <codeph>arccsch</codeph> and <codeph>arccoth</codeph>, <codeph>ln</codeph>, <codeph>log</codeph> and <codeph>determinant</codeph>, which is written det. Any other operator, such as <codeph>gcd</codeph>, <codeph>lcm</codeph>, <codeph>median</codeph>, <codeph>mode</codeph>, <codeph>arg</codeph>, <codeph>domain</codeph>, <codeph>codomain</codeph>, <codeph>image</codeph> or <codeph>xor</codeph>, is written as a name followed by its arguments in parentheses. An operator alone, without <codeph>apply</codeph>, is drawn as its name.</p>
+                    <p>When the head of <codeph>apply</codeph> is a <codeph>ci</codeph>, the formula is the application of a function: <codeph>f(x, y)</codeph>. A <codeph>csymbol</codeph> that names the symbol of a content dictionary, such as <codeph>&lt;csymbol cd="arith1">plus&lt;/csymbol></codeph>, is the same as the operator element, here <codeph>plus</codeph>.</p>
+                </info>
+            </step>
+            <step id="add-qualifiers">
+                <cmd>Add variables and qualifiers</cmd>
+                <info>
+                    <p>A <codeph>bvar</codeph> element names a bound variable, such as the index of a sum. The qualifiers go after the operator and before the arguments. Each one holds an expression:</p>
+                    <ul>
+                        <li><codeph>lowlimit</codeph> and <codeph>uplimit</codeph> are the limits of a sum, a product, an integral or a limit.</li>
+                        <li><codeph>interval</codeph> gives the two ends of an integral.</li>
+                        <li><codeph>condition</codeph> and <codeph>domainofapplication</codeph> restrict the variable, as x ∈ D, or by a condition.</li>
+                        <li><codeph>degree</codeph> is the index of a root, or the order of a derivative.</li>
+                        <li><codeph>momentabout</codeph> is the point of a moment, and <codeph>logbase</codeph> is the base of a logarithm.</li>
+                    </ul>
+                    <p>These operators take them. <codeph>sum</codeph> and <codeph>product</codeph> are ∑ and ∏, <codeph>and</codeph>, <codeph>union</codeph> and <codeph>intersect</codeph> become ⋀, ⋃ and ⋂ when they have a <codeph>bvar</codeph> or a qualifier, and the limits go under and over the sign. <codeph>int</codeph> is an integral with its limits, a condition or a domain, and the body is followed by d and the variable. <codeph>diff</codeph> is f′ without a variable and d(body)/dx with one, and a <codeph>degree</codeph> in the <codeph>bvar</codeph> gives the order. <codeph>partialdiff</codeph> writes ∂ with the order of each variable, and <codeph>limit</codeph> is lim with x → a under it.</p>
+                    <fig id="math-content-calculus-sample">
+                        <title>A sum, an integral, a derivative and a limit</title>
+                        <image href="../images/math-content-calculus.mml" placement="break">
+                            <alt>The sum of i squared for i from 1 to n, the integral from 0 to 1 of sin x dx, the derivative of f of x with respect to x, and the limit of sin x over x as x tends to 0.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="write-collections">
+                <cmd>Write sets, lists, vectors, matrices and pieces</cmd>
+                <info>
+                    <p><codeph>set</codeph> is written in braces and <codeph>list</codeph> in parentheses. A <codeph>bvar</codeph> with a <codeph>condition</codeph> or a <codeph>domainofapplication</codeph> makes a set or a list that is given by a rule: {x | x > 0}. <codeph>vector</codeph> is a column in parentheses, and <codeph>matrix</codeph> is a table of its <codeph>matrixrow</codeph> elements in parentheses. <codeph>interval</codeph> is written between brackets, and its attribute <codeph>closure</codeph> chooses the ends: <codeph>closed</codeph>, which is the default, <codeph>open</codeph>, <codeph>open-closed</codeph> or <codeph>closed-open</codeph>. <codeph>piecewise</codeph> is a brace and a table with a <codeph>piece</codeph> and its condition on each row, and <codeph>otherwise</codeph> for the other cases.</p>
+                    <fig id="math-content-containers-sample">
+                        <title>A set, an interval, a vector, a matrix and a piecewise function</title>
+                        <image href="../images/math-content-containers.mml" placement="break">
+                            <alt>The set a, b, c, the open interval from a to b, a column vector x, y, a two by two matrix, and a function that is 0 if x is less than 0 and 1 otherwise.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="bind-variables">
+                <cmd>Bind variables</cmd>
+                <info>
+                    <p><codeph>forall</codeph> and <codeph>exists</codeph> are ∀ and ∃, and <codeph>lambda</codeph> is λ. Each is followed by its variables, a dot and the expression in parentheses. A <codeph>domainofapplication</codeph> or a <codeph>condition</codeph> restricts the variables. <codeph>bind</codeph> does the same for any binder, with a <codeph>csymbol</codeph> as its first child: <codeph>&lt;bind>&lt;csymbol cd="quant1">forall&lt;/csymbol>…&lt;/bind></codeph> is ∀x . x = x.</p>
+                    <fig id="math-content-logic-sample">
+                        <title>A quantifier, a logical formula, a set by a rule, and fences</title>
+                        <image href="../images/math-content-logic.mml" placement="break">
+                            <alt>For all x, x equals x. Then p and not q, the set of x such that x is greater than 0, the absolute value of x, the floor of x and n factorial.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

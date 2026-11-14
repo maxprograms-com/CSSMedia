@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="break-formulas">
+    <title>Break a long formula into lines</title>
+    <shortdesc>A formula that is wider than its line breaks into lines at its operators. You choose the width, where the breaks go and how the lines are indented, or you choose another way to fit the formula.</shortdesc>
+    <taskbody>
+        <context>
+            <p>CSSMedia breaks a formula, in a line of text or on a line of its own, at an <codeph>mo</codeph> or an <codeph>mspace</codeph> element that is a child of an <codeph>mrow</codeph>, of an <codeph>mstyle</codeph>, of the <codeph>math</codeph> element, or of another element that groups its children. It does not break inside a fraction, a root or a script. It puts on each line what fits, as a paragraph of text does. This formula has no break of its own, and it is 7 cm wide at most:</p>
+            <fig id="math-breaks-sample">
+                <title>A formula broken in a width of 7 cm</title>
+                <image href="../images/math-breaks.mml" placement="break">
+                    <alt>An equation of y equal to the sum of the letters a to r, on two lines. The second line starts with a plus sign and is indented as the first line is.</alt>
+                </image>
+            </fig>
+            <pre outputclass="language-xml">&lt;math xmlns="http://www.w3.org/1998/Math/MathML" display="block"
+      maxwidth="7cm" indentshift="1em">
+    &lt;mi>y&lt;/mi>&lt;mo>=&lt;/mo>&lt;mi>a&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>b&lt;/mi>&lt;mo>+&lt;/mo> …
+&lt;/math>
+</pre>
+        </context>
+        <steps>
+            <step id="set-the-width">
+                <cmd>Set the width</cmd>
+                <info>
+                    <p>A formula is broken in the width of the box that holds it. The attribute <codeph>maxwidth</codeph> of <codeph>math</codeph> sets another width, a length. A formula file has no box, so <codeph>maxwidth</codeph> gives its width, and without it the file is not broken except where you force a break.</p>
+                </info>
+            </step>
+            <step id="choose-another-way">
+                <cmd>Choose another way to fit the formula</cmd>
+                <info>
+                    <p>The attribute <codeph>overflow</codeph> of <codeph>math</codeph> says what happens to a formula that is wider than its width:</p>
+                    <ul>
+                        <li><codeph>linebreak</codeph>, the default, breaks it into lines.</li>
+                        <li><codeph>scale</codeph> keeps it on one line and makes it smaller, so that it fits.</li>
+                        <li><codeph>elide</codeph> keeps it on one line and removes the middle of it. It keeps parts from the start and from the end, as many as fit, and puts an ellipsis between them.</li>
+                        <li><codeph>truncate</codeph> keeps it on one line and cuts it at the width.</li>
+                        <li><codeph>scroll</codeph> keeps it on one line. A PDF has no window to scroll in, so, as in a window that has not been scrolled, you see the start of the formula and the rest is cut at the width.</li>
+                    </ul>
+                    <fig id="math-overflow-elide-sample">
+                        <title>The overflow value elide</title>
+                        <image href="../images/math-overflow-elide.mml" placement="break">
+                            <alt>The start of an equation, an ellipsis, and the end of the equation, on one line.</alt>
+                        </image>
+                    </fig>
+                    <fig id="math-overflow-scale-sample">
+                        <title>The overflow value scale</title>
+                        <image href="../images/math-overflow-scale.mml" placement="break">
+                            <alt>The whole equation on one line, in a smaller size.</alt>
+                        </image>
+                    </fig>
+                    <fig id="math-overflow-truncate-sample">
+                        <title>The overflow value truncate</title>
+                        <image href="../images/math-overflow-truncate.mml" placement="break">
+                            <alt>The start of the equation on one line, cut at the width.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="control-the-breaks">
+                <cmd>Control the breaks</cmd>
+                <info>
+                    <p>The attribute <codeph>linebreak</codeph> of <codeph>mo</codeph> and <codeph>mspace</codeph> says what a break there does:</p>
+                    <ul>
+                        <li><codeph>auto</codeph>, the default, lets CSSMedia break there when the line is full.</li>
+                        <li><codeph>newline</codeph> always starts a new line there. On <codeph>mspace</codeph>, the value <codeph>indentingnewline</codeph> of MathML 3 is the same.</li>
+                        <li><codeph>nobreak</codeph> never breaks there, and not on either side of the element.</li>
+                        <li><codeph>goodbreak</codeph> prefers a break there, and <codeph>badbreak</codeph> avoids it, when the line is full and CSSMedia can choose between several places.</li>
+                    </ul>
+                    <p>The attribute <codeph>linebreakstyle</codeph> of <codeph>mo</codeph> chooses where the operator goes when the line breaks at it: <codeph>before</codeph> puts it at the start of the next line, which is the default, <codeph>after</codeph> puts it at the end of the line, and <codeph>duplicate</codeph> puts it at both. The value <codeph>infixlinebreakstyle</codeph> takes what the attribute of that name says on <codeph>mstyle</codeph> or <codeph>math</codeph>. When a line breaks at an invisible times operator, the attribute <codeph>linebreakmultchar</codeph> is the character that is shown there, with the invisible times as the default.</p>
+                    <fig id="math-breaks-forced-sample">
+                        <title>Forced breaks, and an operator at the end of a line</title>
+                        <image href="../images/math-breaks-forced.mml" placement="break">
+                            <alt>An equation on three lines. The second line starts with a plus sign and is under the equals sign of the first. The second line ends with a plus sign, and the third line is under the equals sign too.</alt>
+                        </image>
+                    </fig>
+                    <pre outputclass="language-xml">&lt;math display="block" indentalign="id" indenttarget="eq">
+    &lt;mi>y&lt;/mi>&lt;mo id="eq">=&lt;/mo>&lt;mi>a&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>b&lt;/mi>
+    &lt;mo linebreak="newline">+&lt;/mo>&lt;mi>c&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>d&lt;/mi>
+    &lt;mo linebreak="newline" linebreakstyle="after">+&lt;/mo>&lt;mi>e&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>f&lt;/mi>
+&lt;/math>
+</pre>
+                </info>
+            </step>
+            <step id="indent-the-lines">
+                <cmd>Indent the lines</cmd>
+                <info>
+                    <p>These attributes set where each line starts. On <codeph>mo</codeph> and <codeph>mspace</codeph> they apply to the lines after a break at that element. On <codeph>mstyle</codeph> and <codeph>math</codeph> they are the default for all the breaks inside. A percentage is a part of the width of the lines.</p>
+                    <ul>
+                        <li><codeph>indentalign</codeph> aligns a line to the <codeph>left</codeph>, the <codeph>center</codeph> or the <codeph>right</codeph>, or to the position of another element with <codeph>id</codeph>. <codeph>auto</codeph> is the default, and it is the left.</li>
+                        <li><codeph>indenttarget</codeph> is the <codeph>id</codeph> of that element, which is in the same formula and on the line above. Without such an element, the alignment is <codeph>auto</codeph>.</li>
+                        <li><codeph>indentshift</codeph> is a length that moves the line from where <codeph>indentalign</codeph> puts it.</li>
+                        <li><codeph>indentalignfirst</codeph> and <codeph>indentshiftfirst</codeph> do the same for the first line of the formula. They are set on <codeph>math</codeph>, and they apply to a formula that has no break too. Their default is the value of <codeph>indentalign</codeph> and <codeph>indentshift</codeph>.</li>
+                        <li><codeph>indentalignlast</codeph> and <codeph>indentshiftlast</codeph> do the same for the last line, and for the second line of a formula that has two. Their default is the value of <codeph>indentalign</codeph> and <codeph>indentshift</codeph>.</li>
+                        <li><codeph>lineleading</codeph> is the space between lines, a length or a percentage of the normal height of a line, which is the default.</li>
+                    </ul>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

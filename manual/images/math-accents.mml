@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mover accent="true"><mi>x</mi><mo>^</mo></mover>
+    <mspace width="2em"/>
+    <mover><mrow><mi>A</mi><mi>B</mi></mrow><mo>&#x2192;</mo></mover>
+    <mspace width="2em"/>
+    <munder><munder><mrow><mi>a</mi><mo>+</mo><mi>b</mi><mo>+</mo><mi>c</mi></mrow><mo>&#x23DF;</mo></munder><mtext>3 terms</mtext></munder>
+</math>

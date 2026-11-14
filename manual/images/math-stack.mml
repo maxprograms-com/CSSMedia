@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mstack>
+        <msrow><mn>199.5</mn></msrow>
+        <msrow><mo>+</mo><mn>25.25</mn></msrow>
+        <msline/>
+        <msrow><mn>224.75</mn></msrow>
+    </mstack>
+    <mspace width="3em"/>
+    <mstack>
+        <mscarries crossout="none"><mn>1</mn><mn>1</mn><none/></mscarries>
+        <msrow><mn>199</mn></msrow>
+        <msrow><mo>+</mo><mn>25</mn></msrow>
+        <msline/>
+        <msrow><mn>224</mn></msrow>
+    </mstack>
+</math>

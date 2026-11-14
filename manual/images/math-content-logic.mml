@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <apply><forall/>
+        <bvar><ci>x</ci></bvar>
+        <apply><eq/><ci>x</ci><ci>x</ci></apply>
+    </apply>
+    <mspace width="2em"/>
+    <apply><and/><ci>p</ci><apply><not/><ci>q</ci></apply></apply>
+    <mspace width="2em"/>
+    <set><bvar><ci>x</ci></bvar><condition><apply><gt/><ci>x</ci><cn>0</cn></apply></condition></set>
+    <mspace width="2em"/>
+    <apply><abs/><ci>x</ci></apply>
+    <mspace width="1em"/>
+    <apply><floor/><ci>x</ci></apply>
+    <mspace width="1em"/>
+    <apply><factorial/><ci>n</ci></apply>
+</math>

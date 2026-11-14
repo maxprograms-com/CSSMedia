@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <apply><eq/>
+        <ci>y</ci>
+        <apply><plus/>
+            <apply><times/><ci>a</ci><apply><power/><ci>x</ci><cn>2</cn></apply></apply>
+            <apply><times/><apply><plus/><ci>b</ci><ci>c</ci></apply><ci>x</ci></apply>
+            <apply><minus/><ci>d</ci></apply>
+        </apply>
+    </apply>
+</math>

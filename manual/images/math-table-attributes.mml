@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet href="../images/math.css" type="text/css"?>
+<math xmlns="http://www.w3.org/1998/Math/MathML" display="block">
+    <mtable frame="solid" columnlines="solid" rowlines="dashed" columnalign="left right">
+        <mtr><mtd columnspan="2"><mtext>one cell over two columns</mtext></mtd></mtr>
+        <mtr><mtd><mi>x</mi></mtd><mtd><mn>1</mn></mtd></mtr>
+        <mtr><mtd><mi>yyy</mi></mtd><mtd><mn>22</mn></mtd></mtr>
+    </mtable>
+</math>

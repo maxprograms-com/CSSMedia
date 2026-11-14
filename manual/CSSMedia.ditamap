@@ -149,11 +149,13 @@
         <topicref href="references/svg-chapter-reference.dita"/>
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>MathML</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+    <chapter href="concepts/intro-mathml.dita">
+        <topicref href="tasks/place-formulas.dita"/>
+        <topicref href="tasks/build-formulas.dita"/>
+        <topicref href="tasks/content-formulas.dita"/>
+        <topicref href="tasks/break-formulas.dita"/>
+        <topicref href="tasks/style-formulas.dita"/>
+        <topicref href="references/mathml-chapter-reference.dita"/>
     </chapter>
 
     <chapter href="concepts/intro-reference.dita">

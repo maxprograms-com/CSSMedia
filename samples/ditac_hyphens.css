@@ -1180,6 +1180,11 @@ ditac|titlePage *[class~="topic/image"] {
     height: 1em;
 }
 
+/* a formula sits on the baseline of its line */
+*[class~="topic/image"][placement="inline"][href$=".mml"] {
+    vertical-align: baseline;
+}
+
 /* the width and height attributes are read as a CSS length, or else
    as a number of CSS pixels; 0.8 gives the sizes of the reference PDF */
 *[class~="topic/image"][width] {

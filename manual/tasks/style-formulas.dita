@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="style-formulas">
+    <title>Style a formula</title>
+    <shortdesc>You style a formula with attributes of the MathML elements, with CSS rules for the elements, and with three properties that CSS adds for math: <codeph>math-style</codeph>, <codeph>math-depth</codeph> and <codeph>math-shift</codeph>.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="style-with-attributes">
+                <cmd>Style with attributes</cmd>
+                <info>
+                    <p>These attributes of MathML elements set a style for the element and for what it holds. <codeph>mstyle</codeph> exists to hold them for a group of elements, and an attribute on an element wins over the same attribute on an <codeph>mstyle</codeph> around it:</p>
+                    <ul>
+                        <li><codeph>mathcolor</codeph> sets the color of the text, and <codeph>mathbackground</codeph> the color behind it.</li>
+                        <li><codeph>mathsize</codeph> sets the size of the text: a length, a percentage, or one of <codeph>small</codeph>, <codeph>normal</codeph> and <codeph>big</codeph>.</li>
+                        <li><codeph>mathvariant</codeph> chooses a style of letters for a token. <codeph>normal</codeph> is upright, and the others are <codeph>bold</codeph>, <codeph>italic</codeph>, <codeph>bold-italic</codeph>, <codeph>double-struck</codeph>, <codeph>script</codeph>, <codeph>bold-script</codeph>, <codeph>fraktur</codeph>, <codeph>bold-fraktur</codeph>, <codeph>sans-serif</codeph>, <codeph>bold-sans-serif</codeph>, <codeph>sans-serif-italic</codeph>, <codeph>sans-serif-bold-italic</codeph> and <codeph>monospace</codeph>. Four more values, <codeph>initial</codeph>, <codeph>tailed</codeph>, <codeph>looped</codeph> and <codeph>stretched</codeph>, choose the forms of Arabic letters.</li>
+                        <li><codeph>dir</codeph> is <codeph>ltr</codeph> or <codeph>rtl</codeph>. An <codeph>rtl</codeph> formula runs from right to left, and its fences are mirrored.</li>
+                    </ul>
+                    <fig id="math-variants-sample">
+                        <title>The styles of letters</title>
+                        <image href="../images/math-variants.mml" placement="break">
+                            <alt>The letter R in italic, upright, bold, double-struck, script and fraktur styles.</alt>
+                        </image>
+                    </fig>
+                    <fig id="math-colors-sample">
+                        <title>Color and background</title>
+                        <image href="../images/math-colors.mml" placement="break">
+                            <alt>The letter x in red, y in blue on a yellow background, and z in a box with a red line and a light yellow background.</alt>
+                        </image>
+                    </fig>
+                    <p>The <codeph>merror</codeph> element has a red border and a light yellow background, to show an error.</p>
+                </info>
+            </step>
+            <step id="style-with-css">
+                <cmd>Style with CSS</cmd>
+                <info>
+                    <p>The elements of a formula are elements of your document, so the rules of your style sheet reach them. Select them with the MathML namespace, and with the <codeph>class</codeph> and <codeph>style</codeph> attributes that MathML elements can have. A rule of your style sheet wins over the attributes of the previous step. The <codeph>style</codeph> attribute wins over a rule:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">m|mi.unknown {
+    color: #1d4f7a;
+}
+
+m|mo {
+    color: gray;
+}
+</pre>
+                    <pre outputclass="language-xml">&lt;mi class="unknown">x&lt;/mi>
+&lt;mi style="color: red">y&lt;/mi>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A formula is a row of boxes, and the box properties work on them. A <codeph>border</codeph>, a <codeph>padding</codeph> and a <codeph>margin</codeph> on an element are kept around its content, and the other elements of the formula are spaced around the result. <codeph>float</codeph> has no effect on the elements of a formula. In a formula from a file, the rules are those of its own style sheet.</p>
+                </info>
+            </step>
+            <step id="generate-content">
+                <cmd>Generate content</cmd>
+                <info>
+                    <p>The properties <codeph>content</codeph>, <codeph>counter-reset</codeph>, <codeph>counter-increment</codeph> and <codeph>counter-set</codeph> work on the elements of a formula, and so do <codeph>::before</codeph> and <codeph>::after</codeph>. A rule can add text before and after an element:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">m|mi.note::before {
+    content: "[";
+    color: #b22222;
+}
+
+m|mi.note::after {
+    content: "]";
+    color: #b22222;
+}
+</pre>
+                    <fig id="math-generated-sample">
+                        <title>Text generated around two identifiers</title>
+                        <image href="../images/math-generated.mml" placement="break">
+                            <alt>The formula x plus y, with the x and the y in square brackets that are red.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>The generated text is a box of its own, among the children of the element. Generate it on an <codeph>mi</codeph>, an <codeph>mn</codeph>, an <codeph>mo</codeph>, an <codeph>mtext</codeph>, an <codeph>mrow</codeph>, an <codeph>mtd</codeph> or the <codeph>math</codeph> element. An element with a fixed number of children, such as <codeph>mfrac</codeph> or <codeph>msup</codeph>, that gets one more child is laid out as a row of its children.</p>
+                    <p>Counters give an equation a number. Put an empty cell at the end of each row of equations, count with <codeph>counter-increment</codeph> and show the number in <codeph>::before</codeph>. The counters of your document run through its formulas in document order, so the first equation of the second formula has the number that follows the last equation of the first. A formula file has counters of its own, which start at 0:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">m|math.numbered {
+    counter-reset: eqnum;
+}
+
+m|mtd.eqnum {
+    counter-increment: eqnum;
+    text-align: right;
+}
+
+m|mtd.eqnum::before {
+    content: "(" counter(eqnum) ")";
+}
+</pre>
+                    <pre outputclass="language-xml">&lt;math display="block" class="numbered">
+    &lt;mtable columnalign="left right" width="7cm">
+        &lt;mtr>&lt;mtd>&lt;mi>a&lt;/mi>&lt;mo>=&lt;/mo>&lt;mi>b&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>c&lt;/mi>&lt;/mtd>&lt;mtd class="eqnum"/>&lt;/mtr>
+        &lt;mtr>&lt;mtd>&lt;mi>d&lt;/mi>&lt;mo>=&lt;/mo>&lt;msup>&lt;mi>a&lt;/mi>&lt;mn>2&lt;/mn>&lt;/msup>&lt;/mtd>&lt;mtd class="eqnum"/>&lt;/mtr>
+    &lt;/mtable>
+&lt;/math>
+</pre>
+                    <fig id="math-numbered-sample">
+                        <title>Numbered equations</title>
+                        <image href="../images/math-numbered.mml" placement="break">
+                            <alt>Two equations, a equals b plus c and d equals a squared, with the numbers 1 and 2 in parentheses at the right.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+            </step>
+            <step id="set-the-script-level">
+                <cmd>Set the script level</cmd>
+                <info>
+                    <p>A script, a limit or an index is smaller than the text it belongs to. The <term>script level</term> of an element says how many such steps it is down from the text: the text has level 0, a superscript has level 1, and a script of a script has level 2. Each level is smaller than the one before. The font gives the sizes of the first two levels in its MATH table, and a level after them is 71% of the level before it. CSSMedia does not make the text smaller than <codeph>8pt</codeph>.</p>
+                    <p>Set the level of an element with <codeph>scriptlevel</codeph>, and give the size of its text with <codeph>mathsize</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;mi>x&lt;/mi>
+&lt;mstyle scriptlevel="1">&lt;mi>x&lt;/mi>&lt;/mstyle>
+&lt;mstyle scriptlevel="2">&lt;mi>x&lt;/mi>&lt;/mstyle>
+&lt;mi mathsize="150%">x&lt;/mi>
+&lt;mi mathsize="big">x&lt;/mi>
+</pre>
+                    <fig id="math-level-sample">
+                        <title>Script levels and sizes</title>
+                        <image href="../images/math-level.mml" placement="break">
+                            <alt>The letter x at text size, then smaller at level 1, then smaller again at level 2, and then larger with a mathsize of 150% and with big.</alt>
+                        </image>
+                    </fig>
+                </stepxmp>
+                <info>
+                    <p>A value such as <codeph>2</codeph> sets the level. A value with a sign, such as <codeph>+1</codeph> or <codeph>-1</codeph>, adds to the level of the parent.</p>
+                    <p>The attributes <codeph>scriptsizemultiplier</codeph> and <codeph>scriptminsize</codeph> of <codeph>mstyle</codeph> set the factor for each level and the least size, in place of the values of the font and the 8pt above.</p>
+                </info>
+            </step>
+            <step id="set-the-math-properties">
+                <cmd>Set the math properties</cmd>
+                <info>
+                    <p>CSS has three properties for math. They are inherited, and the attributes above set them:</p>
+                    <ul>
+                        <li><codeph>math-depth</codeph> is the script level. It takes an integer, <codeph>add(</codeph>an integer<codeph>)</codeph>, or <codeph>auto-add</codeph>, which adds one level in a compact style and none in a normal style. The attribute <codeph>scriptlevel</codeph> sets it. The rule <codeph>m|mi { math-depth: 2; }</codeph> makes every identifier of level 2.</li>
+                        <li><codeph>math-style</codeph> is <codeph>normal</codeph> for display style, with the full size of fractions and limits, and <codeph>compact</codeph> for a style that saves room. The attribute <codeph>displaystyle</codeph> of <codeph>mstyle</codeph> sets it: <codeph>true</codeph> is <codeph>normal</codeph>, and <codeph>false</codeph> is <codeph>compact</codeph>. A <codeph>math</codeph> element with <codeph>display="block"</codeph> is <codeph>normal</codeph>, and the other ones are <codeph>compact</codeph>.</li>
+                        <li><codeph>math-shift</codeph> is <codeph>normal</codeph> or <codeph>compact</codeph>. In <codeph>compact</codeph>, the superscripts of the element are raised less, so that they do not collide with the line above, as under a root bar or in a denominator.</li>
+                    </ul>
+                    <fig id="math-style-sample">
+                        <title>Display style and compact style</title>
+                        <image href="../images/math-style.mml" placement="break">
+                            <alt>A sum with its limits above and below, as in display style, and the same sum with its limits as scripts, as in compact style.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;mstyle displaystyle="true">
+    &lt;munderover>&lt;mo>&amp;#x2211;&lt;/mo>&lt;mi>i&lt;/mi>&lt;mi>n&lt;/mi>&lt;/munderover>
+&lt;/mstyle>
+&lt;mstyle displaystyle="false">
+    &lt;munderover>&lt;mo>&amp;#x2211;&lt;/mo>&lt;mi>i&lt;/mi>&lt;mi>n&lt;/mi>&lt;/munderover>
+&lt;/mstyle>
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Three more values of CSS properties exist for math. The values <codeph>block math</codeph> and <codeph>inline math</codeph> of <codeph>display</codeph> make an element a formula that is block or inline, and the value <codeph>math</codeph> of <codeph>font-size</codeph> gives the size that the script level calls for. The value <codeph>math-auto</codeph> of <codeph>text-transform</codeph> turns one letter into its italic form. CSSMedia sets all three in the rules it has for MathML elements, so you seldom write them.</p>
+                </info>
+            </step>
+            <step id="write-right-to-left">
+                <cmd>Write a formula from right to left</cmd>
+                <info>
+                    <p>Set <codeph>dir="rtl"</codeph> on the <codeph>math</codeph> element, or on an element in it, for a language that is written from right to left. The order of the parts is reversed, and the fences are mirrored:</p>
+                    <fig id="math-rtl-sample">
+                        <title>A formula from right to left</title>
+                        <image href="../images/math-rtl.mml" placement="break">
+                            <alt>The equation c equals the parenthesis, b plus a, parenthesis, read from right to left, with the opening parenthesis on the right.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
