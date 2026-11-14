@@ -30,12 +30,10 @@
     &lt;mfrac>&lt;mn>1&lt;/mn>&lt;mrow>&lt;mn>1&lt;/mn>&lt;mo>+&lt;/mo>&lt;mi>x&lt;/mi>&lt;/mrow>&lt;/mfrac>
 &lt;/math>
 </pre>
-                    <p>In a line of text, the fraction is <image href="../images/math-fraction-inline.mml" placement="inline"><alt>one over one plus x, small</alt></image>. With <codeph>display="block"</codeph> it is on a line of its own and has its full size:</p>
+                    <p>In a line of text, the fraction is <mathml><mathmlref href="../images/math-fraction-inline.mml"/></mathml>. With <codeph>display="block"</codeph> it is on a line of its own and has its full size:</p>
                     <fig id="math-display-sample">
                         <title>A block formula</title>
-                        <image href="../images/math-fraction-block.mml" placement="break">
-                            <alt>One over one plus x, in full size.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-fraction-block.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>
@@ -74,9 +72,7 @@
 </pre>
                     <fig id="math-quadratic-sample">
                         <title>A formula from a file</title>
-                        <image href="../images/math-quadratic.mml" placement="break">
-                            <alt>x equals minus b plus or minus the square root of b squared minus four a c, over two a.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-quadratic.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>

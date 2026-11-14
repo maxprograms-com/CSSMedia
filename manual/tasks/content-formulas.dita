@@ -8,9 +8,7 @@
             <p>With <term>Content MathML</term>, the formula <codeph>a + b</codeph> is an <codeph>apply</codeph> element that holds the operator <codeph>plus</codeph> and two arguments. CSSMedia draws each element as the presentation markup that MathML 4 gives for it, so you can mix both kinds in one formula. The elements are in the same namespace as the presentation elements.</p>
             <fig id="math-content-arithmetic-sample">
                 <title>An equation written with Content MathML</title>
-                <image href="../images/math-content-arithmetic.mml" placement="break">
-                    <alt>y equals a x squared plus the product of b plus c and x plus the negative of d, with parentheses where the formula needs them.</alt>
-                </image>
+                <mathml><mathmlref href="../images/math-content-arithmetic.mml"/></mathml>
             </fig>
             <pre outputclass="language-xml">&lt;apply>&lt;eq/>
     &lt;ci>y&lt;/ci>
@@ -82,9 +80,7 @@
                     <p>These empty elements are constants. <codeph>exponentiale</codeph> is e, <codeph>imaginaryi</codeph> is i, <codeph>pi</codeph> is π, <codeph>eulergamma</codeph> is γ, <codeph>infinity</codeph> is ∞, <codeph>emptyset</codeph> is ∅, <codeph>notanumber</codeph> is NaN, <codeph>true</codeph> and <codeph>false</codeph> are written out, and <codeph>ident</codeph> is id. These are number sets, in double-struck letters: <codeph>integers</codeph> (Z), <codeph>reals</codeph> (R), <codeph>rationals</codeph> (Q), <codeph>naturalnumbers</codeph> (N), <codeph>complexes</codeph> (C) and <codeph>primes</codeph> (P).</p>
                     <fig id="math-content-numbers-sample">
                         <title>Numbers, constants and sets</title>
-                        <image href="../images/math-content-numbers.mml" placement="break">
-                            <alt>The numbers 1/3, 101 in base 2, 1 plus 2i, 2 e to the i 3, 1.5e3 and 0xFF, followed by pi, e, infinity, the real numbers and the empty set.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-content-numbers.mml"/></mathml>
                     </fig>
                     <p><codeph>cerror</codeph> shows an error: the name of its first child, a colon and the other children. <codeph>share</codeph> shows another element of the formula, the one with the <codeph>id</codeph> that its <codeph>src</codeph> names. <codeph>cbytes</codeph> draws nothing.</p>
                 </info>
@@ -224,9 +220,7 @@
                     <p>These operators take them. <codeph>sum</codeph> and <codeph>product</codeph> are ∑ and ∏, <codeph>and</codeph>, <codeph>union</codeph> and <codeph>intersect</codeph> become ⋀, ⋃ and ⋂ when they have a <codeph>bvar</codeph> or a qualifier, and the limits go under and over the sign. <codeph>int</codeph> is an integral with its limits, a condition or a domain, and the body is followed by d and the variable. <codeph>diff</codeph> is f′ without a variable and d(body)/dx with one, and a <codeph>degree</codeph> in the <codeph>bvar</codeph> gives the order. <codeph>partialdiff</codeph> writes ∂ with the order of each variable, and <codeph>limit</codeph> is lim with x → a under it.</p>
                     <fig id="math-content-calculus-sample">
                         <title>A sum, an integral, a derivative and a limit</title>
-                        <image href="../images/math-content-calculus.mml" placement="break">
-                            <alt>The sum of i squared for i from 1 to n, the integral from 0 to 1 of sin x dx, the derivative of f of x with respect to x, and the limit of sin x over x as x tends to 0.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-content-calculus.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -236,9 +230,7 @@
                     <p><codeph>set</codeph> is written in braces and <codeph>list</codeph> in parentheses. A <codeph>bvar</codeph> with a <codeph>condition</codeph> or a <codeph>domainofapplication</codeph> makes a set or a list that is given by a rule: {x | x > 0}. <codeph>vector</codeph> is a column in parentheses, and <codeph>matrix</codeph> is a table of its <codeph>matrixrow</codeph> elements in parentheses. <codeph>interval</codeph> is written between brackets, and its attribute <codeph>closure</codeph> chooses the ends: <codeph>closed</codeph>, which is the default, <codeph>open</codeph>, <codeph>open-closed</codeph> or <codeph>closed-open</codeph>. <codeph>piecewise</codeph> is a brace and a table with a <codeph>piece</codeph> and its condition on each row, and <codeph>otherwise</codeph> for the other cases.</p>
                     <fig id="math-content-containers-sample">
                         <title>A set, an interval, a vector, a matrix and a piecewise function</title>
-                        <image href="../images/math-content-containers.mml" placement="break">
-                            <alt>The set a, b, c, the open interval from a to b, a column vector x, y, a two by two matrix, and a function that is 0 if x is less than 0 and 1 otherwise.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-content-containers.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -248,9 +240,7 @@
                     <p><codeph>forall</codeph> and <codeph>exists</codeph> are ∀ and ∃, and <codeph>lambda</codeph> is λ. Each is followed by its variables, a dot and the expression in parentheses. A <codeph>domainofapplication</codeph> or a <codeph>condition</codeph> restricts the variables. <codeph>bind</codeph> does the same for any binder, with a <codeph>csymbol</codeph> as its first child: <codeph>&lt;bind>&lt;csymbol cd="quant1">forall&lt;/csymbol>…&lt;/bind></codeph> is ∀x . x = x.</p>
                     <fig id="math-content-logic-sample">
                         <title>A quantifier, a logical formula, a set by a rule, and fences</title>
-                        <image href="../images/math-content-logic.mml" placement="break">
-                            <alt>For all x, x equals x. Then p and not q, the set of x such that x is greater than 0, the absolute value of x, the floor of x and n factorial.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-content-logic.mml"/></mathml>
                     </fig>
                 </info>
             </step>

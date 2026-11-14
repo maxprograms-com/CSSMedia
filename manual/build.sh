@@ -8,3 +8,5 @@ cssmedia -x CSSReference_MERGED.xml -c stylesheets/ditac.css -p CSSReference.pdf
 rm CSSReference_MERGED.xml
 rm -rf img/
 
+# rm -rf out
+#  ../../ditac/bin/ditac -p mathjax yes -f webhelp5 ./out/cssmedia.html ./CSSMedia.ditamap

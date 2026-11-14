@@ -8,9 +8,7 @@
             <p>CSSMedia breaks a formula, in a line of text or on a line of its own, at an <codeph>mo</codeph> or an <codeph>mspace</codeph> element that is a child of an <codeph>mrow</codeph>, of an <codeph>mstyle</codeph>, of the <codeph>math</codeph> element, or of another element that groups its children. It does not break inside a fraction, a root or a script. It puts on each line what fits, as a paragraph of text does. This formula has no break of its own, and it is 7 cm wide at most:</p>
             <fig id="math-breaks-sample">
                 <title>A formula broken in a width of 7 cm</title>
-                <image href="../images/math-breaks.mml" placement="break">
-                    <alt>An equation of y equal to the sum of the letters a to r, on two lines. The second line starts with a plus sign and is indented as the first line is.</alt>
-                </image>
+                <mathml><mathmlref href="../images/math-breaks.mml"/></mathml>
             </fig>
             <pre outputclass="language-xml">&lt;math xmlns="http://www.w3.org/1998/Math/MathML" display="block"
       maxwidth="7cm" indentshift="1em">
@@ -38,21 +36,15 @@
                     </ul>
                     <fig id="math-overflow-elide-sample">
                         <title>The overflow value elide</title>
-                        <image href="../images/math-overflow-elide.mml" placement="break">
-                            <alt>The start of an equation, an ellipsis, and the end of the equation, on one line.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-overflow-elide.mml"/></mathml>
                     </fig>
                     <fig id="math-overflow-scale-sample">
                         <title>The overflow value scale</title>
-                        <image href="../images/math-overflow-scale.mml" placement="break">
-                            <alt>The whole equation on one line, in a smaller size.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-overflow-scale.mml"/></mathml>
                     </fig>
                     <fig id="math-overflow-truncate-sample">
                         <title>The overflow value truncate</title>
-                        <image href="../images/math-overflow-truncate.mml" placement="break">
-                            <alt>The start of the equation on one line, cut at the width.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-overflow-truncate.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -69,9 +61,7 @@
                     <p>The attribute <codeph>linebreakstyle</codeph> of <codeph>mo</codeph> chooses where the operator goes when the line breaks at it: <codeph>before</codeph> puts it at the start of the next line, which is the default, <codeph>after</codeph> puts it at the end of the line, and <codeph>duplicate</codeph> puts it at both. The value <codeph>infixlinebreakstyle</codeph> takes what the attribute of that name says on <codeph>mstyle</codeph> or <codeph>math</codeph>. When a line breaks at an invisible times operator, the attribute <codeph>linebreakmultchar</codeph> is the character that is shown there, with the invisible times as the default.</p>
                     <fig id="math-breaks-forced-sample">
                         <title>Forced breaks, and an operator at the end of a line</title>
-                        <image href="../images/math-breaks-forced.mml" placement="break">
-                            <alt>An equation on three lines. The second line starts with a plus sign and is under the equals sign of the first. The second line ends with a plus sign, and the third line is under the equals sign too.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-breaks-forced.mml"/></mathml>
                     </fig>
                     <pre outputclass="language-xml">&lt;math display="block" indentalign="id" indenttarget="eq">
     &lt;mi>y&lt;/mi>&lt;mo id="eq">=&lt;/mo>&lt;mi>a&lt;/mi>&lt;mo>+&lt;/mo>&lt;mi>b&lt;/mi>

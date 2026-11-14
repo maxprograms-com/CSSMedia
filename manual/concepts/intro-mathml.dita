@@ -4,7 +4,7 @@
     <title>MathML</title>
     <shortdesc>With <xref href="../glossaries/MathML.dita">MathML</xref> you write mathematical formulas in <xref href="../glossaries/XML.dita">XML</xref>. CSSMedia lays them out with the rules of the language and draws them as vector graphics and text in the PDF. This chapter explains how to put a formula in your document, how to build the common structures and how to style them. The <xref href="../references/mathml-chapter-reference.dita#mathml-chapter-reference">MathML reference</xref> at the end lists the properties, elements and attributes.</shortdesc>
     <conbody>
-        <p>A MathML formula describes the structure of an expression, not its look. A fraction is a <codeph>mfrac</codeph> with a numerator and a denominator, and CSSMedia decides where the bar goes, how big the parts are and how far apart. For example, the equation <image href="../images/math-pythagoras.mml" placement="inline"><alt>x squared plus y squared equals z squared</alt></image> is part of this line of text, and its baseline is the baseline of the text.</p>
+        <p>A MathML formula describes the structure of an expression, not its look. A fraction is a <codeph>mfrac</codeph> with a numerator and a denominator, and CSSMedia decides where the bar goes, how big the parts are and how far apart. For example, the equation <mathml><mathmlref href="../images/math-pythagoras.mml"/></mathml> is part of this line of text, and its baseline is the baseline of the text.</p>
         <p>MathML elements belong to a namespace, so a formula starts with a <codeph>math</codeph> element that declares it:</p>
         <pre outputclass="language-xml">&lt;math xmlns="http://www.w3.org/1998/Math/MathML">
     &lt;msup>&lt;mi>x&lt;/mi>&lt;mn>2&lt;/mn>&lt;/msup>

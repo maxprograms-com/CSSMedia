@@ -17,15 +17,11 @@
                     </ul>
                     <fig id="math-variants-sample">
                         <title>The styles of letters</title>
-                        <image href="../images/math-variants.mml" placement="break">
-                            <alt>The letter R in italic, upright, bold, double-struck, script and fraktur styles.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-variants.mml"/></mathml>
                     </fig>
                     <fig id="math-colors-sample">
                         <title>Color and background</title>
-                        <image href="../images/math-colors.mml" placement="break">
-                            <alt>The letter x in red, y in blue on a yellow background, and z in a box with a red line and a light yellow background.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-colors.mml"/></mathml>
                     </fig>
                     <p>The <codeph>merror</codeph> element has a red border and a light yellow background, to show an error.</p>
                 </info>
@@ -70,9 +66,7 @@ m|mi.note::after {
 </pre>
                     <fig id="math-generated-sample">
                         <title>Text generated around two identifiers</title>
-                        <image href="../images/math-generated.mml" placement="break">
-                            <alt>The formula x plus y, with the x and the y in square brackets that are red.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-generated.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>
@@ -102,9 +96,7 @@ m|mtd.eqnum::before {
 </pre>
                     <fig id="math-numbered-sample">
                         <title>Numbered equations</title>
-                        <image href="../images/math-numbered.mml" placement="break">
-                            <alt>Two equations, a equals b plus c and d equals a squared, with the numbers 1 and 2 in parentheses at the right.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-numbered.mml"/></mathml>
                     </fig>
                 </stepxmp>
             </step>
@@ -123,9 +115,7 @@ m|mtd.eqnum::before {
 </pre>
                     <fig id="math-level-sample">
                         <title>Script levels and sizes</title>
-                        <image href="../images/math-level.mml" placement="break">
-                            <alt>The letter x at text size, then smaller at level 1, then smaller again at level 2, and then larger with a mathsize of 150% and with big.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-level.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>
@@ -144,9 +134,7 @@ m|mtd.eqnum::before {
                     </ul>
                     <fig id="math-style-sample">
                         <title>Display style and compact style</title>
-                        <image href="../images/math-style.mml" placement="break">
-                            <alt>A sum with its limits above and below, as in display style, and the same sum with its limits as scripts, as in compact style.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-style.mml"/></mathml>
                     </fig>
                 </info>
                 <stepxmp>
@@ -168,9 +156,7 @@ m|mtd.eqnum::before {
                     <p>Set <codeph>dir="rtl"</codeph> on the <codeph>math</codeph> element, or on an element in it, for a language that is written from right to left. The order of the parts is reversed, and the fences are mirrored:</p>
                     <fig id="math-rtl-sample">
                         <title>A formula from right to left</title>
-                        <image href="../images/math-rtl.mml" placement="break">
-                            <alt>The equation c equals the parenthesis, b plus a, parenthesis, read from right to left, with the opening parenthesis on the right.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-rtl.mml"/></mathml>
                     </fig>
                 </info>
             </step>

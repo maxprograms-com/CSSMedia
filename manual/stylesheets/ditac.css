@@ -1182,6 +1182,21 @@ ditac|titlePage *[class~="topic/image"] {
     max-width: none;
 }
 
+/* mathmlref is also an xref, so it must not be a colored link */
+*[class~="mathml-d/mathmlref"] {
+    content: attr(href url);
+    display: inline;
+    vertical-align: baseline;
+    color: inherit;
+    -cssmedia-link: none;
+}
+
+*[class~="topic/fig"] > *[class~="mathml-d/mathml"] {
+    display: block;
+    margin: 0.6em auto;
+    text-align: center;
+}
+
 *[class~="topic/alt"] {
     display: none;
 }

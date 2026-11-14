@@ -36,9 +36,7 @@
 </pre>
                     <fig id="math-roots-sample">
                         <title>A square root and a cube root</title>
-                        <image href="../images/math-roots.mml" placement="break">
-                            <alt>The square root of x plus 1, and the cube root of 8.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-roots.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>
@@ -58,9 +56,7 @@
 </pre>
                     <fig id="math-scripts-sample">
                         <title>Subscripts and superscripts</title>
-                        <image href="../images/math-scripts.mml" placement="break">
-                            <alt>a with subscript i, e to the power of i pi, x with subscript 1 and superscript 2, and X with scripts after it and before it.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-scripts.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>
@@ -78,19 +74,15 @@
 </pre>
                     <fig id="math-limits-sample">
                         <title>Limits in display style</title>
-                        <image href="../images/math-limits.mml" placement="break">
-                            <alt>A sum from i equals 1 to n of a sub i, and the integral from 0 to 1 of f of x dx.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-limits.mml"/></mathml>
                     </fig>
-                    <p>The same sum in a line of text is <image href="../images/math-sum-inline.mml" placement="inline"><alt>a sum with limits as scripts</alt></image>.</p>
+                    <p>The same sum in a line of text is <mathml><mathmlref href="../images/math-sum-inline.mml"/></mathml>.</p>
                 </stepxmp>
                 <info>
                     <p>For an accent, set <codeph>accent="true"</codeph> on <codeph>mover</codeph>, or <codeph>accentunder="true"</codeph> on <codeph>munder</codeph>. The accent is then set close to the base, at the size of the text. The attribute <codeph>align</codeph> aligns the scripts to the <codeph>left</codeph>, the <codeph>center</codeph> or the <codeph>right</codeph>.</p>
                     <fig id="math-accents-sample">
                         <title>An accent, an arrow and a brace</title>
-                        <image href="../images/math-accents.mml" placement="break">
-                            <alt>A hat over x, an arrow over A B, and a brace under a plus b plus c with the text 3 terms below it.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-accents.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -101,9 +93,7 @@
                     <p>The element <codeph>mfenced</codeph> writes the fences and the separators for you. Its attributes are <codeph>open</codeph> and <codeph>close</codeph>, with <codeph>(</codeph> and <codeph>)</codeph> as defaults, and <codeph>separators</codeph>, with <codeph>,</codeph> as default. The last separator is repeated when there are more children than separators.</p>
                     <fig id="math-fences-sample">
                         <title>Fences</title>
-                        <image href="../images/math-fences.mml" placement="break">
-                            <alt>A fraction between two tall parentheses, and the list a, b, c between square brackets with semicolons as separators.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-fences.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -124,9 +114,7 @@
 </pre>
                     <fig id="math-matrix-sample">
                         <title>A matrix</title>
-                        <image href="../images/math-matrix.mml" placement="break">
-                            <alt>A matrix of a, b, c and d between square brackets.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-matrix.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>
@@ -141,9 +129,7 @@
                     </ul>
                     <fig id="math-table-sample">
                         <title>Lines, alignment and a spanning cell</title>
-                        <image href="../images/math-table-attributes.mml" placement="break">
-                            <alt>A framed table with solid column lines and dashed row lines. The first row is one cell over two columns. The first column is aligned left and the second is aligned right.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-table-attributes.mml"/></mathml>
                     </fig>
                     <p>The elements are also styled by CSS. The rule <codeph>m|mtd { border: 1pt solid black; }</codeph> draws a line around each cell.</p>
                 </info>
@@ -154,9 +140,7 @@
                     <p><codeph>mspace</codeph> is an empty space of the <codeph>width</codeph>, <codeph>height</codeph> and <codeph>depth</codeph> you give. <codeph>mpadded</codeph> changes the size of its content: <codeph>width</codeph>, <codeph>height</codeph> and <codeph>depth</codeph> set the size of its box, <codeph>lspace</codeph> moves the content from the start of the box, and <codeph>voffset</codeph> raises or lowers it. <codeph>mphantom</codeph> takes the room of its content and shows nothing.</p>
                     <fig id="math-spaces-sample">
                         <title>Spaces</title>
-                        <image href="../images/math-spaces.mml" placement="break">
-                            <alt>The letters a and b with a gap between them, the letter c on a light blue box that is wider than the letter, and the letters d and e with a gap between them that has the width of the hidden word.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-spaces.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -173,9 +157,7 @@
                     </ul>
                     <fig id="math-enclose-sample">
                         <title>Enclosures</title>
-                        <image href="../images/math-enclose.mml" placement="break">
-                            <alt>x plus y in a box, z in a circle, 12 struck out by a rising line, and 345 under a long division sign.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-enclose.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -192,9 +174,7 @@
                     <p>A child of <codeph>mstack</codeph> that is none of these is a row of its own, as if it were inside an <codeph>msrow</codeph>.</p>
                     <fig id="math-stack-sample">
                         <title>Two additions</title>
-                        <image href="../images/math-stack.mml" placement="break">
-                            <alt>The sum 199.5 plus 25.25 equals 224.75 with the decimal points in one column, and the sum 199 plus 25 equals 224 with a carry of 1 above each of the first two columns.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-stack.mml"/></mathml>
                     </fig>
                     <p>These attributes of <codeph>mstack</codeph> set the alignment of the columns. <codeph>mstyle</codeph> and <codeph>math</codeph> can set them for all the stacks they hold:</p>
                     <ul>
@@ -230,9 +210,7 @@
 </pre>
                     <fig id="math-longdiv-sample">
                         <title>A long division</title>
-                        <image href="../images/math-longdiv.mml" placement="break">
-                            <alt>The division of 36 by 3. The divisor 3 is at the left of the dividend 36 with a parenthesis between them, the quotient 12 is over the dividend, and the steps of the division are under it.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-longdiv.mml"/></mathml>
                     </fig>
                 </stepxmp>
                 <info>
@@ -247,9 +225,7 @@
                     </ul>
                     <fig id="math-longdiv-styles-sample">
                         <title>The styles of long division</title>
-                        <image href="../images/math-longdiv-styles.mml" placement="break">
-                            <alt>The division of 36 by 3 written in each of the ten styles.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-longdiv-styles.mml"/></mathml>
                     </fig>
                 </info>
             </step>
@@ -279,9 +255,7 @@
 </pre>
                     <fig id="math-glyph-sample">
                         <title>An image on the baseline, raised and lowered</title>
-                        <image href="../images/math-glyph.mml" placement="break">
-                            <alt>The letters a and b with a round check mark between them on the baseline, then raised by half an em, then lowered by half an em.</alt>
-                        </image>
+                        <mathml><mathmlref href="../images/math-glyph.mml"/></mathml>
                     </fig>
                 </stepxmp>
             </step>
