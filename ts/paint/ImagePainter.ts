@@ -95,9 +95,8 @@ export class ImagePainter {
     }
 
     alpha(value: CssValue, style: ComputedStyle, width: number, height: number): ImageAlpha | undefined {
-        // CSS Shapes 1 §3.4: the shape of an <image> is where its alpha channel is above the threshold, so the alpha of each kind
-        // of image is found as it is painted: the channel of a file, the alpha of the colors of a gradient at each point of a
-        // grid over the box, the weighted average of those of the images of a cross-fade, and the alpha of the color of image().
+        // CSS Shapes 1 §3.4: the shape of an <image> is where its alpha is above the threshold; a file gives its channel, a gradient the
+        // alpha of its colors over a grid, a cross-fade the weighted average of its images, and image() the alpha of its color.
         const chosen: readonly [CssValue, number | undefined] | undefined = this.chosen(value, style);
         if (chosen === undefined) {
             return undefined;
@@ -227,9 +226,8 @@ export class ImagePainter {
             this.paintImage(image, tile, style, pdf);
             return;
         }
-        // CSS Backgrounds 4 §2.3: a repeated image covers the painting area, so it is a tiling pattern; an axis that does not
-        // repeat keeps one band of tiles. ISO 32000-2 §8.7.3.1: the pattern matrix maps the cell to the default space of the
-        // content stream.
+        // CSS Backgrounds 4 §2.3: a repeated image covers the painting area, so it is a tiling pattern, with one band of tiles on an axis that
+        // does not repeat. ISO 32000-2 §8.7.3.1: the pattern matrix maps the cell to the default space of the content stream.
         if (!across || !down) {
             pdf.content.rectangle(across ? painting.x : tile[0], down ? painting.y : tile[1], across ? painting.width : tile[2], down ? painting.height : tile[3]);
             pdf.content.clip(false);
@@ -309,9 +307,8 @@ export class ImagePainter {
     }
 
     private size(value: CssValue, natural: Natural, area: Rectangle, roundX: boolean, roundY: boolean): readonly [number, number] {
-        // CSS Backgrounds 4 §2.10: cover and contain keep the natural aspect ratio; an auto dimension comes from the ratio and
-        // the other dimension, or the natural size, or 100%; both auto take the natural size, or contain without one. With round
-        // the size is rescaled to fit a whole number of times, and an auto dimension keeps the ratio.
+        // CSS Backgrounds 4 §2.10: cover and contain keep the natural ratio; auto comes from the ratio and the other dimension, or the
+        // natural size, or 100%; both auto take the natural size, or contain without one. round rescales to whole tiles, auto keeps the ratio.
         const [naturalWidth, naturalHeight, ratio] = natural;
         const keyword: string = this.keyword(value);
         if (keyword === "cover" || keyword === "contain") {
@@ -363,9 +360,8 @@ export class ImagePainter {
     }
 
     private axis(value: CssValue, start: number, length: number, size: number, repeat: string, reversed: boolean): readonly [number, number] {
-        // Backgrounds 4 §2.6: a percentage is of the area less the image, an offset is from the edge it names, the start of the
-        // axis by default; §2.3: space puts as many whole images as fit with the first and last on the edges, and needs two of
-        // them. The result is the start of one tile and the distance between tiles, zero when the image is not repeated.
+        // Backgrounds 4 §2.6: a percentage is of the area less the image, an offset is from the edge it names, else the axis start; §2.3:
+        // space needs two whole images, first and last on the edges. The result is the start of a tile and the distance, zero if not repeated.
         if (repeat === "space") {
             const count: number = Math.floor(length / size);
             if (count >= 2) {
@@ -427,9 +423,8 @@ export class ImagePainter {
     }
 
     private option(value: FunctionValue, style: ComputedStyle): readonly [CssValue, number | undefined] | undefined {
-        // §2.4: options of an unsupported type are removed, then those with the resolution of an earlier one; the choice among
-        // the rest is the user agent's, and a PDF for print takes the one of the highest resolution.
-        // A resolution left out selects as 1x but supplies no natural resolution, so the image's own one is honored.
+        // §2.4: options of an unsupported type are removed, then those with the resolution of an earlier one; a PDF for print takes the one of
+        // the highest resolution. A resolution left out selects as 1x but gives no natural resolution, so the image's own is honored.
         const seen: Set<number> = new Set<number>();
         let best: readonly [CssValue, number, boolean] | undefined;
         for (const option of value.args) {
@@ -546,12 +541,8 @@ export class ImagePainter {
     }
 
     private crossFade(value: FunctionValue, target: readonly [number, number, number, number], style: ComputedStyle, pdf: PdfPage): void {
-        // §2.6.2: the weighted average of the premultiplied pixels of the images, each rescaled to the size, and of a transparent
-        // image for what is left over. ISO 32000-2 §11.4.6: an isolated knockout group composites each element with the
-        // transparent backdrop and mixes the result with the ones before by the element's shape, which alpha is with AIS, so
-        // each image painted with the shape w / (sum of the weights so far) leaves the average.
-        // Over opaque images the next one painted with the opacity w / (sum of the weights so far) leaves the same average with
-        // no knockout, which some viewers do not draw; so does one image alone.
+        // §2.6.2: the weighted average of premultiplied pixels. ISO 32000-2 §11.4.6: an isolated knockout group, each image with the shape
+        // w / (sum of the weights so far). Over opaque images the opacity w / (sum so far) gives the same average, which viewers without knockout draw.
         const [weights, leftover] = this.weights(value);
         const present: ReadonlyArray<readonly [CssValue, number]> = weights.filter((part: readonly [CssValue, number]) => part[1] > 0);
         const knockout: boolean = present.length > 1 && !present.every((part: readonly [CssValue, number]) => this.opaque(part[0], style));
@@ -649,9 +640,8 @@ export class ImagePainter {
 
     draw(href: string, target: readonly [number, number, number, number], values: Readonly<Record<string, CssValue>>, decorative: boolean, pdf: PdfPage,
         natural?: readonly [number, number]): ReadonlyArray<readonly [PageRectangle, string, boolean]> {
-        // The image fills the target, given as x, y, width and height on the page; the result is the links inside it.
-        // Exif 2.32 §4.6.4: each orientation puts the stored column s and row t of a point at X = xs s + xt t + x0 across
-        // and Y = ys s + yt t + y0 down the displayed image.
+        // The image fills the target, given as x, y, width and height on the page; the result is the links inside it. Exif 2.32 §4.6.4: each
+        // orientation puts the stored column s and row t of a point at X = xs s + xt t + x0 across and Y = ys s + yt t + y0 down the image.
         const [xs, xt, x0, ys, yt, y0]: readonly [number, number, number, number, number, number] = ORIENTATIONS[this.orientation(values["image-orientation"], href, decorative) - 1];
         // CSS Images 3 §5.2: the multiple of pixelated is taken along the axes of the stored image, which a turn swaps.
         const rendering: CssValue | undefined = values["image-rendering"];

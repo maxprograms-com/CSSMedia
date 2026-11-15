@@ -82,10 +82,8 @@ export class Hyphenator {
     }
 
     private nearest(language: string): string | undefined {
-        // A tag that LanguageUtils rejects, such as one with the script that the language is always written in (en-Latn-US, which
-        // RFC 5646 §4.1 allows but says SHOULD NOT be used), is ignored. The table has a row for each tag of the TypesBCP47 list, and for the tags of the scripts and spellings that need
-        // their own set (sr, sr-latn, de-ch). For any other tag the nearest row is that of the tag without its region, because a
-        // script or a variant subtag names another writing or spelling, whose patterns are not those of the language.
+        // A tag that LanguageUtils rejects, such as en-Latn-US (RFC 5646 §4.1: SHOULD NOT be used), is ignored. The table has a row per tag
+        // of the TypesBCP47 list plus sr, sr-latn and de-ch; other tags use the row without region, as a script or variant names another writing.
         if (!LanguageUtils.isValidLanguageTag(language)) {
             return undefined;
         }

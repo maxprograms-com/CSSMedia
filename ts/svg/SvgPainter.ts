@@ -1003,8 +1003,7 @@ export class SvgPainter {
                 return points === undefined ? undefined : this.geometry.points(points, styles.localName(node.element) === "polygon");
             }
             default: {
-                const d: CssValue | undefined = values["d"];
-                const data: CssValue | undefined = d !== undefined && d.kind === "function" && d.name.toLowerCase() === "path" ? d.args[d.args.length - 1] : d;
+                const data: CssValue | undefined = values["d"];
                 const path: SvgPath | undefined = data !== undefined && data.kind === "string" ? this.geometry.parse(data.value) : undefined;
                 return path === undefined || path.verbs.length === 0 ? undefined : path;
             }

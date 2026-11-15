@@ -381,9 +381,8 @@ export class TextShaper {
     }
 
     private recase(codepoints: ReadonlyArray<number>, run: TextRun, codes: Array<number>, sources: Array<number>, upper: boolean, language?: string): void {
-        // CSS Fonts 4 §6.6: simulated small capitals show the uppercase of the text, and unicase through smcp the lowercase.
-        // Where the case change alters the number of characters, each cluster is converted by itself, so that every glyph is
-        // traced to the character it comes from.
+        // CSS Fonts 4 §6.6: simulated small capitals show the uppercase of the text, and unicase through smcp the lowercase. If the case
+        // change alters the number of characters, each cluster is converted by itself so every glyph traces to its character.
         let text: string = "";
         for (let position: number = run.start; position < run.end; position++) {
             text += String.fromCodePoint(codepoints[position]);

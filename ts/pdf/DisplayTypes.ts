@@ -226,9 +226,8 @@ export class DisplayTypes {
     }
 
     isTransforming(values: Readonly<Record<string, CssValue>>): boolean {
-        // CSS Transforms 1 §3 and CSS Transforms 2 §5, §7 and §12: a computed transform, translate, rotate, scale or
-        // perspective other than none, or transform-style preserve-3d, makes a stacking context and the containing block
-        // of all descendants; so does a filter or backdrop-filter, by Filter Effects 1 §5 and Filter Effects 2 §2.
+        // CSS Transforms 1 §3, 2 §5, §7, §12 and Filter Effects 1 §5, 2 §2: a computed transform, translate, rotate, scale or perspective
+        // other than none, or preserve-3d, makes a stacking context and the containing block of descendants, as do filter and backdrop-filter.
         for (const property of TRANSFORMING) {
             const value: CssValue | undefined = values[property];
             if (value !== undefined && !(value.kind === "ident" && value.lower === "none")) {

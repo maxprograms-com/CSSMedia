@@ -156,11 +156,8 @@ export class PagePainter {
         for (const layer of margins.filter((candidate: Layer) => candidate.z < 0).sort(this.order)) {
             this.context(layer, pdf, false);
         }
-        // "The document canvas background is drawn as the page box's background", in its border box with the
-        // background-clip of the root element, "positioned with respect to the root element or page area as usual";
-        // CSS Backgrounds 4 §4.1: the root element does not paint it again.
-        // CSS Transforms 1 §3: a transform of the root element "applies to the entire canvas, including any background", whose
-        // painting area is then all that the page shows.
+        // CSS Backgrounds 4 §4.1: "The document canvas background is drawn as the page box's background", and the root does not paint it
+        // again. CSS Transforms 1 §3: a root transform "applies to the entire canvas, including any background", so it covers the page.
         const canvasBackground: (target: PdfPage) => void = (target: PdfPage): void => {
             const whole: readonly [Rectangle, PhysicalSides, PhysicalSides] = this.rootArea(page);
             this.backgrounds.paint(this.moved ? this.reach : canvas.borderBox, pageBorders, pagePadding, this.setup.root, target, undefined, NO_RADII,
@@ -374,9 +371,8 @@ export class PagePainter {
     }
 
     private gather(entry: Layer, matrix: Matrix4, planes: Array<Plane>, space: Space): void {
-        // CSS Transforms 2 §4.1.3: the children of a box that extends the context take part in it; one with a transform in
-        // three dimensions gets a plane, and one without is drawn in the plane of its parent, its own children taking part
-        // if it extends the context too.
+        // CSS Transforms 2 §4.1.3: the children of a box that extends the context take part in it; one with a 3D transform gets a plane,
+        // one without is drawn in its parent's plane, its own children taking part if it extends the context too.
         const layers: Array<Layer> = [];
         this.collect(entry.fragment, entry.transform, entry.frame, layers, true, [], undefined, undefined);
         for (const layer of layers) {
@@ -425,9 +421,8 @@ export class PagePainter {
     }
 
     private grouped(entry: Layer, pdf: PdfPage, draw: (target: PdfPage) => void): void {
-        // Compositing 1 §3.1: the stacking context of a grouping box is painted into a group, which is composited with the
-        // box's opacity and blend mode as one object. The group is a form in the page's pixels and holds no tiling patterns,
-        // whose matrices a form would change.
+        // Compositing 1 §3.1: the stacking context of a grouping box is painted into a group composited with the box's opacity and blend
+        // mode as one object; the group is a form in the page's pixels and holds no tiling patterns, whose matrices a form would change.
         const grouping: Grouping | undefined = this.grouping(entry.fragment.box.style);
         if (grouping === undefined) {
             draw(pdf);
@@ -535,9 +530,8 @@ export class PagePainter {
     }
 
     private tiles(page: PdfPage, content: ImageResource, homography: Homography, inverse: Homography, cell: Box): void {
-        // The affine map of a cell is the tangent of the inverse projection at its center; it holds when the corners and the
-        // middles of its sides, taken back by it and projected again, land within CELL_ERROR of where they started. A cell
-        // smaller than CELL_FLOOR shows no difference, and one where w is not positive shows nothing.
+        // The affine map of a cell is the tangent of the inverse projection at its center; it holds when corners and side middles, taken back
+        // by it and projected again, land within CELL_ERROR; a cell under CELL_FLOOR shows no difference, and w not positive shows nothing.
         const [x, y, width, height]: Box = cell;
         const samples: ReadonlyArray<readonly [number, number]> = [
             [x, y], [x + width, y], [x, y + height], [x + width, y + height], [x + width / 2, y], [x + width / 2, y + height], [x, y + height / 2], [x + width, y + height / 2],

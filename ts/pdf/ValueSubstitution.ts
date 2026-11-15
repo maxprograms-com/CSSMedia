@@ -32,7 +32,7 @@ import type {
     ContainerQuery, CssWideKeyword, CustomPropertyValue, Declaration, FunctionDescriptor, FunctionParameter, FunctionRule, PendingSubstitution, Stylesheet
 } from "../css/Stylesheet.js";
 import { DEFAULT_PAGE_SIZE } from "../css/StylesheetReader.js";
-import type { Token } from "../css/SubstitutionSyntax.js";
+import type { AttributeName, AttributeType, Token } from "../css/SubstitutionSyntax.js";
 import { SubstitutionSyntax } from "../css/SubstitutionSyntax.js";
 import { SupportsEvaluator } from "../css/SupportsEvaluator.js";
 import { SyntaxDefinition } from "../css/SyntaxDefinition.js";
@@ -107,7 +107,6 @@ const SIZE_FEATURES: ReadonlyMap<string, ReadonlyArray<ContainerAxis>> = new Map
     ["aspect-ratio", ["width", "height"]], ["orientation", ["width", "height"]]
 ]);
 const MAXIMUM_TOKENS: number = 1000000;
-const URL_TYPE: string = "url";
 
 export class ValueSubstitution {
 
@@ -458,18 +457,19 @@ export class ValueSubstitution {
     }
 
     private resolveAttr(args: ReadonlyArray<ReadonlyArray<Token>>, scope: Scope): Resolved | undefined {
-        // CSS Values 5 §7.7.1: the attribute as a <string> without a syntax, or parsed with the syntax; without a syntax the
-        // fallback defaults to the empty string. What attr() produces carries the base of its element, for the URLs made of it.
-        const parsed: { local: string; prefix?: string; syntax?: string } | undefined = this.syntax.attrName(args[0]);
+        // CSS Values 5 §8.7.1: a <string> for raw-string or no type, else parsed as the type says; with no type the fallback is the
+        // empty string. The result carries the base of its element, for the URLs made of it.
+        const parsed: AttributeName | undefined = this.syntax.attrName(args[0]);
         if (parsed === undefined) {
             return undefined;
         }
-        const namespace: string | undefined = parsed.prefix === undefined ? undefined : scope.namespaces.get(this.escaping.unescape(parsed.prefix));
-        if (parsed.prefix !== undefined && namespace === undefined) {
+        const prefix: string | undefined = parsed.prefix === undefined ? undefined : this.escaping.unescape(parsed.prefix);
+        const namespace: string | undefined = prefix === undefined || prefix === "" ? undefined : scope.namespaces.get(prefix);
+        if (prefix !== undefined && prefix !== "" && namespace === undefined) {
             return undefined;
         }
-        const syntax: string | undefined = parsed.syntax;
-        const fallback: ReadonlyArray<Token> | undefined = args[1] ?? (syntax === undefined ? [{ type: tokenTypes.String, text: "\"\"" }] : undefined);
+        const type: AttributeType | undefined = parsed.type;
+        const fallback: ReadonlyArray<Token> | undefined = args[1] ?? (type === undefined ? [{ type: tokenTypes.String, text: "\"\"" }] : undefined);
         const element: XMLElement | undefined = scope.host.element;
         const value: string | undefined = this.attributeValue(this.escaping.unescape(parsed.local), element, namespace);
         // SVG 2 has no xml:base, so an element of an SVG file has the base of its file.
@@ -477,13 +477,35 @@ export class ValueSubstitution {
         if (value === undefined) {
             return this.makeResolved(undefined, fallback, base);
         }
-        if (syntax === undefined) {
-            return this.makeResolved([{ type: tokenTypes.String, text: cssString.encode(value) }], fallback, base);
+        switch (type?.kind) {
+            case "url":
+                return this.makeResolved([{ type: tokenTypes.Url, text: cssUrl.encode(value) }], fallback, base);
+            case "number":
+            case "unit": {
+                const measured: Token | undefined = this.measured(value, type.kind === "unit" ? type.text : undefined);
+                return this.makeResolved(measured === undefined ? undefined : [measured], fallback, base);
+            }
+            case "syntax":
+                return this.makeResolved(this.parseWithSyntax(value, type.text, parsed.local, scope), fallback, base);
+            default:
+                return this.makeResolved([{ type: tokenTypes.String, text: cssString.encode(value) }], fallback, base);
         }
-        if (syntax === URL_TYPE) {
-            return this.makeResolved([{ type: tokenTypes.Url, text: cssUrl.encode(value) }], fallback, base);
+    }
+
+    private measured(value: string, unit?: string): Token | undefined {
+        // CSS Values 5 §8.7: the value, without the whitespace around it, must be one <number-token>; a unit that is not %
+        // and is not the name of a CSS unit triggers the fallback.
+        const tokens: Array<Token> = this.syntax.trim(this.syntax.tokens(value));
+        if (tokens.length !== 1 || tokens[0].type !== tokenTypes.Number) {
+            return undefined;
         }
-        return this.makeResolved(this.parseWithSyntax(value, syntax, parsed.local, scope), fallback, base);
+        if (unit === undefined) {
+            return tokens[0];
+        }
+        if (unit === "%") {
+            return { type: tokenTypes.Percentage, text: tokens[0].text + "%" };
+        }
+        return this.units.baseTypeOf(unit) === undefined ? undefined : { type: tokenTypes.Dimension, text: tokens[0].text + unit };
     }
 
     private parseWithSyntax(value: string, syntax: string, attribute: string, scope: Scope): Array<Token> | undefined {

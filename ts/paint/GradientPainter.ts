@@ -475,10 +475,8 @@ export class GradientPainter {
     }
 
     private wedge(gradient: Line, from: number, end: number, to: number, colors: Colors): ReadonlyArray<CoonsPatch> {
-        // Images 4 §3.3: the angle turns clockwise from up. Each Coons patch has its u = 0 and u = 1 edges on rays from the
-        // center and its v = 1 edge on the circle, so a point keeps the u of the ray through it and its color follows u. The
-        // patches narrow until the colors between their corners, and at the angle a ray strays to, are within half a step of
-        // 8-bit color; past the piece's own end they keep its last color.
+        // Images 4 §3.3: the angle turns clockwise from up. A Coons patch has its u = 0 and u = 1 edges on rays from the center and its
+        // v = 1 edge on the circle; patches narrow until colors are within half a step of 8-bit color, and keep the last color past the end.
         const [cx, cy]: readonly [number, number] = gradient.origin;
         const radius: number = gradient.radius;
         const at: (angle: number) => readonly [number, number] = (angle: number): readonly [number, number] => [cx + radius * Math.sin(angle), cy - radius * Math.cos(angle)];

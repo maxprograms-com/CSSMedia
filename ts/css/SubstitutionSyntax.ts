@@ -20,11 +20,23 @@
 
 import { tokenize, tokenTypes } from "css-tree";
 import { AsciiCase } from "./AsciiCase.js";
+import { DeclarationReader } from "./DeclarationReader.js";
 import { SyntaxDefinition } from "./SyntaxDefinition.js";
 
 export interface Token {
     type: number;
     text: string;
+}
+
+export interface AttributeType {
+    kind: "syntax" | "raw-string" | "number" | "unit" | "url";
+    text: string;
+}
+
+export interface AttributeName {
+    local: string;
+    prefix?: string;
+    type?: AttributeType;
 }
 
 const CLOSERS: ReadonlyMap<number, number> = new Map<number, number>([
@@ -200,18 +212,24 @@ export class SubstitutionSyntax {
         return trimmed;
     }
 
-    attrName(tokens: ReadonlyArray<Token>): { local: string; prefix?: string; syntax?: string } | undefined {
-        // CSS Values 5 §7.7: <attr-name> <syntax>?, where <attr-name> = [ <ident-token> '|' ]? <ident-token>.
+    attrName(tokens: ReadonlyArray<Token>): AttributeName | undefined {
+        // CSS Values 5 §8.7: <attr-name> <attr-type>?, where <attr-name> = [ <ident-token>? '|' ]? <ident-token>; the null
+        // namespace is implied without a prefix, and the prefix before the bar may be empty.
         let index: number = 0;
-        if (tokens.length > 2 && tokens[0].type === tokenTypes.Ident && tokens[1].type === tokenTypes.Delim && tokens[1].text === "|" && tokens[2].type === tokenTypes.Ident) {
+        let prefix: string | undefined;
+        if (tokens.length > 1 && tokens[0].type === tokenTypes.Delim && tokens[0].text === "|" && tokens[1].type === tokenTypes.Ident) {
+            prefix = "";
+            index = 1;
+        } else if (tokens.length > 2 && tokens[0].type === tokenTypes.Ident && tokens[1].type === tokenTypes.Delim && tokens[1].text === "|" && tokens[2].type === tokenTypes.Ident) {
+            prefix = tokens[0].text;
             index = 2;
         }
         if (tokens[index]?.type !== tokenTypes.Ident) {
             return undefined;
         }
-        const name: { local: string; prefix?: string; syntax?: string } = { local: tokens[index].text };
-        if (index === 2) {
-            name.prefix = tokens[0].text;
+        const name: AttributeName = { local: tokens[index].text };
+        if (prefix !== undefined) {
+            name.prefix = prefix;
         }
         const rest: Array<Token> = this.trim(tokens.slice(index + 1));
         if (rest.length === 0) {
@@ -220,12 +238,35 @@ export class SubstitutionSyntax {
         if (tokens[index + 1].type !== tokenTypes.WhiteSpace) {
             return undefined;
         }
-        const syntax: string | undefined = this.definitions.parse(this.serialize(rest));
-        if (syntax === undefined) {
+        const type: AttributeType | undefined = this.attrType(rest);
+        if (type === undefined) {
             return undefined;
         }
-        name.syntax = syntax;
+        name.type = type;
         return name;
+    }
+
+    private attrType(tokens: ReadonlyArray<Token>): AttributeType | undefined {
+        // CSS Values 5 §8.7: <attr-type> = type( <syntax> ) | raw-string | number | <attr-unit>, and <url> is invalid in type(); the
+        // keyword url, which the attribute type of CSS Values 3 had, stays for the URL of an attribute.
+        if (tokens.length === 1 && tokens[0].type === tokenTypes.Delim && tokens[0].text === "%") {
+            return { kind: "unit", text: "%" };
+        }
+        if (tokens.length === 1 && tokens[0].type === tokenTypes.Ident) {
+            const word: string = this.asciiCase.foldLower(tokens[0].text);
+            if (DeclarationReader.RESERVED_IDENTIFIERS.has(word)) {
+                return undefined;
+            }
+            return word === "raw-string" || word === "number" || word === "url" ? { kind: word, text: word } : { kind: "unit", text: word };
+        }
+        if (tokens.length > 1 && tokens[0].type === tokenTypes.Function && this.functionName(tokens[0]) === "type" && this.closing(tokens, 0) === tokens.length - 1) {
+            const syntax: string | undefined = this.definitions.parse(this.serialize(this.trim(tokens.slice(1, tokens.length - 1))));
+            if (syntax === undefined || syntax.split(" | ").some((component: string) => component.startsWith("<url>"))) {
+                return undefined;
+            }
+            return { kind: "syntax", text: syntax };
+        }
+        return undefined;
     }
 
     randomArguments(contents: ReadonlyArray<Token>): Array<Array<Token>> | undefined {

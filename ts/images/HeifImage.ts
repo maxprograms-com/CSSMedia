@@ -154,9 +154,8 @@ export class HeifImage implements ImageFormat {
                 if (property === undefined) {
                     continue;
                 }
-                // ISO/IEC 23008-12: ispe is a full property with the width and the height; clap and irot are transformative:
-                // clap has the clean aperture as fractions, and irot the angle, in quarter turns, in its two lowest bits. The size of
-                // ispe comes before them wherever it is listed; a crop is of the image as turned so far, so it starts unturned.
+                // ISO/IEC 23008-12: ispe has the size, clap the clean aperture as fractions, irot the angle in quarter turns in its low bits.
+                // The size comes before them wherever listed, and a crop is of the image as turned so far, so it starts unturned.
                 const fields: Buffer = read(property[1], 16);
                 if (property[0] === "ispe" && fields.length >= 12 && !size.cropped) {
                     size.width = fields.readUInt32BE(4);

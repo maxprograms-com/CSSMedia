@@ -270,9 +270,8 @@ export class PageDriver {
     }
 
     private renumber(page: PageLayout, values: Readonly<Record<string, CssValue>>): void {
-        // GCPM 3 §2.5.2: "The footnote counter may be reset on each page", and §2.5: "It should be incremented for each footnote";
-        // the steps between two footnotes in the same counter instance are those of the document, and a reset in the document
-        // between them starts from the document's value.
+        // GCPM 3 §2.5.2: "The footnote counter may be reset on each page", and §2.5: "It should be incremented for each footnote"; between
+        // two footnotes of one counter instance the steps are the document's, and a reset in the document starts from its value.
         let [shown, build, creator]: readonly [number, number, number] = this.numbered;
         for (const [property, initial] of [["counter-reset", 0], ["counter-increment", 1], ["counter-set", 0]] as ReadonlyArray<readonly [string, number]>) {
             for (const [name, value] of this.scopes.changes(initial, values[property]) ?? []) {

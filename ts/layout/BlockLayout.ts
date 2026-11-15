@@ -2054,9 +2054,8 @@ export class BlockLayout {
     }
 
     private callBreak(lines: ReadonlyArray<LineFragment>, index: number, orphans: number, widows: number, paragraph: boolean, fragmenting: Fragmentation): number {
-        // GCPM 3 §2.8: line puts "a forced page break at the start of the line containing the footnote reference", where "the
-        // user agent must honor widow and orphan settings" "and so may need to insert the page break on an earlier line"; block
-        // puts it "before the paragraph that contains the footnote".
+        // GCPM 3 §2.8: line puts "a forced page break at the start of the line containing the footnote reference", where the user agent
+        // "must honor widow and orphan settings", so maybe earlier; block puts it "before the paragraph that contains the footnote".
         const total: number = lines.length;
         let kept: number = paragraph ? 0 : index;
         while (kept > 0 && (kept < orphans || total - kept < widows || lines[kept].block === lines[kept - 1].block)) {

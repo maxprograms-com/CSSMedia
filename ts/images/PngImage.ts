@@ -299,9 +299,8 @@ export class PngImage implements ImageFormat {
     }
 
     private validate(header: PngHeader, palette: Buffer): void {
-        // PNG 3 §11.2.1, Table 12: the colour types and the bit depths each allows, one compression method and one filter method
-        // defined, two interlace methods; for indexed colour "a PLTE chunk shall appear". §11.2.2: "A chunk length not
-        // divisible by 3 is an error."
+        // PNG 3 §11.2.1, Table 12: the colour types and the bit depths each allows, one compression and one filter method, two interlace
+        // methods; indexed colour: "a PLTE chunk shall appear". §11.2.2: "A chunk length not divisible by 3 is an error."
         if (BIT_DEPTHS[header.colorType]?.includes(header.bitDepth) !== true) {
             throw new Error("The PNG image has the colour type " + header.colorType + " with the bit depth " + header.bitDepth);
         }

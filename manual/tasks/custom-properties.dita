@@ -64,7 +64,7 @@ title {
             <step id="reading-xml-attributes-with-attr">
                 <cmd>Read the attributes of your XML with attr()</cmd>
                 <info>
-                    <p>The function <codeph>attr()</codeph> takes the value of an attribute of the element that you style. Without a type it gives a string, which fits <codeph>content</codeph>. After the name of the attribute you can write the type of the value, in angle brackets, and CSSMedia reads the attribute as that type. The last argument is the fallback, used when the attribute is missing or cannot be read as the type:</p>
+                    <p>The function <codeph>attr()</codeph> takes the value of an attribute of the element that you style. Without a type it gives a string, which fits <codeph>content</codeph>. After the name of the attribute you can write the type of the value, and CSSMedia reads the attribute as that type. The type is <codeph>type()</codeph> with a syntax inside, such as <codeph>type(&lt;color&gt;)</codeph>; the keyword <codeph>number</codeph>, for a number without a unit; a unit, such as <codeph>em</codeph> or <codeph>%</codeph>, for a number that gets that unit; or <codeph>raw-string</codeph>, for the text of the attribute as it is. The last argument is the fallback, used when the attribute is missing or cannot be read as the type:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">figure::before {
@@ -72,8 +72,9 @@ title {
 }
 
 figure {
-    width: attr(data-width &lt;length&gt;, 100pt);
-    border-color: attr(tint &lt;color&gt;, black);
+    width: attr(data-width pt, 100pt);
+    height: attr(data-height type(&lt;length&gt;), 50pt);
+    border-color: attr(tint type(&lt;color&gt;), black);
 }
 </pre>
                 </stepxmp>
