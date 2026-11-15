@@ -539,6 +539,12 @@ export class SvgGeometry extends PathGeometry {
             (c * d - a * f) / determinant, (d * h - e * g) / determinant, (b * g - a * h) / determinant, (a * e - b * d) / determinant];
     }
 
+    project(homography: Homography, x: number, y: number): readonly [number, number] | undefined {
+        // CSS Transforms 2 §4.2: the points with w not positive are not drawn.
+        const [px, py, w]: readonly [number, number, number] = this.mapped(homography, x, y);
+        return w <= W_LIMIT ? undefined : [px / w, py / w];
+    }
+
     tangent(homography: Homography, x: number, y: number): Matrix | undefined {
         const [px, py, w]: readonly [number, number, number] = this.mapped(homography, x, y);
         if (w <= W_LIMIT) {
@@ -1341,6 +1347,17 @@ export class SvgGeometry extends PathGeometry {
     perspective4(distance: number): Matrix4 {
         // CSS Transforms 2 §12.2 and §16: a distance below 1px is 1px.
         return [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, -1 / Math.max(1, distance), 0, 0, 0, 1];
+    }
+
+    perspectiveOf(distance: number, values: Readonly<Record<string, CssValue>>, box: Box): Matrix4 {
+        // CSS Transforms 2 §4.1.1: the perspective of an element, about its perspective-origin in its reference box.
+        const value: CssValue | undefined = values["perspective-origin"];
+        const tokens: ReadonlyArray<CssValue> = value === undefined ? [] : (value.kind === "list" ? value.items : [value]);
+        const origin: readonly [number, number] = this.position(tokens, box[2], box[3], this.isKeyword(values["direction"], "rtl"));
+        const x: number = box[0] + origin[0];
+        const y: number = box[1] + origin[1];
+        const shifted: Matrix4 = this.multiply4(this.lift([1, 0, 0, 1, x, y]), this.perspective4(distance));
+        return this.multiply4(shifted, this.lift([1, 0, 0, 1, -x, -y]));
     }
 
     private origin(value: CssValue | undefined, reference: Box): readonly [number, number, number] {

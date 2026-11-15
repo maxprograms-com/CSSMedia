@@ -70,7 +70,7 @@ export class StandardTypefaces {
         return {
             source: data.name,
             index: 0,
-            standardFont: data.name,
+            standard: data,
             tables: this.kerningTable(data.kerning),
             names: {
                 families: [data.family],

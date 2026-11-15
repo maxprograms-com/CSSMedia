@@ -160,6 +160,13 @@
         <topicref href="references/mathml-chapter-reference.dita"/>
     </chapter>
 
+    <chapter>
+        <topicmeta>
+            <navtitle>Accessible PDF</navtitle>
+        </topicmeta>
+        <!-- TODO: placeholder, write this chapter -->
+    </chapter>
+
     <chapter href="concepts/intro-reference.dita">
         <mapref href="CompleteReference.ditamap"/>
     </chapter>

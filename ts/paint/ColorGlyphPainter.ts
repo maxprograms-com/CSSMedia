@@ -149,7 +149,7 @@ export class ColorGlyphPainter {
     outlined(font: FontInstance): boolean {
         // ISO 32000-2 §9.6.2.2: a reader has the outlines of the standard fonts, which come with no font tables.
         const tables: Readonly<Record<string, Buffer>> = font.typeface.tables;
-        return font.typeface.standardFont !== undefined || tables["glyf"] !== undefined || tables["CFF "] !== undefined || tables["CFF2"] !== undefined;
+        return font.typeface.standard !== undefined || tables["glyf"] !== undefined || tables["CFF "] !== undefined || tables["CFF2"] !== undefined;
     }
 
     private drawn(placed: ColorGlyph, color: ColorFont, style: ComputedStyle, opacity: number, pdf: PdfPage, sheared: boolean): void {

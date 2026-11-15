@@ -218,7 +218,7 @@ export interface StandardFontData {
 export interface Typeface {
     source: string;
     index: number;
-    standardFont?: string;
+    standard?: StandardFontData;
     tables: Readonly<Record<string, Buffer>>;
     names: FontNames;
     glyphCount: number;

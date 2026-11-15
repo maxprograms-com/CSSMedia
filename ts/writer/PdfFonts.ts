@@ -19,7 +19,7 @@
  *******************************************************************************/
 
 import { createHash } from "node:crypto";
-import type { FontInstance, Typeface } from "../fonts/Typeface.js";
+import type { FontInstance, StandardFontData, Typeface } from "../fonts/Typeface.js";
 import { EmbeddedPdfFont } from "./EmbeddedPdfFont.js";
 import type { PdfFile } from "./PdfFile.js";
 import type { PdfFont } from "./PdfFont.js";
@@ -43,7 +43,8 @@ export class PdfFonts {
     font(instance: FontInstance, vertical: boolean): PdfFont {
         // One PDF font for each typeface, variation instance, synthesized bold face and writing direction; a standard font has
         // no vertical metrics in PDF, so its upright glyphs are turned by whoever paints them.
-        const standard: boolean = instance.typeface.standardFont !== undefined;
+        const data: StandardFontData | undefined = instance.typeface.standard;
+        const standard: boolean = data !== undefined;
         let identity: number | undefined = this.typefaces.get(instance.typeface);
         if (identity === undefined) {
             identity = this.typefaces.size;
@@ -52,7 +53,7 @@ export class PdfFonts {
         const key: string = identity + "|" + Array.from(instance.coordinates).join(",") + "|" + (instance.emboldening ?? 0) + (vertical && !standard ? "|V" : "|H");
         let font: PdfFont | undefined = this.fonts.get(key);
         if (font === undefined) {
-            font = standard ? new StandardPdfFont(this.file, instance) : new EmbeddedPdfFont(this.file, instance, vertical, this.tag(key + instance.typeface.source));
+            font = data !== undefined ? new StandardPdfFont(this.file, instance, data) : new EmbeddedPdfFont(this.file, instance, vertical, this.tag(key + instance.typeface.source));
             this.fonts.set(key, font);
         }
         return font;

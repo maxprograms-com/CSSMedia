@@ -18,7 +18,6 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
-import { STANDARD_FONTS } from "../fonts/generated/StandardFonts.js";
 import type { FontInstance, StandardFontData } from "../fonts/Typeface.js";
 import type { FontResource, FontRun } from "./PdfFont.js";
 import { PdfFont } from "./PdfFont.js";
@@ -60,14 +59,10 @@ export class StandardPdfFont extends PdfFont {
     private missing?: FontResource;
     private missingCode: number = 1;
 
-    constructor(file: PdfFile, instance: FontInstance) {
+    constructor(file: PdfFile, instance: FontInstance, data: StandardFontData) {
         super();
         this.file = file;
         this.instance = instance;
-        const data: StandardFontData | undefined = STANDARD_FONTS.find((font: StandardFontData) => font.name === instance.typeface.standardFont);
-        if (data === undefined) {
-            throw new Error("The font " + instance.typeface.names.postScriptName + " is not one of the standard fonts");
-        }
         this.data = data;
     }
 

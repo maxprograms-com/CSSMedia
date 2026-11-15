@@ -170,7 +170,7 @@ export class FontMetrics {
         }
         const scale: number = size / metrics.unitsPerEm;
         const thickness: number = metrics.underlineThickness !== undefined && metrics.underlineThickness > 0 ? metrics.underlineThickness * scale : size / DECORATION_THICKNESS;
-        return -metrics.underlinePosition * scale - (instance.typeface.standardFont === undefined ? 0 : thickness / 2);
+        return -metrics.underlinePosition * scale - (instance.typeface.standard === undefined ? 0 : thickness / 2);
     }
 
     strikeout(instance: FontInstance, size: number): readonly [number, number] {

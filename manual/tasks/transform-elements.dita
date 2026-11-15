@@ -86,6 +86,9 @@
                         <li><codeph>stroke-box</codeph> is the box that also holds the outline. <codeph>border-box</codeph> is the same box.</li>
                     </ul>
                     <p>To turn an element around its own center, use <codeph>fill-box</codeph> with <codeph>transform-origin: center</codeph>.</p>
+                    <p>A box of your document has no drawing around it, so there <codeph>view-box</codeph>, <codeph>stroke-box</codeph> and <codeph>border-box</codeph> are the border box, and <codeph>fill-box</codeph> and <codeph>content-box</codeph> are the content box. The initial <codeph>transform-origin</codeph> of a box is <codeph>50% 50%</codeph>, its center.</p>
+                    <p>Every function and property of this topic works on the boxes of your document. A box with a transform is drawn on top of the boxes before it, as if it were positioned with <codeph>z-index: 0</codeph>, and it is the containing block of the boxes inside it that you position with <codeph>position: absolute</codeph> or <codeph>position: fixed</codeph>. A transform does not change the place of the other boxes, and it does not apply to inline boxes that hold only text, to table columns or to table column groups. A fixed <codeph>background-attachment</codeph> in a transformed box works as <codeph>scroll</codeph>. Links inside a transformed box cover the box where it is drawn.</p>
+                    <p>A transform on a <codeph>table</codeph> moves the table and its captions as one box, and its reference box is the border box that holds them both. A transform on the root element moves the whole canvas, including the background of the root element, which then fills all that the page shows.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">.badge {

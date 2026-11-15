@@ -857,14 +857,7 @@ export class SvgPainter {
         if (distance === undefined || this.keyword(distance) === "none") {
             return SvgGeometry.IDENTITY4;
         }
-        const box: Box = this.reference(parent, style);
-        const value: CssValue | undefined = style.values["perspective-origin"];
-        const tokens: ReadonlyArray<CssValue> = value === undefined ? [] : (value.kind === "list" ? value.items : [value]);
-        const origin: readonly [number, number] = this.geometry.position(tokens, box[2], box[3], this.keyword(style.values["direction"]) === "rtl");
-        const x: number = box[0] + origin[0];
-        const y: number = box[1] + origin[1];
-        const shifted: Matrix4 = this.geometry.multiply4(this.geometry.lift([1, 0, 0, 1, x, y]), this.geometry.perspective4(this.styles.pixels(distance, 0)));
-        return this.geometry.multiply4(shifted, this.geometry.lift([1, 0, 0, 1, -x, -y]));
+        return this.geometry.perspectiveOf(this.styles.pixels(distance, 0), style.values, this.reference(parent, style));
     }
 
     private use(node: SvgNode, style: ComputedStyle): void {

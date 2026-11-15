@@ -110,7 +110,7 @@
                         </row>
                         <row>
                             <entry><codeph>transform-origin</codeph></entry>
-                            <entry>Sets the point that <codeph>transform</codeph> turns and scales around. In a drawing it is the origin of the drawing.</entry>
+                            <entry>Sets the point that <codeph>transform</codeph> turns and scales around. In a drawing it is the origin of the drawing, and on a box it is the center of the box.</entry>
                             <entry>One to three lengths, percentages or keywords</entry>
                             <entry><codeph>0 0</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-transforms-1/#transform-origin-property" scope="external" format="html">CSS Transforms 1 §5</xref></entry>

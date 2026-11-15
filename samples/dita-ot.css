@@ -535,6 +535,10 @@ ot-placeholder|glossarylist::before {
     text-transform: uppercase;
 }
 
+*[class~="topic/ol"], *[class~="topic/ul"], *[class~="topic/sl"], *[class~="task/steps"], *[class~="task/steps-unordered"], *[class~="task/substeps"] {
+    counter-reset: list-item;
+}
+
 *[class~="topic/ol"] {
     display: block;
     list-style-type: decimal;

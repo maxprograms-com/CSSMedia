@@ -19,7 +19,7 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
-import type { Matrix } from "../geometry/PathGeometry.js";
+import type { Box, Homography, Matrix } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
 import type { Transform } from "../layout/BoxSizes.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
@@ -29,7 +29,9 @@ import type { PageSetup } from "../PdfGenerator.js";
 import type { ElementBox } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import { DisplayTypes } from "../pdf/DisplayTypes.js";
-import type { PageCanvas, Rectangle, Size } from "../pdf/PageCanvas.js";
+import type { PageCanvas, Rectangle } from "../pdf/PageCanvas.js";
+import { SvgGeometry } from "../svg/SvgGeometry.js";
+import type { Matrix4, SvgPath } from "../svg/SvgGeometry.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { ImageResource, PageRectangle, PdfPage } from "../writer/PdfPage.js";
 import { BackgroundPainter } from "./BackgroundPainter.js";
@@ -61,6 +63,18 @@ interface Layer {
     z: number;
     context: boolean;
     clips: ReadonlyArray<Clip>;
+    matrix?: Matrix4;
+    host?: ElementBox;
+}
+
+interface Space {
+    popped: Set<BoxFragment>;
+    extending: Set<BoxFragment>;
+}
+
+interface Plane {
+    entry: Layer;
+    matrix: Matrix4;
 }
 
 const POINTS_PER_PIXEL: number = 0.75;
@@ -71,7 +85,11 @@ const HIDDEN: ReadonlySet<string> = new Set<string>(["hidden", "collapse"]);
 const NONE_PROPERTIES: ReadonlyArray<string> = ["transform", "translate", "rotate", "scale", "filter", "backdrop-filter", "clip-path", "mask-image", "box-shadow-offset",
     "outline-style", "border-image-source"];
 const NOT_PAINTED: ReadonlySet<string> = new Set<string>();
-const PAINTED_EFFECTS: ReadonlySet<string> = new Set<string>(["opacity", "mix-blend-mode"]);
+const PAINTED_EFFECTS: ReadonlySet<string> = new Set<string>(["opacity", "mix-blend-mode", "transform", "translate", "rotate", "scale"]);
+const OWN_TRANSFORMS: ReadonlyArray<string> = ["transform", "translate", "rotate", "scale"];
+const CELL_FLOOR: number = 0.25;
+const CELL_ERROR: number = 0.05;
+const CELL_OVERLAP: number = 0.5;
 const RADII: ReadonlyArray<string> = ["border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"];
 const NO_SIDES: PhysicalSides = [0, 0, 0, 0];
 const NO_RADII: CornerRadii = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -90,7 +108,12 @@ export class PagePainter {
     private readonly borders: BorderPainter;
     private readonly images: ImagePainter;
     private annotated?: PdfPage;
-    private sheet: Size = { width: 0, height: 0 };
+    private readonly geometry: SvgGeometry = new SvgGeometry();
+    private reach: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
+    private lens?: Homography;
+    private space?: Space;
+    private footprint?: Box;
+    private moved: boolean = false;
     private base: Matrix = PathGeometry.IDENTITY;
     private page: Rectangle = { x: 0, y: 0, width: 0, height: 0 };
 
@@ -109,7 +132,9 @@ export class PagePainter {
         const canvas: PageCanvas = page.canvas;
         this.pageSupported(canvas);
         this.annotated = pdf;
-        this.sheet = canvas.sheet;
+        this.reach = { x: 0, y: 0, width: canvas.sheet.width, height: canvas.sheet.height };
+        delete this.lens;
+        this.moved = false;
         pdf.content.transform(POINTS_PER_PIXEL, 0, 0, POINTS_PER_PIXEL, 0, 0);
         // The default space of the page has its origin at the bottom left in points; a pattern is placed in it.
         this.base = [POINTS_PER_PIXEL, 0, 0, -POINTS_PER_PIXEL, 0, pdf.height];
@@ -134,8 +159,19 @@ export class PagePainter {
         // "The document canvas background is drawn as the page box's background", in its border box with the
         // background-clip of the root element, "positioned with respect to the root element or page area as usual";
         // CSS Backgrounds 4 §4.1: the root element does not paint it again.
-        this.backgrounds.paint(canvas.borderBox, pageBorders, pagePadding, this.setup.root, pdf, undefined, NO_RADII,
-            { base: this.base, page: sheet, whole: this.rootArea(page) });
+        // CSS Transforms 1 §3: a transform of the root element "applies to the entire canvas, including any background", whose
+        // painting area is then all that the page shows.
+        const canvasBackground: (target: PdfPage) => void = (target: PdfPage): void => {
+            const whole: readonly [Rectangle, PhysicalSides, PhysicalSides] = this.rootArea(page);
+            this.backgrounds.paint(this.moved ? this.reach : canvas.borderBox, pageBorders, pagePadding, this.setup.root, target, undefined, NO_RADII,
+                this.moved ? { base: this.base, whole } : { base: this.base, page: sheet, whole });
+        };
+        const rootLayer: Layer | undefined = page.content === undefined ? undefined : this.pageLayer(page.content, page, canvas);
+        if (rootLayer?.matrix === undefined) {
+            canvasBackground(pdf);
+        } else {
+            this.transformed(rootLayer, rootLayer.matrix, pdf, canvasBackground);
+        }
         this.borders.paint(canvas.borderBox, pageBorders, PHYSICAL_NAMES.map((side: string) => this.keyword(canvas.style.values["border-" + side + "-style"])),
             PHYSICAL_NAMES.map((side: string) => canvas.style.values["border-" + side + "-color"]), canvas.style, pdf);
         // GCPM 3 §2.4.1: the footnote area is placed in the page area, in the same coordinates as the content.
@@ -143,10 +179,7 @@ export class PagePainter {
             if (fragment === undefined) {
                 continue;
             }
-            const area: Rectangle = canvas.pageArea;
-            const frame: number = this.sizes.frame((page.content ?? fragment).box.style);
-            const transform: Transform = this.sizes.compose([1, 0, 0, 1, area.x, area.y], this.sizes.between(frame, PHYSICAL, area.width, area.height));
-            this.context({ fragment, transform, frame, z: 0, context: true, clips: [] }, pdf, fragment === page.content);
+            this.context(this.pageLayer(fragment, page, canvas), pdf, fragment === page.content);
         }
         for (const layer of margins.filter((candidate: Layer) => candidate.z >= 0).sort(this.order)) {
             this.context(layer, pdf, false);
@@ -154,6 +187,13 @@ export class PagePainter {
         if (forms !== undefined) {
             pdf.content.paintXObject(pdf.useImage(forms.above));
         }
+    }
+
+    private pageLayer(fragment: BoxFragment, page: PageLayout, canvas: PageCanvas): Layer {
+        const area: Rectangle = canvas.pageArea;
+        const frame: number = this.sizes.frame((page.content ?? fragment).box.style);
+        const transform: Transform = this.sizes.compose([1, 0, 0, 1, area.x, area.y], this.sizes.between(frame, PHYSICAL, area.width, area.height));
+        return this.layer(fragment, transform, frame, 0, true, [], undefined, undefined);
     }
 
     private rootArea(page: PageLayout): readonly [Rectangle, PhysicalSides, PhysicalSides] {
@@ -174,7 +214,9 @@ export class PagePainter {
         this.base = PathGeometry.IDENTITY;
         this.page = { x: 0, y: 0, width: forms.above.width, height: forms.above.height };
         this.annotated = page;
-        this.sheet = forms.above;
+        this.reach = { x: 0, y: 0, width: forms.above.width, height: forms.above.height };
+        delete this.lens;
+        this.moved = false;
         const layers: Array<Layer> = this.marginLayers(fragments);
         if (forms.below !== undefined) {
             this.form(layers.filter((candidate: Layer) => candidate.z < 0), forms.below, document);
@@ -191,7 +233,52 @@ export class PagePainter {
     }
 
     private marginLayers(fragments: ReadonlyArray<BoxFragment>): Array<Layer> {
-        return fragments.map((fragment: BoxFragment): Layer => ({ fragment, transform: BoxSizes.IDENTITY, frame: PHYSICAL, z: this.zIndex(fragment.box) ?? 0, context: true, clips: [] }));
+        return fragments.map((fragment: BoxFragment): Layer => this.layer(fragment, BoxSizes.IDENTITY, PHYSICAL, this.zIndex(fragment.box) ?? 0, true, [], undefined, undefined));
+    }
+
+    private layer(fragment: BoxFragment, transform: Transform, frame: number, z: number, context: boolean, clips: ReadonlyArray<Clip>, view: Matrix4 | undefined, host: ElementBox | undefined): Layer {
+        const matrix: Matrix4 | undefined = this.matrixOf(fragment, transform, view);
+        const layer: Layer = matrix === undefined ? { fragment, transform, frame, z, context, clips } : { fragment, transform, frame, z, context, clips, matrix };
+        if (host !== undefined) {
+            layer.host = host;
+        }
+        return layer;
+    }
+
+    private matrixOf(fragment: BoxFragment, transform: Transform, view: Matrix4 | undefined): Matrix4 | undefined {
+        // CSS Transforms 2 §4.1.1: the perspective of the parent, then the element's own transform about its origin.
+        const values: Readonly<Record<string, CssValue>> = fragment.box.style.values;
+        if (OWN_TRANSFORMS.every((property: string) => PagePainter.isNone(values[property])) || !this.displays.isTransformable(fragment.box.display, fragment.box.replaced)) {
+            return undefined;
+        }
+        const own: Matrix4 = this.geometry.spatial(values, this.reference(fragment, transform));
+        return view === undefined ? own : this.geometry.multiply4(view, own);
+    }
+
+    private eye(fragment: BoxFragment, transform: Transform): Matrix4 | undefined {
+        // CSS Transforms 2 §12: the perspective of a box applies to the transforms of its children, about its perspective-origin.
+        const values: Readonly<Record<string, CssValue>> = fragment.box.style.values;
+        const distance: CssValue | undefined = values["perspective"];
+        if (PagePainter.isNone(distance) || !this.displays.isTransformable(fragment.box.display, fragment.box.replaced)) {
+            return undefined;
+        }
+        return this.geometry.perspectiveOf(this.sizes.pixels(distance as CssValue, 0), values, this.reference(fragment, transform));
+    }
+
+    private reference(fragment: BoxFragment, transform: Transform): Box {
+        // CSS Transforms 1 §6: for a box of the CSS box model fill-box is the content box, and stroke-box and view-box are
+        // the border box.
+        const area: readonly [number, number, number, number] = this.sizes.mapped(transform, fragment.inline, fragment.block, fragment.inlineSize, fragment.blockSize);
+        const keyword: string = this.keyword(fragment.box.style.values["transform-box"]);
+        if (keyword !== "content-box" && keyword !== "fill-box") {
+            return [area[0], area[1], area[2], area[3]];
+        }
+        const [borders, padding]: readonly [PhysicalSides, PhysicalSides] = this.edges(fragment);
+        const top: number = borders[0] + padding[0];
+        const right: number = borders[1] + padding[1];
+        const bottom: number = borders[2] + padding[2];
+        const left: number = borders[3] + padding[3];
+        return [area[0] + left, area[1] + top, Math.max(0, area[2] - left - right), Math.max(0, area[3] - top - bottom)];
     }
 
     private order(first: Layer, second: Layer): number {
@@ -208,20 +295,150 @@ export class PagePainter {
     }
 
     private context(entry: Layer, pdf: PdfPage, root: boolean): void {
+        // A box that has its own plane in a 3D rendering context is drawn with the planes, not with its parent's.
+        const space: Space | undefined = this.space;
+        if (space !== undefined && space.popped.has(entry.fragment)) {
+            return;
+        }
+        // The clips of the boxes that hold a layer apply outside of its own transform.
+        this.enter(entry.clips, pdf);
+        if (this.preserves(entry) && (space === undefined || !space.extending.has(entry.fragment))) {
+            this.establish(entry, pdf, root);
+        } else if (entry.matrix === undefined) {
+            this.grouped(entry, pdf, (target: PdfPage): void => this.stack(entry, target, root));
+        } else {
+            this.transformed(entry, entry.matrix, pdf, (target: PdfPage): void => this.stack(entry, target, root));
+        }
+        this.leave(entry.clips, pdf);
+    }
+
+    private preserves(entry: Layer): boolean {
+        // CSS Transforms 2 §7: transform-style preserve-3d is used as flat when a grouping property is present.
+        const box: ElementBox = entry.fragment.box;
+        const values: Readonly<Record<string, CssValue>> = box.style.values;
+        if (this.keyword(values["transform-style"]) !== "preserve-3d" || !this.displays.isTransformable(box.display, box.replaced) || this.grouping(box.style) !== undefined) {
+            return false;
+        }
+        const clipping: boolean = ["overflow-x", "overflow-y"].some((property: string) => !["visible", "clip"].includes(this.keyword(values[property]) === "none" ? "visible" : this.keyword(values[property])));
+        return !clipping && ["filter", "clip-path", "mask-image"].every((property: string) => PagePainter.isNone(values[property]));
+    }
+
+    private establish(entry: Layer, pdf: PdfPage, root: boolean): void {
+        // CSS Transforms 2 §4.1.2: the box and the boxes that take part in its 3D rendering context are planes of one space,
+        // drawn from the farthest to the nearest and cut where they cross; the parts in one plane keep the painting order.
+        const saved: Space | undefined = this.space;
+        const space: Space = { popped: new Set<BoxFragment>(), extending: new Set<BoxFragment>([entry.fragment]) };
+        this.space = space;
+        try {
+            const own: Matrix4 = entry.matrix ?? SvgGeometry.IDENTITY4;
+            const planes: Array<Plane> = [{ entry, matrix: own }];
+            this.gather(entry, own, planes, space);
+            const facets: Array<readonly [number, ReadonlyArray<readonly [number, number, number]>]> = [];
+            planes.forEach((plane: Plane, index: number) => {
+                const box: Box | undefined = this.ink(plane.entry, space);
+                const points: Array<readonly [number, number, number]> = box === undefined ? [] : this.geometry.facet(plane.matrix, box);
+                if (points.length >= 3) {
+                    facets.push([index, points]);
+                }
+            });
+            for (const [index, points] of this.geometry.depthOrder(facets)) {
+                const plane: Plane = planes[index];
+                pdf.content.save();
+                points.forEach((point: readonly [number, number, number], position: number) => {
+                    if (position === 0) {
+                        pdf.content.moveTo(point[0], point[1]);
+                    } else {
+                        pdf.content.lineTo(point[0], point[1]);
+                    }
+                });
+                pdf.content.closePath();
+                pdf.content.clip(false);
+                this.footprint = this.facetBox(points);
+                this.transformed(plane.entry, plane.matrix, pdf, (target: PdfPage): void => this.stack(plane.entry, target, root && index === 0));
+                delete this.footprint;
+                pdf.content.restore();
+            }
+        } finally {
+            if (saved === undefined) {
+                delete this.space;
+            } else {
+                this.space = saved;
+            }
+        }
+    }
+
+    private facetBox(points: ReadonlyArray<readonly [number, number, number]>): Box {
+        const xs: Array<number> = points.map((point: readonly [number, number, number]) => point[0]);
+        const ys: Array<number> = points.map((point: readonly [number, number, number]) => point[1]);
+        return [Math.min(...xs), Math.min(...ys), Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys)];
+    }
+
+    private gather(entry: Layer, matrix: Matrix4, planes: Array<Plane>, space: Space): void {
+        // CSS Transforms 2 §4.1.3: the children of a box that extends the context take part in it; one with a transform in
+        // three dimensions gets a plane, and one without is drawn in the plane of its parent, its own children taking part
+        // if it extends the context too.
+        const layers: Array<Layer> = [];
+        this.collect(entry.fragment, entry.transform, entry.frame, layers, true, [], undefined, undefined);
+        for (const layer of layers) {
+            if (layer.host !== entry.fragment.box || !this.displays.isTransformable(layer.fragment.box.display, layer.fragment.box.replaced)) {
+                continue;
+            }
+            const own: Matrix4 = layer.matrix ?? SvgGeometry.IDENTITY4;
+            const accumulated: Matrix4 = this.geometry.multiply4(matrix, own);
+            const extends3d: boolean = this.preserves(layer);
+            if (!this.geometry.planar(own)) {
+                space.popped.add(layer.fragment);
+                planes.push({ entry: layer, matrix: accumulated });
+            }
+            if (extends3d) {
+                space.extending.add(layer.fragment);
+                this.gather(layer, accumulated, planes, space);
+            }
+        }
+    }
+
+    private ink(entry: Layer, space: Space): Box | undefined {
+        // What a plane shows: the boxes of the element and of its descendants that are not planes of their own.
+        let box: Box | undefined;
+        const walk: (fragment: BoxFragment, transform: Transform, frame: number) => void = (fragment: BoxFragment, transform: Transform, frame: number): void => {
+            const area: readonly [number, number, number, number] = this.sizes.mapped(transform, fragment.inline, fragment.block, fragment.inlineSize, fragment.blockSize);
+            box = this.geometry.union(box, [area[0], area[1], area[2], area[3]]);
+            const inner: Transform = this.sizes.compose(transform, this.sizes.inside(fragment, frame));
+            const own: number = this.sizes.frame(fragment.box.style);
+            for (const child of fragment.children ?? []) {
+                if (child.kind === "box") {
+                    if (!space.popped.has(child)) {
+                        walk(child, inner, own);
+                    }
+                    continue;
+                }
+                const line: Transform = this.lineTransform(inner, child);
+                for (const piece of child.pieces) {
+                    if (piece.kind === "box" && !space.popped.has(piece)) {
+                        walk(piece, line, own);
+                    }
+                }
+            }
+        };
+        walk(entry.fragment, entry.transform, entry.frame);
+        return box;
+    }
+
+    private grouped(entry: Layer, pdf: PdfPage, draw: (target: PdfPage) => void): void {
         // Compositing 1 §3.1: the stacking context of a grouping box is painted into a group, which is composited with the
         // box's opacity and blend mode as one object. The group is a form in the page's pixels and holds no tiling patterns,
         // whose matrices a form would change.
         const grouping: Grouping | undefined = this.grouping(entry.fragment.box.style);
         if (grouping === undefined) {
-            this.stack(entry, pdf, root);
+            draw(pdf);
             return;
         }
-        const area: readonly [number, number, number, number] = [0, 0, this.sheet.width, this.sheet.height];
+        const area: Box = [this.reach.x, this.reach.y, this.reach.width, this.reach.height];
         const group: PdfPage = this.document.startForm(area[2], area[3], false);
         const base: Matrix = this.base;
         this.base = PathGeometry.IDENTITY;
         try {
-            this.stack(entry, group, root);
+            draw(group);
         } finally {
             this.base = base;
         }
@@ -231,11 +448,139 @@ export class PagePainter {
         pdf.content.restore();
     }
 
+    private transformed(entry: Layer, matrix: Matrix4, pdf: PdfPage, draw: (target: PdfPage) => void): void {
+        // CSS Transforms 1 §10: "If a transform function causes the current transformation matrix of an object to be
+        // non-invertible, the object and its content do not get displayed."
+        const limit: Box | undefined = this.footprint;
+        delete this.footprint;
+        const flat: Matrix | null | undefined = this.geometry.flatten(matrix);
+        const homography: Homography = this.geometry.homography(matrix);
+        const inverse: Homography | undefined = this.geometry.invertHomography(homography);
+        if (flat === null || inverse === undefined || (flat !== undefined && this.geometry.invert(flat) === undefined)) {
+            return;
+        }
+        // CSS Transforms 2 §10: with backface-visibility hidden the box is not drawn when its back faces the viewer.
+        if (this.keyword(entry.fragment.box.style.values["backface-visibility"]) === "hidden" && matrix[10] < 0) {
+            return;
+        }
+        // What the page shows of the local plane is what the inverse of the transform takes the visible area to.
+        let inside: Box | undefined;
+        const visible: SvgPath = this.geometry.rectangle(this.reach.x, this.reach.y, this.reach.width, this.reach.height, 0, 0);
+        for (const polygon of this.geometry.projected(visible, inverse, 1)) {
+            for (const point of polygon) {
+                inside = this.geometry.union(inside, [point[0], point[1], 0, 0]);
+            }
+        }
+        if (inside === undefined) {
+            return;
+        }
+        const saved: readonly [Homography | undefined, Rectangle, Matrix, boolean] = [this.lens, this.reach, this.base, this.moved];
+        const outer: Rectangle = this.reach;
+        this.lens = this.geometry.composeHomography(this.lens ?? PathGeometry.IDENTITY3, homography);
+        this.reach = { x: inside[0], y: inside[1], width: inside[2], height: inside[3] };
+        this.moved = true;
+        try {
+            if (flat !== undefined) {
+                pdf.content.save();
+                pdf.content.transform(flat[0], flat[1], flat[2], flat[3], flat[4], flat[5]);
+                this.base = this.geometry.concat(saved[2], flat);
+                this.grouped(entry, pdf, draw);
+                pdf.content.restore();
+            } else {
+                this.projected(entry, homography, inverse, outer, limit, pdf, draw);
+            }
+        } finally {
+            if (saved[0] === undefined) {
+                delete this.lens;
+            } else {
+                this.lens = saved[0];
+            }
+            this.reach = saved[1];
+            this.base = saved[2];
+            this.moved = saved[3];
+        }
+    }
+
+    private limited(limit: Box | undefined, draw: () => void): void {
+        if (limit !== undefined) {
+            this.footprint = limit;
+        }
+        try {
+            draw();
+        } finally {
+            delete this.footprint;
+        }
+    }
+
+    private projected(entry: Layer, homography: Homography, inverse: Homography, outer: Rectangle, limit: Box | undefined, pdf: PdfPage, draw: (target: PdfPage) => void): void {
+        // A projection is not an affine map, which a PDF can apply to a form. The page's area is cut into cells in which the
+        // map is affine to within a fraction of a pixel, and each cell shows the form of the layer through its own map.
+        const area: Box = [this.reach.x, this.reach.y, this.reach.width, this.reach.height];
+        const form: PdfPage = this.document.startForm(area[2], area[3], false);
+        this.base = PathGeometry.IDENTITY;
+        draw(form);
+        const content: ImageResource = this.document.finishForm(form, area, PathGeometry.IDENTITY);
+        const grouping: Grouping | undefined = this.grouping(entry.fragment.box.style);
+        const cell: Box = [outer.x, outer.y, outer.width, outer.height];
+        if (grouping === undefined) {
+            this.limited(limit, () => this.tiles(pdf, content, homography, inverse, cell));
+            return;
+        }
+        const group: PdfPage = this.document.startForm(cell[2], cell[3], false);
+        this.limited(limit, () => this.tiles(group, content, homography, inverse, cell));
+        pdf.content.save();
+        pdf.content.graphicsState(pdf.useState(grouping.alpha, grouping.alpha, grouping.blend));
+        pdf.content.paintXObject(pdf.useImage(this.document.finishForm(group, cell, PathGeometry.IDENTITY)));
+        pdf.content.restore();
+    }
+
+    private tiles(page: PdfPage, content: ImageResource, homography: Homography, inverse: Homography, cell: Box): void {
+        // The affine map of a cell is the tangent of the inverse projection at its center; it holds when the corners and the
+        // middles of its sides, taken back by it and projected again, land within CELL_ERROR of where they started. A cell
+        // smaller than CELL_FLOOR shows no difference, and one where w is not positive shows nothing.
+        const [x, y, width, height]: Box = cell;
+        const samples: ReadonlyArray<readonly [number, number]> = [
+            [x, y], [x + width, y], [x, y + height], [x + width, y + height], [x + width / 2, y], [x + width / 2, y + height], [x, y + height / 2], [x + width, y + height / 2],
+            [x + width / 2, y + height / 2]
+        ];
+        // A cell outside of the footprint of the plane has nothing of it, nor has one that lies wholly behind the viewer.
+        const footprint: Box | undefined = this.footprint;
+        if ((footprint !== undefined && (x > footprint[0] + footprint[2] || x + width < footprint[0] || y > footprint[1] + footprint[3] || y + height < footprint[1]))
+            || samples.every((sample: readonly [number, number]) => this.geometry.project(inverse, sample[0], sample[1]) === undefined)) {
+            return;
+        }
+        const approximation: Matrix | undefined = this.geometry.tangent(inverse, x + width / 2, y + height / 2);
+        let error: number = approximation === undefined ? Number.POSITIVE_INFINITY : 0;
+        for (const sample of samples) {
+            const source: readonly [number, number] | undefined = approximation === undefined ? undefined : this.geometry.point(approximation, sample[0], sample[1]);
+            const back: readonly [number, number] | undefined = source === undefined || this.geometry.project(inverse, sample[0], sample[1]) === undefined ? undefined
+                : this.geometry.project(homography, source[0], source[1]);
+            error = back === undefined ? Number.POSITIVE_INFINITY : Math.max(error, Math.hypot(back[0] - sample[0], back[1] - sample[1]));
+        }
+        if (error > CELL_ERROR && (width >= 2 * CELL_FLOOR || height >= 2 * CELL_FLOOR)) {
+            const across: boolean = width >= height;
+            const first: Box = across ? [x, y, width / 2, height] : [x, y, width, height / 2];
+            const second: Box = across ? [x + width / 2, y, width / 2, height] : [x, y + height / 2, width, height / 2];
+            this.tiles(page, content, homography, inverse, first);
+            this.tiles(page, content, homography, inverse, second);
+            return;
+        }
+        const forward: Matrix | undefined = approximation === undefined || error === Number.POSITIVE_INFINITY ? undefined : this.geometry.invert(approximation);
+        if (forward === undefined) {
+            return;
+        }
+        page.content.save();
+        page.content.rectangle(x - CELL_OVERLAP, y - CELL_OVERLAP, width + 2 * CELL_OVERLAP, height + 2 * CELL_OVERLAP);
+        page.content.clip(false);
+        page.content.transform(forward[0], forward[1], forward[2], forward[3], forward[4], forward[5]);
+        page.content.paintXObject(page.useImage(content));
+        page.content.restore();
+    }
+
     private stack(entry: Layer, pdf: PdfPage, root: boolean): void {
         // CSS 2 Appendix E.2 gives the order.
         const layers: Array<Layer> = [];
-        this.collect(entry.fragment, entry.transform, entry.frame, layers, true, []);
-        this.enter(entry.clips, pdf);
+        this.collect(entry.fragment, entry.transform, entry.frame, layers, true, [], undefined, undefined);
         this.box(entry.fragment, entry.transform, entry.frame, pdf, root);
         const order: (first: Layer, second: Layer) => number = (first: Layer, second: Layer): number => first.z - second.z;
         for (const layer of layers.filter((candidate: Layer) => candidate.context && candidate.z < 0).sort(order)) {
@@ -252,7 +597,6 @@ export class PagePainter {
         for (const layer of layers.filter((candidate: Layer) => candidate.context && candidate.z > 0).sort(order)) {
             this.context(layer, pdf, false);
         }
-        this.leave(entry.clips, pdf);
     }
 
     private atomically(entry: Layer, pdf: PdfPage): void {
@@ -332,14 +676,14 @@ export class PagePainter {
         const edges: readonly [PhysicalSides, PhysicalSides] = this.edges(fragment);
         const inner: readonly [Rectangle, CornerRadii] = this.borders.inner(rectangle, edges[0], this.radii(fragment.box.style, rectangle));
         const clip: Rectangle = { ...inner[0] };
-        // A clip is a closed path, so in the axis that does not clip it spans the sheet, whose MediaBox ends what can be seen.
+        // A clip is a closed path, so in the axis that does not clip it spans what the page shows, whose MediaBox ends what can be seen.
         if (!across) {
-            clip.x = 0;
-            clip.width = this.sheet.width;
+            clip.x = this.reach.x;
+            clip.width = this.reach.width;
         }
         if (!down) {
-            clip.y = 0;
-            clip.height = this.sheet.height;
+            clip.y = this.reach.y;
+            clip.height = this.reach.height;
         }
         return { rectangle: clip, radii: across && down ? inner[1] : NO_RADII };
     }
@@ -349,19 +693,19 @@ export class PagePainter {
         return line === undefined || (line.kind === "ident" && line.lower === "none") ? decorators : [...decorators, style];
     }
 
-    private collect(fragment: BoxFragment, transform: Transform, frame: number, layers: Array<Layer>, top: boolean, held: ReadonlyArray<Held>): void {
+    private collect(fragment: BoxFragment, transform: Transform, frame: number, layers: Array<Layer>, top: boolean, held: ReadonlyArray<Held>, view: Matrix4 | undefined, host: ElementBox | undefined): void {
         // CSS Overflow 3 §3: a clip holds the boxes whose containing block it contains, so it holds an absolutely positioned
         // box only when a positioned box comes between them.
         let passed: ReadonlyArray<Held> = held;
         const positioned: boolean = this.isPositioned(fragment.box);
         if (!top) {
             // Compositing 1 §3.1: a box with effects that group it is a stacking context painted as if positioned with z-index 0.
-            const grouped: boolean = this.grouping(fragment.box.style) !== undefined;
+            const grouped: boolean = this.stacks(fragment.box);
             const z: number | undefined = positioned ? this.zIndex(fragment.box) : undefined;
             if (positioned || grouped) {
                 const absolute: boolean = this.keyword(fragment.box.style.values["position"]) === "absolute";
                 const clips: Array<Clip> = held.filter((entry: Held) => !absolute || entry.positioned).map((entry: Held) => entry.clip);
-                layers.push({ fragment, transform, frame, z: z ?? 0, context: z !== undefined || grouped, clips });
+                layers.push(this.layer(fragment, transform, frame, z ?? 0, z !== undefined || grouped, clips, view, host));
                 passed = positioned ? held.map((entry: Held): Held => ({ clip: entry.clip, positioned: true })) : held;
             }
             if (z !== undefined || grouped) {
@@ -374,15 +718,20 @@ export class PagePainter {
         }
         const inner: Transform = this.sizes.compose(transform, this.sizes.inside(fragment, frame));
         const own: number = this.sizes.frame(fragment.box.style);
+        // The perspective of a box reaches its element children, through the anonymous boxes between.
+        // A table wrapper has no element but takes the transform properties of its table; an anonymous box has no values of its own.
+        const named: boolean = fragment.box.element !== undefined || fragment.box.pseudoElement !== undefined || fragment.box.style.values !== fragment.box.style.inherited;
+        const eye: Matrix4 | undefined = named ? this.eye(fragment, transform) : view;
+        const next: ElementBox | undefined = named ? fragment.box : host;
         for (const child of fragment.children ?? []) {
             if (child.kind === "box") {
-                this.collect(child, inner, own, layers, false, passed);
+                this.collect(child, inner, own, layers, false, passed, eye, next);
                 continue;
             }
             const line: Transform = this.lineTransform(inner, child);
             for (const piece of child.pieces) {
                 if (piece.kind === "box") {
-                    this.collect(piece, line, own, layers, false, passed);
+                    this.collect(piece, line, own, layers, false, passed, eye, next);
                 }
             }
         }
@@ -497,7 +846,9 @@ export class PagePainter {
                     this.textShapes(fragment, transform, frame, form);
                 }
             };
-            this.backgrounds.paint(rectangle, borders, padding, style, pdf, undefined, radii, { base: this.base, page: this.page, shapes });
+            // CSS Transforms 1 §3: in a transformed box "a value of fixed for the background-attachment property is treated as
+            // if it had a value of scroll".
+            this.backgrounds.paint(rectangle, borders, padding, style, pdf, undefined, radii, this.moved ? { base: this.base, shapes } : { base: this.base, page: this.page, shapes });
         }
         if (fragment.collapsed !== undefined) {
             this.collapsed(fragment.collapsed, rectangle, own, pdf);
@@ -541,20 +892,40 @@ export class PagePainter {
             return;
         }
         const names: ReadonlyArray<string> | undefined = fragment.resumed === true ? undefined : this.setup.references.destinations(box);
-        for (const name of names ?? []) {
-            this.document.addDestination(name, page, rectangle.x * POINTS_PER_PIXEL, rectangle.y * POINTS_PER_PIXEL);
+        const shown: Rectangle | undefined = this.placed(rectangle);
+        if (shown === undefined) {
+            return;
         }
-        if (hidden || rectangle.width <= 0 || rectangle.height <= 0 || (box.linkDestination === undefined && box.linkUri === undefined)) {
+        for (const name of names ?? []) {
+            this.document.addDestination(name, page, shown.x * POINTS_PER_PIXEL, shown.y * POINTS_PER_PIXEL);
+        }
+        if (hidden || shown.width <= 0 || shown.height <= 0 || (box.linkDestination === undefined && box.linkUri === undefined)) {
             return;
         }
         const area: PageRectangle = {
-            x: rectangle.x * POINTS_PER_PIXEL, y: rectangle.y * POINTS_PER_PIXEL, width: rectangle.width * POINTS_PER_PIXEL, height: rectangle.height * POINTS_PER_PIXEL
+            x: shown.x * POINTS_PER_PIXEL, y: shown.y * POINTS_PER_PIXEL, width: shown.width * POINTS_PER_PIXEL, height: shown.height * POINTS_PER_PIXEL
         };
         if (box.linkDestination !== undefined) {
             this.document.linkToDestination(page, area, box.linkDestination);
         } else if (box.linkUri !== undefined) {
             this.document.linkToUri(page, area, box.linkUri);
         }
+    }
+
+    private placed(rectangle: Rectangle): Rectangle | undefined {
+        // Where a rectangle of the local plane lies on the page: the box of what its corners go to under the transforms in force,
+        // which is nothing for a plane that is not seen.
+        if (this.lens === undefined) {
+            return rectangle;
+        }
+        let box: Box | undefined;
+        const outline: SvgPath = this.geometry.rectangle(rectangle.x, rectangle.y, rectangle.width, rectangle.height, 0, 0);
+        for (const polygon of this.geometry.projected(outline, this.lens, 1)) {
+            for (const point of polygon) {
+                box = this.geometry.union(box, [point[0], point[1], 0, 0]);
+            }
+        }
+        return box === undefined ? undefined : { x: box[0], y: box[1], width: box[2], height: box[3] };
     }
 
     private linked(links: ReadonlyArray<readonly [PageRectangle, string, boolean]>): void {
@@ -564,8 +935,12 @@ export class PagePainter {
             return;
         }
         for (const [rectangle, name, internal] of links) {
+            const shown: Rectangle | undefined = this.placed({ x: rectangle.x, y: rectangle.y, width: rectangle.width, height: rectangle.height });
+            if (shown === undefined) {
+                continue;
+            }
             const area: PageRectangle = {
-                x: rectangle.x * POINTS_PER_PIXEL, y: rectangle.y * POINTS_PER_PIXEL, width: rectangle.width * POINTS_PER_PIXEL, height: rectangle.height * POINTS_PER_PIXEL
+                x: shown.x * POINTS_PER_PIXEL, y: shown.y * POINTS_PER_PIXEL, width: shown.width * POINTS_PER_PIXEL, height: shown.height * POINTS_PER_PIXEL
             };
             if (internal) {
                 this.document.linkToDestination(page, area, name);
@@ -682,7 +1057,12 @@ export class PagePainter {
 
     private isLayered(box: ElementBox): boolean {
         // A box that is painted from its own layer: a positioned one, or one that makes a stacking context by its effects.
-        return this.isPositioned(box) || this.grouping(box.style) !== undefined;
+        return this.isPositioned(box) || this.stacks(box);
+    }
+
+    private stacks(box: ElementBox): boolean {
+        // Compositing 1 §3.1 and CSS Transforms 1 §3: effects that group the box, or a transform of a transformable box.
+        return this.grouping(box.style) !== undefined || (this.displays.isTransformable(box.display, box.replaced) && this.displays.isTransforming(box.style.values));
     }
 
     private grouping(style: ComputedStyle): Grouping | undefined {

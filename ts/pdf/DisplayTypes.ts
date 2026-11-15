@@ -41,6 +41,7 @@ const LEGACY: ReadonlyMap<string, InnerDisplay> = new Map<string, InnerDisplay>(
 const FLOW_ROOT_INTERNAL: ReadonlySet<string> = new Set<string>(["table-cell", "table-caption"]);
 const FLOW_RUBY_INTERNAL: ReadonlySet<string> = new Set<string>(["ruby-base", "ruby-text"]);
 const BREAKING_INTERNAL: ReadonlySet<string> = new Set<string>(["table-row", "table-row-group", "table-header-group", "table-footer-group", "table-caption"]);
+const TRANSFORMING: ReadonlyArray<string> = ["transform", "translate", "rotate", "scale", "perspective", "filter", "backdrop-filter"];
 
 export class DisplayTypes {
 
@@ -212,6 +213,30 @@ export class DisplayTypes {
             flags &= ~(DisplayTypes.SIZE_CONTAINMENT | DisplayTypes.INLINE_SIZE_CONTAINMENT | DisplayTypes.SIZE_QUERIES);
         }
         return flags;
+    }
+
+    isTransformable(display: DisplayType, replaced: boolean): boolean {
+        // CSS Transforms 1 §2: every box of the CSS box model "except for non-replaced inline boxes, table-column boxes, and
+        // table-column-group boxes".
+        const internal: string | undefined = display.internal;
+        if (display.box !== undefined || internal === "table-column" || internal === "table-column-group" || (internal !== undefined && internal.startsWith("ruby-"))) {
+            return false;
+        }
+        return replaced || internal !== undefined || display.outer === "block" || display.inner !== "flow";
+    }
+
+    isTransforming(values: Readonly<Record<string, CssValue>>): boolean {
+        // CSS Transforms 1 §3 and CSS Transforms 2 §5, §7 and §12: a computed transform, translate, rotate, scale or
+        // perspective other than none, or transform-style preserve-3d, makes a stacking context and the containing block
+        // of all descendants; so does a filter or backdrop-filter, by Filter Effects 1 §5 and Filter Effects 2 §2.
+        for (const property of TRANSFORMING) {
+            const value: CssValue | undefined = values[property];
+            if (value !== undefined && !(value.kind === "ident" && value.lower === "none")) {
+                return true;
+            }
+        }
+        const style: CssValue | undefined = values["transform-style"];
+        return style !== undefined && style.kind === "ident" && style.lower === "preserve-3d";
     }
 
     private containmentOf(keyword: string): number {

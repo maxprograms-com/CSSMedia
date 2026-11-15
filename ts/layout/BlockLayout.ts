@@ -365,10 +365,15 @@ export class BlockLayout {
         // CSS Position 3 §2.1 and CSS Containment 2 §3.2: a positioned box, or one with layout or paint containment, that
         // another layout mode lays out is the containing block of the absolutely positioned boxes inside it.
         const box: ElementBox = fragment.box;
-        const containing: boolean = (this.containment(box) & CONTAINING_BLOCK) !== 0;
+        const containing: boolean = (this.containment(box) & CONTAINING_BLOCK) !== 0 || this.transforms(box);
         if (containing || (this.keyword(box.style.values["position"]) !== "none" && this.keyword(box.style.values["position"]) !== "static")) {
             this.positioned(fragment, containing);
         }
+    }
+
+    private transforms(box: ElementBox): boolean {
+        // CSS Transforms 1 §3: a box with a transform "establish[es] a containing block for all descendants", the fixed ones too.
+        return this.displays.isTransformable(box.display, box.replaced) && this.displays.isTransforming(box.style.values);
     }
 
     blockContentSizes(box: ElementBox): readonly [number, number] {
@@ -1564,7 +1569,7 @@ export class BlockLayout {
         }
         // CSS Containment 2 §3.2 and §3.4: a layout or paint containment box "establishes an absolute positioning containing
         // block and a fixed positioning containing block".
-        const containing: boolean = (containment & CONTAINING_BLOCK) !== 0;
+        const containing: boolean = (containment & CONTAINING_BLOCK) !== 0 || this.transforms(box);
         if (containing || (this.keyword(box.style.values["position"]) !== "none" && this.keyword(box.style.values["position"]) !== "static")) {
             this.positioned(fragment, containing);
         }
