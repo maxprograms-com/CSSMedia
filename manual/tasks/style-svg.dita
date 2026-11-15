@@ -48,6 +48,21 @@ svg|text {
 }
 </pre>
                 </stepxmp>
+                <info>
+                    <p>The rules of a drawing can use the at-rules of CSS. A <codeph>@container style()</codeph> query tests the custom properties of the parent of the element, so a drawing can change by a property that a group sets. The elements of a drawing have no box, so a size query finds no container among them and its rules do not apply. A <codeph>@color-profile</codeph> rule names an ICC profile for the colors of the drawing that use <codeph>color(--name …)</codeph>. The profile is known to that drawing alone, and it takes the place of a profile of your document with the same name.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;svg xmlns="http://www.w3.org/2000/svg" width="200" height="60">
+    &lt;style>
+        @color-profile --own { src: url("rgb.icc"); components: r, g, b; }
+        @container style(--x: 1) { rect { fill: color(--own 0.9 0.2 0.1); } }
+    &lt;/style>
+    &lt;g style="--x: 1">
+        &lt;rect width="80" height="50"/>
+    &lt;/g>
+&lt;/svg>
+</pre>
+                </stepxmp>
             </step>
             <step id="use-inheritance">
                 <cmd>Let the elements inherit</cmd>

@@ -19,7 +19,17 @@
                 </stepxmp>
                 <info>
                     <p>Opacity works on shapes, text, images, groups, <codeph>use</codeph> elements and nested <codeph>svg</codeph> elements. The property is not inherited, but the opacities of nested elements multiply: a shape with <codeph>opacity: 0.5</codeph> inside a group with <codeph>opacity: 0.5</codeph> is drawn at one quarter of its color.</p>
+                    <p>It also works on the boxes of your document. A box with an opacity below 1 is drawn with its background, its border, its text and the boxes inside it as one picture, and then the picture is made transparent. The box and everything in it fade together, and the boxes inside do not show through each other.</p>
                 </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    display: block;
+    background-color: #2e7d32;
+    color: #ffffff;
+    opacity: 0.4;
+}
+</pre>
+                </stepxmp>
             </step>
             <step id="fade-a-group">
                 <cmd>Fade a group as one picture</cmd>

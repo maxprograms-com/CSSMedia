@@ -65,6 +65,15 @@ interface Method {
     profile?: string;
 }
 
+interface Gradient {
+    repeating: boolean;
+    line: Line;
+    colors: ReadonlyArray<ColorValue>;
+    placed: ReadonlyArray<number>;
+    hints: ReadonlyMap<number, number>;
+    method: Method;
+}
+
 const SIDES: Readonly<Record<string, number>> = { top: 0, right: 90, bottom: 180, left: 270 };
 const EXTENTS: ReadonlySet<string> = new Set<string>(["closest-side", "closest-corner", "farthest-side", "farthest-corner"]);
 const DEFAULT_METHOD: Method = { space: "oklab", hue: "shorter" };
@@ -93,8 +102,83 @@ export class GradientPainter {
     paint(value: FunctionValue, box: Box, style: ComputedStyle, pdf: PdfPage): void {
         // CSS Images 3 §3: the gradient is drawn into the gradient box, here x, y, width and height on the page; each point
         // takes the color of its place on the gradient line.
-        if (box[2] <= 0 || box[3] <= 0) {
+        const read: Gradient | undefined = this.read(value, box, style);
+        if (read === undefined) {
             return;
+        }
+        const { repeating, line, colors, placed, hints, method } = read;
+        if (line.solid === true || (repeating && placed[placed.length - 1] - placed[0] <= 0)) {
+            // Images 3 §3.2.3 and §3.3: an ending shape of no height shows the last stop, or the average color when it repeats; a
+            // repeating gradient whose stops are all at one place shows the average color of its stops spread out evenly.
+            this.solid(repeating ? this.average(colors, placed[placed.length - 1] - placed[0] <= 0 ? Array.from(colors.keys()) : placed)
+                : colors[colors.length - 1], box, pdf);
+            return;
+        }
+        this.shade(line, colors, placed, hints, method, repeating, box, pdf);
+    }
+
+    alphaAt(value: FunctionValue, box: Box, style: ComputedStyle): ((x: number, y: number) => number) | undefined {
+        // Images 4 §3.5.3: the alpha of a point is that of the color at its position on the gradient line, interpolated between
+        // the stops with their hints, premultiplied alpha leaving the alpha itself linear; a repeating gradient repeats the line.
+        const read: Gradient | undefined = this.read(value, box, style);
+        if (read === undefined) {
+            return undefined;
+        }
+        const { repeating, line, colors, placed, hints } = read;
+        const alphas: ReadonlyArray<number> = colors.map((color: ColorValue) => color.alpha ?? 0);
+        const first: number = placed[0];
+        const last: number = placed[placed.length - 1];
+        if (line.solid === true || (repeating && last - first <= 0)) {
+            const constant: number = repeating ? this.average(colors, last - first <= 0 ? Array.from(colors.keys()) : placed).alpha ?? 0 : alphas[alphas.length - 1];
+            return (): number => constant;
+        }
+        return (x: number, y: number): number => {
+            let position: number;
+            if (line.kind === "linear") {
+                position = (x - line.origin[0]) * line.direction[0] + (y - line.origin[1]) * line.direction[1];
+            } else if (line.kind === "across") {
+                position = Math.abs(x - line.origin[0]);
+            } else if (line.kind === "radial") {
+                position = Math.hypot(x - line.origin[0], (y - line.origin[1]) / line.scale);
+            } else {
+                const angle: number = Math.atan2(x - line.origin[0], line.origin[1] - y) * 180 / Math.PI - line.turn;
+                position = ((angle % 360) + 360) % 360;
+            }
+            if (repeating) {
+                position = first + (((position - first) % (last - first)) + (last - first)) % (last - first);
+            }
+            if (position <= first) {
+                return alphas[0];
+            }
+            if (position >= last) {
+                return alphas[alphas.length - 1];
+            }
+            let index: number = 0;
+            while (index + 2 < placed.length && placed[index + 1] <= position) {
+                index++;
+            }
+            const from: number = placed[index];
+            const to: number = placed[index + 1];
+            const start: ColorStop = { offset: from, components: [] };
+            const exponent: number | undefined = this.bend(hints.get(index + 1), from, to);
+            if (exponent !== undefined) {
+                start.exponent = exponent;
+            }
+            const piece: Piece = { from, to, start, end: { offset: to, components: [] }, alphas: [alphas[index], alphas[index + 1]] };
+            return alphas[index] + (alphas[index + 1] - alphas[index]) * this.progress(piece, position);
+        };
+    }
+
+    private bend(hint: number | undefined, start: number, end: number): number | undefined {
+        // Images 4 §3.5.3: the weight is bent to P^log_H(.5) with H the hint's fraction of the way between the stops.
+        const span: number = end - start;
+        const fraction: number | undefined = hint === undefined || span <= 0 ? undefined : (hint - start) / span;
+        return fraction === undefined ? undefined : (fraction <= 0 ? 0 : (fraction >= 1 ? Number.POSITIVE_INFINITY : Math.log(0.5) / Math.log(fraction)));
+    }
+
+    private read(value: FunctionValue, box: Box, style: ComputedStyle): Gradient | undefined {
+        if (box[2] <= 0 || box[3] <= 0) {
+            return undefined;
         }
         const repeating: boolean = value.name.startsWith("repeating-");
         const kind: string = value.name.substring(repeating ? 10 : 0, value.name.length - 9);
@@ -122,18 +206,10 @@ export class GradientPainter {
             }
         }
         if (stops.length === 0) {
-            return;
+            return undefined;
         }
         const placed: Array<number> = this.fixup(stops, hints, line.length);
-        const colors: ReadonlyArray<ColorValue> = stops.map((stop: StopEntry) => stop.color as ColorValue);
-        if (line.solid === true || (repeating && placed[placed.length - 1] - placed[0] <= 0)) {
-            // Images 3 §3.2.3 and §3.3: an ending shape of no height shows the last stop, or the average color when it repeats; a
-            // repeating gradient whose stops are all at one place shows the average color of its stops spread out evenly.
-            this.solid(repeating ? this.average(colors, placed[placed.length - 1] - placed[0] <= 0 ? Array.from(colors.keys()) : placed)
-                : colors[colors.length - 1], box, pdf);
-            return;
-        }
-        this.shade(line, colors, placed, hints, method, repeating, box, pdf);
+        return { repeating, line, colors: stops.map((stop: StopEntry) => stop.color as ColorValue), placed, hints, method };
     }
 
     private shade(gradient: Line, colors: ReadonlyArray<ColorValue>, placed: ReadonlyArray<number>, hints: ReadonlyMap<number, number>, method: Method,
@@ -174,11 +250,7 @@ export class GradientPainter {
             }
             const startAlpha: number = colors[index].alpha ?? colors[index + 1].alpha ?? 0;
             const endAlpha: number = colors[index + 1].alpha ?? colors[index].alpha ?? 0;
-            const hint: number | undefined = hints.get(index + 1);
-            const span: number = placed[index + 1] - placed[index];
-            const fraction: number | undefined = hint === undefined || span <= 0 ? undefined : (hint - placed[index]) / span;
-            add(placed[index], start, startAlpha, fraction === undefined ? undefined
-                : (fraction <= 0 ? 0 : (fraction >= 1 ? Number.POSITIVE_INFINITY : Math.log(0.5) / Math.log(fraction))));
+            add(placed[index], start, startAlpha, this.bend(hints.get(index + 1), placed[index], placed[index + 1]));
             add(placed[index + 1], end, endAlpha);
         }
         // Viewers draw a shading from a few samples of its function, which blurs stops that meet, so each piece between two

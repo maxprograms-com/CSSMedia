@@ -56,8 +56,12 @@ export class ColorProfiles implements ProfileColors {
     private readonly transforms: Map<string, IccTransform | null> = new Map<string, IccTransform | null>();
     private readonly spaces: ColorSpaces = new ColorSpaces();
     private readonly remote: RemoteResource = new RemoteResource();
+    private readonly parent?: ColorProfiles;
 
-    constructor(rules: ReadonlyArray<DescriptorRule>) {
+    constructor(rules: ReadonlyArray<DescriptorRule>, parent?: ColorProfiles) {
+        if (parent !== undefined) {
+            this.parent = parent;
+        }
         // CSS Color 5 §5.3: "If multiple @color-profile rules are defined with the same name, the last one in document order
         // wins, and all preceding ones are ignored."
         const last: Map<string, DescriptorRule> = new Map<string, DescriptorRule>();
@@ -78,15 +82,16 @@ export class ColorProfiles implements ProfileColors {
     }
 
     profile(name: string): ColorProfile | undefined {
-        return this.profiles.get(name);
+        // A profile of an SVG image's own style sheet is known only there, and hides one of the same name from the document.
+        return this.profiles.get(name) ?? this.parent?.profile(name);
     }
 
     channels(name: string): number | undefined {
-        return this.profiles.get(name)?.channels;
+        return this.profile(name)?.channels;
     }
 
     components(name: string): ReadonlyArray<string> | undefined {
-        return this.profiles.get(name)?.components;
+        return this.profile(name)?.components;
     }
 
     colorants(name: string): ReadonlyArray<string> {
@@ -143,7 +148,7 @@ export class ColorProfiles implements ProfileColors {
     private transform(name: string): IccTransform | undefined {
         const profile: ColorProfile | undefined = this.profiles.get(name);
         if (profile === undefined) {
-            return undefined;
+            return this.parent?.transform(name);
         }
         let transform: IccTransform | null | undefined = this.transforms.get(name);
         if (transform === undefined) {
@@ -159,7 +164,7 @@ export class ColorProfiles implements ProfileColors {
     }
 
     private absoluteScale(name: string, transform: IccTransform): [number, number, number] | undefined {
-        const white: [number, number, number] | undefined = this.profiles.get(name)?.intent === "absolute-colorimetric" ? transform.mediaWhite() : undefined;
+        const white: [number, number, number] | undefined = this.profile(name)?.intent === "absolute-colorimetric" ? transform.mediaWhite() : undefined;
         const illuminant: [number, number, number] = transform.illuminant();
         return white === undefined || illuminant.includes(0) || white.includes(0) ? undefined : [white[0] / illuminant[0], white[1] / illuminant[1], white[2] / illuminant[2]];
     }

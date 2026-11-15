@@ -521,7 +521,7 @@
                             <entry>Sets the radius of the four corners. Values after a slash set the vertical radii.</entry>
                             <entry>One to four non-negative lengths or percentages, optionally followed by <codeph>/</codeph> and one to four more</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-radius" scope="external" format="html">CSS Borders 4 §3.6.2</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-top-left-radius</codeph></entry>
@@ -584,56 +584,56 @@
                             <entry>Sets the radius of the two top corners.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-top-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-right-radius</codeph></entry>
                             <entry>Sets the radius of the two right corners.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-right-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-right-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-bottom-radius</codeph></entry>
                             <entry>Sets the radius of the two bottom corners.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-bottom-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-left-radius</codeph></entry>
                             <entry>Sets the radius of the two left corners.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-left-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-left-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-block-start-radius</codeph></entry>
                             <entry>Sets the radius of the two corners at the start of the block axis.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-start-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-start-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-block-end-radius</codeph></entry>
                             <entry>Sets the radius of the two corners at the end of the block axis.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-end-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-block-end-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-inline-start-radius</codeph></entry>
                             <entry>Sets the radius of the two corners at the start of the inline axis.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-start-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-start-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>border-inline-end-radius</codeph></entry>
                             <entry>Sets the radius of the two corners at the end of the inline axis.</entry>
                             <entry>One or two non-negative lengths or percentages, optionally with a slash</entry>
                             <entry><codeph>0</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-end-radius" scope="external" format="html">CSS Borders 4 §3.5</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-borders-4/#propdef-border-inline-end-radius" scope="external" format="html">CSS Borders 4 §3.6.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>corner</codeph></entry>

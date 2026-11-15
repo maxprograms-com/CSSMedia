@@ -484,13 +484,18 @@ export class BlockLayout {
     }
 
     private free(top: number, bottom: number): Array<readonly [number, number]> | undefined {
-        // CSS Shapes 2 §9.2: the area outside the shape is excluded only inside the content area, and a line has the room
-        // that is free across its whole block size.
+        // CSS Shapes 2 §9.2: the exclusion is the content area minus the shape, and "Any part of the shape outside the element's
+        // content area has no effect"; a line box needs the room that is free across its whole block size (CSS 2 §9.5).
         const wrapping: Wrapping | undefined = this.wrapping;
         if (wrapping === undefined) {
             return undefined;
         }
         const area: readonly [number, number, number, number] = wrapping.area.area;
+        if (area[3] === Number.POSITIVE_INFINITY && wrapping.critical.length > 0 && top + TOLERANCE >= wrapping.bottom) {
+            // SVG 2 §11.7.1.1 treats the edge of a shape as floats, and CSS 2 §9.5 shifts a line down "until either some content
+            // fits or there are no more floats present"; below the last edge nothing is left to exclude, so the content overflows.
+            return undefined;
+        }
         const from: number = Math.max(top, area[1]);
         const to: number = Math.min(bottom, area[3]);
         if (to < from) {

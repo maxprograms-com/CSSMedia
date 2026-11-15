@@ -23,8 +23,12 @@ import type { CssValue } from "../css/values/CssValue.js";
 import type { StrokeStyle } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
 import type { ImageFormats, ImageSamples, ImageSize } from "../images/ImageFormats.js";
+import { BoxSizes } from "../layout/BoxSizes.js";
 import type { ColorOutput, PdfColor } from "../paint/ColorOutput.js";
+import type { TileLayer } from "../paint/ImagePainter.js";
+import { ImagePainter } from "../paint/ImagePainter.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
+import type { ColorProfiles } from "../pdf/ColorProfiles.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import type { ColorSpaceResource } from "../writer/PdfColorSpaces.js";
 import { PdfColorSpaces } from "../writer/PdfColorSpaces.js";
@@ -92,10 +96,11 @@ export class SvgPainter {
     private contextBox?: Box;
     private readonly document: PdfDocument;
     private readonly formats: ImageFormats;
-    private readonly colors: ColorOutput;
+    private colors: ColorOutput;
     private readonly images: SvgImage;
     private readonly geometry: SvgGeometry = new SvgGeometry();
     private readonly text: SvgText;
+    private maskPainter?: ImagePainter;
     private readonly active: Set<XMLElement> = new Set<XMLElement>();
 
     constructor(document: PdfDocument, formats: ImageFormats, colors: ColorOutput, images: SvgImage) {
@@ -121,12 +126,38 @@ export class SvgPainter {
         this.ctm = SvgGeometry.IDENTITY;
         this.origin = SvgGeometry.IDENTITY;
         try {
-            this.inDocument(styles, width, height, undefined, undefined, () => this.drawIn(pdf, [1, 0, 0, -1, 0, height], [0, 0, width, height], () =>
-                this.effects(node, style, SvgGeometry.IDENTITY, () => this.viewport(node, style, [0, 0, width, height], undefined)), SvgGeometry.IDENTITY));
+            this.withProfiles(styles, () => this.inDocument(styles, width, height, undefined, undefined, () => this.drawIn(pdf, [1, 0, 0, -1, 0, height], [0, 0, width, height], () =>
+                this.effects(node, style, SvgGeometry.IDENTITY, () => this.viewport(node, style, [0, 0, width, height], undefined)), SvgGeometry.IDENTITY)));
             return this.links;
         } finally {
             [this.scale, this.links, this.formHeight, this.quiet, this.ctm, this.origin] = saved;
         }
+    }
+
+    private withProfiles(styles: SvgStyles, run: () => void): void {
+        // CSS Color 5 §5.3: a @color-profile rule names a profile for the style sheet that holds it, so those of an image serve
+        // its own colors and hide those of the document with the same name.
+        const profiles: ColorProfiles | undefined = styles.profiles();
+        if (profiles === undefined) {
+            run();
+            return;
+        }
+        const saved: ColorOutput = this.colors;
+        this.useColors(saved.extend(profiles));
+        for (const message of this.colors.diagnostics()) {
+            this.images.diagnose(message);
+        }
+        try {
+            run();
+        } finally {
+            this.useColors(saved);
+        }
+    }
+
+    private useColors(colors: ColorOutput): void {
+        this.colors = colors;
+        this.text.useColors(colors);
+        delete this.maskPainter;
     }
 
     glyph(styles: SvgStyles, pdf: PdfPage, element: XMLElement, size: number, scale: number, ctm: Matrix, growth: number): Box | undefined {
@@ -147,7 +178,7 @@ export class SvgPainter {
         this.origin = SvgGeometry.IDENTITY;
         let ink: Box | undefined;
         try {
-            this.inDocument(styles, size, size, undefined, undefined, () => this.drawIn(pdf, ctm, [0, 0, size, size], () => {
+            this.withProfiles(styles, () => this.inDocument(styles, size, size, undefined, undefined, () => this.drawIn(pdf, ctm, [0, 0, size, size], () => {
                 const placement: readonly [Matrix, number, number] | undefined = this.placement(node.element, this.rectangle(style), undefined);
                 if (placement === undefined) {
                     return;
@@ -162,7 +193,7 @@ export class SvgPainter {
                         ink = this.geometry.transformBox(this.geometry.concat(placement[0], transform), box);
                     }
                 }));
-            }, SvgGeometry.IDENTITY));
+            }, SvgGeometry.IDENTITY)));
         } finally {
             [this.scale, this.links, this.formHeight, this.quiet, this.ctm, this.origin] = saved;
             this.growth = savedGrowth;
@@ -292,7 +323,8 @@ export class SvgPainter {
                 });
                 break;
             case "foreignObject":
-                throw new Error("The painting of the foreignObject element in the SVG image " + styles.url + " is not implemented");
+                this.unsupported("The painting of the foreignObject element in the SVG image " + styles.url + " is not implemented and the element is skipped");
+                break;
             default:
                 if (SHAPES.has(name)) {
                     this.effects(node, style, SvgGeometry.IDENTITY, () => this.shape(node, style));
@@ -435,12 +467,16 @@ export class SvgPainter {
             this.keyword(values["height"]) === "auto" ? this.height : this.styles.pixels(values["height"], this.height)];
     }
 
+    unsupported(message: string): void {
+        this.images.diagnose(message);
+    }
+
     private effects(node: SvgNode, style: ComputedStyle, after: Matrix, draw: () => void): void {
         // SVG 2 §3.6: the transforms, then clipping and masking, then the group composited with its opacity and blend mode.
         // CSS Transforms 2 §4.1: an element in a 3D rendering context goes into the plane of its own or its parent's.
         const filter: CssValue | undefined = style.values["filter"];
         if (filter !== undefined && this.keyword(filter) !== "none") {
-            throw new Error("The painting of the filter property in the SVG image " + this.styles.url + " is not implemented");
+            this.unsupported("The painting of the filter property in the SVG image " + this.styles.url + " is not implemented and the elements are painted unfiltered");
         }
         const own: Matrix4 = this.geometry.multiply4(this.geometry.multiply4(this.perspective(node), this.spatial(node, style)), this.geometry.lift(after));
         if (this.space !== undefined) {
@@ -2042,7 +2078,7 @@ export class SvgPainter {
 
     private mask(node: SvgNode, style: ComputedStyle): readonly [ImageResource, boolean] | null | undefined {
         // CSS Masking 1 §7.1 and §7.10.2: each reference is a layer, the first on top, and each layer but the lowest composites
-        // with those below it; a none, or a reference that is not a mask element, is a layer of transparent black.
+        // with those below it; a none, or a reference that names no mask element or image, is a layer of transparent black.
         const value: CssValue | undefined = style.values["mask-image"] ?? style.values["mask"];
         const references: ReadonlyArray<CssValue> = value === undefined ? [] : (value.kind === "list" ? value.items : [value]);
         if (references.every((reference: CssValue) => this.keyword(reference) === "none")) {
@@ -2069,7 +2105,7 @@ export class SvgPainter {
             return null;
         }
         if (reference.kind !== "url" || !this.styles.resolve(reference.href).includes("#")) {
-            throw new Error("The painting of mask images other than mask elements in the SVG image " + this.styles.url + " is not implemented");
+            return this.imageLayer(reference, index, node, style);
         }
         const element: readonly [ImageResource, boolean] | null = this.maskElement(reference.href, node, style);
         if (element === null) {
@@ -2079,9 +2115,52 @@ export class SvgPainter {
         return [element[0], mode === "alpha" ? false : (mode === "luminance" ? true : element[1])];
     }
 
+    private imageLayer(image: CssValue, index: number, node: SvgNode, style: ComputedStyle): readonly [ImageResource, boolean] | null {
+        // CSS Masking 1 §7.1 and §7.2: the image is positioned in the mask-origin box, repeated, and painted inside the mask-clip
+        // box, or all over with no-clip; with match-source an image is an alpha mask, and luminance takes its luminance.
+        const area: Box | undefined = this.localArea();
+        const origin: Box | undefined = this.maskBox(this.keyword(this.layerOf(style.values["mask-origin"], index)) ?? "border-box", node, style);
+        const clipName: string = this.keyword(this.layerOf(style.values["mask-clip"], index)) ?? "border-box";
+        const clip: Box | undefined = clipName === "no-clip" ? area : this.maskBox(clipName, node, style);
+        if (area === undefined || origin === undefined || clip === undefined) {
+            return null;
+        }
+        const painter: ImagePainter = this.imagePainter();
+        const layer: TileLayer = painter.maskTile(this.layerOf(style.values["mask-position"], index), this.layerOf(style.values["mask-size"], index),
+            this.layerOf(style.values["mask-repeat"], index));
+        const form: PdfPage = this.document.startForm(area[2], area[3], false);
+        this.drawIn(form, SvgGeometry.IDENTITY, area, () => {
+            this.pdf.content.save();
+            if (clipName === "no-clip" || this.clipTo(this.geometry.rectangle(clip[0], clip[1], clip[2], clip[3], 0, 0))) {
+                painter.tile(image, layer, { x: origin[0], y: origin[1], width: origin[2], height: origin[3] }, { x: clip[0], y: clip[1], width: clip[2], height: clip[3] },
+                    SvgGeometry.IDENTITY, style, this.pdf);
+            }
+            this.pdf.content.restore();
+        });
+        return [this.document.finishForm(form, area, SvgGeometry.IDENTITY), this.keyword(this.layerOf(style.values["mask-mode"], index)) === "luminance"];
+    }
+
+    private maskBox(name: string, node: SvgNode, style: ComputedStyle): Box | undefined {
+        // CSS Masking 1 §7.1: for an SVG element without a CSS layout box, content-box and padding-box are fill-box and
+        // border-box and margin-box are stroke-box; view-box is the nearest viewport.
+        if (name === "view-box") {
+            return [0, 0, this.width, this.height];
+        }
+        const box: Box | undefined = this.bbox(node, style, name === "stroke-box" || name === "border-box" || name === "margin-box" ? "stroke" : "fill");
+        return box === undefined || box[2] <= 0 || box[3] <= 0 ? undefined : box;
+    }
+
+    imagePainter(): ImagePainter {
+        if (this.maskPainter === undefined) {
+            this.maskPainter = new ImagePainter(this.formats, new BoxSizes(() => undefined), this.document, this.colors);
+            this.maskPainter.resolver = (reference: string): string => this.styles.resolve(reference);
+        }
+        return this.maskPainter;
+    }
+
     private layerOf(value: CssValue | undefined, index: number): CssValue | undefined {
         // CSS Masking 1 §7.10.2: a list shorter than the number of layers repeats, and the excess values of a longer one are not used.
-        return value === undefined || value.kind !== "list" ? value : value.items[index % value.items.length];
+        return value === undefined || value.kind !== "list" || value.separator !== "comma" ? value : value.items[index % value.items.length];
     }
 
     private coverage(layer: readonly [ImageResource, boolean] | null, area: Box): ImageResource {

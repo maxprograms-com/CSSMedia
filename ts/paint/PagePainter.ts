@@ -49,6 +49,11 @@ interface Held {
     positioned: boolean;
 }
 
+interface Grouping {
+    alpha: number;
+    blend: string;
+}
+
 interface Layer {
     fragment: BoxFragment;
     transform: Transform;
@@ -65,6 +70,8 @@ const PHYSICAL_NAMES: ReadonlyArray<string> = ["top", "right", "bottom", "left"]
 const HIDDEN: ReadonlySet<string> = new Set<string>(["hidden", "collapse"]);
 const NONE_PROPERTIES: ReadonlyArray<string> = ["transform", "translate", "rotate", "scale", "filter", "backdrop-filter", "clip-path", "mask-image", "box-shadow-offset",
     "outline-style", "border-image-source"];
+const NOT_PAINTED: ReadonlySet<string> = new Set<string>();
+const PAINTED_EFFECTS: ReadonlySet<string> = new Set<string>(["opacity", "mix-blend-mode"]);
 const RADII: ReadonlyArray<string> = ["border-top-left-radius", "border-top-right-radius", "border-bottom-right-radius", "border-bottom-left-radius"];
 const NO_SIDES: PhysicalSides = [0, 0, 0, 0];
 const NO_RADII: CornerRadii = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -201,6 +208,30 @@ export class PagePainter {
     }
 
     private context(entry: Layer, pdf: PdfPage, root: boolean): void {
+        // Compositing 1 §3.1: the stacking context of a grouping box is painted into a group, which is composited with the
+        // box's opacity and blend mode as one object. The group is a form in the page's pixels and holds no tiling patterns,
+        // whose matrices a form would change.
+        const grouping: Grouping | undefined = this.grouping(entry.fragment.box.style);
+        if (grouping === undefined) {
+            this.stack(entry, pdf, root);
+            return;
+        }
+        const area: readonly [number, number, number, number] = [0, 0, this.sheet.width, this.sheet.height];
+        const group: PdfPage = this.document.startForm(area[2], area[3], false);
+        const base: Matrix = this.base;
+        this.base = PathGeometry.IDENTITY;
+        try {
+            this.stack(entry, group, root);
+        } finally {
+            this.base = base;
+        }
+        pdf.content.save();
+        pdf.content.graphicsState(pdf.useState(grouping.alpha, grouping.alpha, grouping.blend));
+        pdf.content.paintXObject(pdf.useImage(this.document.finishForm(group, area, PathGeometry.IDENTITY)));
+        pdf.content.restore();
+    }
+
+    private stack(entry: Layer, pdf: PdfPage, root: boolean): void {
         // CSS 2 Appendix E.2 gives the order.
         const layers: Array<Layer> = [];
         this.collect(entry.fragment, entry.transform, entry.frame, layers, true, []);
@@ -324,14 +355,16 @@ export class PagePainter {
         let passed: ReadonlyArray<Held> = held;
         const positioned: boolean = this.isPositioned(fragment.box);
         if (!top) {
+            // Compositing 1 §3.1: a box with effects that group it is a stacking context painted as if positioned with z-index 0.
+            const grouped: boolean = this.grouping(fragment.box.style) !== undefined;
             const z: number | undefined = positioned ? this.zIndex(fragment.box) : undefined;
-            if (positioned) {
+            if (positioned || grouped) {
                 const absolute: boolean = this.keyword(fragment.box.style.values["position"]) === "absolute";
                 const clips: Array<Clip> = held.filter((entry: Held) => !absolute || entry.positioned).map((entry: Held) => entry.clip);
-                layers.push({ fragment, transform, frame, z: z ?? 0, context: z !== undefined, clips });
-                passed = held.map((entry: Held): Held => ({ clip: entry.clip, positioned: true }));
+                layers.push({ fragment, transform, frame, z: z ?? 0, context: z !== undefined || grouped, clips });
+                passed = positioned ? held.map((entry: Held): Held => ({ clip: entry.clip, positioned: true })) : held;
             }
-            if (z !== undefined) {
+            if (z !== undefined || grouped) {
                 return;
             }
         }
@@ -357,7 +390,7 @@ export class PagePainter {
 
     private blocks(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage): void {
         for (const child of fragment.children ?? []) {
-            if (child.kind === "box" && !this.isPositioned(child.box) && child.box.placement !== "float") {
+            if (child.kind === "box" && !this.isLayered(child.box) && child.box.placement !== "float") {
                 this.box(child, transform, frame, pdf, false);
                 const clipped: boolean = this.clip(child, transform, pdf);
                 this.blocks(child, this.sizes.compose(transform, this.sizes.inside(child, frame)), this.sizes.frame(child.box.style), pdf);
@@ -370,7 +403,7 @@ export class PagePainter {
 
     private floats(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage): void {
         for (const child of fragment.children ?? []) {
-            if (child.kind !== "box" || this.isPositioned(child.box)) {
+            if (child.kind !== "box" || this.isLayered(child.box)) {
                 continue;
             }
             if (child.box.placement === "float") {
@@ -390,10 +423,10 @@ export class PagePainter {
         for (const child of fragment.children ?? []) {
             if (child.kind === "line") {
                 this.line(child, transform, frame, pdf, decorators);
-            } else if (child.box.replaced && !this.isPositioned(child.box) && child.box.placement !== "float") {
+            } else if (child.box.replaced && !this.isLayered(child.box) && child.box.placement !== "float") {
                 // CSS 2 Appendix E.2: "If the element is a block-level replaced element, then: the replaced content".
                 this.replaced(child, transform, frame, pdf);
-            } else if (!this.isPositioned(child.box) && child.box.placement !== "float") {
+            } else if (!this.isLayered(child.box) && child.box.placement !== "float") {
                 const clipped: boolean = this.clip(child, transform, pdf);
                 this.inlines(child, this.sizes.compose(transform, this.sizes.inside(child, frame)), this.sizes.frame(child.box.style), pdf,
                     this.decorated(decorators, child.box.style));
@@ -413,7 +446,7 @@ export class PagePainter {
         for (const piece of line.pieces) {
             if (piece.kind === "text") {
                 runs.push(piece);
-            } else if (!this.isPositioned(piece.box)) {
+            } else if (!this.isLayered(piece.box)) {
                 this.text.runs(line, texts, runs, transform, decorators, pdf);
                 runs = [];
                 if (!piece.box.replaced && this.displays.isInlineBox(piece.box.display)) {
@@ -483,7 +516,7 @@ export class PagePainter {
                 const decorating: ReadonlyArray<ComputedStyle> = this.decorated(decorators, box.box.style);
                 for (const child of box.children ?? []) {
                     if (child.kind === "box") {
-                        if (!this.isPositioned(child.box) && !child.box.replaced) {
+                        if (!this.isLayered(child.box) && !child.box.replaced) {
                             walk(child, inner, own, decorating);
                         }
                         continue;
@@ -492,7 +525,7 @@ export class PagePainter {
                     for (const piece of child.pieces) {
                         if (piece.kind === "text") {
                             this.text.shapes(child, piece, inner, decorating, form);
-                        } else if (!this.isPositioned(piece.box) && !piece.box.replaced && !this.displays.isInlineBox(piece.box.display)) {
+                        } else if (!this.isLayered(piece.box) && !piece.box.replaced && !this.displays.isInlineBox(piece.box.display)) {
                             walk(piece, local, own, []);
                         }
                     }
@@ -623,21 +656,21 @@ export class PagePainter {
         if (box.placement === "fixed") {
             throw new Error("position: fixed is not implemented");
         }
-        PagePainter.effectsSupported(values);
+        PagePainter.effectsSupported(values, PAINTED_EFFECTS);
     }
 
-    static effectsSupported(values: Readonly<Record<string, CssValue>>): void {
+    static effectsSupported(values: Readonly<Record<string, CssValue>>, painted: ReadonlySet<string> = NOT_PAINTED): void {
         for (const property of NONE_PROPERTIES) {
-            if (!PagePainter.isNone(values[property])) {
+            if (!painted.has(property) && !PagePainter.isNone(values[property])) {
                 throw new Error("The painting of " + property + " is not implemented");
             }
         }
         const opacity: CssValue | undefined = values["opacity"];
-        if (opacity !== undefined && ((opacity.kind === "number" && opacity.value < 1) || (opacity.kind === "percentage" && opacity.value < 100))) {
+        if (!painted.has("opacity") && opacity !== undefined && ((opacity.kind === "number" && opacity.value < 1) || (opacity.kind === "percentage" && opacity.value < 100))) {
             throw new Error("The painting of opacity is not implemented");
         }
         const blend: CssValue | undefined = values["mix-blend-mode"];
-        if (blend !== undefined && blend.kind === "ident" && blend.lower !== "none" && blend.lower !== "normal") {
+        if (!painted.has("mix-blend-mode") && blend !== undefined && blend.kind === "ident" && blend.lower !== "none" && blend.lower !== "normal") {
             throw new Error("The painting of mix-blend-mode is not implemented");
         }
     }
@@ -645,6 +678,22 @@ export class PagePainter {
     private isPositioned(box: ElementBox): boolean {
         const position: string = this.keyword(box.style.values["position"]);
         return position !== "none" && position !== "static";
+    }
+
+    private isLayered(box: ElementBox): boolean {
+        // A box that is painted from its own layer: a positioned one, or one that makes a stacking context by its effects.
+        return this.isPositioned(box) || this.grouping(box.style) !== undefined;
+    }
+
+    private grouping(style: ComputedStyle): Grouping | undefined {
+        // Compositing 1 §3.1 and CSS Color 4 §3.2: opacity below 1, a blend mode other than normal and isolation make a stacking
+        // context whose contents are one group, composited as a whole with its alpha and blend mode.
+        const values: Readonly<Record<string, CssValue>> = style.values;
+        const opacity: CssValue | undefined = values["opacity"];
+        const alpha: number = opacity === undefined ? 1 : (opacity.kind === "number" ? opacity.value : (opacity.kind === "percentage" ? opacity.value / 100 : 1));
+        const blend: string = BackgroundPainter.BLEND_MODES.get(this.keyword(values["mix-blend-mode"])) ?? "Normal";
+        const isolated: boolean = this.keyword(values["isolation"]) === "isolate";
+        return alpha < 1 || blend !== "Normal" || isolated ? { alpha: Math.min(1, Math.max(0, alpha)), blend } : undefined;
     }
 
     private zIndex(box: ElementBox): number | undefined {

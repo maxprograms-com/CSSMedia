@@ -60,6 +60,6 @@
                 <alt>Five boxes in a row joined by arrows: Drawing, Transform, Clip, Mask, and Opacity and blend.</alt>
             </image>
         </fig>
-        <!-- TODO: box-shadow, text-shadow, outline, filter, and opacity, transform, clip-path, mask and mix-blend-mode on the boxes of the document or on the svg element itself, stop the run; they work on the elements inside the drawing -->
+        <!-- TODO: box-shadow, text-shadow, outline, filter, and transform, clip-path and mask on the boxes of the document or on the svg element itself, stop the run; they work on the elements inside the drawing, and opacity, mix-blend-mode and isolation work on the boxes of the document -->
     </conbody>
 </concept>

@@ -102,7 +102,7 @@ export class SvgText {
     private wrapper?: InlineLayout;
     private wrapFonts?: DocumentFonts;
     private painting: boolean = false;
-    private readonly colors: ColorOutput;
+    private colors: ColorOutput;
     private colorGlyphs?: ColorGlyphPainter;
     private colorFonts?: DocumentFonts;
     private colorRules?: ReadonlyArray<PaletteRule>;
@@ -134,6 +134,11 @@ export class SvgText {
         } finally {
             this.painting = false;
         }
+    }
+
+    useColors(colors: ColorOutput): void {
+        this.colors = colors;
+        delete this.colorGlyphs;
     }
 
     private fresh(): SvgText {
@@ -404,8 +409,8 @@ export class SvgText {
     }
 
     private inShape(sequence: InlineSequence, shape: Outline, size: number, anchor: string, rtl: boolean): readonly [Array<LineFragment>, number, number] {
-        // CSS Shapes 2 §9.2: the shape takes from the content area, which inline-size bounds along the line from the initial
-        // text position as text-anchor places it, and which is infinite otherwise; SVG 2 §11.7.1.1: lines start at its top.
+        // CSS Shapes 2 §9.2: only the part of the shape inside the content area counts; the content area is bounded along the line by
+        // inline-size from the initial text position as text-anchor places it (SVG 2 §11.7, §11.10.1.1), and nowhere else.
         const [edges, rules, crossing]: Outline = shape;
         let start: number = Number.NEGATIVE_INFINITY;
         let end: number = Number.POSITIVE_INFINITY;
@@ -456,8 +461,8 @@ export class SvgText {
     }
 
     private insideShape(style: ComputedStyle, matrix: Matrix): Outline | undefined {
-        // CSS Shapes 2 §9.2 and CSS Round Display 1 §5.1: the shape that the text wraps in, in the axes of its layout; an SVG
-        // element has no CSS box, so the box keywords and the percentages take the viewport, as view-box does.
+        // CSS Shapes 2 §9.2 and CSS Round Display 1 §5.1: the shape that the text wraps in, in the axes of its layout. An SVG
+        // element has no CSS box, so the reference box is the viewport, which CSS Masking 1 §5.1 gives view-box.
         const value: CssValue | undefined = style.values["shape-inside"];
         const keyword: string | undefined = this.keyword(value);
         if (value === undefined || keyword === "auto") {
@@ -504,15 +509,10 @@ export class SvgText {
     }
 
     private imageShape(image: CssValue, style: ComputedStyle, reference: Box, matrix: Matrix): Outline | undefined {
-        // CSS Shapes 2 §9.2: a URL that names an SVG shape element gives its shape, with its transform as a text path takes
-        // it, and one that names an image the shape of its alpha channel; anything else is as if auto had been given.
+        // CSS Shapes 2 §9.2: a URL that names an SVG shape element gives its shape, and one that names an image the shape of its
+        // alpha channel; anything else is as if auto had been given. The transform of the element applies, as for a text path.
         const styles: SvgStyles = this.painter.styles;
-        if (image.kind !== "url") {
-            throw new Error("The shape-inside value " + (image.kind === "function" ? image.name + "()" : "") + " of a text element in the SVG image " + styles.url
-                + " is not implemented");
-        }
-        const url: string = styles.resolve(image.href);
-        if (url.includes("#")) {
+        if (image.kind === "url" && styles.resolve(image.href).includes("#")) {
             const target: readonly [XMLElement, SvgStyles] | undefined = this.painter.lookup(image.href);
             if (target === undefined || !target[1].isSvg(target[0]) || !SHAPE_ELEMENTS.has(target[1].localName(target[0]))) {
                 return undefined;
@@ -526,7 +526,7 @@ export class SvgText {
             const placed: SvgPath = this.geometry.projectPath(path, this.painter.elementTransform(shapeNode, shapeStyle, target[1]), tolerance);
             return [this.tagged(this.geometry.edges(placed, matrix, tolerance), 0), [this.keyword(shapeStyle.values["fill-rule"]) === "evenodd"], true];
         }
-        const alpha: ImageAlpha | undefined = this.formats.alpha(url);
+        const alpha: ImageAlpha | undefined = this.painter.imagePainter().alpha(image, style, reference[2], reference[3]);
         return alpha === undefined ? undefined : this.alphaShape(alpha, style, reference, matrix);
     }
 

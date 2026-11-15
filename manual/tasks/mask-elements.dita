@@ -10,7 +10,7 @@
                 <info>
                     <p>A <codeph>mask</codeph> element holds the shapes, text and images of the mask. You name it in the <codeph>mask-image</codeph> property of the element you want to mask, as <codeph>url(#id)</codeph>. The shorthand <codeph>mask</codeph> takes the same reference. You can set it on shapes, text, images, groups and <codeph>use</codeph> elements.</p>
                     <p>The mask is drawn in the coordinates of the masked element, so it moves when the element moves. Where the mask is light the element shows, where it is dark the element is transparent, and the steps between them make the element partly transparent. A gradient in a mask gives a fade.</p>
-                    <p>A reference to something that is not a <codeph>mask</codeph> element, or to nothing, is a layer that is fully transparent. When it is the only layer, it hides the element.</p>
+                    <p>A reference to an element that is not a <codeph>mask</codeph> element, or to nothing, is a layer that is fully transparent. When it is the only layer, it hides the element.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-xml">&lt;defs>
@@ -87,7 +87,37 @@
 </pre>
                 </stepxmp>
             </step>
+            <step id="mask-with-an-image">
+                <cmd>Mask with an image or a gradient</cmd>
+                <info>
+                    <p>A layer of <codeph>mask-image</codeph> does not have to be a <codeph>mask</codeph> element. It can be the URL of an image file, a gradient, <codeph>image-set()</codeph>, <codeph>image()</codeph> or <codeph>cross-fade()</codeph>. An image layer uses the alpha of the image by default: where the image is opaque the element shows, and where it is transparent the element is hidden. With <codeph>mask-mode: luminance</codeph> the layer uses the luminance of the image instead.</p>
+                    <p>An image layer is placed in a box of the element, like a background. The box is the stroke box by default, the area that the element and its outline cover. Five properties control the layer, and each takes a list with one value for each layer:</p>
+                    <ul>
+                        <li><codeph>mask-origin</codeph> chooses the box that the position and the size refer to. It can be <codeph>fill-box</codeph> or <codeph>content-box</codeph> or <codeph>padding-box</codeph>, which are all the fill box, <codeph>stroke-box</codeph> or <codeph>border-box</codeph> or <codeph>margin-box</codeph>, which are all the stroke box, or <codeph>view-box</codeph>, the viewport of the drawing.</li>
+                        <li><codeph>mask-clip</codeph> chooses the box in which the layer paints. It takes the same values, and <codeph>no-clip</codeph>, which does not limit it.</li>
+                        <li><codeph>mask-size</codeph> sets the size of the image: <codeph>auto</codeph>, <codeph>cover</codeph>, <codeph>contain</codeph>, or one or two lengths or percentages.</li>
+                        <li><codeph>mask-position</codeph> places the image in the origin box. <codeph>right bottom</codeph> puts it in the bottom right corner and <codeph>center</codeph> centers it.</li>
+                        <li><codeph>mask-repeat</codeph> repeats the image. With <codeph>repeat</codeph> it covers the area, with <codeph>space</codeph> it puts as many whole images as fit with equal gaps, with <codeph>round</codeph> it stretches the images to fit a whole number of times, and with <codeph>no-repeat</codeph> it is drawn once.</li>
+                    </ul>
+                    <p>A gradient has no size of its own, so with <codeph>mask-size: auto</codeph> it fills the origin box. The mask hides everything that the layers do not cover.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.fade {
+    mask-image: linear-gradient(to right, black, transparent);
+}
+.dots {
+    mask-image: radial-gradient(circle at 15px 25px, black 12px, transparent 13px);
+    mask-size: 30px 50px;
+}
+.stamp {
+    mask-image: url(stamp.png);
+    mask-position: right bottom;
+    mask-repeat: no-repeat;
+}
+</pre>
+                </stepxmp>
+            </step>
         </steps>
-        <!-- TODO: mask-image with an image file or a gradient stops the run; mask-clip, mask-origin, mask-position, mask-repeat, mask-size and the mask-border properties are read and never painted -->
+        <!-- TODO: mask-border -->
     </taskbody>
 </task>

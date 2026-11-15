@@ -166,7 +166,7 @@
             <ul>
                 <li>A length is a size with a unit, such as <codeph>12pt</codeph> or <codeph>1em</codeph>. A percentage is relative to the containing block, as defined for the relevant inset.</li>
                 <li>
-                    <codeph>anchor()</codeph> uses an anchor’s side or center as an inset coordinate. <codeph>anchor-size()</codeph> uses a selected anchor’s size. See <xref href="https://www.w3.org/TR/css-anchor-position-1/#anchor-function" scope="external" format="html">CSS Anchor Positioning 1</xref> and <xref href="https://www.w3.org/TR/css-anchor-position-1/#anchor-size-function" scope="external" format="html">the <codeph>anchor-size()</codeph> function</xref>.</li>
+                    <codeph>anchor()</codeph> uses an anchor’s side or center as an inset coordinate. <codeph>anchor-size()</codeph> uses a selected anchor’s size. See <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor" scope="external" format="html">CSS Anchor Positioning 1</xref> and <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor-size" scope="external" format="html">the <codeph>anchor-size()</codeph> function</xref>.</li>
                 <li>
                     <codeph>running()</codeph> names an element to move into a page margin box. See <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-running" scope="external" format="html">CSS GCPM 3</xref>.</li>
                 <li>An integer is a whole number without a fractional part. Negative values, zero, and positive values are allowed for <codeph>order</codeph> and <codeph>z-index</codeph>; CSS Display defines how ordering is applied.</li>

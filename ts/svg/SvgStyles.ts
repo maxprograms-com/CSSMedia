@@ -30,7 +30,7 @@ import type { PropertyTable } from "../css/PropertyTable.js";
 import { ShorthandExpander } from "../css/ShorthandExpander.js";
 import type { TriState } from "../css/ConditionEvaluator.js";
 import type {
-    ContainerCondition, ContainerQuery, CssWideKeyword, Declaration, DeclaredValue, DescriptorRule, FontFaceRule, FontFeatureValuesRule, FunctionRule, PendingSubstitution,
+    ContainerQuery, CssWideKeyword, Declaration, DeclaredValue, DescriptorRule, FontFaceRule, FontFeatureValuesRule, FunctionRule, PendingSubstitution,
     PropertyRule, Scope, StyleRule, Stylesheet
 } from "../css/Stylesheet.js";
 import { SyntaxDefinition } from "../css/SyntaxDefinition.js";
@@ -46,7 +46,9 @@ import type { PaletteRule } from "../paint/ColorGlyphPainter.js";
 import { ColorGlyphPainter } from "../paint/ColorGlyphPainter.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
-import type { StyleComputer } from "../pdf/StyleComputer.js";
+import { ColorProfiles } from "../pdf/ColorProfiles.js";
+import type { Size } from "../pdf/PageCanvas.js";
+import type { QueryContainer, StyleComputer } from "../pdf/StyleComputer.js";
 import type { CustomValue, SubstitutionHost } from "../pdf/ValueSubstitution.js";
 import { ValueSubstitution } from "../pdf/ValueSubstitution.js";
 import type { DocumentFonts } from "../PdfGenerator.js";
@@ -129,7 +131,6 @@ const NO_LAYER: string = "";
 const FONT_DEPENDENCIES: ReadonlyArray<string> = ["writing-mode", "font-size", "font-family", "font-style", "font-weight", "font-width", "font-size-adjust", "line-height"];
 const PALETTE_RULE: string = "font-palette-values";
 const NO_PALETTES: ReadonlyArray<PaletteRule> = [];
-const STYLE_QUERY: RegExp = /(?:^|[^\w-])style\s*\(/i;
 const NO_SCOPE: ReadonlyArray<readonly [SvgNode | undefined, number]> = [[undefined, Number.POSITIVE_INFINITY]];
 
 export class SvgStyles {
@@ -168,6 +169,8 @@ export class SvgStyles {
     private cssUnits?: CssUnits;
     private hostSheet?: Stylesheet;
     private readonly computer: StyleComputer;
+    private readonly base: ColorProfiles;
+    private ownProfiles?: ColorProfiles | null;
     private registered?: ReadonlyMap<string, PropertyRule>;
     private initials?: Map<string, CustomValue | null>;
     private initialStyle?: ComputedStyle;
@@ -177,7 +180,8 @@ export class SvgStyles {
     private readonly outer: ReadonlyMap<string, string>;
     private sheetsRead: boolean = false;
     private hostRules?: ReadonlyArray<StyleRule>;
-    private hostHolds?: (queries: ReadonlyArray<ContainerQuery>) => boolean;
+    private hostContainers?: () => Iterable<QueryContainer>;
+    private hostViewport?: Size;
     private hostStyle?: ComputedStyle;
     private hostRoot?: SourceElement;
     private hostIds?: Map<string, XMLElement>;
@@ -187,7 +191,7 @@ export class SvgStyles {
     private rootPlace?: SvgNode;
     private scopeNode?: SvgNode;
 
-    constructor(source: XMLDocument | XMLElement, url: string, table: PropertyTable, computer: StyleComputer,
+    constructor(source: XMLDocument | XMLElement, url: string, table: PropertyTable, computer: StyleComputer, base: ColorProfiles,
         fontsFor: (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>) => DocumentFonts, load: (url: string) => Buffer | undefined,
         outer: ReadonlyMap<string, string> = new Map<string, string>([["xml", XML_NAMESPACE]])) {
         this.source = source;
@@ -195,6 +199,7 @@ export class SvgStyles {
         this.url = url;
         this.table = table;
         this.computer = computer;
+        this.base = base;
         this.reader = new DeclarationReader(table);
         this.fontsFor = fontsFor;
         this.load = load;
@@ -252,8 +257,7 @@ export class SvgStyles {
             return this.absolute(read.value, this.units(resolution.values, resolution.values, resolution.values));
         }
         // CSS Fonts 4 §9.2.3: "Each specified <color> must be an absolute color, otherwise the descriptor is invalid."
-        this.colors = this.colors ?? new ColorParser(undefined);
-        return this.colors.isAbsolute(read.value) ? this.colored(read.value) : undefined;
+        return this.colorParser().isAbsolute(read.value) ? this.colored(read.value) : undefined;
     }
 
     private get metrics(): FontMetrics {
@@ -261,7 +265,7 @@ export class SvgStyles {
     }
 
     embed(sheet: Stylesheet, box: ComputedStyle, root: ComputedStyle, palettes: ReadonlyArray<PaletteRule>, hostRoot: SourceElement,
-        holds: (queries: ReadonlyArray<ContainerQuery>) => boolean): void {
+        containers: () => Iterable<QueryContainer>, viewport: Size): void {
         this.hostSheet = sheet;
         this.hostRules = sheet.styleRules;
         this.hostLayers = sheet.layers;
@@ -269,7 +273,8 @@ export class SvgStyles {
         this.documentRoot = root;
         this.hostPalettes = palettes;
         this.hostRoot = hostRoot;
-        this.hostHolds = holds;
+        this.hostContainers = containers;
+        this.hostViewport = viewport;
         this.host(box);
     }
 
@@ -313,14 +318,60 @@ export class SvgStyles {
         this.sheets(this.root, reader);
         const sheet: Stylesheet = this.authorSheet as Stylesheet;
         this.diagnostics.push(...sheet.diagnostics);
-        if (sheet.colorProfiles.length > 0) {
-            throw new Error("The @color-profile rule in the style sheet of the SVG image " + this.url + " is not implemented");
+    }
+
+    profiles(): ColorProfiles | undefined {
+        // CSS Color 5 §5.3: the profiles of the image's own style sheets, in front of those of the document; none when it has none.
+        if (this.ownProfiles === undefined) {
+            this.loadSheets();
+            const rules: ReadonlyArray<DescriptorRule> = (this.authorSheet as Stylesheet).colorProfiles;
+            this.ownProfiles = rules.length === 0 ? null : new ColorProfiles(rules, this.base);
         }
-        // A style() query needs the computed styles of the ancestors of an SVG element, which are not available to the cascade.
-        if (sheet.styleRules.some((rule: StyleRule) => rule.containers.some((query: ContainerQuery) =>
-            query.conditions.some((condition: ContainerCondition) => condition.query !== undefined && STYLE_QUERY.test(condition.query))))) {
-            throw new Error("A container style query in the style sheet of the SVG image " + this.url + " is not implemented");
+        return this.ownProfiles ?? undefined;
+    }
+
+    private colorParser(): ColorParser {
+        this.colors = this.colors ?? new ColorParser(this.profiles() ?? this.base);
+        return this.colors;
+    }
+
+    private holds(node: SvgNode, queries: ReadonlyArray<ContainerQuery>, viewport: Size): boolean {
+        // CSS Conditional 5 §5: the query containers of an element are its ancestors, those of the image first and then those of
+        // the document that holds it; an SVG element has no box, so no size query finds a container among them.
+        return this.computer.containersHold(queries, (): Iterable<QueryContainer> => this.queryContainers(node), viewport);
+    }
+
+    private *queryContainers(node: SvgNode): Generator<QueryContainer> {
+        let root: ComputedStyle | undefined;
+        for (let current: SvgNode = node; current.element !== this.root && current.parent !== undefined;) {
+            root = root ?? this.documentRoot ?? this.styleOf(this.rootNode());
+            current = current.parent;
+            const container: QueryContainer = { element: current.element as SourceElement, style: this.withCustoms(this.styleOf(current)) };
+            const parent: ComputedStyle | undefined = current.element === this.root || current.parent === undefined ? this.hostStyle : this.styleOf(current.parent);
+            if (parent !== undefined) {
+                container.parent = this.withCustoms(parent);
+            }
+            if (root !== undefined) {
+                container.root = root;
+            }
+            yield container;
         }
+        yield* this.hostContainers?.() ?? [];
+    }
+
+    private withCustoms(style: ComputedStyle): ComputedStyle {
+        // The custom properties of an SVG element are kept apart from its style, and a style query reads them from the style.
+        const customs: ReadonlyMap<string, CustomValue> | undefined = this.customs?.get(style);
+        return customs === undefined ? style : { ...style, custom: Object.fromEntries(customs) };
+    }
+
+    private styleOf(node: SvgNode): ComputedStyle {
+        // The style of an ancestor is computed on its own parents, as the painter does when it comes down the tree.
+        return this.styles.get(node) ?? this.style(node, node.element === this.root || node.parent === undefined ? undefined : this.styleOf(node.parent));
+    }
+
+    private ownViewport(): Size {
+        return { width: this.viewport[0], height: this.viewport[1] };
     }
 
     private added(sheet: Stylesheet, owner?: XMLElement): void {
@@ -613,8 +664,7 @@ export class SvgStyles {
         const author: Stylesheet = this.authorSheet as Stylesheet;
         for (const [sheet, agent] of [[this.agentSheet as Stylesheet, true], [author, false]] as Array<[Stylesheet, boolean]>) {
             sheet.styleRules.forEach((rule: StyleRule, order: number) => {
-                // Without a host document there is no query container, so a container query is unknown and its rules do not apply.
-                if (rule.containers.length > 0 && (this.hostHolds === undefined || !this.hostHolds(rule.containers))) {
+                if (rule.containers.length > 0 && !this.holds(node, rule.containers, this.ownViewport())) {
                     return;
                 }
                 let specificity: readonly [number, number, number] | undefined;
@@ -673,7 +723,7 @@ export class SvgStyles {
 
     private hostCandidates(node: SvgNode, add: (declaration: Declaration, key: ReadonlyArray<number>) => void): void {
         this.hostRules?.forEach((rule: StyleRule, order: number) => {
-            if (rule.containers.length > 0 && this.hostHolds?.(rule.containers) !== true) {
+            if (rule.containers.length > 0 && !this.holds(node, rule.containers, this.hostViewport ?? this.ownViewport())) {
                 return;
             }
             const found: readonly [readonly [number, number, number], number] | undefined = this.scoped(node, rule.selectors, rule.scope);
@@ -1317,7 +1367,7 @@ export class SvgStyles {
                 typed: (syntax: string, text: string, baseUrl: string): string | undefined => this.typedText(syntax, text, baseUrl, resolution),
                 matches: (property: string, value?: string): TriState => this.styleMatches(property, value, resolution),
                 numeric: (text: string): [number, string] | undefined => this.numeric(text, resolution),
-                containersHold: (queries: ReadonlyArray<ContainerQuery>): boolean => this.hostHolds?.(queries) === true,
+                containersHold: (queries: ReadonlyArray<ContainerQuery>): boolean => this.holds(resolution.node, queries, this.ownViewport()),
                 enter: (key: string): boolean => this.enter(key, resolution),
                 leave: (key: string): boolean => this.leave(key, resolution)
             };
@@ -1530,14 +1580,13 @@ export class SvgStyles {
             case "hash":
             case "ident":
             case "function": {
-                this.colors = this.colors ?? new ColorParser(undefined);
-                const parsed: ParsedColor | undefined = this.colors.parse(value, this.simplifier.specifiedContext());
+                const parsed: ParsedColor | undefined = this.colorParser().parse(value, this.simplifier.specifiedContext());
                 if (parsed === undefined || parsed === "unresolved") {
                     return value.kind === "function" ? { ...value, args: value.args.map((item: CssValue) => this.colored(item)) } : value;
                 }
                 if (parsed.kind === "ident" && parsed.lower !== "currentcolor") {
                     const hex: string | undefined = this.keywords.systemColorHex(parsed.lower);
-                    return (hex === undefined ? undefined : this.colors.parseHex(hex)) ?? parsed;
+                    return (hex === undefined ? undefined : this.colorParser().parseHex(hex)) ?? parsed;
                 }
                 return parsed;
             }

@@ -125,7 +125,7 @@
                             <entry><codeph>x</codeph>, <codeph>y</codeph>, <codeph>dx</codeph>, <codeph>dy</codeph>, <codeph>rotate</codeph>, <codeph>textLength</codeph>, <codeph>lengthAdjust</codeph></entry>
                         </row>
                         <row>
-                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#TSpanElement" scope="external" format="html"><codeph>tspan</codeph></xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/text.html#elementdef-tspan" scope="external" format="html"><codeph>tspan</codeph></xref></entry>
                             <entry>A part of a text with its own style or position.</entry>
                             <entry><codeph>x</codeph>, <codeph>y</codeph>, <codeph>dx</codeph>, <codeph>dy</codeph>, <codeph>rotate</codeph>, <codeph>textLength</codeph>, <codeph>lengthAdjust</codeph></entry>
                         </row>
@@ -352,7 +352,7 @@
                             <entry>Presentation attributes: each sets the CSS property of the same name on an element of a drawing. A rule of a style sheet overrides them.</entry>
                             <entry>The values of the property</entry>
                             <entry>The initial value of the property</entry>
-                            <entry><xref href="https://www.w3.org/TR/SVG2/styling.html#PresentationAttributes" scope="external" format="html">SVG 2 §6.6</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/SVG2/styling.html#PresentationAttributes" scope="external" format="html">SVG 2 §6.10.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>transform</codeph></entry>
@@ -411,7 +411,7 @@
                             <entry>On a <codeph>text</codeph> element, pours the text into a shape.</entry>
                             <entry><codeph>auto</codeph>, a basic shape, <codeph>url(#id)</codeph> of a shape, or the URL of an image</entry>
                             <entry><codeph>auto</codeph></entry>
-                            <entry><xref href="https://www.w3.org/TR/css-shapes-2/#shape-inside-property" scope="external" format="html">CSS Shapes 2</xref></entry>
+                            <entry><xref href="https://drafts.csswg.org/css-shapes-2/#shape-inside-property" scope="external" format="html">CSS Shapes 2</xref></entry>
                         </row>
                     </tbody>
                 </tgroup>

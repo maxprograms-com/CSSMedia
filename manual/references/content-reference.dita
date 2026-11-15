@@ -110,7 +110,7 @@
                                 <codeph>first</codeph>
                             </entry>
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-string" scope="external" format="html">CSS GCPM 3 §1.1.2</xref>
+                                <xref href="https://www.w3.org/TR/css-gcpm-3/#using-named-strings" scope="external" format="html">CSS GCPM 3 §1.1.2</xref>
                             </entry>
                         </row>
                         <row id="row-content-function" valign="middle">
@@ -345,7 +345,7 @@
                             </entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-counter-set" scope="external" format="html">CSS Lists 3 §4.3</xref>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-counter-set" scope="external" format="html">CSS Lists 3 §4.2</xref>
                             </entry>
                         </row>
                         <row valign="middle">
@@ -368,7 +368,7 @@
                             </entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-list-style-image" scope="external" format="html">CSS Lists 3 §3.1</xref>
+                                <xref href="https://www.w3.org/TR/css-lists-3/#propdef-list-style-image" scope="external" format="html">CSS Lists 3 §3.3</xref>
                             </entry>
                         </row>
                         <row valign="middle">
@@ -438,7 +438,7 @@
                             <entry>One or more symbols</entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-symbols" scope="external" format="html">CSS Counter Styles 3 §3.2</xref>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-symbols" scope="external" format="html">CSS Counter Styles 3 §3.8</xref>
                             </entry>
                         </row>
                         <row valign="middle">
@@ -448,7 +448,7 @@
                             <entry>Comma-separated pairs of a non-negative integer and a symbol, in descending weight order</entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-additive-symbols" scope="external" format="html">CSS Counter Styles 3 §3.3</xref>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-additive-symbols" scope="external" format="html">CSS Counter Styles 3 §3.8</xref>
                             </entry>
                         </row>
                         <row valign="middle">
@@ -458,7 +458,7 @@
                             <entry>One or two symbols</entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-negative" scope="external" format="html">CSS Counter Styles 3 §3.4</xref>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-negative" scope="external" format="html">CSS Counter Styles 3 §3.2</xref>
                             </entry>
                         </row>
                         <row valign="middle">
@@ -468,7 +468,7 @@
                             <entry>One symbol</entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-prefix" scope="external" format="html">CSS Counter Styles 3 §3.7</xref>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-prefix" scope="external" format="html">CSS Counter Styles 3 §3.3</xref>
                             </entry>
                         </row>
                         <row valign="middle">
@@ -478,7 +478,7 @@
                             <entry>One symbol</entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-suffix" scope="external" format="html">CSS Counter Styles 3 §3.7</xref>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-suffix" scope="external" format="html">CSS Counter Styles 3 §3.4</xref>
                             </entry>
                         </row>
                         <row valign="middle">
@@ -510,7 +510,7 @@
                             <entry>A counter-style name</entry>
                             <entry />
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-fallback" scope="external" format="html">CSS Counter Styles 3 §3.8</xref>
+                                <xref href="https://www.w3.org/TR/css-counter-styles-3/#descdef-counter-style-fallback" scope="external" format="html">CSS Counter Styles 3 §3.7</xref>
                             </entry>
                         </row>
                         <row id="row-footnote-counter" valign="middle">

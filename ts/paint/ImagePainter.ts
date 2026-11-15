@@ -20,12 +20,14 @@
 
 import { CssUnits } from "../css/values/CssUnits.js";
 import type { ColorValue, CssValue, FunctionValue } from "../css/values/CssValue.js";
+import type { Matrix } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
-import type { ImageFormats, ImageSize } from "../images/ImageFormats.js";
+import type { ImageAlpha, ImageFormats, ImageSize } from "../images/ImageFormats.js";
 import type { BoxSizes, Transform } from "../layout/BoxSizes.js";
 import type { BoxFragment, ObjectArea } from "../layout/Fragment.js";
 import type { BoxNode } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
+import type { Rectangle } from "../pdf/PageCanvas.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { ImageResource, PageRectangle, PdfPage } from "../writer/PdfPage.js";
 import type { ColorOutput } from "./ColorOutput.js";
@@ -33,11 +35,20 @@ import { GradientPainter } from "./GradientPainter.js";
 
 export type Natural = readonly [number | undefined, number | undefined, number | undefined];
 
+export interface TileLayer {
+    size: CssValue;
+    x: CssValue;
+    y: CssValue;
+    repeatX: string;
+    repeatY: string;
+}
+
 const NO_LINKS: ReadonlyArray<readonly [PageRectangle, string, boolean]> = [];
 const NO_NATURAL: Natural = [undefined, undefined, undefined];
 const SUPPORTED_TYPES: ReadonlySet<string> = new Set<string>([
     "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/tiff", "image/jp2", "image/svg+xml", "application/mathml+xml"
 ]);
+const LARGEST_GRID: number = 2048;
 const BLOCK_START: number = 0;
 const INLINE_END: number = 1;
 const BLOCK_END: number = 2;
@@ -55,6 +66,8 @@ export class ImagePainter {
     private readonly colors: ColorOutput;
     private readonly gradients: GradientPainter;
     private readonly units: CssUnits = new CssUnits();
+    private readonly geometry: PathGeometry = new PathGeometry();
+    resolver?: (reference: string) => string;
 
     constructor(images: ImageFormats, sizes: BoxSizes, document: PdfDocument, colors: ColorOutput) {
         this.images = images;
@@ -73,12 +86,92 @@ export class ImagePainter {
         }
         const [image, density] = chosen;
         if (image.kind === "url") {
-            return this.images.natural(image.href, style.values, style.zoom ?? 1, true, undefined, density);
+            return this.images.natural(this.located(image.href), style.values, style.zoom ?? 1, true, undefined, density);
         }
         if (image.kind === "function" && image.name === "cross-fade") {
             return this.crossFadeSize(image, style);
         }
         return NO_NATURAL;
+    }
+
+    alpha(value: CssValue, style: ComputedStyle, width: number, height: number): ImageAlpha | undefined {
+        // CSS Shapes 1 §3.4: the shape of an <image> is where its alpha channel is above the threshold, so the alpha of each kind
+        // of image is found as it is painted: the channel of a file, the alpha of the colors of a gradient at each point of a
+        // grid over the box, the weighted average of those of the images of a cross-fade, and the alpha of the color of image().
+        const chosen: readonly [CssValue, number | undefined] | undefined = this.chosen(value, style);
+        if (chosen === undefined) {
+            return undefined;
+        }
+        const image: CssValue = chosen[0];
+        if (image.kind === "url") {
+            return this.images.alpha(this.located(image.href));
+        }
+        if (image.kind !== "function") {
+            return undefined;
+        }
+        if (GradientPainter.NAMES.has(image.name)) {
+            const sampler: ((x: number, y: number) => number) | undefined = this.gradients.alphaAt(image, [0, 0, width, height], style);
+            return sampler === undefined ? undefined : this.grid(width, height, (x: number, y: number): number => sampler(x, y));
+        }
+        if (image.name === "image") {
+            const source: CssValue | undefined = this.imageSource(image);
+            const href: string | undefined = source === undefined ? undefined : this.href(source);
+            if (href !== undefined && this.images.size(href) !== undefined) {
+                return this.images.alpha(href);
+            }
+            const color: ColorValue | undefined = this.colors.colorValue(this.imageColor(image, style), style);
+            return this.grid(1, 1, (): number => color?.alpha ?? 0);
+        }
+        return image.name === "cross-fade" ? this.crossFadeAlpha(image, style, width, height) : undefined;
+    }
+
+    private crossFadeAlpha(value: FunctionValue, style: ComputedStyle, width: number, height: number): ImageAlpha {
+        // CSS Images 4 §2.6.2: the average of the premultiplied pixels with the weights, so the alpha is the average of the
+        // alphas by the same weights, and what is left over is a transparent image.
+        const [weights]: readonly [ReadonlyArray<readonly [CssValue, number]>, number] = this.weights(value);
+        const layers: Array<readonly [(x: number, y: number) => number, number]> = [];
+        for (const [image, weight] of weights) {
+            const color: ColorValue | undefined = this.colors.colorValue(image, style);
+            if (color !== undefined) {
+                layers.push([(): number => color.alpha ?? 0, weight]);
+                continue;
+            }
+            const alpha: ImageAlpha | undefined = this.alpha(image, style, width, height);
+            if (alpha !== undefined) {
+                layers.push([(x: number, y: number): number => this.alphaAt(alpha, x / width, y / height), weight]);
+            }
+        }
+        return this.grid(width, height, (x: number, y: number): number => layers.reduce((sum: number, layer: readonly [(x: number, y: number) => number, number]) =>
+            sum + layer[0](x, y) * layer[1], 0));
+    }
+
+    private alphaAt(image: ImageAlpha, fx: number, fy: number): number {
+        // The nearest pixel of the image at a fraction of its width and height; an image without an alpha channel is opaque.
+        if (image.alpha === undefined) {
+            return 1;
+        }
+        const column: number = Math.min(image.width - 1, Math.max(0, Math.floor(fx * image.width)));
+        const row: number = Math.min(image.height - 1, Math.max(0, Math.floor(fy * image.height)));
+        return image.bits === 16 ? image.alpha.readUInt16BE((row * image.width + column) * 2) / 65535 : image.alpha[row * image.width + column] / 255;
+    }
+
+    private grid(width: number, height: number, alpha: (x: number, y: number) => number): ImageAlpha {
+        // Samples at the centers of the pixels of a grid over the box, a pixel to a CSS pixel and no more than the largest
+        // image allows along an axis.
+        const columns: number = Math.min(LARGEST_GRID, Math.max(1, Math.ceil(width)));
+        const rows: number = Math.min(LARGEST_GRID, Math.max(1, Math.ceil(height)));
+        const samples: Buffer = Buffer.alloc(columns * rows);
+        for (let row: number = 0; row < rows; row++) {
+            for (let column: number = 0; column < columns; column++) {
+                samples[row * columns + column] = Math.round(Math.min(1, Math.max(0, alpha((column + 0.5) * width / columns, (row + 0.5) * height / rows))) * 255);
+            }
+        }
+        return { width: columns, height: rows, bits: 8, alpha: samples };
+    }
+
+    private located(href: string): string {
+        // A reference in an SVG image is against the address of that image, which the document's painters do not know.
+        return this.resolver === undefined ? href : this.resolver(href);
     }
 
     paintImage(value: CssValue, target: readonly [number, number, number, number], style: ComputedStyle, pdf: PdfPage): void {
@@ -89,12 +182,12 @@ export class ImagePainter {
         }
         const image: CssValue = chosen[0];
         if (image.kind === "url") {
-            const natural: Natural | undefined = this.images.natural(image.href, style.values, style.zoom ?? 1, true, undefined, chosen[1]);
+            const natural: Natural | undefined = this.images.natural(this.located(image.href), style.values, style.zoom ?? 1, true, undefined, chosen[1]);
             const size: readonly [number, number] | undefined = natural?.[0] !== undefined && natural[1] !== undefined ? [natural[0], natural[1]] : undefined;
             pdf.content.save();
             pdf.content.rectangle(target[0], target[1], target[2], target[3]);
             pdf.content.clip(false);
-            this.draw(image.href, target, style.values, true, pdf, size);
+            this.draw(this.located(image.href), target, style.values, true, pdf, size);
             pdf.content.restore();
             return;
         }
@@ -110,11 +203,208 @@ export class ImagePainter {
         }
     }
 
+    tile(image: CssValue, layer: TileLayer, area: Rectangle, painting: Rectangle, base: Matrix, style: ComputedStyle, pdf: PdfPage): void {
+        // The image sized, positioned and repeated in the positioning area, and where it repeats, over the painting area.
+        const natural: Natural | undefined = this.natural(image, style);
+        if (natural === undefined) {
+            return;
+        }
+        const values: Readonly<Record<string, CssValue>> = style.values;
+        const size: readonly [number, number] = this.size(layer.size, natural, area, layer.repeatX === "round", layer.repeatY === "round");
+        if (!(size[0] > 0) || !(size[1] > 0)) {
+            return;
+        }
+        const rtl: boolean = this.keyword(values["direction"]) === "rtl";
+        const mode: string = this.keyword(values["writing-mode"]);
+        const vertical: boolean = mode !== "horizontal-tb" && mode !== "none";
+        const flipped: boolean = vertical && mode.endsWith("-rl");
+        const x: readonly [number, number] = this.axis(layer.x, area.x, area.width, size[0], layer.repeatX, vertical ? flipped : rtl);
+        const y: readonly [number, number] = this.axis(layer.y, area.y, area.height, size[1], layer.repeatY, vertical && rtl);
+        const tile: readonly [number, number, number, number] = [x[0], y[0], size[0], size[1]];
+        const across: boolean = layer.repeatX !== "no-repeat" && x[1] > 0;
+        const down: boolean = layer.repeatY !== "no-repeat" && y[1] > 0;
+        if (!across && !down) {
+            this.paintImage(image, tile, style, pdf);
+            return;
+        }
+        // CSS Backgrounds 4 §2.3: a repeated image covers the painting area, so it is a tiling pattern; an axis that does not
+        // repeat keeps one band of tiles. ISO 32000-2 §8.7.3.1: the pattern matrix maps the cell to the default space of the
+        // content stream.
+        if (!across || !down) {
+            pdf.content.rectangle(across ? painting.x : tile[0], down ? painting.y : tile[1], across ? painting.width : tile[2], down ? painting.height : tile[3]);
+            pdf.content.clip(false);
+        }
+        const stepX: number = across ? x[1] : tile[2];
+        const stepY: number = down ? y[1] : tile[3];
+        const cell: PdfPage = this.document.startForm(stepX, stepY, false);
+        this.paintImage(image, [0, 0, tile[2], tile[3]], style, cell);
+        if (base !== PathGeometry.IDENTITY) {
+            const matrix: Matrix = this.geometry.concat(base, this.geometry.translation(tile[0], tile[1]));
+            const pattern: string = pdf.usePattern(this.document.finishPattern(cell, [0, 0, stepX, stepY], matrix));
+            pdf.content.fillPattern(pattern);
+            pdf.content.rectangle(painting.x, painting.y, painting.width, painting.height);
+            pdf.content.fill(false);
+            return;
+        }
+        // Quartz places a tiling pattern inside a form XObject apart from where the other viewers do, so there the tile is a
+        // form painted at each place it repeats over the painting area.
+        const form: string = pdf.useImage(this.document.finishForm(cell, [0, 0, stepX, stepY], PathGeometry.IDENTITY));
+        const first: (start: number, step: number, from: number) => number = (start: number, step: number, from: number): number => Math.floor((from - start) / step);
+        const columns: readonly [number, number] = across ? [first(tile[0], stepX, painting.x), first(tile[0], stepX, painting.x + painting.width)] : [0, 0];
+        const rows: readonly [number, number] = down ? [first(tile[1], stepY, painting.y), first(tile[1], stepY, painting.y + painting.height)] : [0, 0];
+        for (let row: number = rows[0]; row <= rows[1]; row++) {
+            for (let column: number = columns[0]; column <= columns[1]; column++) {
+                pdf.content.save();
+                pdf.content.transform(1, 0, 0, 1, tile[0] + column * stepX, tile[1] + row * stepY);
+                pdf.content.paintXObject(form);
+                pdf.content.restore();
+            }
+        }
+    }
+
+    maskTile(position: CssValue | undefined, size: CssValue | undefined, repeat: CssValue | undefined): TileLayer {
+        // CSS Masking 1 §7.4 to §7.6: mask-position is a <position>, mask-size is the <bg-size> of backgrounds, and mask-repeat
+        // a <repeat-style>, which Backgrounds 4 §2.3 reads as repeat-x, repeat-y, or one or two keywords for the two axes.
+        const [x, y]: readonly [CssValue, CssValue] = this.positionAxes(position);
+        const words: ReadonlyArray<string> = repeat === undefined ? [] : this.list(repeat, " ").map((word: CssValue) => this.keyword(word));
+        let repeatX: string = words[0] ?? "repeat";
+        let repeatY: string = words[1] ?? repeatX;
+        if (repeatX === "repeat-x") {
+            repeatX = "repeat";
+            repeatY = "no-repeat";
+        } else if (repeatX === "repeat-y") {
+            repeatX = "no-repeat";
+            repeatY = "repeat";
+        }
+        return { size: size ?? { kind: "ident", name: "auto", lower: "auto" }, x, y, repeatX, repeatY };
+    }
+
+    private positionAxes(value: CssValue | undefined): readonly [CssValue, CssValue] {
+        // CSS Values 4 §6.1.1: one value gives an axis and centers the other; two values give the horizontal first unless the
+        // first is top or bottom, or the second left or right; three or four are edges, each with an optional offset.
+        const center: CssValue = { kind: "ident", name: "center", lower: "center" };
+        const items: ReadonlyArray<CssValue> = value === undefined ? [] : this.list(value, " ");
+        if (items.length === 0) {
+            const origin: CssValue = { kind: "percentage", value: 0 };
+            return [origin, origin];
+        }
+        const groups: Array<Array<CssValue>> = [];
+        for (const item of items) {
+            const last: Array<CssValue> | undefined = groups[groups.length - 1];
+            if (item.kind !== "ident" && last !== undefined && last.length === 1 && last[0].kind === "ident" && last[0].lower !== "center") {
+                last.push(item);
+            } else {
+                groups.push([item]);
+            }
+        }
+        const vertical: (group: ReadonlyArray<CssValue>) => boolean = (group: ReadonlyArray<CssValue>): boolean => ["top", "bottom", "y-start", "y-end", "block-start", "block-end"].includes(this.keyword(group[0]));
+        const horizontal: (group: ReadonlyArray<CssValue>) => boolean = (group: ReadonlyArray<CssValue>): boolean => ["left", "right", "x-start", "x-end", "inline-start", "inline-end"].includes(this.keyword(group[0]));
+        const axis: (group: ReadonlyArray<CssValue>) => CssValue = (group: ReadonlyArray<CssValue>): CssValue => group.length === 1 ? group[0] : { kind: "list", separator: "space", items: group };
+        const first: ReadonlyArray<CssValue> = groups[0];
+        const second: ReadonlyArray<CssValue> | undefined = groups[1];
+        if (second === undefined) {
+            return vertical(first) ? [center, axis(first)] : [axis(first), center];
+        }
+        return vertical(first) || horizontal(second) ? [axis(second), axis(first)] : [axis(first), axis(second)];
+    }
+
+    private size(value: CssValue, natural: Natural, area: Rectangle, roundX: boolean, roundY: boolean): readonly [number, number] {
+        // CSS Backgrounds 4 §2.10: cover and contain keep the natural aspect ratio; an auto dimension comes from the ratio and
+        // the other dimension, or the natural size, or 100%; both auto take the natural size, or contain without one. With round
+        // the size is rescaled to fit a whole number of times, and an auto dimension keeps the ratio.
+        const [naturalWidth, naturalHeight, ratio] = natural;
+        const keyword: string = this.keyword(value);
+        if (keyword === "cover" || keyword === "contain") {
+            if (ratio === undefined) {
+                return this.rounded([area.width, area.height], area, roundX, roundY, false, false);
+            }
+            const wide: boolean = area.width / area.height > ratio;
+            const byWidth: boolean = keyword === "cover" ? wide : !wide;
+            return this.rounded(byWidth ? [area.width, area.width / ratio] : [area.height * ratio, area.height], area, roundX, roundY, false, false);
+        }
+        const items: ReadonlyArray<CssValue> = this.list(value, " ");
+        const first: CssValue = items[0];
+        const second: CssValue | undefined = items[1];
+        let width: number | undefined = first === undefined || this.keyword(first) === "auto" ? undefined : this.geometry.pixels(first, area.width);
+        let height: number | undefined = second === undefined || this.keyword(second) === "auto" ? undefined : this.geometry.pixels(second, area.height);
+        const autoWidth: boolean = width === undefined;
+        const autoHeight: boolean = height === undefined;
+        if (width === undefined && height === undefined) {
+            if (naturalWidth === undefined && naturalHeight === undefined) {
+                return this.size({ kind: "ident", name: "contain", lower: "contain" }, natural, area, roundX, roundY);
+            }
+            width = naturalWidth;
+            height = naturalHeight;
+        }
+        if (width === undefined) {
+            width = ratio !== undefined && height !== undefined ? height * ratio : (naturalWidth ?? area.width);
+        }
+        if (height === undefined) {
+            height = ratio !== undefined ? width / ratio : (naturalHeight ?? area.height);
+        }
+        return this.rounded([width, height], area, roundX, roundY, autoWidth, autoHeight);
+    }
+
+    private rounded(size: readonly [number, number], area: Rectangle, roundX: boolean, roundY: boolean, autoWidth: boolean, autoHeight: boolean): readonly [number, number] {
+        // Backgrounds 4 §2.10: X' = W / round(W / X), with round() the nearest natural number greater than zero; rounded in
+        // one dimension only, an auto other dimension is scaled to keep the aspect ratio.
+        let [width, height] = size;
+        if (roundX && width > 0) {
+            const rounded: number = area.width / Math.max(1, Math.round(area.width / width));
+            height = !roundY && autoHeight ? height * rounded / width : height;
+            width = rounded;
+        }
+        if (roundY && height > 0) {
+            const rounded: number = area.height / Math.max(1, Math.round(area.height / height));
+            width = !roundX && autoWidth ? width * rounded / height : width;
+            height = rounded;
+        }
+        return [width, height];
+    }
+
+    private axis(value: CssValue, start: number, length: number, size: number, repeat: string, reversed: boolean): readonly [number, number] {
+        // Backgrounds 4 §2.6: a percentage is of the area less the image, an offset is from the edge it names, the start of the
+        // axis by default; §2.3: space puts as many whole images as fit with the first and last on the edges, and needs two of
+        // them. The result is the start of one tile and the distance between tiles, zero when the image is not repeated.
+        if (repeat === "space") {
+            const count: number = Math.floor(length / size);
+            if (count >= 2) {
+                return [start, size + (length - count * size) / (count - 1)];
+            }
+        }
+        const items: ReadonlyArray<CssValue> = this.list(value, " ");
+        let edge: string = "start";
+        let offset: CssValue | undefined;
+        for (const item of items) {
+            if (item.kind === "ident") {
+                edge = item.lower;
+            } else {
+                offset = item;
+            }
+        }
+        // start, x-start and y-start follow the direction of the axis in the writing mode, which reversed gives.
+        const free: number = length - size;
+        const logicalStart: boolean = edge === "start" || edge === "x-start" || edge === "y-start";
+        const logicalEnd: boolean = edge === "end" || edge === "x-end" || edge === "y-end";
+        const fromEnd: boolean = edge === "right" || edge === "bottom" || (logicalEnd && !reversed) || (logicalStart && reversed);
+        const distance: number = offset === undefined ? 0 : this.geometry.pixels(offset, free);
+        const position: number = edge === "center" ? free / 2 : (fromEnd ? free - distance : distance);
+        return [start + position, repeat === "repeat" || repeat === "round" ? size : 0];
+    }
+
+    private list(value: CssValue, separator: string): ReadonlyArray<CssValue> {
+        return value.kind === "list" && value.separator === (separator === "," ? "comma" : "space") ? value.items : [value];
+    }
+
+    private keyword(value?: CssValue): string {
+        return value !== undefined && value.kind === "ident" ? value.lower : "none";
+    }
+
     private chosen(value: CssValue, style: ComputedStyle): readonly [CssValue, number | undefined] | undefined {
         // CSS Images 4 §2.4: image-set() represents one of its options; its resolution is the natural resolution of a raster
         // image. §2.5.1: an image() whose image cannot be shown is its color, if it has one.
         if (value.kind === "url") {
-            return this.images.size(value.href) === undefined ? undefined : [value, undefined];
+            return this.images.size(this.located(value.href)) === undefined ? undefined : [value, undefined];
         }
         if (value.kind !== "function") {
             return undefined;
@@ -185,7 +475,7 @@ export class ImagePainter {
     }
 
     private href(source: CssValue): string {
-        return source.kind === "url" ? source.href : (source.kind === "string" ? source.value : "");
+        return this.located(source.kind === "url" ? source.href : (source.kind === "string" ? source.value : ""));
     }
 
     private imageFunction(value: FunctionValue, target: readonly [number, number, number, number], style: ComputedStyle, pdf: PdfPage): void {

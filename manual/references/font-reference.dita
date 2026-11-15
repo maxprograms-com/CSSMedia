@@ -464,14 +464,14 @@
                             <entry>Names stylistic sets (<codeph>ss01</codeph> to <codeph>ss99</codeph>).</entry>
                             <entry>Names, each with one or more integers from 1 to 99. 0 and larger values select no feature.</entry>
                             <entry/>
-                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-styleset" scope="external" format="html">CSS Fonts 4 §6.9.2</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-styleset" scope="external" format="html">CSS Fonts 4 §6.9.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>@character-variant</codeph></entry>
                             <entry>Names character variants (<codeph>cv01</codeph> to <codeph>cv99</codeph>).</entry>
                             <entry>Names, each with one or two integers. The first, from 1 to 99, selects the feature, and the second sets its value. 0 and larger values select no feature.</entry>
                             <entry/>
-                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-character-variant" scope="external" format="html">CSS Fonts 4 §6.9.2</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-fonts-4/#at-ruledef-font-feature-values-character-variant" scope="external" format="html">CSS Fonts 4 §6.9.1</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>@swash</codeph></entry>

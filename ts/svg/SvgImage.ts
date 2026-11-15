@@ -133,7 +133,7 @@ export class SvgImage implements ImageFormat {
         if (rootNamespace !== undefined) {
             scope.set("", rootNamespace);
         }
-        return new SvgStyles(element, new BaseUrls(this.input.documentUri).of(element), this.table, this.input.computer,
+        return new SvgStyles(element, new BaseUrls(this.input.documentUri).of(element), this.table, this.input.computer, this.input.profiles,
             (rules: ReadonlyArray<FontFaceRule>, features: ReadonlyArray<FontFeatureValuesRule>): DocumentFonts => this.elementFonts(rules, features),
             (resource: string) => this.images.bytes(resource), scope);
     }
@@ -151,8 +151,7 @@ export class SvgImage implements ImageFormat {
         const setup: PageSetup = this.setup();
         const [containers, viewport]: readonly [() => Iterable<QueryContainer>, Size] = this.images.elementPlace(source.element) ?? [StyleComputer.NO_CONTAINERS, setup.viewport];
         this.hostSheet = this.hostSheet ?? new StylesheetReader(this.table).read(input.cssPath);
-        styles.embed(this.hostSheet, source.style, setup.root, setup.palettes, input.root, (queries: ReadonlyArray<ContainerQuery>) =>
-            input.computer.containersHold(queries, containers, viewport));
+        styles.embed(this.hostSheet, source.style, setup.root, setup.palettes, input.root, containers, viewport);
         return styles;
     }
 
@@ -170,7 +169,7 @@ export class SvgImage implements ImageFormat {
             } catch {
                 return undefined;
             }
-            styles = new SvgStyles(parsed, href, this.table, this.input.computer, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
+            styles = new SvgStyles(parsed, href, this.table, this.input.computer, this.input.profiles, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
         }
         if (!styles.isSvg(styles.root, SVG_ROOT)) {
             return undefined;
@@ -197,6 +196,12 @@ export class SvgImage implements ImageFormat {
             size.ratio = ratio;
         }
         return size;
+    }
+
+    diagnose(message: string): void {
+        if (!this.images.diagnostics.includes(message)) {
+            this.images.diagnostics.push(message);
+        }
     }
 
     key(drawing: ImageDrawing): string {
@@ -260,7 +265,8 @@ export class SvgImage implements ImageFormat {
             this.images.report(href, "cannot be parsed: " + (error instanceof Error ? error.message : String(error)));
             return undefined;
         }
-        const styles: SvgStyles = new SvgStyles(parsed, href, this.table, this.input.computer, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
+        const styles: SvgStyles = new SvgStyles(parsed, href, this.table, this.input.computer, this.input.profiles, this.input.fontsFor,
+            (resource: string) => this.images.bytes(resource));
         styles.loadSheets();
         this.images.diagnostics.push(...styles.diagnostics);
         const element: XMLElement | undefined = styles.element(id);
@@ -365,7 +371,8 @@ export class SvgImage implements ImageFormat {
             this.documents.set(url, null);
             return undefined;
         }
-        let styles: SvgStyles | undefined = new SvgStyles(parsed, url, this.table, this.input.computer, this.input.fontsFor, (resource: string) => this.images.bytes(resource));
+        let styles: SvgStyles | undefined = new SvgStyles(parsed, url, this.table, this.input.computer, this.input.profiles, this.input.fontsFor,
+            (resource: string) => this.images.bytes(resource));
         styles.loadSheets();
         this.images.diagnostics.push(...styles.diagnostics);
         if (!styles.isSvg(styles.root, SVG_ROOT)) {

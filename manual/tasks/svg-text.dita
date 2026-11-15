@@ -47,7 +47,7 @@
                 <cmd>Wrap text to a width or into a shape</cmd>
                 <info>
                     <p>With the property <codeph>inline-size</codeph> on a <codeph>text</codeph> element, the text wraps to lines of that length. The line breaks follow the rules of the languages of the text. The property <codeph>text-anchor</codeph> aligns the lines in the length.</p>
-                    <p>With the property <codeph>shape-inside</codeph> the text fills a shape. Each line is as long as the shape is wide at that height, and the text goes around the holes. The value is a basic shape, such as <codeph>circle()</codeph>, <codeph>ellipse()</codeph>, <codeph>polygon()</codeph> or <codeph>inset()</codeph>, a reference to a shape of the drawing, such as <codeph>url(#id)</codeph>, or the URL of an image, whose opaque pixels are the area. In a shape, <codeph>text-align</codeph> aligns the lines, and <codeph>text-align: justify</codeph> makes them fill the width.</p>
+                    <p>With the property <codeph>shape-inside</codeph> the text fills a shape. Each line is as long as the shape is wide at that height, and the text goes around the holes. The value is a basic shape, such as <codeph>circle()</codeph>, <codeph>ellipse()</codeph>, <codeph>polygon()</codeph> or <codeph>inset()</codeph>, a reference to a shape of the drawing, such as <codeph>url(#id)</codeph>, or an image, whose opaque pixels are the area. The image can be the URL of a raster image, a gradient, <codeph>image-set()</codeph>, <codeph>image()</codeph> or <codeph>cross-fade()</codeph>: a gradient gives the area where its colors are not transparent, and <codeph>shape-image-threshold</codeph> sets how opaque a pixel must be to count. When the text is longer than the shape, the lines that do not fit go below it, as wide as the shape, and no text is lost. In a shape, <codeph>text-align</codeph> aligns the lines, and <codeph>text-align: justify</codeph> makes them fill the width.</p>
                     <fig id="svg-text-samples">
                         <title>A line, text on a path and text in a shape</title>
                         <image href="../images/svg-text.svg" placement="break" scale="125">
@@ -68,6 +68,6 @@
                 </info>
             </step>
         </steps>
-        <!-- TODO: method="stretch" and spacing="auto" of textPath, text-overflow, text-decoration-style and the other decoration properties, dominant-baseline on a tspan, alignment-baseline outside wrapped text, and shape-inside from a gradient are not painted or stop the run -->
+        <!-- TODO: method="stretch" and spacing="auto" of textPath, text-overflow, text-decoration-style and the other decoration properties, dominant-baseline on a tspan, alignment-baseline outside wrapped text, and shape-inside from the file of an SVG image are not painted or stop the run -->
     </taskbody>
 </task>

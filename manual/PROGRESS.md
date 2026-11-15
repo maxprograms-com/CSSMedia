@@ -913,14 +913,14 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] mask-border-slice
 - [ ] mask-border-source
 - [ ] mask-border-width
-- [ ] mask-clip
+- [x] mask-clip
 - [x] mask-composite
 - [x] mask-image
 - [x] mask-mode
-- [ ] mask-origin
-- [ ] mask-position
-- [ ] mask-repeat
-- [ ] mask-size
+- [x] mask-origin
+- [x] mask-position
+- [x] mask-repeat
+- [x] mask-size
 - [x] mask-type
 
 ### Filter Effects 1 (filter-effects-1)

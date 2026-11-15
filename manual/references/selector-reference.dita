@@ -93,7 +93,7 @@
                             <entry>Limits a type selector to a declared <xref href="../glossaries/XMLNamespace.dita">namespace</xref>, to any namespace, or to no namespace. The same prefixes work in attribute selectors.</entry>
                             <entry>A prefix declared with <codeph>@namespace</codeph>.</entry>
                             <entry>Matches</entry>
-                            <entry><xref href="https://www.w3.org/TR/selectors-4/#type-selectors" scope="external" format="html">Selectors 4 §5.3</xref>, <xref href="https://www.w3.org/TR/css-namespaces-3/#declaration" scope="external" format="html">CSS Namespaces 3 §3</xref></entry>
+                            <entry><xref href="https://www.w3.org/TR/selectors-4/#type-selectors" scope="external" format="html">Selectors 4 §5.1</xref>, <xref href="https://www.w3.org/TR/css-namespaces-3/#declaration" scope="external" format="html">CSS Namespaces 3 §3</xref></entry>
                         </row>
                         <row valign="middle">
                             <entry><codeph>&amp;</codeph></entry>

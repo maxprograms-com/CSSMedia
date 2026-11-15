@@ -41,9 +41,44 @@
                         <row>
                             <entry><codeph>mask-image</codeph></entry>
                             <entry>Lists the layers of the mask of an element. The first layer is the top one.</entry>
-                            <entry>A list of <codeph>none</codeph> and <codeph>url(#id)</codeph> of <codeph>mask</codeph> elements, separated by commas</entry>
+                            <entry>A list, separated by commas, of <codeph>none</codeph>, <codeph>url(#id)</codeph> of a <codeph>mask</codeph> element, and images: the URL of an image file, a gradient, <codeph>image-set()</codeph>, <codeph>image()</codeph> or <codeph>cross-fade()</codeph></entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-image" scope="external" format="html">CSS Masking 1 §7.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-repeat</codeph></entry>
+                            <entry>Chooses for each image layer whether the image repeats across the mask and how.</entry>
+                            <entry>A list of <codeph>repeat-x</codeph>, <codeph>repeat-y</codeph>, or one or two of <codeph>repeat</codeph>, <codeph>space</codeph>, <codeph>round</codeph> and <codeph>no-repeat</codeph></entry>
+                            <entry><codeph>repeat</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-repeat" scope="external" format="html">CSS Masking 1 §7.3</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-position</codeph></entry>
+                            <entry>Places each image layer in its positioning area.</entry>
+                            <entry>A list of positions, each one to four keywords, lengths and percentages</entry>
+                            <entry><codeph>0% 0%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-position" scope="external" format="html">CSS Masking 1 §7.4</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-clip</codeph></entry>
+                            <entry>Chooses the area that each layer paints in, or <codeph>no-clip</codeph> for no limit.</entry>
+                            <entry>A list of <codeph>fill-box</codeph>, <codeph>stroke-box</codeph>, <codeph>view-box</codeph>, <codeph>content-box</codeph>, <codeph>padding-box</codeph>, <codeph>border-box</codeph>, <codeph>margin-box</codeph> or <codeph>no-clip</codeph></entry>
+                            <entry><codeph>border-box</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-clip" scope="external" format="html">CSS Masking 1 §7.5</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-origin</codeph></entry>
+                            <entry>Chooses the area that <codeph>mask-position</codeph> and <codeph>mask-size</codeph> refer to, for each layer.</entry>
+                            <entry>A list of <codeph>fill-box</codeph>, <codeph>stroke-box</codeph>, <codeph>view-box</codeph>, <codeph>content-box</codeph>, <codeph>padding-box</codeph>, <codeph>border-box</codeph> or <codeph>margin-box</codeph></entry>
+                            <entry><codeph>border-box</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-origin" scope="external" format="html">CSS Masking 1 §7.6</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-size</codeph></entry>
+                            <entry>Sets the size of each image layer.</entry>
+                            <entry>A list of <codeph>auto</codeph>, <codeph>cover</codeph>, <codeph>contain</codeph>, or one or two lengths, percentages or <codeph>auto</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-size" scope="external" format="html">CSS Masking 1 §7.7</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>mask-mode</codeph></entry>

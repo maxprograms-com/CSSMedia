@@ -305,7 +305,7 @@ export class InlineLayout {
                 guess = strut;
             }
             if (parts.length === 0) {
-                // CSS Shapes 2 §9.2: the wrapping area has no room left for the rest of the content.
+                // A shape without area excludes the whole content area, so no lower position gives the rest of the content a place.
                 break;
             }
             let last: Part = parts[parts.length - 1];

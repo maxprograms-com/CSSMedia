@@ -95,6 +95,6 @@
                 </info>
             </step>
         </steps>
-        <!-- TODO: opacity, transform, clip-path, mask and mix-blend-mode set on the svg element itself, which is a box of the document, stop the run; they work on the elements inside the drawing -->
+        <!-- TODO: transform, clip-path and mask set on the svg element itself, which is a box of the document, stop the run; they work on the elements inside the drawing -->
     </taskbody>
 </task>

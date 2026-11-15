@@ -9,6 +9,7 @@
                 <cmd>Choose a blend mode</cmd>
                 <info>
                     <p>The <codeph>mix-blend-mode</codeph> property sets the blend mode of an element. The initial value is <codeph>normal</codeph>, which paints the element over what is behind it. You can set a mode on shapes, text, images, groups and <codeph>use</codeph> elements. On a group, the mode applies to the group as one picture.</p>
+                    <p>The property works on the boxes of your document too. A box with a mode other than <codeph>normal</codeph> is drawn as one picture, with its background, border and content, and the picture is blended with everything painted behind it, such as the background and the text of the boxes before it.</p>
                     <p>The modes are those of the PDF format:</p>
                     <table frame="all">
                         <tgroup cols="2">
@@ -79,7 +80,7 @@
                 <cmd>Isolate a group</cmd>
                 <info>
                     <p>An element blends with everything painted before it in the same group. A group is isolated when its elements blend with each other and nothing outside the group takes part. With <codeph>isolation: isolate</codeph> you make a group isolated. The initial value is <codeph>auto</codeph>.</p>
-                    <p>A group is isolated by itself, without the property, when it has an <codeph>opacity</codeph> below 1, a <codeph>clip-path</codeph> or a <codeph>mask</codeph>, because CSSMedia paints such a group as one picture first.</p>
+                    <p>A group is isolated by itself, without the property, when it has an <codeph>opacity</codeph> below 1, a <codeph>clip-path</codeph> or a <codeph>mask</codeph>, because CSSMedia paints such a group as one picture first. A box of your document with <codeph>isolation: isolate</codeph> or an <codeph>opacity</codeph> below 1 is isolated in the same way, so a box inside it that blends mixes only with what the isolated box itself paints.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">.badge {

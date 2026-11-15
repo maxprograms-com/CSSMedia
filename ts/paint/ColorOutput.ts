@@ -52,6 +52,15 @@ export class ColorOutput {
         this.parser = new ColorParser(profiles);
     }
 
+    extend(profiles: ColorProfiles): ColorOutput {
+        // The @color-profile rules of an SVG image are known to that image alone, and its colors use them before the document's.
+        return new ColorOutput(this.document, profiles);
+    }
+
+    diagnostics(): ReadonlyArray<string> {
+        return this.profiles.diagnostics;
+    }
+
     restart(): void {
         this.profileSpaces.clear();
         delete this.lab;

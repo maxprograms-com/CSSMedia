@@ -67,7 +67,7 @@
             </tgroup>
         </table>
         <p>The elements <codeph>title</codeph>, <codeph>desc</codeph> and <codeph>metadata</codeph> describe a drawing and are not drawn.</p>
-        <!-- TODO: foreignObject, the filter property, mask images other than mask elements, the rule @color-profile, container style queries in a drawing and the paint of shape-inside from a gradient or other image function stop the run -->
+        <!-- TODO: foreignObject and the filter property are reported at the end and not painted, and shape-inside from the file of an SVG image is not painted -->
         <p>The elements of SVG that are for screens, such as <codeph>animate</codeph> and <codeph>script</codeph>, have no effect in a PDF.</p>
         <p>A drawing uses the same CSS as the rest of your document. Properties such as <codeph>fill</codeph> and <codeph>stroke</codeph> are CSS properties, and the style sheet of your document reaches the elements of a drawing that is part of your XML. The topics of this chapter follow the work of making a drawing:</p>
         <ul>
