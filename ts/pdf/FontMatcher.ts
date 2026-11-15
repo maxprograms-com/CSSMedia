@@ -121,7 +121,7 @@ const OVERRIDE_DESCRIPTORS: ReadonlyArray<string> = ["size-adjust", "ascent-over
 
 export class FontMatcher {
 
-    static readonly DEFAULT_FAMILY: string = "Helvetica";
+    static readonly DEFAULT_FAMILY: string = FontCatalog.DEFAULT_FAMILY;
     static readonly DEFAULT_OBLIQUE: number = 14;
     static readonly WIDTH_KEYWORDS: ReadonlyMap<string, number> = new Map<string, number>([
         ["ultra-condensed", 50], ["extra-condensed", 62.5], ["condensed", 75], ["semi-condensed", 87.5], ["normal", 100],
@@ -140,6 +140,8 @@ export class FontMatcher {
     private readonly built: Map<string, FontInstance> = new Map<string, FontInstance>();
     private readonly faces: WeakMap<FontInstance, CatalogFace> = new WeakMap<FontInstance, CatalogFace>();
     private readonly matches: Map<string, Chosen | null> = new Map<string, Chosen | null>();
+    private readonly defaultMatches: Map<string, Chosen> = new Map<string, Chosen>();
+    private defaults?: Array<Candidate>;
     private readonly scripts: ScriptTags = new ScriptTags();
     private readonly shaper: GlyphShaper = new GlyphShaper();
     private readonly shapable: WeakMap<Typeface, Map<number, boolean>> = new WeakMap<Typeface, Map<number, boolean>>();
@@ -164,22 +166,33 @@ export class FontMatcher {
         return pairs === 0 ? 0 : total / pairs;
     }
 
-    firstAvailable(request: FontRequest): FontInstance | undefined {
+    firstAvailable(request: FontRequest): FontInstance {
         // CSS Fonts 4 §5.2: the first font whose unicode-range does not exclude U+0020, or the user agent's default font.
-        for (const family of [...request.families, DEFAULT_FONT]) {
+        for (const family of request.families) {
             const chosen: Chosen | undefined = this.match(family, request);
             const candidate: Candidate | undefined = chosen?.candidates.find((entry: Candidate) => this.inRanges(SPACE, entry.unicode));
-            if (chosen !== undefined && candidate !== undefined) {
-                return this.instance(candidate, chosen, request);
+            const found: FontInstance | undefined = chosen === undefined || candidate === undefined ? undefined : this.instance(candidate, chosen, request);
+            if (found !== undefined) {
+                return found;
             }
         }
-        return undefined;
+        return this.defaultFont(request);
     }
 
-    private defaultFont(request: FontRequest): FontInstance | undefined {
-        // CSS Fonts 4 §5.2: a character that no font has is shown with "the missing character glyph from a default font".
-        const chosen: Chosen | undefined = this.match(DEFAULT_FONT, request);
-        return chosen === undefined || chosen.candidates.length === 0 ? undefined : this.instance(chosen.candidates[0], chosen, request);
+    private defaultFont(request: FontRequest): FontInstance {
+        // CSS Fonts 4 §5.2: a character that no font has is shown with "the missing character glyph from a default font". The
+        // default font is one of the standard fonts of PDF, which are always present, so it is taken from them and never searched.
+        const key: string = this.requestKey(request);
+        let chosen: Chosen | undefined = this.defaultMatches.get(key);
+        if (chosen === undefined) {
+            if (this.defaults === undefined) {
+                this.defaults = this.catalog.defaultFaces().map((face: CatalogFace, order: number): Candidate => ({ face, traits: this.typefaceTraits(this.catalog.defaultTypeface(face)), order }));
+            }
+            chosen = this.select(this.defaults, request);
+            this.defaultMatches.set(key, chosen);
+        }
+        const candidate: Candidate = chosen.candidates[0];
+        return this.instanceOf(this.catalog.defaultTypeface(candidate.face), candidate, chosen, request);
     }
 
     fontFor(request: FontRequest, code: number): FontInstance | undefined {
@@ -188,9 +201,9 @@ export class FontMatcher {
         return this.listed(request, codes) ?? this.installed(request, codes);
     }
 
-    clusterFonts(request: FontRequest, codes: ReadonlyArray<number>): Array<FontInstance> | undefined {
+    clusterFonts(request: FontRequest, codes: ReadonlyArray<number>): Array<FontInstance> {
         // CSS Fonts 4 §5.3: a font supporting the whole cluster, or its canonically equivalent character, else an installed one
-        // supporting a variation sequence's base and selector; §5.2: else the default font, and nothing when that is missing.
+        // supporting a variation sequence's base and selector; §5.2: else the default font.
         const composed: string = codes.length > 1 ? String.fromCodePoint(...codes).normalize("NFC") : "";
         const single: number | undefined = composed.length > 0 && composed.length === String.fromCodePoint(composed.codePointAt(0) as number).length
             ? composed.codePointAt(0) : undefined;
@@ -201,8 +214,7 @@ export class FontMatcher {
         }
         const bases: Array<number> = codes.filter((code: number) => !this.isVariationSelector(code));
         if (codes.length === 1 || bases.length === 0) {
-            const only: FontInstance | undefined = this.defaultFont(request);
-            return only === undefined ? undefined : new Array<FontInstance>(codes.length).fill(only);
+            return new Array<FontInstance>(codes.length).fill(this.defaultFont(request));
         }
         if (bases.length < codes.length) {
             // §9.3: fallback "must take the presentation preference" of VS16 and VS15 "into account": with no font listing the
@@ -214,10 +226,7 @@ export class FontMatcher {
             }
             // "match the single character b using the normal procedure for matching single characters and ignore the
             // variation selector": the cluster is matched without its selectors, and each one goes with its character.
-            const fonts: Array<FontInstance> | undefined = this.clusterFonts(request, bases);
-            if (fonts === undefined) {
-                return undefined;
-            }
+            const fonts: Array<FontInstance> = this.clusterFonts(request, bases);
             let position: number = -1;
             return codes.map((code: number): FontInstance => {
                 position += this.isVariationSelector(code) ? 0 : 1;
@@ -240,9 +249,6 @@ export class FontMatcher {
             if (font === undefined) {
                 fallback = fallback ?? this.defaultFont(request);
                 font = fallback;
-            }
-            if (font === undefined) {
-                return undefined;
             }
             fonts.push(font);
         }
@@ -338,21 +344,21 @@ export class FontMatcher {
         // The match depends only on the family and on the width, style and weight asked for, and on the size where a face
         // is declared for some sizes only, so each one is made once.
         const sized: boolean = this.candidates(family).some((candidate: Candidate) => candidate.size !== undefined);
-        const key: string = (family.generic ? "generic:" : "family:") + family.name + "|" + request.width + "|" + request.style + "|" + request.angle + "|" + request.weight
-            + "|" + request.boldSynthesis + "|" + request.styleSynthesis + (sized ? "|" + Math.round(request.size) : "");
+        const key: string = (family.generic ? "generic:" : "family:") + family.name + "|" + this.requestKey(request) + (sized ? "|" + Math.round(request.size) : "");
         let chosen: Chosen | null | undefined = this.matches.get(key);
         if (chosen === undefined) {
-            chosen = this.choice(family, request) ?? null;
+            const candidates: Array<Candidate> = this.candidates(family);
+            chosen = candidates.length === 0 ? null : this.select(candidates, request);
             this.matches.set(key, chosen);
         }
         return chosen ?? undefined;
     }
 
-    private choice(family: FamilyReference, request: FontRequest): Chosen | undefined {
-        const candidates: Array<Candidate> = this.candidates(family);
-        if (candidates.length === 0) {
-            return undefined;
-        }
+    private requestKey(request: FontRequest): string {
+        return request.width + "|" + request.style + "|" + request.angle + "|" + request.weight + "|" + request.boldSynthesis + "|" + request.styleSynthesis;
+    }
+
+    private select(candidates: Array<Candidate>, request: FontRequest): Chosen {
         // CSS Fonts 4 §5.2 step 4: width first, then style, then weight.
         const width: number = this.choose(candidates.map((candidate: Candidate) => candidate.traits.width), this.widthOrder(request.width)) ?? request.width;
         let remaining: Array<Candidate> = candidates.filter((candidate: Candidate) => this.contains(width, candidate.traits.width));
@@ -579,8 +585,7 @@ export class FontMatcher {
         if (typeface === undefined) {
             return undefined;
         }
-        const fromFont: Traits = this.fontTraits(typeface.metrics.weightClass, typeface.metrics.widthClass, typeface.metrics.selection, typeface.metrics.macStyle,
-            () => typeface.metrics.italicAngle, typeface.variations?.axes);
+        const fromFont: Traits = this.typefaceTraits(typeface);
         if (face.origin === "standard" || face.rule === undefined) {
             return { face, traits: fromFont, order };
         }
@@ -624,6 +629,11 @@ export class FontMatcher {
             };
         }
         return candidate;
+    }
+
+    private typefaceTraits(typeface: Typeface): Traits {
+        return this.fontTraits(typeface.metrics.weightClass, typeface.metrics.widthClass, typeface.metrics.selection, typeface.metrics.macStyle,
+            () => typeface.metrics.italicAngle, typeface.variations?.axes);
     }
 
     private axisOverrides(value: CssValue | undefined, repeated: boolean): AxisOverrides {
@@ -751,9 +761,10 @@ export class FontMatcher {
 
     private instance(candidate: Candidate, chosen: Chosen, request: FontRequest): FontInstance | undefined {
         const typeface: Typeface | undefined = this.catalog.typeface(candidate.face);
-        if (typeface === undefined) {
-            return undefined;
-        }
+        return typeface === undefined ? undefined : this.instanceOf(typeface, candidate, chosen, request);
+    }
+
+    private instanceOf(typeface: Typeface, candidate: Candidate, chosen: Chosen, request: FontRequest): FontInstance {
         // CSS Fonts 4 §7.2, in ascending precedence: the matched weight, width and style; the named instance and then the
         // font-variation-settings of the @font-face rule; font-optical-sizing; the font-variation-settings property.
         const axes: Record<string, number> = { wght: chosen.weight, wdth: chosen.width };

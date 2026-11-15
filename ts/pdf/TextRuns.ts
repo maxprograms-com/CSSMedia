@@ -223,10 +223,7 @@ export class TextRuns {
             }
             // CSS Fonts 4 §5.2: a character that no font has takes glyph 0, the missing character glyph, of the default font.
             const letter: FontInstance | undefined = length === 1 ? this.mathLetter(codepoints, position, request) : undefined;
-            const fonts: ReadonlyArray<FontInstance> | undefined = letter === undefined ? this.clusterFonts(codepoints, position, length, request, known) : [letter];
-            if (fonts === undefined) {
-                throw new Error("No font is available for the text \"" + text + "\"");
-            }
+            const fonts: ReadonlyArray<FontInstance> = letter === undefined ? this.clusterFonts(codepoints, position, length, request, known) : [letter];
             // CSS Writing Modes 4 §5.1.2: with mixed, "the UA must determine the orientation of each typographic character
             // unit by its Vertical_Orientation property".
             const upright: boolean = !combined && (orientation === "upright" || (orientation === "mixed" && this.vertical.isUpright(codepoints[position])));
@@ -290,17 +287,14 @@ export class TextRuns {
     }
 
     private clusterFonts(codepoints: ReadonlyArray<number>, position: number, length: number, request: FontRequest,
-        known: Map<number, FontInstance>): ReadonlyArray<FontInstance> | undefined {
+        known: Map<number, FontInstance>): ReadonlyArray<FontInstance> {
         if (length > 1) {
             return this.matcher.clusterFonts(request, codepoints.slice(position, position + length));
         }
         const code: number = codepoints[position];
         let font: FontInstance | undefined = known.get(code);
         if (font === undefined) {
-            font = this.matcher.clusterFonts(request, [code])?.[0];
-            if (font === undefined) {
-                return undefined;
-            }
+            font = this.matcher.clusterFonts(request, [code])[0];
             known.set(code, font);
         }
         return [font];

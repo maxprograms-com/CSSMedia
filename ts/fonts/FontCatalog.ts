@@ -29,10 +29,11 @@ import { FontFileReader } from "./FontFileReader.js";
 import { InstalledFonts } from "./InstalledFonts.js";
 import { NameTableReader } from "./NameTableReader.js";
 import { StandardTypefaces } from "./StandardTypefaces.js";
-import type { CatalogFace, InstalledFace, SfntFont, Typeface } from "./Typeface.js";
+import type { CatalogFace, InstalledFace, SfntFont, StandardFontData, Typeface } from "./Typeface.js";
 import { TypefaceReader } from "./TypefaceReader.js";
 
-const STANDARD_GENERICS: Readonly<Record<string, string>> = { "serif": "Times", "sans-serif": "Helvetica", "monospace": "Courier", "math": "Times" };
+const DEFAULT_FAMILY: string = "Helvetica";
+const STANDARD_GENERICS: Readonly<Record<string, string>> = { "serif": "Times", "sans-serif": DEFAULT_FAMILY, "monospace": "Courier", "math": "Times" };
 const MATH_GENERIC: string = "math";
 const MATH_TABLE: string = "MATH";
 
@@ -41,6 +42,7 @@ const POSTSCRIPT_MAXIMUM: number = 63;
 
 export class FontCatalog {
 
+    static readonly DEFAULT_FAMILY: string = DEFAULT_FAMILY;
     static readonly GENERIC_FAMILIES: ReadonlySet<string> = new Set<string>(["serif", "sans-serif", "monospace", "cursive", "fantasy", "system-ui", "ui-sans-serif",
         "ui-serif", "ui-monospace", "ui-rounded", "math", "emoji", "fangsong"]);
 
@@ -54,8 +56,10 @@ export class FontCatalog {
     private readonly standard: StandardTypefaces = new StandardTypefaces();
     private readonly remote: RemoteResource = new RemoteResource();
     private installedFamilies?: Map<string, Array<CatalogFace>>;
+    private standardFaces?: ReadonlyArray<CatalogFace>;
     private standardFamilies?: Map<string, Array<CatalogFace>>;
     private mathFamily?: string | null;
+    private warnedMath: boolean = false;
     private readonly common: FontCatalog;
     private readonly faces: Map<string, Typeface | null> = new Map<string, Typeface | null>();
     readonly diagnostics: Array<string>;
@@ -92,11 +96,25 @@ export class FontCatalog {
         if (math !== undefined) {
             return math;
         }
+        if (keyword === MATH_GENERIC && !this.common.warnedMath) {
+            this.common.warnedMath = true;
+            this.diagnostics.push("Times was used for MathML instead of a specialized font");
+        }
         const standard: string | undefined = STANDARD_GENERICS[keyword];
         return standard === undefined ? undefined : this.common.standardFamily(this.caseFolder.fold(standard));
     }
 
-    private installedMath(): ReadonlyArray<CatalogFace> | undefined {
+    defaultFaces(): ReadonlyArray<CatalogFace> {
+        // CSS Fonts 4 §5.2: the font of last resort is the user agent's own, and the standard fonts of PDF are part of the
+        // package, so this family always has its faces.
+        return this.common.allStandardFaces().filter((face: CatalogFace) => face.family === DEFAULT_FAMILY);
+    }
+
+    defaultTypeface(face: CatalogFace): Typeface {
+        return this.common.standard.typeface(face.standard as StandardFontData);
+    }
+
+    private installedMath():ReadonlyArray<CatalogFace> | undefined {
         const installed: InstalledFonts | undefined = this.installed;
         if (installed === undefined) {
             return undefined;
@@ -116,7 +134,7 @@ export class FontCatalog {
         let typeface: Typeface | null | undefined = this.typefaces.get(face);
         if (typeface === undefined) {
             if (face.origin === "standard") {
-                typeface = this.standard.typeface(face.standard as string) ?? null;
+                typeface = this.standard.typeface(face.standard as StandardFontData);
             } else if (face.origin === "installed") {
                 typeface = this.installedTypeface(face.installed as InstalledFace) ?? null;
             } else {
@@ -160,14 +178,18 @@ export class FontCatalog {
         // Courier, Symbol and ZapfDingbats.
         if (this.standardFamilies === undefined) {
             this.standardFamilies = new Map<string, Array<CatalogFace>>();
-            for (const name of this.standard.names()) {
-                const family: string | undefined = this.standard.typeface(name)?.names.family;
-                if (family !== undefined) {
-                    this.add(this.standardFamilies, this.caseFolder.fold(family), { family, origin: "standard", standard: name });
-                }
+            for (const face of this.allStandardFaces()) {
+                this.add(this.standardFamilies, this.caseFolder.fold(face.family), face);
             }
         }
         return this.standardFamilies.get(key);
+    }
+
+    private allStandardFaces(): ReadonlyArray<CatalogFace> {
+        if (this.standardFaces === undefined) {
+            this.standardFaces = this.standard.all().map((data: StandardFontData): CatalogFace => ({ family: data.family, origin: "standard", standard: data }));
+        }
+        return this.standardFaces;
     }
 
     private installedTypeface(face: InstalledFace): Typeface | undefined {

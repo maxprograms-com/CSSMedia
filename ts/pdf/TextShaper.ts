@@ -210,10 +210,10 @@ export class TextShaper {
         for (const cluster of this.graphemes.segment(text)) {
             // A character that the font of the text lacks takes its font as any text does (CSS Fonts 4 §5.3).
             const unit: Array<number> = Array.from(cluster.segment, (character: string) => character.codePointAt(0) as number);
-            let chosen: FontInstance | undefined = run.font;
+            let chosen: FontInstance = run.font;
             if (!unit.every(covers)) {
                 request = request ?? this.metrics.request(values);
-                chosen = this.matcher.clusterFonts(request, unit)?.[0];
+                chosen = this.matcher.clusterFonts(request, unit)[0];
             }
             if (chosen !== font) {
                 flush();

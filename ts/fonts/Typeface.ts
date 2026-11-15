@@ -246,7 +246,7 @@ export interface CatalogFace {
     origin: "font-face" | "installed" | "standard";
     rule?: FontFaceRule;
     installed?: InstalledFace;
-    standard?: string;
+    standard?: StandardFontData;
 }
 
 export type MetricOverride = number | "from-font";

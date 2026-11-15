@@ -25,7 +25,7 @@ import { GlyphOutlines } from "../fonts/GlyphOutlines.js";
 import { FeatureShaper } from "../fonts/layout/FeatureShaper.js";
 import { FontLayout } from "../fonts/layout/FontLayout.js";
 import type { GlyphInfo } from "../fonts/layout/GlyphInfo.js";
-import type { FaceMetrics, FontInstance, Typeface } from "../fonts/Typeface.js";
+import type { FontInstance, Typeface } from "../fonts/Typeface.js";
 import type { BlockLayout } from "../layout/BlockLayout.js";
 import type { UsedSizes } from "../layout/BoxSizes.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
@@ -182,10 +182,6 @@ const ARROWS: ReadonlyMap<string, readonly [number, number, number, number, bool
     ["updownarrow", [0.5, 1, 0.5, 0, true]], ["leftrightarrow", [0, 0.5, 1, 0.5, true]], ["northwestsoutheastarrow", [0, 0, 1, 1, true]],
     ["northeastsouthwestarrow", [0, 1, 1, 0, true]]
 ]);
-const NO_METRICS: FaceMetrics = {
-    unitsPerEm: 1, bounds: [0, 0, 0, 0], horizontal: { ascender: 0, descender: 0, lineGap: 0 }, useTypographic: false, italicAngle: 0, fixedPitch: false, weightClass: 400,
-    widthClass: 5, selection: 0, macStyle: 0
-};
 
 export class MathLayout {
 
@@ -196,7 +192,6 @@ export class MathLayout {
     private readonly dictionary: MathOperators = new MathOperators();
     private readonly lookup: CharacterMapLookup = new CharacterMapLookup();
     private readonly bidi: UnicodeBidi = new UnicodeBidi();
-    private readonly noTable: MathTable = new MathTable();
     private readonly operators: WeakMap<ElementBox, Operator> = new WeakMap<ElementBox, Operator>();
     private readonly cores: WeakMap<ElementBox, ElementBox | null> = new WeakMap<ElementBox, ElementBox | null>();
     private readonly shapers: WeakMap<Typeface, FeatureShaper> = new WeakMap<Typeface, FeatureShaper>();
@@ -1110,9 +1105,9 @@ export class MathLayout {
     private glyphFor(code: number, box: ElementBox): readonly [FontInstance, number] | undefined {
         // The Editor's Draft §5.3.2, "get a glyph corresponding to a character c given a directionality dir": in rtl, the rtlm
         // variant of the glyph, or else the glyph of the mirrored character of a Bidi_Mirrored one, which fails without one.
-        const instance: FontInstance | undefined = this.metrics.firstFont(box.style.values);
-        const glyph: number = instance === undefined ? 0 : this.lookup.glyphOf(instance.typeface.characters, code);
-        if (instance === undefined || glyph === 0) {
+        const instance: FontInstance = this.metrics.firstFont(box.style.values);
+        const glyph: number = this.lookup.glyphOf(instance.typeface.characters, code);
+        if (glyph === 0) {
             return undefined;
         }
         if (this.keyword(box, "direction") !== "rtl") {
@@ -2908,9 +2903,8 @@ export class MathLayout {
 
     private constants(box: ElementBox): MathConstants {
         // §5.1: "global layout constants for the first available font", at the size of the element's font.
-        const instance: FontInstance | undefined = this.metrics.firstFont(box.style.values);
-        return instance === undefined ? this.noTable.constants(NO_METRICS, this.metrics.fontSize(box.style.values))
-            : this.mathTable(instance).constants(instance.metrics, this.metrics.usedSize(box.style.values, instance));
+        const instance: FontInstance = this.metrics.firstFont(box.style.values);
+        return this.mathTable(instance).constants(instance.metrics, this.metrics.usedSize(box.style.values, instance));
     }
 
     private keyword(box: ElementBox, property: string): string {

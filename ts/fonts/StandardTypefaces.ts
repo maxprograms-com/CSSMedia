@@ -35,19 +35,15 @@ export class StandardTypefaces {
 
     private readonly typefaces: Map<string, Typeface> = new Map<string, Typeface>();
 
-    names(): Array<string> {
-        return STANDARD_FONTS.map((font: StandardFontData) => font.name);
+    all(): ReadonlyArray<StandardFontData> {
+        return STANDARD_FONTS;
     }
 
-    typeface(name: string): Typeface | undefined {
-        let typeface: Typeface | undefined = this.typefaces.get(name);
+    typeface(data: StandardFontData): Typeface {
+        let typeface: Typeface | undefined = this.typefaces.get(data.name);
         if (typeface === undefined) {
-            const data: StandardFontData | undefined = STANDARD_FONTS.find((font: StandardFontData) => font.name === name);
-            if (data === undefined) {
-                return undefined;
-            }
             typeface = this.build(data);
-            this.typefaces.set(name, typeface);
+            this.typefaces.set(data.name, typeface);
         }
         return typeface;
     }
@@ -63,7 +59,9 @@ export class StandardTypefaces {
         // The AFM metrics have no missing character glyph, and CSS Fonts 4 §5.2 needs one that shows.
         const zero: number = data.codes.findIndex((codes: ReadonlyArray<number>) => codes.includes(DIGIT_ZERO));
         advances[0] = zero < 0 ? UNITS_PER_EM / 2 : data.widths[zero];
-        bounds.set([data.stemV, 0, advances[0] - data.stemV, data.capHeight ?? data.ascender ?? data.bounds[3]], 0);
+        // The box is stroked with the stem of the font, so its sides are half a stem from the advance edges: with a full stem the
+        // inner contour of a bold face would cross itself and the box would be solid.
+        bounds.set([data.stemV / 2, 0, advances[0] - data.stemV / 2, data.capHeight ?? data.ascender ?? data.bounds[3]], 0);
         const bold: boolean = data.weight === "Bold";
         const oblique: boolean = data.name.endsWith("Oblique");
         const italic: boolean = data.name.endsWith("Italic");

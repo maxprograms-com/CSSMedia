@@ -87,19 +87,16 @@ export class FontMetrics {
     xHeight(values: Readonly<Record<string, CssValue>>): number {
         // CSS Values 4 §6.1.1: the x-height of the first available font, or 0.5em when it cannot be determined.
         return this.cached("ex", values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            const height: number | undefined = instance?.metrics.xHeight;
-            return instance !== undefined && height !== undefined && height > 0 ? this.scaled(instance, height, values) : this.fontSize(values) / 2;
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
+            const height: number | undefined = instance.metrics.xHeight;
+            return height !== undefined && height > 0 ? this.scaled(instance, height, values) : this.fontSize(values) / 2;
         });
     }
 
     capHeight(values: Readonly<Record<string, CssValue>>): number {
         // CSS Values 4 §6.1.1: the cap-height of the first available font, or its ascent when that cannot be determined.
         return this.cached("cap", values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            if (instance === undefined) {
-                return this.fontSize(values);
-            }
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
             const height: number | undefined = instance.metrics.capHeight;
             return this.scaled(instance, height !== undefined && height > 0 ? height : this.lines(instance, this.upright(values)).ascender, values);
         });
@@ -137,10 +134,7 @@ export class FontMetrics {
             return lineHeight.value * this.fontSize(values);
         }
         return this.cached("lh", values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            if (instance === undefined) {
-                return this.fontSize(values);
-            }
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
             // CSS Inline 3 §3.2.2: the ascent and descent metrics, and the line gap floored at zero, which normal may include.
             // CSS Fonts 5 §3.4: font-size-adjust "does not affect the used value of line-height"; §4.4: size-adjust scales the metrics.
             const metrics: LineMetrics = this.lines(instance, this.upright(values));
@@ -151,13 +145,13 @@ export class FontMetrics {
 
     underline(values: Readonly<Record<string, CssValue>>): readonly [number, number] {
         const thickness: number = this.cached("underline-thickness", values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            const units: number | undefined = instance?.metrics.underlineThickness;
-            return instance !== undefined && units !== undefined && units > 0 ? this.scaled(instance, units, values) : this.fontSize(values) / DECORATION_THICKNESS;
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
+            const units: number | undefined = instance.metrics.underlineThickness;
+            return units !== undefined && units > 0 ? this.scaled(instance, units, values) : this.fontSize(values) / DECORATION_THICKNESS;
         });
         const offset: number = this.cached("underline-offset", values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            return instance === undefined ? this.fontSize(values) / DECORATION_OFFSET : this.runUnderline(instance, this.usedSize(values, instance));
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
+            return this.runUnderline(instance, this.usedSize(values, instance));
         });
         return [offset, thickness];
     }
@@ -188,16 +182,16 @@ export class FontMetrics {
     ascent(values: Readonly<Record<string, CssValue>>): number {
         // CSS Inline 3 §3.2.2: the ascent metric of the first available font; without a font, the font size.
         return this.cached("ascent", values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            return instance === undefined ? this.fontSize(values) : this.scaled(instance, this.lines(instance, this.upright(values)).ascender, values);
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
+            return this.scaled(instance, this.lines(instance, this.upright(values)).ascender, values);
         });
     }
 
     descent(values: Readonly<Record<string, CssValue>>): number {
         // CSS Inline 3 §3.2.2: the descent metric of the first available font, as a distance below the baseline.
         return this.cached("descent", values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            return instance === undefined ? 0 : -this.scaled(instance, this.lines(instance, this.upright(values)).descender, values);
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
+            return -this.scaled(instance, this.lines(instance, this.upright(values)).descender, values);
         });
     }
 
@@ -212,8 +206,8 @@ export class FontMetrics {
         const used: string = type === "middle" && upright ? "central" : type;
         const vertical: boolean = this.vertical(values);
         return this.cached("baseline-" + used + (vertical ? "-vertical" : ""), values, () => {
-            const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-            return instance === undefined ? 0 : this.fontBaseline(instance, this.usedSize(values, instance), used, vertical, upright);
+            const instance: FontInstance = this.matcher.firstAvailable(this.request(values));
+            return this.fontBaseline(instance, this.usedSize(values, instance), used, vertical, upright);
         });
     }
 
@@ -303,7 +297,7 @@ export class FontMetrics {
             : coordinate.value + this.instances.delta(store, this.instances.scalars(store, instance.coordinates), coordinate.outer, coordinate.inner);
     }
 
-    firstFont(values: Readonly<Record<string, CssValue>>): FontInstance | undefined {
+    firstFont(values: Readonly<Record<string, CssValue>>): FontInstance {
         return this.matcher.firstAvailable(this.request(values));
     }
 
@@ -317,8 +311,7 @@ export class FontMetrics {
         const high: number = Math.max(inherited, computed);
         let levels: number = high - low;
         let scale: number = 1;
-        const instance: FontInstance | undefined = this.firstFont(parent);
-        const scaleDowns: readonly [number, number] | undefined = instance === undefined ? undefined : new MathTable(instance.typeface.tables["MATH"]).scaleDowns();
+        const scaleDowns: readonly [number, number] | undefined = new MathTable(this.firstFont(parent).typeface.tables["MATH"]).scaleDowns();
         if (scaleDowns !== undefined) {
             if (low <= 0 && high >= 2) {
                 scale *= scaleDowns[1];
@@ -437,8 +430,7 @@ export class FontMetrics {
     }
 
     firstAspect(values: Readonly<Record<string, CssValue>>, metric: string): number | undefined {
-        const instance: FontInstance | undefined = this.matcher.firstAvailable(this.request(values));
-        return instance === undefined ? undefined : this.aspect(instance, metric);
+        return this.aspect(this.matcher.firstAvailable(this.request(values)), metric);
     }
 
     private aspect(instance: FontInstance, metric: string): number | undefined {
