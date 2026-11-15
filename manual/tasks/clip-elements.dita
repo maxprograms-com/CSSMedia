@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="clip-elements">
+    <title>Clip elements</title>
+    <shortdesc>A clip cuts away the parts of an element that are outside an area. You draw the area with a <codeph>clipPath</codeph> element or you write it as a basic shape.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="clip-with-an-element">
+                <cmd>Clip with a clipPath element</cmd>
+                <info>
+                    <p>Define the area with a <codeph>clipPath</codeph> element and name it in the <codeph>clip-path</codeph> property of the element you want to clip, as <codeph>url(#id)</codeph>. The parts of the element that are under the shapes of the <codeph>clipPath</codeph> stay visible, and the rest is cut away. You can set <codeph>clip-path</codeph> on shapes, text, images, groups and <codeph>use</codeph> elements.</p>
+                    <p>A <codeph>clipPath</codeph> can hold shapes, text, and <codeph>use</codeph> elements that point to a shape or to text. The shapes together make one area, and the area is the union of all of them. Each shape is filled with its <codeph>clip-rule</codeph>, <codeph>nonzero</codeph> or <codeph>evenodd</codeph>, as <codeph>fill-rule</codeph> works for a fill. A child with <codeph>display: none</codeph> or <codeph>visibility: hidden</codeph> adds nothing. A <codeph>clipPath</codeph> that holds nothing cuts away the whole element.</p>
+                    <p>The area follows the transforms. You can set a <codeph>transform</codeph> on the <codeph>clipPath</codeph> or on any of its shapes. The element that you clip carries its clip with it, so the clip moves when the element moves.</p>
+                    <p>A <codeph>clipPath</codeph> and each of its shapes can have a <codeph>clip-path</codeph> too. The area is then the part of the shapes that is also inside that second clip.</p>
+                    <p>By default the numbers in a <codeph>clipPath</codeph> are in user units. With <codeph>clipPathUnits="objectBoundingBox"</codeph> they are fractions of the box of the element that is clipped, so one clip fits elements of every size. A <codeph>clip-path</codeph> that names an element that is not a <codeph>clipPath</codeph>, or does not name anything, clips nothing.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;clipPath id="lens" clipPathUnits="objectBoundingBox">
+        &lt;circle cx="0.5" cy="0.5" r="0.4"/>
+    &lt;/clipPath>
+&lt;/defs>
+&lt;rect class="lensed" width="90" height="70" fill="#1d4f7a"/>
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">.lensed {
+    clip-path: url(#lens);
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="clip-with-a-shape">
+                <cmd>Clip with a basic shape</cmd>
+                <info>
+                    <p>Instead of a <codeph>clipPath</codeph> you can write the shape in the property. The shape is measured in a reference box, which is the stroke box of the element unless you name another one. These are the shapes:</p>
+                    <table frame="all">
+                        <tgroup cols="2">
+                            <colspec colname="c1" colwidth="1*"/>
+                            <colspec colname="c2" colwidth="3*"/>
+                            <thead>
+                                <row>
+                                    <entry>Shape</entry>
+                                    <entry>What it describes</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>circle(radius at x y)</codeph></entry>
+                                    <entry>A circle. The radius is a length, a percentage of the diagonal of the box divided by the square root of 2, or <codeph>closest-side</codeph>, <codeph>farthest-side</codeph>, <codeph>closest-corner</codeph> or <codeph>farthest-corner</codeph>. Without a radius it is <codeph>closest-side</codeph>. The center follows <codeph>at</codeph>, and it is the middle of the box without it. You can write the position with keywords and with offsets from an edge, as <codeph>at right 10px bottom 5px</codeph>.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>ellipse(rx ry at x y)</codeph></entry>
+                                    <entry>An ellipse. The radii are lengths, percentages of the width and the height of the box, or the same keywords as for a circle. Without radii both are <codeph>closest-side</codeph>.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>inset(top right bottom left round radii)</codeph></entry>
+                                    <entry>A rectangle that is smaller than the box by the given distances. One to four distances work like the margin of a box. After <codeph>round</codeph> you write one to four corner radii, and after a slash the vertical radii for elliptical corners. When the distances of two opposite sides are together longer than the box, CSSMedia reduces them in proportion until they fit.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>xywh(x y width height round radii)</codeph></entry>
+                                    <entry>A rectangle given by its position and its size, measured from the top left corner of the box.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>rect(top right bottom left round radii)</codeph></entry>
+                                    <entry>A rectangle given by the distances of its four sides from the top left corner of the box. A side can be <codeph>auto</codeph>, which is the side of the box.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>polygon(fill-rule round radius, x y, x y, ...)</codeph></entry>
+                                    <entry>A polygon with its vertices, each a pair of lengths or percentages. The optional <codeph>nonzero</codeph> or <codeph>evenodd</codeph> sets the fill rule, and <codeph>round</codeph> with a length rounds the corners. A polygon with fewer than three vertices is not a shape and clips everything.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>path(fill-rule, "data")</codeph></entry>
+                                    <entry>A path in the syntax of the <codeph>d</codeph> attribute of SVG, in a string. Its coordinates start at the top left corner of the box.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>shape(from x y, commands)</codeph></entry>
+                                    <entry>A path in CSS syntax. It starts at the point after <codeph>from</codeph>, and each command is <codeph>move</codeph>, <codeph>line</codeph>, <codeph>hline</codeph>, <codeph>vline</codeph>, <codeph>curve</codeph>, <codeph>smooth</codeph>, <codeph>arc</codeph> or <codeph>close</codeph>. <codeph>to</codeph> gives the end point from the top left corner of the box, and <codeph>by</codeph> gives it from the point where the command starts. A curve takes its control points after <codeph>with</codeph>.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <fig id="clip-shape-samples">
+                        <title>A rectangle clipped by five basic shapes</title>
+                        <image href="../images/effects-clip-shapes.svg" placement="break" scale="125">
+                            <alt>Five rectangles with a dashed outline. Inside each one a dark blue shape remains: a circle, an ellipse, a rounded square, a triangle and a heart.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.avatar {
+    clip-path: circle(40%);
+}
+.tab {
+    clip-path: inset(0 0 0 0 round 8px 8px 0 0);
+}
+.arrow {
+    clip-path: polygon(0 20%, 60% 20%, 60% 0, 100% 50%, 60% 100%, 60% 80%, 0 80%);
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="choose-the-clip-box">
+                <cmd>Choose the reference box</cmd>
+                <info>
+                    <p>A word before or after the shape chooses the box that the shape is measured in:</p>
+                    <ul>
+                        <li><codeph>fill-box</codeph> is the box of the shape without its outline. <codeph>content-box</codeph> and <codeph>padding-box</codeph> are the same box.</li>
+                        <li><codeph>stroke-box</codeph> is the box that also holds the outline. It is the box that CSSMedia uses when you name none. <codeph>border-box</codeph> and <codeph>margin-box</codeph> are the same box.</li>
+                        <li><codeph>view-box</codeph> is the whole drawing, from its top left corner.</li>
+                    </ul>
+                    <p>A box without a shape clips to the edges of that box: <codeph>clip-path: fill-box</codeph> cuts away the outline of a shape. The value <codeph>none</codeph>, the initial one, does not clip.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">rect.frame {
+    clip-path: inset(4px) fill-box;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

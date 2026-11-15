@@ -9,6 +9,7 @@
                 <cmd>Use presentation attributes for simple drawings</cmd>
                 <info>
                     <p>Most properties of a drawing can be written as attributes of the element, such as <codeph>fill</codeph>, <codeph>stroke</codeph>, <codeph>stroke-width</codeph> and <codeph>font-size</codeph>. These are presentation attributes. A presentation attribute is the weakest style an element can have: any rule overrides it.</p>
+                    <p>The effects of the chapter <xref href="../concepts/intro-effects.dita#intro-effects">Shadows, opacity, transforms and masks</xref> have presentation attributes too: <codeph>opacity</codeph>, <codeph>transform</codeph>, <codeph>transform-origin</codeph>, <codeph>clip-path</codeph>, <codeph>clip-rule</codeph>, <codeph>mask</codeph> and <codeph>mask-type</codeph>. The other properties of that chapter, such as <codeph>mix-blend-mode</codeph>, <codeph>isolation</codeph>, <codeph>transform-box</codeph> and <codeph>perspective</codeph>, are CSS properties only, and an attribute of the same name is not read. You can also write any property in the <codeph>style</codeph> attribute of an SVG element, as the next step shows.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-xml">&lt;rect width="60" height="40" fill="#cfe3f5" stroke="#1d4f7a"/>

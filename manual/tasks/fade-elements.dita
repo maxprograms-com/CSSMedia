@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="fade-elements">
+    <title>Make elements transparent</title>
+    <shortdesc>The <codeph>opacity</codeph> property makes an element and everything inside it transparent, as one group.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="set-opacity">
+                <cmd>Set the opacity of an element</cmd>
+                <info>
+                    <p>The value of <codeph>opacity</codeph> is a number from 0 to 1, or a percentage. The value 1, or 100%, is the initial one and draws the element as it is. The value 0 draws nothing. A value above 1 counts as 1 and a value below 0 counts as 0. A value that is not a number or a percentage is ignored and the element keeps the initial opacity.</p>
+                    <p>You write the value in a rule of a style sheet:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.watermark {
+    opacity: 0.15;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Opacity works on shapes, text, images, groups, <codeph>use</codeph> elements and nested <codeph>svg</codeph> elements. The property is not inherited, but the opacities of nested elements multiply: a shape with <codeph>opacity: 0.5</codeph> inside a group with <codeph>opacity: 0.5</codeph> is drawn at one quarter of its color.</p>
+                </info>
+            </step>
+            <step id="fade-a-group">
+                <cmd>Fade a group as one picture</cmd>
+                <info>
+                    <p>CSSMedia draws an element with an opacity below 1 as one picture, and then makes the picture transparent. When you set the opacity on a group, the shapes inside it do not show through each other where they overlap. When you set the same opacity on each shape, they do.</p>
+                    <p>The properties <codeph>fill-opacity</codeph> and <codeph>stroke-opacity</codeph> are different. They make only the fill or only the outline of one shape transparent, and they do not group anything. Use them when you want the fill of a shape to be transparent and its outline to stay solid. The <xref href="../tasks/paint-shapes.dita#paint-shapes">SVG chapter</xref> explains them.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;g class="faded">
+    &lt;rect x="10" y="10" width="60" height="40" fill="#6fc3e8"/>
+    &lt;rect x="40" y="30" width="60" height="40" fill="#f2d649"/>
+&lt;/g>
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">.faded {
+    opacity: 0.5;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>An element with an opacity below 1 is also an isolated group for blending. The <xref href="../tasks/blend-elements.dita#blend-elements">blend modes</xref> of the elements inside it mix with each other and not with what is behind the group.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>

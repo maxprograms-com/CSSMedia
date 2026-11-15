@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="Luminance">
+    <glossterm>Luminance</glossterm>
+    <glossdef>How light a color is, from 0 for black to 1 for white. A mask that works with luminance shows the parts of an element where the mask is light and hides the parts where it is dark.</glossdef>
+</glossentry>

@@ -145,6 +145,8 @@
                         <li><codeph>skewX(angle)</codeph> and <codeph>skewY(angle)</codeph> slant it.</li>
                         <li><codeph>matrix(a b c d e f)</codeph> gives the six numbers of the transform directly.</li>
                     </ul>
+                    <p>The attribute has its own syntax. The functions take plain numbers: lengths are in user units and angles in degrees. You separate the functions and the numbers with spaces or commas. An attribute that does not follow this syntax gives no transform at all, even if only one function of the list is wrong. The attribute <codeph>transform-origin</codeph> also exists, with numbers in user units.</p>
+                    <p>Elements that define a paint have their own attribute: <codeph>gradientTransform</codeph> for gradients and <codeph>patternTransform</codeph> for patterns. A <codeph>clipPath</codeph> takes <codeph>transform</codeph>.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-xml">&lt;g transform="translate(40 20) rotate(15)">
@@ -153,7 +155,7 @@
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The CSS property <codeph>transform</codeph> does the same with CSS syntax: <codeph>transform: translate(40px, 20px) rotate(15deg)</codeph>. You can also use the properties <codeph>rotate</codeph>, <codeph>scale</codeph> and <codeph>translate</codeph> and the 3D functions such as <codeph>rotateY()</codeph> and <codeph>perspective()</codeph>. The origin of a transform in a drawing is the origin of the drawing. Set <codeph>transform-origin</codeph> to turn an element around another point:</p>
+                    <p>The CSS property <codeph>transform</codeph> does the same with CSS syntax: <codeph>transform: translate(40px, 20px) rotate(15deg)</codeph>. You can also use the properties <codeph>rotate</codeph>, <codeph>scale</codeph> and <codeph>translate</codeph> and the 3D functions such as <codeph>rotateY()</codeph> and <codeph>perspective()</codeph>. The origin of a transform in a drawing is the origin of the drawing. Set <codeph>transform-origin</codeph> to turn an element around another point. <xref href="../tasks/transform-elements.dita#transform-elements">Move, turn and scale elements</xref> describes all the functions, the origin and the reference box:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">.turned {

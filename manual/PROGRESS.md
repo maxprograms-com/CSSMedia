@@ -428,8 +428,8 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### Compositing 1 (compositing-1)
 
 - [x] background-blend-mode
-- [~] isolation
-- [~] mix-blend-mode
+- [x] isolation
+- [x] mix-blend-mode
 
 ### CSS Borders and Box Decorations 4 (css-borders-4)
 
@@ -868,7 +868,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### CSS Color 4 (css-color-4)
 
 - [x] color
-- [~] opacity
+- [x] opacity
 
 ### CSS Color Adjustment 1 (css-color-adjust-1)
 
@@ -914,9 +914,9 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] mask-border-source
 - [ ] mask-border-width
 - [ ] mask-clip
-- [ ] mask-composite
-- [ ] mask-image
-- [ ] mask-mode
+- [x] mask-composite
+- [x] mask-image
+- [x] mask-mode
 - [ ] mask-origin
 - [ ] mask-position
 - [ ] mask-repeat
@@ -1249,19 +1249,19 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Transforms 1 (css-transforms-1)
 
-- [~] transform
-- [ ] transform-box
-- [~] transform-origin
+- [x] transform
+- [x] transform-box
+- [x] transform-origin
 
 ### CSS Transforms 2 (css-transforms-2)
 
-- [ ] backface-visibility
-- [ ] perspective
-- [ ] perspective-origin
-- [~] rotate
-- [~] scale
-- [ ] transform-style
-- [~] translate
+- [x] backface-visibility
+- [x] perspective
+- [x] perspective-origin
+- [x] rotate
+- [x] scale
+- [x] transform-style
+- [x] translate
 
 ### CSS Transitions 1 (css-transitions-1)
 

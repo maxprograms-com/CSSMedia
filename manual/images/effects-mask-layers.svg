@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="130" viewBox="0 0 480 130" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <defs>
+        <mask id="a">
+            <rect x="0" y="0" width="40" height="50" fill="white"/>
+        </mask>
+        <mask id="b">
+            <rect x="25" y="0" width="40" height="50" fill="white"/>
+        </mask>
+    </defs>
+    <g fill="none" stroke="#999999" stroke-dasharray="3 2">
+        <rect x="10" y="10" width="65" height="50"/>
+        <rect x="100" y="10" width="65" height="50"/>
+        <rect x="190" y="10" width="65" height="50"/>
+        <rect x="280" y="10" width="65" height="50"/>
+        <rect x="370" y="10" width="65" height="50"/>
+    </g>
+    <g fill="#1d4f7a">
+        <g transform="translate(10 10)"><rect width="65" height="50" fill="#f2d649" style="mask-image: url(#a)"/><rect width="65" height="50" style="mask-image: url(#b)" fill="#6fc3e8"/></g>
+        <g transform="translate(100 10)"><rect width="65" height="50" style="mask-image: url(#a), url(#b); mask-composite: add"/></g>
+        <g transform="translate(190 10)"><rect width="65" height="50" style="mask-image: url(#a), url(#b); mask-composite: subtract"/></g>
+        <g transform="translate(280 10)"><rect width="65" height="50" style="mask-image: url(#a), url(#b); mask-composite: intersect"/></g>
+        <g transform="translate(370 10)"><rect width="65" height="50" style="mask-image: url(#a), url(#b); mask-composite: exclude"/></g>
+    </g>
+    <g fill="#222222" text-anchor="middle">
+        <text x="42" y="82">the two masks</text>
+        <text x="132" y="82">add</text>
+        <text x="222" y="82">subtract</text>
+        <text x="312" y="82">intersect</text>
+        <text x="402" y="82">exclude</text>
+        <text x="42" y="96" font-size="10">a yellow, b blue</text>
+        <text x="132" y="96" font-size="10">a, b</text>
+        <text x="222" y="96" font-size="10">a outside b</text>
+        <text x="312" y="96" font-size="10">a inside b</text>
+        <text x="402" y="96" font-size="10">not both</text>
+    </g>
+</svg>

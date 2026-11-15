@@ -13,14 +13,14 @@
                         <row>
                             <entry><codeph>opacity</codeph></entry>
                             <entry>Makes an element and its children transparent as a group.</entry>
-                            <entry>A number from 0 to 1, or a percentage</entry>
+                            <entry>A number from 0 to 1, or a percentage. A number outside that range is clamped.</entry>
                             <entry><codeph>1</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-color-4/#transparency" scope="external" format="html">CSS Color 4 §3.3</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>clip-path</codeph></entry>
                             <entry>Shows only the part of an element inside an area.</entry>
-                            <entry><codeph>none</codeph>, <codeph>url(#id)</codeph> of a <codeph>clipPath</codeph>, or a basic shape, with <codeph>fill-box</codeph>, <codeph>stroke-box</codeph> or <codeph>view-box</codeph></entry>
+                            <entry><codeph>none</codeph>, <codeph>url(#id)</codeph> of a <codeph>clipPath</codeph>, or a basic shape (<codeph>circle()</codeph>, <codeph>ellipse()</codeph>, <codeph>inset()</codeph>, <codeph>xywh()</codeph>, <codeph>rect()</codeph>, <codeph>polygon()</codeph>, <codeph>path()</codeph> or <codeph>shape()</codeph>), with <codeph>fill-box</codeph>, <codeph>stroke-box</codeph>, <codeph>view-box</codeph>, <codeph>content-box</codeph>, <codeph>padding-box</codeph>, <codeph>border-box</codeph> or <codeph>margin-box</codeph></entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-clip-path" scope="external" format="html">CSS Masking 1 §5.1</xref></entry>
                         </row>
@@ -33,10 +33,31 @@
                         </row>
                         <row>
                             <entry><codeph>mask</codeph></entry>
-                            <entry>Makes parts of an element transparent with a <codeph>mask</codeph> element.</entry>
-                            <entry><codeph>none</codeph> or <codeph>url(#id)</codeph> of a <codeph>mask</codeph> element</entry>
+                            <entry>Makes parts of an element transparent with one or more <codeph>mask</codeph> elements. It is the shorthand of the mask layer properties.</entry>
+                            <entry><codeph>none</codeph>, or a list of layers separated by commas, each with <codeph>url(#id)</codeph> of a <codeph>mask</codeph> element</entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask" scope="external" format="html">CSS Masking 1 §7.9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-image</codeph></entry>
+                            <entry>Lists the layers of the mask of an element. The first layer is the top one.</entry>
+                            <entry>A list of <codeph>none</codeph> and <codeph>url(#id)</codeph> of <codeph>mask</codeph> elements, separated by commas</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-image" scope="external" format="html">CSS Masking 1 §7.1</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-mode</codeph></entry>
+                            <entry>Chooses for each layer whether the mask uses the luminance or the alpha of what it holds, in place of the <codeph>mask-type</codeph> of the <codeph>mask</codeph> element.</entry>
+                            <entry>A list of <codeph>match-source</codeph>, <codeph>luminance</codeph> or <codeph>alpha</codeph></entry>
+                            <entry><codeph>match-source</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-mode" scope="external" format="html">CSS Masking 1 §7.2</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>mask-composite</codeph></entry>
+                            <entry>Chooses for each layer how it combines with the layers below it.</entry>
+                            <entry>A list of <codeph>add</codeph>, <codeph>subtract</codeph>, <codeph>intersect</codeph> or <codeph>exclude</codeph></entry>
+                            <entry><codeph>add</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-masking-1/#the-mask-composite" scope="external" format="html">CSS Masking 1 §7.8</xref></entry>
                         </row>
                         <row>
                             <entry><codeph>mask-type</codeph></entry>
@@ -60,11 +81,56 @@
                             <entry><xref href="https://www.w3.org/TR/css-transforms-1/#transform-origin-property" scope="external" format="html">CSS Transforms 1 §5</xref></entry>
                         </row>
                         <row>
+                            <entry><codeph>transform-box</codeph></entry>
+                            <entry>Chooses the reference box for the percentages and the keywords of <codeph>transform</codeph> and <codeph>transform-origin</codeph>.</entry>
+                            <entry><codeph>view-box</codeph>, <codeph>fill-box</codeph>, <codeph>stroke-box</codeph>, <codeph>content-box</codeph> or <codeph>border-box</codeph></entry>
+                            <entry><codeph>view-box</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-1/#transform-box" scope="external" format="html">CSS Transforms 1 §6</xref></entry>
+                        </row>
+                        <row>
                             <entry><codeph>translate</codeph>, <codeph>rotate</codeph>, <codeph>scale</codeph></entry>
                             <entry>Move, turn or scale an element, each in a property of its own.</entry>
                             <entry><codeph>none</codeph> or the arguments of the function of the same name</entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-transforms-2/#individual-transforms" scope="external" format="html">CSS Transforms 2 §5</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="effects-3d">
+            <title>Three-dimensional transforms</title>
+            <table id="effects-3d__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row>
+                            <entry><codeph>perspective</codeph></entry>
+                            <entry>Sets the distance from the reader to the drawing for the children of an element.</entry>
+                            <entry><codeph>none</codeph> or a length. A length below 1px counts as 1px.</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-2/#perspective-property" scope="external" format="html">CSS Transforms 2 §8</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>perspective-origin</codeph></entry>
+                            <entry>Sets the point of view of the children of an element, on the plane of the drawing.</entry>
+                            <entry>A position, as in <codeph>background-position</codeph></entry>
+                            <entry><codeph>50% 50%</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-2/#perspective-origin-property" scope="external" format="html">CSS Transforms 2 §9</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>transform-style</codeph></entry>
+                            <entry>Chooses whether the children of an element share one three-dimensional space or are flattened into the plane of the element.</entry>
+                            <entry><codeph>flat</codeph> or <codeph>preserve-3d</codeph></entry>
+                            <entry><codeph>flat</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-2/#transform-style-property" scope="external" format="html">CSS Transforms 2 §7</xref></entry>
+                        </row>
+                        <row>
+                            <entry><codeph>backface-visibility</codeph></entry>
+                            <entry>Chooses whether an element is drawn when its back faces the reader.</entry>
+                            <entry><codeph>visible</codeph> or <codeph>hidden</codeph></entry>
+                            <entry><codeph>visible</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-transforms-2/#backface-visibility-property" scope="external" format="html">CSS Transforms 2 §10</xref></entry>
                         </row>
                     </tbody>
                 </tgroup>

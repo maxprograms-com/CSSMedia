@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE glossentry PUBLIC "-//OASIS//DTD DITA Glossary//EN" "glossary.dtd">
+<glossentry id="Alpha">
+    <glossterm>Alpha</glossterm>
+    <glossdef>The opacity of a color or of a point of a drawing, from 0 for fully transparent to 1 for fully opaque. A mask that works with alpha looks only at how opaque each point is and ignores its color.</glossdef>
+</glossentry>

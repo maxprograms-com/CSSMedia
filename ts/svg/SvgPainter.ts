@@ -52,6 +52,7 @@ const BLEND_MODES: Readonly<Record<string, string>> = {
     "color-burn": "ColorBurn", "hard-light": "HardLight", "soft-light": "SoftLight", difference: "Difference", exclusion: "Exclusion", hue: "Hue",
     saturation: "Saturation", color: "Color", luminosity: "Luminosity"
 };
+const MASK_OPERATORS: Readonly<Record<string, string>> = { add: "Screen", intersect: "Multiply", exclude: "Exclusion" };
 const REFERENCE_KEYWORDS: Readonly<Record<string, number>> = { left: 0, top: 0, center: 0.5, right: 1, bottom: 1 };
 const FLAT_TRANSFORMS: ReadonlySet<string> = new Set<string>(["clipPath", "linearGradient", "radialGradient", "pattern"]);
 const FLATNESS: number = 0.05;
@@ -462,7 +463,7 @@ export class SvgPainter {
         // CSS Transforms 2 §4.1: a flat element is drawn with its transform, which is affine unless it has a perspective;
         // then all that the element draws goes through the projection of its plane.
         const flat: Matrix | null | undefined = this.geometry.flatten(matrix);
-        if (flat === null) {
+        if (flat === null || this.singular(matrix, flat)) {
             return;
         }
         this.pdf.content.save();
@@ -667,9 +668,15 @@ export class SvgPainter {
         }
     }
 
+    private singular(matrix: Matrix4, flat: Matrix | undefined): boolean {
+        // CSS Transforms 1 §10: if a transform makes the current transformation matrix non-invertible, "the object and its
+        // content do not get displayed".
+        return flat === undefined ? this.geometry.invertHomography(this.geometry.homography(matrix)) === undefined : this.geometry.invert(flat) === undefined;
+    }
+
     private within(matrix: Matrix4, draw: () => void): void {
         const flat: Matrix | null | undefined = this.geometry.flatten(matrix);
-        if (flat === null) {
+        if (flat === null || this.singular(matrix, flat)) {
             return;
         }
         if (flat !== undefined) {
@@ -2034,18 +2041,103 @@ export class SvgPainter {
     }
 
     private mask(node: SvgNode, style: ComputedStyle): readonly [ImageResource, boolean] | null | undefined {
-        // CSS Masking 1 §9.1: the mask region in the units of maskUnits and its content in those of maskContentUnits, as a
-        // luminance or an alpha mask; §7.1: a reference that is not to a mask element is a layer of transparent black.
+        // CSS Masking 1 §7.1 and §7.10.2: each reference is a layer, the first on top, and each layer but the lowest composites
+        // with those below it; a none, or a reference that is not a mask element, is a layer of transparent black.
         const value: CssValue | undefined = style.values["mask-image"] ?? style.values["mask"];
-        const url: CssValue | undefined = value === undefined ? undefined : (value.kind === "list" ? value.items.find((item: CssValue) => item.kind === "url") : value);
-        const image: boolean = url !== undefined && url.kind === "url" && !this.styles.resolve(url.href).includes("#");
-        if (url === undefined || url.kind !== "url" || image) {
-            if (value !== undefined && this.keyword(value) !== "none") {
-                throw new Error("The painting of mask images other than mask elements in the SVG image " + this.styles.url + " is not implemented");
-            }
+        const references: ReadonlyArray<CssValue> = value === undefined ? [] : (value.kind === "list" ? value.items : [value]);
+        if (references.every((reference: CssValue) => this.keyword(reference) === "none")) {
             return undefined;
         }
-        const target: readonly [XMLElement, SvgStyles] | undefined = this.lookup(url.href);
+        const layers: Array<readonly [ImageResource, boolean] | null> = references.map((reference: CssValue, index: number) => this.layer(reference, index, node, style));
+        if (layers.length === 1) {
+            return layers[0];
+        }
+        const area: Box | undefined = this.localArea();
+        if (area === undefined) {
+            return null;
+        }
+        let combined: ImageResource = this.coverage(layers[layers.length - 1], area);
+        for (let index: number = layers.length - 2; index >= 0; index--) {
+            combined = this.composited(this.coverage(layers[index], area), combined, this.keyword(this.layerOf(style.values["mask-composite"], index)) ?? "add", area);
+        }
+        return [combined, true];
+    }
+
+    private layer(reference: CssValue, index: number, node: SvgNode, style: ComputedStyle): readonly [ImageResource, boolean] | null {
+        // CSS Masking 1 §7.2: mask-mode, when it is not match-source, replaces the mask-type of the mask element.
+        if (this.keyword(reference) === "none") {
+            return null;
+        }
+        if (reference.kind !== "url" || !this.styles.resolve(reference.href).includes("#")) {
+            throw new Error("The painting of mask images other than mask elements in the SVG image " + this.styles.url + " is not implemented");
+        }
+        const element: readonly [ImageResource, boolean] | null = this.maskElement(reference.href, node, style);
+        if (element === null) {
+            return null;
+        }
+        const mode: string | undefined = this.keyword(this.layerOf(style.values["mask-mode"], index));
+        return [element[0], mode === "alpha" ? false : (mode === "luminance" ? true : element[1])];
+    }
+
+    private layerOf(value: CssValue | undefined, index: number): CssValue | undefined {
+        // CSS Masking 1 §7.10.2: a list shorter than the number of layers repeats, and the excess values of a longer one are not used.
+        return value === undefined || value.kind !== "list" ? value : value.items[index % value.items.length];
+    }
+
+    private coverage(layer: readonly [ImageResource, boolean] | null, area: Box): ImageResource {
+        // A layer as a form in DeviceGray whose gray is the mask value, so that blend modes can composite the layers.
+        const form: PdfPage = this.document.startForm(area[2], area[3], false);
+        this.drawIn(form, SvgGeometry.IDENTITY, area, () => {
+            this.fillArea(area, 0);
+            if (layer !== null) {
+                this.pdf.content.graphicsState(this.pdf.useMask(layer[0].object, layer[1]));
+                this.fillArea(area, 1);
+            }
+        });
+        return this.document.finishForm(form, area, SvgGeometry.IDENTITY, PdfColorSpaces.GRAY);
+    }
+
+    private fillArea(area: Box, gray: number): void {
+        this.pdf.content.fillSpace(this.pdf.useColorSpace(PdfColorSpaces.GRAY));
+        this.pdf.content.fillColor([gray]);
+        if (this.outline(this.geometry.rectangle(area[0], area[1], area[2], area[3], 0, 0))) {
+            this.pdf.content.fill(false);
+        }
+    }
+
+    private composited(source: ImageResource, destination: ImageResource, operator: string, area: Box): ImageResource {
+        // CSS Masking 1 §7.8 gives Porter-Duff operators on mask values, which are alpha: add is Screen (s + d - sd), intersect
+        // Multiply (sd), exclude Exclusion (s + d - 2sd), and subtract Multiply by the inverse of the destination (s(1 - d)).
+        const form: PdfPage = this.document.startForm(area[2], area[3], false);
+        this.drawIn(form, SvgGeometry.IDENTITY, area, () => {
+            if (operator === "subtract") {
+                this.pdf.content.paintXObject(this.pdf.useImage(source));
+                this.pdf.content.graphicsState(this.pdf.useState(1, 1, "Multiply"));
+                this.pdf.content.paintXObject(this.pdf.useImage(this.inverted(destination, area)));
+                return;
+            }
+            this.pdf.content.paintXObject(this.pdf.useImage(destination));
+            this.pdf.content.graphicsState(this.pdf.useState(1, 1, MASK_OPERATORS[operator] ?? "Screen"));
+            this.pdf.content.paintXObject(this.pdf.useImage(source));
+        });
+        return this.document.finishForm(form, area, SvgGeometry.IDENTITY, PdfColorSpaces.GRAY);
+    }
+
+    private inverted(layer: ImageResource, area: Box): ImageResource {
+        // The difference between white and a gray is one minus it.
+        const form: PdfPage = this.document.startForm(area[2], area[3], false);
+        this.drawIn(form, SvgGeometry.IDENTITY, area, () => {
+            this.fillArea(area, 1);
+            this.pdf.content.graphicsState(this.pdf.useState(1, 1, "Difference"));
+            this.pdf.content.paintXObject(this.pdf.useImage(layer));
+        });
+        return this.document.finishForm(form, area, SvgGeometry.IDENTITY, PdfColorSpaces.GRAY);
+    }
+
+    private maskElement(href: string, node: SvgNode, style: ComputedStyle): readonly [ImageResource, boolean] | null {
+        // CSS Masking 1 §9.1: the mask region in the units of maskUnits and its content in those of maskContentUnits, as a
+        // luminance or an alpha mask.
+        const target: readonly [XMLElement, SvgStyles] | undefined = this.lookup(href);
         if (target === undefined || !target[1].isSvg(target[0], "mask") || this.active.has(target[0])) {
             return null;
         }

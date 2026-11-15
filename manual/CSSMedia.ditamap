@@ -98,11 +98,13 @@
         <!-- TODO: placeholder, write this chapter -->
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>Shadows, opacity, transforms and masks</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write the topics of this chapter; its reference lists the properties documented so far -->
+    <chapter href="concepts/intro-effects.dita">
+        <topicref href="tasks/fade-elements.dita"/>
+        <topicref href="tasks/transform-elements.dita"/>
+        <topicref href="tasks/transform-3d.dita"/>
+        <topicref href="tasks/clip-elements.dita"/>
+        <topicref href="tasks/mask-elements.dita"/>
+        <topicref href="tasks/blend-elements.dita"/>
         <topicref href="references/effects-chapter-reference.dita"/>
     </chapter>
 
@@ -167,6 +169,7 @@
     <backmatter>
         <booklists>
             <glossarylist chunk="to-content">
+                <topicref href="glossaries/Alpha.dita" type="glossentry"/>
                 <topicref href="glossaries/Bookmark.dita" type="glossentry"/>
                 <topicref href="glossaries/Box.dita" type="glossentry"/>
                 <topicref href="glossaries/ContainingBlock.dita" type="glossentry"/>
@@ -177,6 +180,7 @@
                 <topicref href="glossaries/Kerning.dita" type="glossentry"/>
                 <topicref href="glossaries/Leader.dita" type="glossentry"/>
                 <topicref href="glossaries/Ligature.dita" type="glossentry"/>
+                <topicref href="glossaries/Luminance.dita" type="glossentry"/>
                 <topicref href="glossaries/MathML.dita" type="glossentry"/>
                 <topicref href="glossaries/XMLNamespace.dita" type="glossentry"/>
                 <topicref href="glossaries/OASISCatalog.dita" type="glossentry"/>

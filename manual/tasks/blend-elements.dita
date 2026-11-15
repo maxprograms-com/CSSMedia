@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="blend-elements">
+    <title>Blend elements</title>
+    <shortdesc>A blend mode chooses how the colors of an element mix with the colors under it. You can also isolate a group so that its elements blend with each other and not with what is behind the group.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="choose-a-blend-mode">
+                <cmd>Choose a blend mode</cmd>
+                <info>
+                    <p>The <codeph>mix-blend-mode</codeph> property sets the blend mode of an element. The initial value is <codeph>normal</codeph>, which paints the element over what is behind it. You can set a mode on shapes, text, images, groups and <codeph>use</codeph> elements. On a group, the mode applies to the group as one picture.</p>
+                    <p>The modes are those of the PDF format:</p>
+                    <table frame="all">
+                        <tgroup cols="2">
+                            <colspec colname="c1" colwidth="1*"/>
+                            <colspec colname="c2" colwidth="3*"/>
+                            <thead>
+                                <row>
+                                    <entry>Mode</entry>
+                                    <entry>Result</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>multiply</codeph></entry>
+                                    <entry>Multiplies the colors. The result is never lighter. Multiplying by white changes nothing.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>screen</codeph></entry>
+                                    <entry>Multiplies the opposite of the colors. The result is never darker. Screening with black changes nothing.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>overlay</codeph></entry>
+                                    <entry>Multiplies dark colors of the backdrop and screens light ones.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>darken</codeph>, <codeph>lighten</codeph></entry>
+                                    <entry>Keep the darker or the lighter of the two colors in each channel.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>color-dodge</codeph>, <codeph>color-burn</codeph></entry>
+                                    <entry>Brighten or darken the backdrop to reflect the color of the element.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>hard-light</codeph>, <codeph>soft-light</codeph></entry>
+                                    <entry>Multiply or screen, depending on the color of the element. The effect is harsh with <codeph>hard-light</codeph> and gentle with <codeph>soft-light</codeph>.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>difference</codeph>, <codeph>exclusion</codeph></entry>
+                                    <entry>Subtract the darker color from the lighter one. <codeph>exclusion</codeph> has less contrast.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>hue</codeph>, <codeph>saturation</codeph>, <codeph>color</codeph>, <codeph>luminosity</codeph></entry>
+                                    <entry>Take the named part of the color from the element and the other parts from the backdrop. <codeph>color</codeph> takes the hue and the saturation.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <fig id="blend-mode-samples">
+                        <title>A red circle over a blue and yellow backdrop in each blend mode</title>
+                        <image href="../images/effects-blend.svg" placement="break" scale="125">
+                            <alt>Sixteen small rectangles, half blue and half yellow, each with a red circle on top. The circle looks different in each one, depending on the blend mode named under it. The last one is the normal mode.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;circle cx="260" cy="45" r="28" fill="#6fc3e8"/>
+&lt;circle class="shade" cx="285" cy="45" r="28" fill="#f2d649"/>
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">.shade {
+    mix-blend-mode: multiply;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="isolate-a-group">
+                <cmd>Isolate a group</cmd>
+                <info>
+                    <p>An element blends with everything painted before it in the same group. A group is isolated when its elements blend with each other and nothing outside the group takes part. With <codeph>isolation: isolate</codeph> you make a group isolated. The initial value is <codeph>auto</codeph>.</p>
+                    <p>A group is isolated by itself, without the property, when it has an <codeph>opacity</codeph> below 1, a <codeph>clip-path</codeph> or a <codeph>mask</codeph>, because CSSMedia paints such a group as one picture first.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.badge {
+    isolation: isolate;
+}
+.badge .shade {
+    mix-blend-mode: multiply;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

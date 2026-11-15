@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270" viewBox="0 0 480 270" font-family="Helvetica, Arial, sans-serif" font-size="10">
+    <defs>
+        <g id="tile">
+            <rect width="70" height="40" fill="#3b7dd8"/>
+            <rect x="35" width="35" height="40" fill="#f0b840"/>
+        </g>
+        <circle id="top" cx="35" cy="20" r="17" fill="#d8403b"/>
+    </defs>
+    <g transform="translate(14 8)"><use href="#tile"/><use href="#top" style="mix-blend-mode: multiply"/><text x="35" y="54" text-anchor="middle" fill="#222222">multiply</text></g>
+    <g transform="translate(104 8)"><use href="#tile"/><use href="#top" style="mix-blend-mode: screen"/><text x="35" y="54" text-anchor="middle" fill="#222222">screen</text></g>
+    <g transform="translate(194 8)"><use href="#tile"/><use href="#top" style="mix-blend-mode: overlay"/><text x="35" y="54" text-anchor="middle" fill="#222222">overlay</text></g>
+    <g transform="translate(284 8)"><use href="#tile"/><use href="#top" style="mix-blend-mode: darken"/><text x="35" y="54" text-anchor="middle" fill="#222222">darken</text></g>
+    <g transform="translate(374 8)"><use href="#tile"/><use href="#top" style="mix-blend-mode: lighten"/><text x="35" y="54" text-anchor="middle" fill="#222222">lighten</text></g>
+    <g transform="translate(14 83)"><use href="#tile"/><use href="#top" style="mix-blend-mode: color-dodge"/><text x="35" y="54" text-anchor="middle" fill="#222222">color-dodge</text></g>
+    <g transform="translate(104 83)"><use href="#tile"/><use href="#top" style="mix-blend-mode: color-burn"/><text x="35" y="54" text-anchor="middle" fill="#222222">color-burn</text></g>
+    <g transform="translate(194 83)"><use href="#tile"/><use href="#top" style="mix-blend-mode: hard-light"/><text x="35" y="54" text-anchor="middle" fill="#222222">hard-light</text></g>
+    <g transform="translate(284 83)"><use href="#tile"/><use href="#top" style="mix-blend-mode: soft-light"/><text x="35" y="54" text-anchor="middle" fill="#222222">soft-light</text></g>
+    <g transform="translate(374 83)"><use href="#tile"/><use href="#top" style="mix-blend-mode: difference"/><text x="35" y="54" text-anchor="middle" fill="#222222">difference</text></g>
+    <g transform="translate(14 158)"><use href="#tile"/><use href="#top" style="mix-blend-mode: exclusion"/><text x="35" y="54" text-anchor="middle" fill="#222222">exclusion</text></g>
+    <g transform="translate(104 158)"><use href="#tile"/><use href="#top" style="mix-blend-mode: hue"/><text x="35" y="54" text-anchor="middle" fill="#222222">hue</text></g>
+    <g transform="translate(194 158)"><use href="#tile"/><use href="#top" style="mix-blend-mode: saturation"/><text x="35" y="54" text-anchor="middle" fill="#222222">saturation</text></g>
+    <g transform="translate(284 158)"><use href="#tile"/><use href="#top" style="mix-blend-mode: color"/><text x="35" y="54" text-anchor="middle" fill="#222222">color</text></g>
+    <g transform="translate(374 158)"><use href="#tile"/><use href="#top" style="mix-blend-mode: luminosity"/><text x="35" y="54" text-anchor="middle" fill="#222222">luminosity</text></g>
+    <g transform="translate(14 233)"><use href="#tile"/><use href="#top"/><text x="35" y="54" text-anchor="middle" fill="#222222">normal</text></g>
+</svg>

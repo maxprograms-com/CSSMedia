@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="120" viewBox="0 0 480 120" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <g fill="none" stroke="#999999" stroke-dasharray="3 2">
+        <rect x="20" y="20" width="44" height="28"/>
+        <rect x="100" y="20" width="44" height="28"/>
+        <rect x="180" y="20" width="44" height="28"/>
+        <rect x="260" y="20" width="44" height="28"/>
+        <rect x="340" y="20" width="44" height="28"/>
+        <rect x="420" y="20" width="44" height="28"/>
+    </g>
+    <g fill="#6fc3e8" fill-opacity="0.8" stroke="#1d4f7a">
+        <g transform="translate(20 20)"><rect width="44" height="28" style="transform: translate(14px, 24px)"/></g>
+        <g transform="translate(100 20)"><rect width="44" height="28" style="transform: rotate(20deg)"/></g>
+        <g transform="translate(180 20)"><rect width="44" height="28" style="transform: scale(1.4, 1.6)"/></g>
+        <g transform="translate(260 20)"><rect width="44" height="28" style="transform: skewX(-25deg)"/></g>
+        <g transform="translate(340 20)"><rect width="44" height="28" style="transform: rotate(20deg); transform-box: fill-box; transform-origin: center"/></g>
+        <g transform="translate(420 20)"><rect width="44" height="28" style="transform: matrix(1, 0.4, -0.4, 1, 0, 0)"/></g>
+    </g>
+    <g fill="#222222" text-anchor="middle">
+        <text x="42" y="104">translate()</text>
+        <text x="122" y="104">rotate()</text>
+        <text x="202" y="104">scale()</text>
+        <text x="282" y="104">skewX()</text>
+        <text x="362" y="104">rotate() and</text>
+        <text x="362" y="116" font-size="10">transform-origin</text>
+        <text x="442" y="104">matrix()</text>
+    </g>
+</svg>

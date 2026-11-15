@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="110" viewBox="0 0 480 110" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <defs>
+        <marker id="next" viewBox="0 0 10 10" markerWidth="6" markerHeight="6" refX="9" refY="5" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#555555"/>
+        </marker>
+    </defs>
+    <g stroke="#1d4f7a" fill="#cfe3f5">
+        <rect x="6" y="26" width="82" height="56" rx="6"/>
+        <rect x="104" y="26" width="82" height="56" rx="6"/>
+        <rect x="202" y="26" width="82" height="56" rx="6"/>
+        <rect x="300" y="26" width="82" height="56" rx="6"/>
+        <rect x="398" y="26" width="76" height="56" rx="6"/>
+    </g>
+    <g stroke="#555555" stroke-width="1.5" fill="none">
+        <path d="M88 54 H102" marker-end="url(#next)"/>
+        <path d="M186 54 H200" marker-end="url(#next)"/>
+        <path d="M284 54 H298" marker-end="url(#next)"/>
+        <path d="M382 54 H396" marker-end="url(#next)"/>
+    </g>
+    <g fill="#222222" text-anchor="middle">
+        <text x="47" y="48" font-weight="bold">1</text>
+        <text x="47" y="64">Drawing</text>
+        <text x="145" y="48" font-weight="bold">2</text>
+        <text x="145" y="64">Transform</text>
+        <text x="243" y="48" font-weight="bold">3</text>
+        <text x="243" y="64">Clip</text>
+        <text x="341" y="48" font-weight="bold">4</text>
+        <text x="341" y="64">Mask</text>
+        <text x="436" y="48" font-weight="bold">5</text>
+        <text x="436" y="64">Opacity</text>
+        <text x="436" y="76" font-size="10">and blend</text>
+    </g>
+</svg>

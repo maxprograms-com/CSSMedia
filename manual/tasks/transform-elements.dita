@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="transform-elements">
+    <title>Move, turn and scale elements</title>
+    <shortdesc>A transform moves, turns, scales or skews an element and everything inside it. You choose the functions, the point they turn and scale around, and the box that point is measured in.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="write-a-transform">
+                <cmd>Write a transform</cmd>
+                <info>
+                    <p>The <codeph>transform</codeph> property takes <codeph>none</codeph>, the initial value, or a list of functions separated by spaces. These are the functions for a flat drawing:</p>
+                    <table frame="all">
+                        <tgroup cols="2">
+                            <colspec colname="c1" colwidth="1*"/>
+                            <colspec colname="c2" colwidth="3*"/>
+                            <thead>
+                                <row>
+                                    <entry>Function</entry>
+                                    <entry>What it does</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>translate(x, y)</codeph>, <codeph>translateX(x)</codeph>, <codeph>translateY(y)</codeph></entry>
+                                    <entry>Moves the element. With one value, <codeph>translate()</codeph> moves it only to the right or left. Lengths use any unit. A percentage is a part of the width of the reference box for x and of its height for y.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>scale(x, y)</codeph>, <codeph>scaleX(x)</codeph>, <codeph>scaleY(y)</codeph></entry>
+                                    <entry>Makes the element larger or smaller. With one value, <codeph>scale()</codeph> uses it for both directions. A negative number mirrors the element.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>rotate(angle)</codeph></entry>
+                                    <entry>Turns the element clockwise around the transform origin. A positive angle turns clockwise because the y axis goes down.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>skew(x, y)</codeph>, <codeph>skewX(x)</codeph>, <codeph>skewY(y)</codeph></entry>
+                                    <entry>Slants the element. <codeph>skewX()</codeph> moves points sideways in proportion to their height, and <codeph>skewY()</codeph> moves them up and down in proportion to their distance from the left. With one value, <codeph>skew()</codeph> is <codeph>skewX()</codeph>.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>matrix(a, b, c, d, e, f)</codeph></entry>
+                                    <entry>Gives the six numbers of the transform directly. A point x, y goes to <codeph>a x + c y + e</codeph>, <codeph>b x + d y + f</codeph>.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <p>Angles use the units <codeph>deg</codeph>, <codeph>grad</codeph>, <codeph>rad</codeph> and <codeph>turn</codeph>, and a plain 0 is also an angle. A transform that is not valid is ignored and the element is not transformed.</p>
+                    <p>Each function works in the coordinate system that the functions before it made. In <codeph>translate(20px, 0) scale(2)</codeph>, the element is scaled first and then moved 20 pixels, so the move is not doubled. In <codeph>scale(2) translate(20px, 0)</codeph> the move is also scaled, so it goes 40 pixels.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.stamp {
+    transform: translate(40px, 20px) rotate(15deg);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <fig id="transform-samples">
+                        <title>Some transforms of one rectangle</title>
+                        <image href="../images/effects-transforms.svg" placement="break" scale="125">
+                            <alt>A rectangle with a dashed outline marks the starting place. Six copies of it show a translation, a rotation about the corner, a scaling, a skew, a rotation about the center and a matrix.</alt>
+                        </image>
+                    </fig>
+                    <p>A transform does not change the place of the other elements of the drawing, and it does not change the size that the drawing takes in the text. The elements that follow are drawn as if the transformed element had not moved.</p>
+                    <p>When the transform makes it impossible to go back from the transformed element to the original one, such as <codeph>scale(0)</codeph>, CSSMedia does not draw the element or its content.</p>
+                </info>
+            </step>
+            <step id="set-the-origin">
+                <cmd>Choose the transform origin</cmd>
+                <info>
+                    <p>Rotations and scalings happen around a point, the transform origin. In a drawing the origin is the top left corner of the reference box, which is the initial value <codeph>0 0</codeph>. <codeph>transform-origin</codeph> moves it. It takes one or two values, and a third length for the third dimension. Each of the first two is a length, a percentage of the reference box, or a keyword: <codeph>left</codeph>, <codeph>center</codeph> and <codeph>right</codeph> for the horizontal position, and <codeph>top</codeph>, <codeph>center</codeph> and <codeph>bottom</codeph> for the vertical one. With one value, the vertical position is the center. When you write a vertical keyword first, as in <codeph>bottom left</codeph>, CSSMedia reads it as <codeph>left bottom</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.hand {
+    transform: rotate(30deg);
+    transform-origin: 40px 30px;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="set-the-box">
+                <cmd>Choose the reference box</cmd>
+                <info>
+                    <p>The percentages of the transform origin, of <codeph>translate()</codeph> and of the keywords refer to a reference box. The property <codeph>transform-box</codeph> chooses it:</p>
+                    <ul>
+                        <li><codeph>view-box</codeph>, the initial value, is the whole drawing, from its top left corner. With it, <codeph>transform-origin: 50% 50%</codeph> is the center of the drawing.</li>
+                        <li><codeph>fill-box</codeph> is the box that holds the shape without its outline. <codeph>content-box</codeph> is the same box. For a group, it is the box that holds all the shapes inside it.</li>
+                        <li><codeph>stroke-box</codeph> is the box that also holds the outline. <codeph>border-box</codeph> is the same box.</li>
+                    </ul>
+                    <p>To turn an element around its own center, use <codeph>fill-box</codeph> with <codeph>transform-origin: center</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.badge {
+    transform: rotate(20deg);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="individual-transforms">
+                <cmd>Use the individual transform properties</cmd>
+                <info>
+                    <p>The properties <codeph>translate</codeph>, <codeph>rotate</codeph> and <codeph>scale</codeph> do the work of the functions of the same name, each in a property of its own, so you can change one of them in a rule without repeating the others.</p>
+                    <ul>
+                        <li><codeph>translate</codeph> takes one to three lengths or percentages: x, y and the distance in the third dimension.</li>
+                        <li><codeph>rotate</codeph> takes an angle, which turns the element in the drawing. It can also take an axis, <codeph>x</codeph>, <codeph>y</codeph> or <codeph>z</codeph> or three numbers, and an angle: <codeph>rotate: x 40deg</codeph>.</li>
+                        <li><codeph>scale</codeph> takes one to three numbers or percentages. One number scales both directions.</li>
+                    </ul>
+                    <p>CSSMedia applies them around the same transform origin as <codeph>transform</codeph>, in the order <codeph>translate</codeph>, <codeph>rotate</codeph>, <codeph>scale</codeph> and then the list of <codeph>transform</codeph>. The result is the same as writing the functions of the three properties first in one <codeph>transform</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.mark {
+    translate: 5px 0;
+    rotate: 30deg;
+    scale: 2;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+    </taskbody>
+</task>

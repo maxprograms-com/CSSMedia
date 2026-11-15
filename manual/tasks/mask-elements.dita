@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="mask-elements">
+    <title>Mask elements</title>
+    <shortdesc>A mask makes parts of an element transparent, in steps that go from fully visible to fully hidden. You draw the mask with a <codeph>mask</codeph> element and combine several masks in layers.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="mask-with-an-element">
+                <cmd>Draw a mask</cmd>
+                <info>
+                    <p>A <codeph>mask</codeph> element holds the shapes, text and images of the mask. You name it in the <codeph>mask-image</codeph> property of the element you want to mask, as <codeph>url(#id)</codeph>. The shorthand <codeph>mask</codeph> takes the same reference. You can set it on shapes, text, images, groups and <codeph>use</codeph> elements.</p>
+                    <p>The mask is drawn in the coordinates of the masked element, so it moves when the element moves. Where the mask is light the element shows, where it is dark the element is transparent, and the steps between them make the element partly transparent. A gradient in a mask gives a fade.</p>
+                    <p>A reference to something that is not a <codeph>mask</codeph> element, or to nothing, is a layer that is fully transparent. When it is the only layer, it hides the element.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;defs>
+    &lt;linearGradient id="ramp">
+        &lt;stop offset="0" stop-color="#ffffff"/>
+        &lt;stop offset="1" stop-color="#000000"/>
+    &lt;/linearGradient>
+    &lt;mask id="fade-out">
+        &lt;rect x="120" y="10" width="95" height="70" fill="url(#ramp)"/>
+    &lt;/mask>
+&lt;/defs>
+&lt;rect class="faded" x="120" y="10" width="95" height="70" fill="#1d4f7a"/>
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">.faded {
+    mask-image: url(#fade-out);
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="choose-the-mask-type">
+                <cmd>Choose what the mask measures</cmd>
+                <info>
+                    <p>A mask measures either the <xref href="../glossaries/Luminance.dita">luminance</xref> or the <xref href="../glossaries/Alpha.dita">alpha</xref> of what it holds. By default it is the luminance, multiplied by the alpha, so a black shape hides and a white one shows, and a transparent shape hides. The <codeph>mask-type</codeph> property of the <codeph>mask</codeph> element can be <codeph>luminance</codeph> or <codeph>alpha</codeph>. With <codeph>alpha</codeph>, a black shape shows as much as a white one, and only the empty parts hide.</p>
+                    <p>The <codeph>mask-mode</codeph> property of the masked element decides for itself. Its value can be <codeph>luminance</codeph> or <codeph>alpha</codeph>, which replace the <codeph>mask-type</codeph> of the mask element, or <codeph>match-source</codeph>, the initial value, which uses it.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.stamp {
+    mask-image: url(#grain);
+    mask-mode: alpha;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="size-the-mask">
+                <cmd>Set the region and the units of a mask</cmd>
+                <info>
+                    <p>A mask has a region, given by <codeph>x</codeph>, <codeph>y</codeph>, <codeph>width</codeph> and <codeph>height</codeph>, outside which the element is hidden. By default the region is the box of the masked element made 10% larger on every side, as the initial values <codeph>-10%</codeph> and <codeph>120%</codeph> say. The numbers of the region are fractions of the box, until you write <codeph>maskUnits="userSpaceOnUse"</codeph>, which makes them user units. A region without width or height hides the element.</p>
+                    <p>The numbers inside the mask are user units. With <codeph>maskContentUnits="objectBoundingBox"</codeph> they are fractions of the box of the element, so the same mask fits elements of every size.</p>
+                    <p>Masks can hold other masks and clips: an element inside a mask can have its own <codeph>mask</codeph> and <codeph>clip-path</codeph>. An element can have a clip and a mask at once, and then also an opacity. The clip is applied first, then the mask, then the opacity.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;mask id="half" maskContentUnits="objectBoundingBox">
+    &lt;rect width="0.5" height="1" fill="white"/>
+&lt;/mask>
+</pre>
+                </stepxmp>
+            </step>
+            <step id="layer-masks">
+                <cmd>Combine masks in layers</cmd>
+                <info>
+                    <p>You can list several masks in <codeph>mask-image</codeph>, separated by commas. Each is a layer, and the first one is the top one. The property <codeph>mask-composite</codeph> says how each layer combines with the layers below it. It takes a list too, with one value for each layer except the lowest one, which has nothing under it:</p>
+                    <ul>
+                        <li><codeph>add</codeph>, the initial value, shows what either layer shows.</li>
+                        <li><codeph>subtract</codeph> shows what the layer shows and the layers below do not.</li>
+                        <li><codeph>intersect</codeph> shows what the layer and the layers below both show.</li>
+                        <li><codeph>exclude</codeph> shows what only one of them shows.</li>
+                    </ul>
+                    <p>A value of <codeph>none</codeph> in the list is a layer that is fully transparent. It still counts as a layer, so <codeph>mask-image: url(#a), none</codeph> with <codeph>mask-composite: intersect</codeph> hides the element. When <codeph>mask-mode</codeph> or <codeph>mask-composite</codeph> has fewer values than there are layers, the list repeats until there are enough. When it has more, the last ones are not used.</p>
+                    <fig id="mask-layers-samples">
+                        <title>Two masks, and what each operator shows</title>
+                        <image href="../images/effects-mask-layers.svg" placement="break" scale="125">
+                            <alt>Two bars overlap, one yellow and one blue, which are the two masks. Four dark blue rectangles show what remains with add, subtract, intersect and exclude.</alt>
+                        </image>
+                    </fig>
+                    <p>The shorthand <codeph>mask</codeph> sets all the layers at once.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.photo {
+    mask-image: url(#frame), url(#hole);
+    mask-composite: subtract;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+        <!-- TODO: mask-image with an image file or a gradient stops the run; mask-clip, mask-origin, mask-position, mask-repeat, mask-size and the mask-border properties are read and never painted -->
+    </taskbody>
+</task>

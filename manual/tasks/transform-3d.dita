@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="transform-3d">
+    <title>Tilt elements in three dimensions</title>
+    <shortdesc>With three-dimensional transforms you tilt an element as if it were a sheet of paper in space, and with a perspective you make the near edge larger than the far one.</shortdesc>
+    <taskbody>
+        <steps>
+            <step id="rotate-in-space">
+                <cmd>Turn an element in space</cmd>
+                <info>
+                    <p>The drawing is a plane with the x axis to the right, the y axis down and the z axis pointing to the reader. The functions of <codeph>transform</codeph> that work in space are:</p>
+                    <table frame="all">
+                        <tgroup cols="2">
+                            <colspec colname="c1" colwidth="1*"/>
+                            <colspec colname="c2" colwidth="3*"/>
+                            <thead>
+                                <row>
+                                    <entry>Function</entry>
+                                    <entry>What it does</entry>
+                                </row>
+                            </thead>
+                            <tbody>
+                                <row>
+                                    <entry><codeph>rotateX(angle)</codeph>, <codeph>rotateY(angle)</codeph>, <codeph>rotateZ(angle)</codeph></entry>
+                                    <entry>Turn the element around one of the axes. <codeph>rotateZ()</codeph> is <codeph>rotate()</codeph>.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>rotate3d(x, y, z, angle)</codeph></entry>
+                                    <entry>Turns the element around the axis that goes from the origin to the point x, y, z. The numbers can have any size, because only the direction counts. When all three are 0, the element does not turn.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>translateZ(z)</codeph>, <codeph>translate3d(x, y, z)</codeph></entry>
+                                    <entry>Move the element, in the third dimension too.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>scaleZ(z)</codeph>, <codeph>scale3d(x, y, z)</codeph></entry>
+                                    <entry>Scale the element, in the third dimension too.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>perspective(length)</codeph></entry>
+                                    <entry>Makes what is closer to the reader larger and what is farther smaller. The length is the distance from the reader to the drawing. A length below 1 pixel counts as 1 pixel, and <codeph>none</codeph> gives no perspective.</entry>
+                                </row>
+                                <row>
+                                    <entry><codeph>matrix3d(...)</codeph></entry>
+                                    <entry>Gives the sixteen numbers of the transform, column by column.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                    <p>The properties <codeph>rotate</codeph>, <codeph>translate</codeph> and <codeph>scale</codeph> also take three dimensions, as <xref href="../tasks/transform-elements.dita#transform-elements">Move, turn and scale elements</xref> shows.</p>
+                    <p>Without a perspective, the drawing is projected straight onto the page. A turn around the x or y axis then only makes the element narrower, and a movement along z changes nothing you can see.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.card {
+    transform: rotateY(50deg);
+    transform-box: fill-box;
+    transform-origin: center;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="add-a-perspective">
+                <cmd>Add a perspective</cmd>
+                <info>
+                    <p>You can add a perspective in two ways. The function <codeph>perspective()</codeph> at the start of a <codeph>transform</codeph> list works for that element only. The property <codeph>perspective</codeph> on a group works for the children of the group, and they all share the same point of view. The group itself is not changed by its own perspective.</p>
+                    <p>A smaller distance gives a stronger effect. The <codeph>perspective-origin</codeph> property sets the point of view, the place where the reader looks from, on the plane of the drawing. Its initial value is <codeph>50% 50%</codeph>, the center of the reference box of the group. It takes the same values as <codeph>background-position</codeph>: lengths, percentages and the keywords <codeph>left</codeph>, <codeph>center</codeph>, <codeph>right</codeph>, <codeph>top</codeph> and <codeph>bottom</codeph>.</p>
+                    <fig id="transform-3d-samples">
+                        <title>A rotation without a perspective, with one in the transform and with one on the parent</title>
+                        <image href="../images/effects-3d.svg" placement="break" scale="125">
+                            <alt>Three rectangles with a dashed outline mark the starting places. The first is turned around its vertical axis and looks narrower. The second and the third also turn, and the edge nearer to the reader is taller than the farther one.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.stage {
+    perspective: 400px;
+    perspective-origin: 50% 30%;
+}
+.stage .card {
+    transform: rotateY(40deg);
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="share-a-space">
+                <cmd>Put several elements in the same space</cmd>
+                <info>
+                    <p>Each element with a three-dimensional transform is a plane. By default the children of a group are flattened into the plane of the group, so two planes that cross each other are drawn one after the other, in the order of the document. With <codeph>transform-style: preserve-3d</codeph> on the group, its children keep their own planes in one shared space. CSSMedia cuts the planes where they cross and draws the parts from the farthest to the nearest.</p>
+                    <p>Some properties make the group flat even if you ask for <codeph>preserve-3d</codeph>: an <codeph>overflow</codeph> that is not <codeph>visible</codeph> or <codeph>clip</codeph>, an <codeph>opacity</codeph> below 1, a <codeph>clip-path</codeph>, a <codeph>mask</codeph>, an <codeph>isolation</codeph> of <codeph>isolate</codeph> and a <codeph>mix-blend-mode</codeph> other than <codeph>normal</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">.stage {
+    transform-style: preserve-3d;
+    perspective: 400px;
+}
+.front { transform: rotateY(40deg); }
+.back  { transform: rotateY(-40deg); }
+</pre>
+                </stepxmp>
+            </step>
+            <step id="hide-the-back">
+                <cmd>Hide the back of an element</cmd>
+                <info>
+                    <p>When you turn an element so far that you see its back, CSSMedia draws it, as a mirror image. With <codeph>backface-visibility: hidden</codeph> it draws nothing while the back faces the reader. The initial value is <codeph>visible</codeph>.</p>
+                    <p>A <codeph>clipPath</codeph>, a gradient and a pattern are always flat. CSSMedia ignores the three-dimensional functions of their transforms and applies the flat ones.</p>
+                </info>
+            </step>
+        </steps>
+    </taskbody>
+</task>
