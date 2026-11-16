@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="vertical-reference">
+    <title>Vertical text, ruby, emphasis and shadows</title>
+    <shortdesc>This reference lists the properties and the display values that CSSMedia uses to write text in vertical lines, to annotate it with ruby, and to mark and shade it.</shortdesc>
+    <refbody>
+        <section id="vertical-properties">
+            <title>Writing mode properties</title>
+            <table id="vertical-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-writing-mode">
+                            <entry><codeph>writing-mode</codeph></entry>
+                            <entry>The direction in which lines run and in which they follow each other. In <codeph>vertical-rl</codeph> the lines are vertical and go from the right to the left. In <codeph>vertical-lr</codeph> they go from the left to the right. In <codeph>sideways-rl</codeph> and <codeph>sideways-lr</codeph> all the text is turned: lines go from the right and from the left, and the text reads downward and upward. On the root element, it sets the writing mode of the page. It is inherited.</entry>
+                            <entry><codeph>horizontal-tb</codeph>, <codeph>vertical-rl</codeph>, <codeph>vertical-lr</codeph>, <codeph>sideways-rl</codeph> or <codeph>sideways-lr</codeph></entry>
+                            <entry><codeph>horizontal-tb</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-writing-mode" scope="external" format="html">CSS Writing Modes 4 §3.2</xref></entry>
+                        </row>
+                        <row id="row-text-orientation">
+                            <entry><codeph>text-orientation</codeph></entry>
+                            <entry>How the characters of a vertical line are turned. <codeph>mixed</codeph> sets the characters of scripts that are written vertically, such as Chinese and Japanese, upright and turns the others a quarter clockwise. <codeph>upright</codeph> sets all of them upright, one under another. <codeph>sideways</codeph> turns all of them. It is inherited.</entry>
+                            <entry><codeph>mixed</codeph>, <codeph>upright</codeph> or <codeph>sideways</codeph></entry>
+                            <entry><codeph>mixed</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-text-orientation" scope="external" format="html">CSS Writing Modes 4 §5.1</xref></entry>
+                        </row>
+                        <row id="row-glyph-orientation-vertical">
+                            <entry><codeph>glyph-orientation-vertical</codeph></entry>
+                            <entry>An older property that makes the same choice as <codeph>text-orientation</codeph>, and that CSSMedia reads as that property. <codeph>auto</codeph> is <codeph>mixed</codeph>, <codeph>0deg</codeph> and <codeph>0</codeph> are <codeph>upright</codeph>, and <codeph>90deg</codeph> and <codeph>90</codeph> are <codeph>sideways</codeph>.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>0deg</codeph>, <codeph>0</codeph>, <codeph>90deg</codeph> or <codeph>90</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-glyph-orientation-vertical" scope="external" format="html">CSS Writing Modes 4 §5.1.3</xref></entry>
+                        </row>
+                        <row id="row-text-combine-upright">
+                            <entry><codeph>text-combine-upright</codeph></entry>
+                            <entry>Sets several characters side by side in the space of one, upright, inside a vertical line. <codeph>all</codeph> combines the text of the element. <codeph>digits</codeph> combines each run of digits that has as many digits as the integer or fewer. It has no effect in horizontal text or in the sideways modes. It is inherited.</entry>
+                            <entry><codeph>none</codeph>, <codeph>all</codeph> or <codeph>digits</codeph> with an optional integer from 2 to 4, which is 2 when it is left out</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-text-combine-upright" scope="external" format="html">CSS Writing Modes 4 §9.1</xref></entry>
+                        </row>
+                        <row id="row-direction-vertical">
+                            <entry><codeph>direction</codeph></entry>
+                            <entry>The direction of the text along the line. In a vertical line, <codeph>ltr</codeph> goes down and <codeph>rtl</codeph> goes up. In <codeph>sideways-lr</codeph> it is the other way around. It is inherited.</entry>
+                            <entry><codeph>ltr</codeph> or <codeph>rtl</codeph></entry>
+                            <entry><codeph>ltr</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-direction" scope="external" format="html">CSS Writing Modes 4 §2.1</xref></entry>
+                        </row>
+                        <row id="row-unicode-bidi-vertical">
+                            <entry><codeph>unicode-bidi</codeph></entry>
+                            <entry>How an element takes part in the ordering of text that mixes directions. It works along the vertical line as it does along a horizontal one.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>embed</codeph>, <codeph>isolate</codeph>, <codeph>bidi-override</codeph>, <codeph>isolate-override</codeph> or <codeph>plaintext</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-unicode-bidi" scope="external" format="html">CSS Writing Modes 4 §2.2</xref></entry>
+                        </row>
+                        <row id="row-line-break-vertical">
+                            <entry><codeph>line-break</codeph></entry>
+                            <entry>How strict the rules are that keep some characters off the start or the end of a line: closing brackets and stops do not start a line, opening brackets do not end one, and a dash or an ellipsis of two characters is not split. They apply in vertical lines as they do in horizontal ones. <codeph>strict</codeph> also keeps small kana off the start of a line, and <codeph>loose</codeph> lets them start it. <codeph>anywhere</codeph> allows a break after every character.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>loose</codeph>, <codeph>normal</codeph>, <codeph>strict</codeph> or <codeph>anywhere</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-line-break" scope="external" format="html">CSS Text 4 §6.2</xref></entry>
+                        </row>
+                        <row id="row-text-underline-position-vertical">
+                            <entry><codeph>text-underline-position</codeph></entry>
+                            <entry>Where an underline is drawn. In a vertical line, <codeph>right</codeph> puts it on the right of the text and <codeph>left</codeph> on the left, and so does <codeph>auto</codeph>, which is the left. In horizontal text, <codeph>under</codeph> puts it under the characters and <codeph>from-font</codeph> takes its position from the font. It is inherited.</entry>
+                            <entry><codeph>auto</codeph>, or <codeph>from-font</codeph> or <codeph>under</codeph> with <codeph>left</codeph> or <codeph>right</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-underline-position" scope="external" format="html">CSS Text Decoration 4 §2.7</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="ruby-properties">
+            <title>Ruby display values and properties</title>
+            <table id="ruby-display__table">
+                <tgroup cols="2">
+                    <colspec colname="c1" colwidth="1*"/>
+                    <colspec colname="c2" colwidth="3*"/>
+                    <thead>
+                        <row>
+                            <entry>Value of <codeph>display</codeph></entry>
+                            <entry>The element is</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row id="row-display-ruby">
+                            <entry><codeph>ruby</codeph></entry>
+                            <entry>A ruby: a group of bases with their annotations. It sits on a line of text.</entry>
+                        </row>
+                        <row id="row-display-ruby-base">
+                            <entry><codeph>ruby-base</codeph></entry>
+                            <entry>The text that is annotated.</entry>
+                        </row>
+                        <row id="row-display-ruby-text">
+                            <entry><codeph>ruby-text</codeph></entry>
+                            <entry>One annotation.</entry>
+                        </row>
+                        <row id="row-display-ruby-base-container">
+                            <entry><codeph>ruby-base-container</codeph></entry>
+                            <entry>A group of bases that stands on one level.</entry>
+                        </row>
+                        <row id="row-display-ruby-text-container">
+                            <entry><codeph>ruby-text-container</codeph></entry>
+                            <entry>A group of annotations that stands on one level, over or under the bases.</entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+            <table id="ruby-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-ruby-position">
+                            <entry><codeph>ruby-position</codeph></entry>
+                            <entry>Where the annotations are. <codeph>over</codeph> is above the bases in horizontal text and on the right in vertical text. <codeph>under</codeph> is the other side. <codeph>alternate</codeph> puts the first level over and the next levels on the other side of the level before. <codeph>inter-character</codeph> puts each annotation after its base, on the right of it in vertical text. It is inherited.</entry>
+                            <entry><codeph>alternate</codeph> or <codeph>over</codeph> or <codeph>under</codeph>, with <codeph>alternate</codeph> optional beside them, or <codeph>inter-character</codeph></entry>
+                            <entry><codeph>alternate</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-ruby-1/#propdef-ruby-position" scope="external" format="html">CSS Ruby 1 §4.1</xref></entry>
+                        </row>
+                        <row id="row-ruby-align">
+                            <entry><codeph>ruby-align</codeph></entry>
+                            <entry>How the content of a base or an annotation is spread when it is narrower than its column. <codeph>start</codeph> puts it at the start. <codeph>center</codeph> centers it. <codeph>space-between</codeph> spreads the characters over the whole column. <codeph>space-around</codeph> does the same with half a space at each end. It is inherited.</entry>
+                            <entry><codeph>start</codeph>, <codeph>center</codeph>, <codeph>space-between</codeph> or <codeph>space-around</codeph></entry>
+                            <entry><codeph>space-around</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-ruby-1/#propdef-ruby-align" scope="external" format="html">CSS Ruby 1 §4.3</xref></entry>
+                        </row>
+                        <row id="row-ruby-merge">
+                            <entry><codeph>ruby-merge</codeph></entry>
+                            <entry>Whether the annotations of a level are shown as one annotation over all the bases. <codeph>merge</codeph> does it always. <codeph>auto</codeph> does it when an annotation is wider than its base. <codeph>separate</codeph> keeps them apart. It is inherited.</entry>
+                            <entry><codeph>separate</codeph>, <codeph>merge</codeph> or <codeph>auto</codeph></entry>
+                            <entry><codeph>separate</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-ruby-1/#propdef-ruby-merge" scope="external" format="html">CSS Ruby 1 §4.2</xref></entry>
+                        </row>
+                        <row id="row-ruby-overhang">
+                            <entry><codeph>ruby-overhang</codeph></entry>
+                            <entry>Lets an annotation that is wider than its base reach over the kana beside it. The reach is at most half the size of the annotation. <codeph>none</codeph> keeps it inside the column. It is inherited.</entry>
+                            <entry><codeph>auto</codeph> or <codeph>none</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-ruby-1/#propdef-ruby-overhang" scope="external" format="html">CSS Ruby 1 §5.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="emphasis-properties">
+            <title>Emphasis and shadow properties</title>
+            <table id="emphasis-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-text-emphasis-style">
+                            <entry><codeph>text-emphasis-style</codeph></entry>
+                            <entry>The mark that is put beside each character. <codeph>filled</codeph> or <codeph>open</codeph> alone gives a circle in horizontal text and a sesame in vertical text. A shape alone is filled. A string gives a mark that is the first character of the string. It is inherited.</entry>
+                            <entry><codeph>none</codeph>, <codeph>filled</codeph> or <codeph>open</codeph> with <codeph>dot</codeph>, <codeph>circle</codeph>, <codeph>double-circle</codeph>, <codeph>triangle</codeph> or <codeph>sesame</codeph>, or a string</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis-style" scope="external" format="html">CSS Text Decoration 4 §3.1</xref></entry>
+                        </row>
+                        <row id="row-text-emphasis-color">
+                            <entry><codeph>text-emphasis-color</codeph></entry>
+                            <entry>The color of the marks. It is inherited.</entry>
+                            <entry>A color</entry>
+                            <entry><codeph>currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis-color" scope="external" format="html">CSS Text Decoration 4 §3.2</xref></entry>
+                        </row>
+                        <row id="row-text-emphasis">
+                            <entry><codeph>text-emphasis</codeph></entry>
+                            <entry>Sets <codeph>text-emphasis-style</codeph> and <codeph>text-emphasis-color</codeph> together.</entry>
+                            <entry>A style and a color, in any order</entry>
+                            <entry>See the two properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis" scope="external" format="html">CSS Text Decoration 4 §3.3</xref></entry>
+                        </row>
+                        <row id="row-text-emphasis-position">
+                            <entry><codeph>text-emphasis-position</codeph></entry>
+                            <entry>The side where the marks are. In horizontal text and in the sideways modes, <codeph>over</codeph> and <codeph>under</codeph> choose the side of the line. In vertical lines, <codeph>right</codeph> and <codeph>left</codeph> choose it. It is inherited.</entry>
+                            <entry><codeph>over</codeph> or <codeph>under</codeph>, and <codeph>right</codeph> or <codeph>left</codeph></entry>
+                            <entry><codeph>over right</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis-position" scope="external" format="html">CSS Text Decoration 4 §3.4</xref></entry>
+                        </row>
+                        <row id="row-text-emphasis-skip">
+                            <entry><codeph>text-emphasis-skip</codeph></entry>
+                            <entry>The characters that get no mark: spaces, punctuation, symbols and the characters that are set narrow. It is inherited.</entry>
+                            <entry>One or more of <codeph>spaces</codeph>, <codeph>punctuation</codeph>, <codeph>symbols</codeph> and <codeph>narrow</codeph></entry>
+                            <entry><codeph>spaces punctuation</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis-skip" scope="external" format="html">CSS Text Decoration 4 §3.5</xref></entry>
+                        </row>
+                        <row id="row-text-shadow">
+                            <entry><codeph>text-shadow</codeph></entry>
+                            <entry>One or more shadows of the text and of its decorations. Each one has a horizontal and a vertical offset, a blur, a spread and a color, and it can be <codeph>inset</codeph>. The offsets are on the page whatever the writing mode: a positive horizontal offset is to the right. The first shadow is on top. It is inherited.</entry>
+                            <entry><codeph>none</codeph> or a comma separated list of shadows</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-shadow" scope="external" format="html">CSS Text Decoration 4 §4</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

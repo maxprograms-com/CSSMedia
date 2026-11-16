@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="mark-and-shade-text">
+    <title>Mark text with emphasis and shadows</title>
+    <shortdesc>Emphasis marks put a small dot or another mark beside each character of a text. They take the place of italics in Chinese, Japanese and Korean text. A text shadow draws a copy of the text, and of its underlines, behind the text. Both work in horizontal and in vertical lines. The <xref href="../references/vertical-chapter-reference.dita#vertical-chapter-reference">vertical text reference</xref> lists the properties used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>em</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="choose-an-emphasis-mark">
+                <cmd>Choose the mark</cmd>
+                <info>
+                    <p>Set <codeph>text-emphasis-style</codeph> on the element whose text you want to mark:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">em {
+    text-emphasis-style: filled sesame;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A mark is <codeph>filled</codeph> or <codeph>open</codeph>, and it has one of five shapes: <codeph>dot</codeph>, <codeph>circle</codeph>, <codeph>double-circle</codeph>, <codeph>triangle</codeph> or <codeph>sesame</codeph>. If you give only <codeph>filled</codeph> or <codeph>open</codeph>, the shape is a circle in horizontal text and a sesame in vertical text. If you give only a shape, the mark is filled. A string, such as <codeph>"*"</codeph>, uses its first character as the mark, in the font of the text. If that font has no such character, the text has no marks.</p>
+                    <fig id="emphasis-marks-figure">
+                        <title>The emphasis marks</title>
+                        <image href="../images/emphasis-marks.svg" placement="break" scale="100">
+                            <alt>Two rows of five Chinese characters, each with a small mark over it. The first row has filled marks: dot, circle, double circle, triangle and sesame. The second row has the same marks open.</alt>
+                        </image>
+                    </fig>
+                    <p><codeph>text-emphasis</codeph> sets the style and the color together. The marks have the size of half the font, and the line grows to make room for them when its <codeph>line-height</codeph> leaves none.</p>
+                </info>
+            </step>
+            <step id="place-the-marks">
+                <cmd>Place and color the marks</cmd>
+                <info>
+                    <p><codeph>text-emphasis-position</codeph> chooses the side of the text. In horizontal text, <codeph>over</codeph> is above the characters and <codeph>under</codeph> is below them. In vertical lines, <codeph>right</codeph> is on the right of the characters and <codeph>left</codeph> is on the left. The initial value, <codeph>over right</codeph>, puts the marks above horizontal text and on the right of vertical text. <codeph>text-emphasis-color</codeph> sets the color, which is the color of the text when you do not set it:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">em {
+    text-emphasis: filled dot #c00000;
+    text-emphasis-position: under;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="skip-characters">
+                <cmd>Leave some characters without a mark</cmd>
+                <info>
+                    <p>By default, spaces and punctuation get no mark. <codeph>text-emphasis-skip</codeph> lists the kinds of characters to skip: <codeph>spaces</codeph>, <codeph>punctuation</codeph>, <codeph>symbols</codeph> and <codeph>narrow</codeph>, the characters that are not wide or full-width, such as the Latin letters in a line of Japanese text. This example marks the punctuation too:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">em {
+    text-emphasis-style: open circle;
+    text-emphasis-skip: spaces;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="add-a-shadow">
+                <cmd>Add a shadow</cmd>
+                <info>
+                    <p><codeph>text-shadow</codeph> takes a list of shadows. Each one has a horizontal and a vertical offset, then an optional blur, an optional spread and a color:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    text-shadow: 2pt 2pt 3pt gray;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The offsets are on the page, whatever the writing mode: a positive horizontal offset moves the shadow to the right, and a positive vertical offset moves it down. The blur softens the edge of the shadow. The spread makes the shadow thicker by that length on all sides. The color is the color of the text when you leave it out.</p>
+                    <p>With several shadows, separated by commas, the first one is on top:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    text-shadow: 1pt 1pt white, 3pt 3pt 4pt black;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The shadow also has the underlines, overlines and lines through the text of the element.</p>
+                </info>
+            </step>
+            <step id="inset-shadows">
+                <cmd>Draw a shadow inside the letters</cmd>
+                <info>
+                    <p>Write <codeph>inset</codeph> before the lengths of a shadow to draw it inside the letters, as if they were cut into the page:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">title {
+    color: #444444;
+    text-shadow: inset 1pt 1pt 2pt black;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="know-the-limits-of-blur">
+                <cmd>Embed a font for blurs and inset shadows</cmd>
+                <info>
+                    <p>A blur and an inset shadow are drawn from the outlines of the letters. CSSMedia has the outlines of the fonts that you embed with <codeph>@font-face</codeph>, but it does not have those of the 14 standard fonts of PDF, whose letters the PDF viewer draws. For text in a standard font, CSSMedia draws a shadow without its blur, and it leaves out an inset shadow. In both cases it shows a warning. Shadows with offsets and spreads, and the emphasis marks, are drawn in any font. Declare an embedded font when you need the blur or an inset shadow, as <xref href="font-faces.dita"/> explains.</p>
+                </info>
+            </step>
+        </steps>
+        <result>
+            <p>The text of your document has marks and shadows in horizontal and vertical lines.</p>
+        </result>
+    </taskbody>
+</task>

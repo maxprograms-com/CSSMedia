@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="190" viewBox="0 0 480 190">
+    <style>
+        @font-face { font-family: "Noto Sans CJK JP"; src: url("../fonts/NotoSansCJKjp-Regular.otf"); }
+        .cjk { font-family: "Noto Sans CJK JP", Helvetica, sans-serif; font-size: 22px; }
+    </style>
+    <g font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#222222">
+        <g stroke="#1d4f7a" stroke-width="1.2">
+            <circle cx="50" cy="22" r="2.6" fill="#1d4f7a"/>
+            <circle cx="140" cy="22" r="4.5" fill="#1d4f7a"/>
+            <circle cx="230" cy="22" r="5" fill="#1d4f7a"/>
+            <circle cx="230" cy="22" r="2" fill="#ffffff"/>
+            <path d="M320 17L325.5 27H314.5Z" fill="#1d4f7a"/>
+            <path d="M410 18C415 18 416 22 414 26L411 30C412 25 409 23 406 22Z" fill="#1d4f7a"/>
+        </g>
+        <g stroke="#1d4f7a" stroke-width="1.2" fill="#ffffff">
+            <circle cx="50" cy="102" r="2.6"/>
+            <circle cx="140" cy="102" r="4.5"/>
+            <circle cx="230" cy="102" r="5"/>
+            <circle cx="230" cy="102" r="2"/>
+            <path d="M320 97L325.5 107H314.5Z"/>
+            <path d="M410 98C415 98 416 102 414 106L411 110C412 105 409 103 406 102Z"/>
+        </g>
+        <g class="cjk">
+            <text class="cjk" x="50" y="52">強</text>
+            <text class="cjk" x="140" y="52">強</text>
+            <text class="cjk" x="230" y="52">強</text>
+            <text class="cjk" x="320" y="52">強</text>
+            <text class="cjk" x="410" y="52">強</text>
+            <text class="cjk" x="50" y="132">調</text>
+            <text class="cjk" x="140" y="132">調</text>
+            <text class="cjk" x="230" y="132">調</text>
+            <text class="cjk" x="320" y="132">調</text>
+            <text class="cjk" x="410" y="132">調</text>
+        </g>
+        <text x="50" y="72" font-size="10">filled dot</text>
+        <text x="140" y="72" font-size="10">filled circle</text>
+        <text x="230" y="72" font-size="10">filled double-circle</text>
+        <text x="320" y="72" font-size="10">filled triangle</text>
+        <text x="410" y="72" font-size="10">filled sesame</text>
+        <text x="50" y="152" font-size="10">open dot</text>
+        <text x="140" y="152" font-size="10">open circle</text>
+        <text x="230" y="152" font-size="10">open double-circle</text>
+        <text x="320" y="152" font-size="10">open triangle</text>
+        <text x="410" y="152" font-size="10">open sesame</text>
+        <text x="240" y="180" font-size="10" fill="#555555">The values of text-emphasis-style, over the text.</text>
+    </g>
+</svg>

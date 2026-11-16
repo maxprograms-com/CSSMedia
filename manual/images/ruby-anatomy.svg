@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="240" viewBox="0 0 500 240">
+    <style>
+        @font-face { font-family: "Noto Sans CJK JP"; src: url("../fonts/NotoSansCJKjp-Regular.otf"); }
+        .cjk { font-family: "Noto Sans CJK JP", Helvetica, sans-serif; }
+    </style>
+    <g font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#222222">
+        <text x="125" y="22" font-size="12" font-weight="bold">horizontal text</text>
+        <rect x="20" y="32" width="210" height="150" fill="#ffffff" stroke="#888888" stroke-dasharray="4 3"/>
+        <rect x="50" y="48" width="60" height="22" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text class="cjk" x="80" y="64" font-size="13">かん</text>
+        <rect x="110" y="48" width="60" height="22" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text class="cjk" x="140" y="64" font-size="13">じ</text>
+        <rect x="50" y="70" width="60" height="40" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <text class="cjk" x="80" y="99" font-size="26">漢</text>
+        <rect x="110" y="70" width="60" height="40" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <text class="cjk" x="140" y="99" font-size="26">字</text>
+        <rect x="50" y="110" width="120" height="22" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text x="110" y="125" font-size="12">Chinese characters</text>
+        <text x="182" y="62" text-anchor="start" font-size="9" fill="#555555">over</text>
+        <text x="182" y="124" text-anchor="start" font-size="9" fill="#555555">under</text>
+        <text x="125" y="156" font-size="10" fill="#555555">annotations over and under the bases</text>
+        <text x="125" y="170" font-size="10" fill="#555555">ruby-position: over, then under</text>
+
+        <text x="375" y="22" font-size="12" font-weight="bold">vertical text</text>
+        <rect x="270" y="32" width="210" height="150" fill="#ffffff" stroke="#888888" stroke-dasharray="4 3"/>
+        <rect x="400" y="44" width="26" height="62" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <text class="cjk" x="413" y="82" font-size="24">漢</text>
+        <rect x="400" y="106" width="26" height="62" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <text class="cjk" x="413" y="144" font-size="24">字</text>
+        <rect x="426" y="44" width="22" height="62" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text class="cjk" x="437" y="80" font-size="12">か</text>
+        <text class="cjk" x="437" y="94" font-size="12">ん</text>
+        <rect x="426" y="106" width="22" height="62" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text class="cjk" x="437" y="140" font-size="12">じ</text>
+        <rect x="370" y="44" width="30" height="124" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text transform="translate(390 56) rotate(90)" text-anchor="start" font-size="12">Kanji</text>
+        <text x="456" y="110" text-anchor="start" font-size="9" fill="#555555">over</text>
+        <text x="362" y="110" text-anchor="end" font-size="9" fill="#555555">under</text>
+        <text x="375" y="198" font-size="10" fill="#555555">over is on the right of vertical text</text>
+        <text x="250" y="226" font-size="10" fill="#555555">A ruby has one level of bases and one or more levels of annotations, each over or under the bases.</text>
+    </g>
+</svg>

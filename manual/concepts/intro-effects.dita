@@ -49,6 +49,11 @@
                         <entry><codeph>mix-blend-mode</codeph>, <codeph>isolation</codeph></entry>
                         <entry><xref href="../tasks/blend-elements.dita#blend-elements">Blend elements</xref></entry>
                     </row>
+                    <row>
+                        <entry>Give the text of the document a shadow</entry>
+                        <entry><codeph>text-shadow</codeph></entry>
+                        <entry><xref href="../tasks/mark-and-shade-text.dita#mark-and-shade-text">Mark text with emphasis and shadows</xref></entry>
+                    </row>
                 </tbody>
             </tgroup>
         </table>
@@ -60,6 +65,6 @@
                 <alt>Five boxes in a row joined by arrows: Drawing, Transform, Clip, Mask, and Opacity and blend.</alt>
             </image>
         </fig>
-        <!-- TODO: box-shadow, text-shadow, outline, filter, and clip-path and mask on the boxes of the document or on the svg element itself, stop the run; they work on the elements inside the drawing, and opacity, mix-blend-mode, isolation, transform, translate, rotate, scale and perspective work on the boxes of the document -->
+        <!-- TODO: box-shadow, outline, filter, and clip-path and mask on the boxes of the document or on the svg element itself, stop the run; they work on the elements inside the drawing, and opacity, mix-blend-mode, isolation, transform, translate, rotate, scale and perspective work on the boxes of the document -->
     </conbody>
 </concept>

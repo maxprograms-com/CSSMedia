@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="columns-reference">
+    <title>Multi-column layout</title>
+    <shortdesc>This reference lists the properties that CSSMedia uses to flow the content of an element into columns.</shortdesc>
+    <refbody>
+        <section id="columns-properties">
+            <title>Column properties</title>
+            <table id="columns-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-column-count">
+                            <entry><codeph>column-count</codeph></entry>
+                            <entry>The number of columns. With <codeph>column-width</codeph> too, it is the most columns that fit.</entry>
+                            <entry><codeph>auto</codeph> or an integer of 1 or more</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-count" scope="external" format="html">CSS Multi-column 2 §4.2</xref></entry>
+                        </row>
+                        <row id="row-column-width">
+                            <entry><codeph>column-width</codeph></entry>
+                            <entry>The least width of a column. The element gets as many columns of at least that width as fit, and the columns are widened to fill it.</entry>
+                            <entry><codeph>auto</codeph> or a length</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-width" scope="external" format="html">CSS Multi-column 2 §4.1</xref></entry>
+                        </row>
+                        <row id="row-columns">
+                            <entry><codeph>columns</codeph></entry>
+                            <entry>Sets <codeph>column-width</codeph> and <codeph>column-count</codeph> together.</entry>
+                            <entry>A width, a count, or both</entry>
+                            <entry>See the two properties</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-columns" scope="external" format="html">CSS Multi-column 2 §4.3</xref></entry>
+                        </row>
+                        <row id="row-column-gap">
+                            <entry><codeph>column-gap</codeph></entry>
+                            <entry>The space between two columns. <codeph>normal</codeph> is 1em. A percentage is of the width of the element.</entry>
+                            <entry><codeph>normal</codeph> or a length or a percentage</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-gaps-1/#propdef-column-gap" scope="external" format="html">CSS Gaps 1 §2.1</xref></entry>
+                        </row>
+                        <row id="row-column-rule">
+                            <entry><codeph>column-rule</codeph>, <codeph>column-rule-width</codeph>, <codeph>column-rule-style</codeph>, <codeph>column-rule-color</codeph></entry>
+                            <entry>A line in the middle of the gap between two columns that have content. It has the width, the style and the color of a border, and it is as long as the columns. Give each property one value. The color is <codeph>currentcolor</codeph> when it is left out.</entry>
+                            <entry>As the properties of a border</entry>
+                            <entry><codeph>medium none currentcolor</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-rule" scope="external" format="html">CSS Multi-column 2 §5.5</xref></entry>
+                        </row>
+                        <row id="row-column-fill">
+                            <entry><codeph>column-fill</codeph></entry>
+                            <entry>How the content is shared between the columns. <codeph>balance</codeph> makes the columns as even as it can. <codeph>auto</codeph> fills a column up to the height of the element, or to the end of the page, before it starts the next one.</entry>
+                            <entry><codeph>balance</codeph> or <codeph>auto</codeph></entry>
+                            <entry><codeph>balance</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-fill" scope="external" format="html">CSS Multi-column 2 §8.1</xref></entry>
+                        </row>
+                        <row id="row-column-span">
+                            <entry><codeph>column-span</codeph></entry>
+                            <entry>On a block inside the multi-column element, <codeph>all</codeph> makes it as wide as the element, across all the columns. The content before it and the content after it are laid out in columns of their own.</entry>
+                            <entry><codeph>none</codeph> or <codeph>all</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-span" scope="external" format="html">CSS Multi-column 2 §7.1</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

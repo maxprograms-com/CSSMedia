@@ -12,6 +12,8 @@
     <topicref href="references/table-reference.dita"/>
     <topicref href="references/font-reference.dita"/>
     <topicref href="references/language-reference.dita"/>
+    <topicref href="references/vertical-reference.dita"/>
+    <topicref href="references/columns-reference.dita"/>
     <topicref href="references/page-reference.dita"/>
     <topicref href="references/content-reference.dita"/>
     <topicref href="references/named-strings-reference.dita"/>

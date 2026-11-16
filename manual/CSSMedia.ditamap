@@ -69,11 +69,11 @@
         <topicref href="references/language-chapter-reference.dita"/>
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>Ruby and vertical text</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+    <chapter href="concepts/intro-vertical-text.dita">
+        <topicref href="tasks/write-vertically.dita"/>
+        <topicref href="tasks/mark-and-shade-text.dita"/>
+        <topicref href="tasks/ruby-annotations.dita"/>
+        <topicref href="references/vertical-chapter-reference.dita"/>
     </chapter>
 
     <chapter href="concepts/intro-tables.dita">
@@ -84,11 +84,8 @@
         <topicref href="references/table-chapter-reference.dita"/>
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>Multi-column layout</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+    <chapter href="tasks/columns.dita">
+        <topicref href="references/columns-chapter-reference.dita"/>
     </chapter>
 
     <chapter>

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="write-vertically">
+    <title>Write text in vertical lines</title>
+    <shortdesc>You write text in vertical lines by setting <codeph>writing-mode</codeph> on an element. The characters of Chinese and Japanese stand upright, one under another, and the lines follow each other from right to left. The <xref href="../references/vertical-chapter-reference.dita#vertical-chapter-reference">vertical text reference</xref> lists the properties used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>book</codeph> and <codeph>p</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>. The font must have the characters of the text, so declare a font with <codeph>@font-face</codeph>, as <xref href="font-faces.dita"/> explains. The standard fonts of PDF have no Chinese, Japanese or Korean characters.</p>
+        </context>
+        <steps>
+            <step id="set-the-writing-mode">
+                <cmd>Set the writing mode</cmd>
+                <info>
+                    <p>Set <codeph>writing-mode</codeph> to <codeph>vertical-rl</codeph> on the root element to write the whole document in vertical lines:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@font-face {
+    font-family: "Noto Sans CJK JP";
+    src: url("fonts/NotoSansCJKjp-Regular.otf");
+}
+
+@page {
+    size: A5;
+    margin: 15mm;
+}
+
+book {
+    display: block;
+    writing-mode: vertical-rl;
+    font-family: "Noto Sans CJK JP";
+    font-size: 11pt;
+    line-height: 1.8;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The root element also sets the writing mode of the page, so the page area is laid out in vertical lines too, the first line is at the right edge of the page and the text goes on to the next page when the lines reach the left edge. Any other element can have its own writing mode. The value is inherited, so the elements inside take it.</p>
+                    <p><codeph>vertical-lr</codeph> starts the lines at the left edge. <codeph>sideways-rl</codeph> and <codeph>sideways-lr</codeph> turn all the characters, Latin or Japanese, a quarter turn, and are for text that reads sideways. A page written in <codeph>sideways-rl</codeph> is the horizontal page turned a quarter clockwise, and one in <codeph>sideways-lr</codeph> is the horizontal page turned a quarter counterclockwise.</p>
+                </info>
+            </step>
+            <step id="choose-how-characters-are-turned">
+                <cmd>Choose how the characters are turned</cmd>
+                <info>
+                    <p>In a vertical line, <codeph>text-orientation</codeph> decides what happens to the characters:</p>
+                    <ul>
+                        <li><codeph>mixed</codeph>, the initial value, keeps the characters of Chinese, Japanese and Korean upright and turns a quarter clockwise the characters of the other scripts, so Latin words read from top to bottom.</li>
+                        <li><codeph>upright</codeph> keeps every character upright. A Latin word is then a stack of letters, from top to bottom.</li>
+                        <li><codeph>sideways</codeph> turns every character.</li>
+                    </ul>
+                    <fig id="text-orientation-figure">
+                        <title>The values of text-orientation</title>
+                        <image href="../images/text-orientation.svg" placement="break" scale="100">
+                            <alt>Three vertical lines. Each one has two Chinese characters and the Latin word Word. With mixed, the characters are upright and the word is turned a quarter clockwise. With upright, the characters and the four letters of the word are all upright. With sideways, the characters and the word are all turned.</alt>
+                        </image>
+                    </fig>
+                    <p><codeph>glyph-orientation-vertical</codeph> is an older property that makes the same choice as <codeph>text-orientation</codeph>, and CSSMedia reads it as that property: <codeph>auto</codeph> is <codeph>mixed</codeph>, <codeph>0deg</codeph> is <codeph>upright</codeph> and <codeph>90deg</codeph> is <codeph>sideways</codeph>. Use <codeph>text-orientation</codeph> in new stylesheets.</p>
+                    <p>Punctuation that has a vertical form, such as the Japanese stop and brackets, is drawn in that form. CSSMedia shapes complex scripts such as Arabic, Hebrew, Thai and Devanagari as a line first, and then turns the result, so letters still join and marks stay in place in sideways text.</p>
+                </info>
+            </step>
+            <step id="combine-digits">
+                <cmd>Put short numbers upright in one place</cmd>
+                <info>
+                    <p>A number or a short code in a vertical line is often set side by side in the space of one character. <codeph>text-combine-upright: all</codeph> does it for the whole element, and <codeph>digits</codeph> does it for each run of digits that has no more digits than the number that follows, from 2 to 4:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">date {
+    text-combine-upright: digits 2;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>With this rule, <codeph>12</codeph> in the text is one upright unit, the width of a character. <codeph>2026</codeph> has four digits, so it stays as it is. The property has no effect in horizontal text or with the sideways values.</p>
+                </info>
+            </step>
+            <step id="set-the-direction">
+                <cmd>Set the direction of the text</cmd>
+                <info>
+                    <p>The properties <codeph>direction</codeph> and <codeph>unicode-bidi</codeph> work along the line. With <codeph>direction: rtl</codeph>, a vertical line goes from the bottom to the top, and text of a script that is written from right to left, such as Arabic or Hebrew, is ordered as it is in horizontal text. A paragraph that mixes Japanese and Arabic orders its parts by the Unicode bidirectional algorithm, as horizontal text does.</p>
+                </info>
+            </step>
+            <step id="size-with-logical-properties">
+                <cmd>Size and space the boxes</cmd>
+                <info>
+                    <p>The physical properties keep their meaning: <codeph>width</codeph> is the horizontal size of a box on the page, whatever the writing mode. In a vertical element, the length of the line is its height. To write one stylesheet for both directions, use the logical properties <codeph>inline-size</codeph>, <codeph>block-size</codeph>, <codeph>margin-block-start</codeph>, <codeph>margin-inline-end</codeph>, <codeph>padding-block-end</codeph>, <codeph>border-inline-start</codeph> and the others of their family. They follow the writing mode, so the same rule spaces a paragraph in horizontal and in vertical text:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">p {
+    display: block;
+    margin-block-end: 1em;
+    padding-inline-start: 1em;
+    border-block-start: 0.5pt solid gray;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>In <codeph>vertical-rl</codeph>, the block start is the right side, so the border is on the right of the paragraph and the space is on its left. The border, the padding and the margin of a box, its background, its list markers and its tables all follow this rule. A background image is placed by physical terms: <codeph>background-position: top right</codeph> is the top right corner of the box in every writing mode. The values <codeph>left</codeph> and <codeph>right</codeph> of <codeph>float</codeph> are physical too. <codeph>inline-start</codeph> and <codeph>inline-end</codeph> follow the line.</p>
+                </info>
+            </step>
+            <step id="break-the-lines">
+                <cmd>Break the lines</cmd>
+                <info>
+                    <p>CSSMedia breaks vertical lines where horizontal ones are broken, with the rules of Chinese, Japanese and Korean text. A closing bracket, a comma or a stop does not start a line, an opening bracket does not end one, and a dash or an ellipsis of two characters is not split. <codeph>line-break</codeph> sets how strict the rules are. <codeph>strict</codeph> also keeps small kana off the start of a line, <codeph>loose</codeph> allows them there, and <codeph>anywhere</codeph> breaks after any character:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">book:lang(ja) {
+    line-break: strict;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Set the language of the document, as <xref href="document-language.dita"/> explains, so that the rules of the right language apply.</p>
+                </info>
+            </step>
+            <step id="draw-decorations">
+                <cmd>Draw underlines and other decorations</cmd>
+                <info>
+                    <p>Underlines, overlines and lines through the text are drawn along the line, on the sides of the characters. An underline of a vertical line is on its left, and <codeph>text-underline-position: right</codeph> puts it on the right. Emphasis marks and shadows work in vertical text too. <xref href="mark-and-shade-text.dita"/> explains them.</p>
+                </info>
+            </step>
+            <step id="style-the-page-boxes">
+                <cmd>Write the margin boxes in vertical lines</cmd>
+                <info>
+                    <p>Each margin box of the page has its own writing mode. The boxes of the top and the bottom margin are wide and short, so text in them is usually horizontal, and the boxes of the side margins are tall and narrow, where vertical text fits. Set <codeph>writing-mode</codeph> in the margin box rule:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    @right-middle {
+        content: counter(page);
+        writing-mode: vertical-rl;
+    }
+}
+</pre>
+                </stepxmp>
+                <info>
+                </info>
+            </step>
+            <step id="mix-writing-modes">
+                <cmd>Mix horizontal and vertical text</cmd>
+                <info>
+                    <p>An element with a different writing mode from its parent is laid out in its own mode, as a box of its own, and then placed in the flow of its parent. A vertical box inside horizontal text needs a height, because its lines are as long as its height:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    display: block;
+    writing-mode: vertical-rl;
+    height: 120pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Images and formulas that are in the text are not turned. A MathML formula is always laid out horizontally, and its size in a vertical line is the same as in a horizontal one.</p>
+                </info>
+            </step>
+            <step id="use-vertical-text-in-drawings">
+                <cmd>Use vertical text in a drawing</cmd>
+                <info>
+                    <p>The text of an <xref href="../glossaries/SVG.dita">SVG</xref> drawing takes the same properties. <xref href="svg-text.dita"/> explains how.</p>
+                </info>
+            </step>
+        </steps>
+        <result>
+            <p>The text of your document is written in vertical lines, with the lines of the page and the boxes of the page following the writing mode.</p>
+        </result>
+    </taskbody>
+</task>

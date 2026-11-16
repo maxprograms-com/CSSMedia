@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="540" height="215" viewBox="0 0 540 215">
+    <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0L10 5L0 10Z" fill="#1d4f7a"/>
+        </marker>
+        <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0L10 5L0 10Z" fill="#4a2700"/>
+        </marker>
+    </defs>
+    <g font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#222222">
+        <rect x="20" y="20" width="100" height="110" fill="#ffffff" stroke="#888888"/>
+        <rect x="30" y="35" width="80" height="8" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="30" y="53" width="80" height="8" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="30" y="71" width="50" height="8" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <path d="M30 143H112" stroke="#1d4f7a" fill="none" marker-end="url(#arrow)"/>
+        <path d="M128 35V100" stroke="#4a2700" fill="none" marker-end="url(#arrow2)"/>
+        <text x="70" y="172">horizontal-tb</text>
+
+        <rect x="155" y="20" width="100" height="110" fill="#ffffff" stroke="#888888"/>
+        <rect x="237" y="30" width="8" height="80" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="219" y="30" width="8" height="80" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="201" y="30" width="8" height="50" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <path d="M147 30V112" stroke="#1d4f7a" fill="none" marker-end="url(#arrow)"/>
+        <path d="M247 143H163" stroke="#4a2700" fill="none" marker-end="url(#arrow2)"/>
+        <text x="205" y="172">vertical-rl</text>
+
+        <rect x="290" y="20" width="100" height="110" fill="#ffffff" stroke="#888888"/>
+        <rect x="300" y="30" width="8" height="80" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="318" y="30" width="8" height="80" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="336" y="30" width="8" height="50" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <path d="M282 30V112" stroke="#1d4f7a" fill="none" marker-end="url(#arrow)"/>
+        <path d="M298 143H382" stroke="#4a2700" fill="none" marker-end="url(#arrow2)"/>
+        <text x="340" y="172">vertical-lr</text>
+
+        <rect x="425" y="20" width="100" height="110" fill="#ffffff" stroke="#888888"/>
+        <rect x="435" y="40" width="8" height="80" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="453" y="40" width="8" height="80" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <rect x="471" y="70" width="8" height="50" fill="#cfe3f5" stroke="#1d4f7a"/>
+        <path d="M417 120V38" stroke="#1d4f7a" fill="none" marker-end="url(#arrow)"/>
+        <path d="M433 143H517" stroke="#4a2700" fill="none" marker-end="url(#arrow2)"/>
+        <text x="475" y="172">sideways-lr</text>
+
+        <path d="M150 198H180" stroke="#1d4f7a" fill="none" marker-end="url(#arrow)"/>
+        <text x="260" y="202" text-anchor="middle">the direction of a line</text>
+        <path d="M340 198H370" stroke="#4a2700" fill="none" marker-end="url(#arrow2)"/>
+        <text x="445" y="202" text-anchor="middle">where the next line goes</text>
+    </g>
+</svg>

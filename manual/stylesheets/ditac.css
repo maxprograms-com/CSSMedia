@@ -889,7 +889,7 @@ ditac|indexAnchor::before {
    (both share this base class) */
 *[class~="topic/pre"] {
     display: block;
-    font-family: monospace;
+    font-family: monospace, "Noto Sans JP";
     font-size: 0.9em;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
@@ -918,7 +918,7 @@ ditac|indexAnchor::before {
    (cmdname, varname, apiname, option, xmlelement, xmlatt, xmlpi...):
    all of them name something from code, so monospace throughout */
 *[class~="pr-d/codeph"], *[class~="sw-d/userinput"], *[class~="sw-d/filepath"], *[class~="topic/keyword"], *[class~="hi-d/tt"] {
-    font-family: monospace;
+    font-family: monospace, "Noto Sans JP";
 }
 
 *[class~="topic/cite"], *[class~="topic/term"] {

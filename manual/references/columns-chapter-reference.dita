@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="columns-chapter-reference">
+    <title>Multi-column layout reference</title>
+    <shortdesc>This reference lists the properties that flow the content of an element into columns.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-columns/columns-properties"/>
+    </refbody>
+</reference>

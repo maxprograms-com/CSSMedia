@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE concept PUBLIC "-//OASIS//DTD DITA Concept//EN" "concept.dtd">
+<concept id="introVerticalText">
+    <title>Ruby and vertical text</title>
+    <shortdesc>Chinese, Japanese and Korean text can be written in vertical lines, and Japanese text often carries small annotations beside the characters. This chapter explains how to write text in vertical lines, how to annotate it with ruby, how to mark it with emphasis dots and how to give it shadows. The <xref href="../references/vertical-chapter-reference.dita#vertical-chapter-reference">vertical text reference</xref> at the end lists the properties and values.</shortdesc>
+    <conbody>
+        <p>The <b>writing mode</b> of an element says which way its lines run and which way the lines follow each other. In horizontal text, a line runs from left to right and the next line is under it. In vertical text, a line runs from top to bottom and the next line is beside it. You choose the writing mode with the property <codeph>writing-mode</codeph>:</p>
+        <table frame="all">
+            <tgroup cols="3">
+                <colspec colname="c1" colwidth="1*"/>
+                <colspec colname="c2" colwidth="1*"/>
+                <colspec colname="c3" colwidth="2*"/>
+                <thead>
+                    <row>
+                        <entry>Value</entry>
+                        <entry>Lines run</entry>
+                        <entry>The next line is</entry>
+                    </row>
+                </thead>
+                <tbody>
+                    <row>
+                        <entry><codeph>horizontal-tb</codeph></entry>
+                        <entry>From left to right.</entry>
+                        <entry>Under the line.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>vertical-rl</codeph></entry>
+                        <entry>From top to bottom.</entry>
+                        <entry>On the left of the line. The first line is at the right edge. This is the usual writing mode of Chinese and Japanese books.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>vertical-lr</codeph></entry>
+                        <entry>From top to bottom.</entry>
+                        <entry>On the right of the line. The first line is at the left edge. Mongolian is written this way.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>sideways-rl</codeph></entry>
+                        <entry>From top to bottom, with every character turned a quarter clockwise.</entry>
+                        <entry>On the left of the line.</entry>
+                    </row>
+                    <row>
+                        <entry><codeph>sideways-lr</codeph></entry>
+                        <entry>From bottom to top, with every character turned a quarter counterclockwise.</entry>
+                        <entry>On the right of the line.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+        <fig id="vertical-modes-figure">
+            <title>The writing modes</title>
+            <image href="../images/vertical-modes.svg" placement="break" scale="100">
+                <alt>Four pages with three lines each. In horizontal-tb the lines run from left to right and the next line is under the first. In vertical-rl the lines run from top to bottom and the first line is at the right edge. In vertical-lr the first line is at the left edge. In sideways-lr the lines run from the bottom to the top and the first line is at the left edge.</alt>
+            </image>
+        </fig>
+        <p>Everything else in CSSMedia follows the writing mode: the lines break at the length of the line, floats go to the start or the end of the line, tables put their columns along the line, footnotes go to the end of the page where the next lines would go, and borders, margins and padding keep their meaning in terms of the line and of the block. The page itself takes the writing mode of the root element.</p>
+        <p>CSS describes sizes and sides in two ways. The <b>physical</b> names are <codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph>, <codeph>left</codeph>, <codeph>width</codeph> and <codeph>height</codeph>, and they always mean the sides and the sizes of the page. The <b>logical</b> names are <codeph>block-start</codeph>, <codeph>block-end</codeph>, <codeph>inline-start</codeph>, <codeph>inline-end</codeph>, <codeph>inline-size</codeph> and <codeph>block-size</codeph>, and they follow the writing mode. The <b>inline</b> direction is the direction of a line, and the <b>block</b> direction is the direction in which lines follow each other. Use the logical names in stylesheets that you want to use for both horizontal and vertical text.</p>
+        <p>The topics of this chapter follow the steps of the work:</p>
+        <ul>
+            <li><xref href="../tasks/write-vertically.dita"/></li>
+            <li><xref href="../tasks/mark-and-shade-text.dita"/></li>
+            <li><xref href="../tasks/ruby-annotations.dita"/></li>
+        </ul>
+    </conbody>
+</concept>

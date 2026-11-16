@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="columns">
+    <title>Flow text into columns</title>
+    <shortdesc>A multi-column element flows its content down a first column, then down the next one, and so on, as a newspaper does. You choose the number of columns or their width, the space between them and a line to draw there. The <xref href="../references/columns-chapter-reference.dita#columns-chapter-reference">columns reference</xref> lists the properties used here.</shortdesc>
+    <taskbody>
+        <context>
+            <fig id="columns-layout-figure">
+                <title>A multi-column element</title>
+                <image href="../images/columns-layout.svg" placement="break" scale="100">
+                    <alt>A box with a heading across its whole width. Under it, three columns of lines of text, with a vertical rule in the gap between the first and the second column and between the second and the third.</alt>
+                </image>
+            </fig>
+            <p>The element names in the examples, such as <codeph>article</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="set-the-columns">
+                <cmd>Choose the number or the width of the columns</cmd>
+                <info>
+                    <p>Set <codeph>column-count</codeph> on a block element to divide its content into that number of columns:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    display: block;
+    column-count: 2;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Set <codeph>column-width</codeph> instead to give the least width of a column. The element gets as many columns of that width as fit, and the columns are widened to fill the element. When you give both, <codeph>column-count</codeph> is the most columns that you get. The shorthand <codeph>columns</codeph> sets both: <codeph>columns: 3</codeph> and <codeph>columns: 12em</codeph> are valid.</p>
+                </info>
+            </step>
+            <step id="set-the-gap-and-the-rule">
+                <cmd>Set the gap and the rule</cmd>
+                <info>
+                    <p><codeph>column-gap</codeph> is the space between two columns. Its initial value, <codeph>normal</codeph>, is 1em. <codeph>column-rule</codeph> draws a line in the middle of each gap, with the width, the style and the color of a border:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    column-count: 3;
+    column-gap: 14pt;
+    column-rule: 0.5pt solid gray;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A rule is drawn only between two columns that have content.</p>
+                </info>
+            </step>
+            <step id="balance-the-columns">
+                <cmd>Balance the columns or fill them one by one</cmd>
+                <info>
+                    <p>By default, the columns of an element are as even as they can be, so the text is shared in equal parts. <codeph>column-fill: auto</codeph> fills each column up to the height of the element, or to the bottom of the page when the element has no height, before it starts the next column:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    column-count: 2;
+    column-fill: auto;
+    height: 200pt;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="span-the-columns">
+                <cmd>Let a heading go across the columns</cmd>
+                <info>
+                    <p>A block element inside the multi-column element can have <codeph>column-span: all</codeph>. It is as wide as the element, and the content before it and the content after it are laid out in columns of their own:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article h {
+    display: block;
+    column-span: all;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="columns-and-pages">
+                <cmd>Use columns across pages</cmd>
+                <info>
+                    <p>When the content is longer than the page, the columns go on to the next page. Each page has its own columns, and the text reads in order through all of them.</p>
+                </info>
+            </step>
+            <!-- TODO: column-span with a number, column-fill: balance-all and the lists, break and inset values of the column rule properties are read and change nothing; document them when they are drawn -->
+            <step id="columns-in-vertical-text">
+                <cmd>Use columns in vertical text</cmd>
+                <info>
+                    <p>The columns follow the writing mode. In vertical lines, the columns are one above the other, and the lines of each column are as long as a column is tall. A vertical element with columns, inside horizontal text, needs a height. <xref href="write-vertically.dita"/> explains writing modes.</p>
+                </info>
+            </step>
+        </steps>
+        <result>
+            <p>The content of your element flows into columns.</p>
+        </result>
+    </taskbody>
+</task>

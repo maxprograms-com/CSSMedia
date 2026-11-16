@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="ruby-annotations">
+    <title>Annotate text with ruby</title>
+    <shortdesc>A ruby is a short annotation that stands over or under a word, or beside it in vertical text. In Japanese, it gives the reading of a character, and in other languages it can hold a translation or a note. The <xref href="../references/vertical-chapter-reference.dita#vertical-chapter-reference">vertical text reference</xref> lists the properties and the display values used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>These terms are used in this topic:</p>
+            <ul>
+                <li>The <b>base</b> is the text that is annotated.</li>
+                <li>The <b>annotation</b> is the short text that goes over, under or beside the base.</li>
+                <li>A <b>ruby</b> is a base with its annotations.</li>
+            </ul>
+            <fig id="ruby-anatomy-figure">
+                <title>A ruby in horizontal and in vertical text</title>
+                <image href="../images/ruby-anatomy.svg" placement="break" scale="100">
+                    <alt>On the left, a horizontal ruby: two bases side by side, two annotations over them, and a wider annotation under both. On the right, a vertical ruby: two bases one under the other, an annotation on the right of each, and a long annotation on the left of both.</alt>
+                </image>
+            </fig>
+            <p>XML has no ruby element, so your stylesheet decides which elements make a ruby. The element names in the examples, such as <codeph>r</codeph>, <codeph>b</codeph> and <codeph>t</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="mark-the-parts-of-a-ruby">
+                <cmd>Say which elements are the ruby, the bases and the annotations</cmd>
+                <info>
+                    <p>Give the elements these <codeph>display</codeph> values:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;p&gt;The word &lt;r&gt;&lt;b&gt;漢字&lt;/b&gt;&lt;t&gt;かんじ&lt;/t&gt;&lt;/r&gt; has a ruby.&lt;/p&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">r {
+    display: ruby;
+}
+
+b {
+    display: ruby-base;
+}
+
+t {
+    display: ruby-text;
+    font-size: 50%;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The annotation is as large as the base unless you set its <codeph>font-size</codeph>, so set it, usually to half the size. The font must have the characters, so declare it with <codeph>@font-face</codeph>, as <xref href="font-faces.dita"/> explains.</p>
+                    <p>CSSMedia adds the parts that are missing. Text directly inside the ruby element is the base, and annotations without a base are paired with empty bases. White space between the parts is ignored. You write the container elements only when you need them.</p>
+                </info>
+            </step>
+            <step id="pair-bases-and-annotations">
+                <cmd>Pair the annotations with the bases</cmd>
+                <info>
+                    <p>The bases and the annotations are paired in order: the first annotation goes with the first base, the second with the second, and so on. This example has two bases, each with its own annotation:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;r&gt;&lt;b&gt;漢&lt;/b&gt;&lt;b&gt;字&lt;/b&gt;&lt;t&gt;かん&lt;/t&gt;&lt;t&gt;じ&lt;/t&gt;&lt;/r&gt;
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A single annotation that has no element of its own, directly inside a container of annotations, goes over all the bases of the ruby. When the ruby has fewer annotations than bases, the last bases have an empty annotation. When it has more annotations than bases, the last annotations stand after the last base, on empty bases, and each takes the room that it needs. A ruby that has only annotations, and no base at all, is shown too.</p>
+                    <p>An annotation that has the same text as its base is hidden, and so is one with <codeph>visibility: collapse</codeph>.</p>
+                </info>
+            </step>
+            <step id="set-the-levels">
+                <cmd>Put annotations on more than one level</cmd>
+                <info>
+                    <p>A <codeph>ruby-text-container</codeph> holds the annotations of one level. A ruby can have several. With the initial <codeph>ruby-position: alternate</codeph>, the first level is over the bases and the next one is on the other side of the level before. Levels are stacked outward, so that the line grows by the height of each:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-xml">&lt;r&gt;&lt;b&gt;東京&lt;/b&gt;&lt;rtc&gt;&lt;t&gt;とうきょう&lt;/t&gt;&lt;/rtc&gt;&lt;rtc&gt;&lt;t&gt;Tokyo&lt;/t&gt;&lt;/rtc&gt;&lt;/r&gt;
+</pre>
+                </stepxmp>
+                <stepxmp>
+                    <pre outputclass="language-css21">rtc {
+    display: ruby-text-container;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="choose-the-position">
+                <cmd>Choose where the annotations go</cmd>
+                <info>
+                    <p><codeph>ruby-position</codeph> chooses the side. <codeph>over</codeph> is above the base in horizontal text and on the right in vertical text, and <codeph>under</codeph> is the other side. <codeph>inter-character</codeph> puts each annotation after its base, as Taiwanese texts do with bopomofo:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">r {
+    ruby-position: under;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="align-the-annotations">
+                <cmd>Align the annotations</cmd>
+                <info>
+                    <p>Each base and its annotation form a column that is as wide as the wider of the two, and the narrower one is spread over the column. <codeph>ruby-align</codeph> says how. <codeph>space-around</codeph>, the initial value, spreads the characters of Chinese and Japanese text and leaves half a space at each end. <codeph>space-between</codeph> has no space at the ends, <codeph>center</codeph> centers the content, and <codeph>start</codeph> puts it at the start:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">t {
+    ruby-align: center;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A column is never broken between lines, and the line breaks only where all the levels allow it.</p>
+                </info>
+            </step>
+            <step id="overhang-and-merge">
+                <cmd>Let annotations overhang or merge</cmd>
+                <info>
+                    <p>An annotation that is wider than its base can reach over the kana that stand beside the ruby. <codeph>ruby-overhang: auto</codeph>, the initial value, allows it, up to half the size of the annotation, and <codeph>none</codeph> keeps the annotation inside its column. When an annotation overhangs a character that has an annotation too, the characters keep their place.</p>
+                    <p>With <codeph>ruby-merge: merge</codeph> on a container of annotations, all its annotations become one annotation over all the bases. <codeph>auto</codeph> merges them only when one of them is wider than its base.</p>
+                </info>
+            </step>
+            <step id="line-height-with-ruby">
+                <cmd>Leave room on the line</cmd>
+                <info>
+                    <p>The annotations of a line stand over or under it, so a line with a ruby is taller than one without. When your <codeph>line-height</codeph> is less than the base and the annotations need together, CSSMedia adds the missing room around the annotations, so that the lines do not overlap. If you want equal lines, set a <codeph>line-height</codeph> that is large enough, such as 2.</p>
+                    <p>The underline or the overline of a base is between the base and its annotations on that side.</p>
+                </info>
+            </step>
+        </steps>
+        <result>
+            <p>The words of your document have their annotations, in horizontal and in vertical lines.</p>
+        </result>
+    </taskbody>
+</task>

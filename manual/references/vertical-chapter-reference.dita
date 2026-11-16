@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="vertical-chapter-reference">
+    <title>Ruby and vertical text reference</title>
+    <shortdesc>This reference lists the properties and the display values that write text in vertical lines, annotate it with ruby, and mark and shade it.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-vertical/vertical-properties"/>
+        <section conkeyref="ref-vertical/ruby-properties"/>
+        <section conkeyref="ref-vertical/emphasis-properties"/>
+    </refbody>
+</reference>
