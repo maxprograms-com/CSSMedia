@@ -31,6 +31,11 @@ interface EncodingPart {
     texts: Array<string>;
 }
 
+interface MissingPart {
+    resource: FontResource;
+    texts: Array<string>;
+}
+
 const CODES: number = 256;
 const FIXED_PITCH: number = 1;
 const SERIF: number = 2;
@@ -56,8 +61,8 @@ export class StandardPdfFont extends PdfFont {
     private readonly parts: Array<EncodingPart> = [];
     private readonly placed: Map<number, readonly [number, number]> = new Map<number, readonly [number, number]>();
     private readonly variants: Map<string, readonly [number, number]> = new Map<string, readonly [number, number]>();
-    private readonly missingCodes: Map<string, number> = new Map<string, number>([["", 1]]);
-    private missing?: FontResource;
+    private readonly missingParts: Array<MissingPart> = [];
+    private readonly missingPlaced: Map<string, readonly [number, number]> = new Map<string, readonly [number, number]>();
 
     constructor(file: PdfFile, instance: FontInstance, data: StandardFontData) {
         super();
@@ -71,12 +76,12 @@ export class StandardPdfFont extends PdfFont {
         // they are first shown, and every 256 of them make another font dictionary with its own encoding.
         if (glyph === 0) {
             // §9.10.3: one square stands for every missing character, so each gets a code of its own for its text.
-            let missing: number | undefined = this.missingCodes.get(text);
-            if (missing === undefined) {
-                missing = this.missingCodes.size < LAST_CID ? this.missingCodes.size + 1 : 1;
-                this.missingCodes.set(text, missing);
+            let at: readonly [number, number] | undefined = this.missingPlaced.get(text);
+            if (at === undefined) {
+                at = this.appendMissing(text);
+                this.missingPlaced.set(text, at);
             }
-            return [this.missingResource(), "<" + missing.toString(16).toUpperCase().padStart(4, "0") + ">"];
+            return [this.missingParts[at[0]].resource, "<" + at[1].toString(16).toUpperCase().padStart(4, "0") + ">"];
         }
         const [where, code]: readonly [number, number] = this.place(glyph, text);
         return [this.parts[where].resource, "<" + code.toString(16).toUpperCase().padStart(2, "0") + ">"];
@@ -90,8 +95,8 @@ export class StandardPdfFont extends PdfFont {
     write(): void {
         // §9.6.2.2, Table 109: in PDF 2.0 FirstChar, LastChar, Widths and FontDescriptor are required for the standard
         // fonts too; §9.6.5: the encoding gives each code its glyph by name, as Differences from the built-in encoding.
-        if (this.missing !== undefined) {
-            this.writeMissing(this.missing);
+        if (this.missingParts.length > 0) {
+            this.writeMissing();
         }
         if (this.parts.length === 0) {
             return;
@@ -150,32 +155,46 @@ export class StandardPdfFont extends PdfFont {
         return position;
     }
 
-    private missingResource(): FontResource {
-        if (this.missing === undefined) {
+    private appendMissing(text: string): readonly [number, number] {
+        // The codes of a Type 0 font with Identity-H are two bytes, and code 0 is left to .notdef, so a font dictionary holds
+        // 65535 characters and the next one goes to another dictionary, as the simple fonts do with their 256 codes.
+        let part: MissingPart | undefined = this.missingParts[this.missingParts.length - 1];
+        if (part === undefined || part.texts.length === LAST_CID) {
             const object: number = this.file.reserve();
-            this.missing = { key: "F" + object, object };
+            part = { resource: { key: "F" + object, object }, texts: this.missingParts.length === 0 ? [""] : [] };
+            if (this.missingParts.length === 0) {
+                this.missingPlaced.set("", [0, 1]);
+            }
+            this.missingParts.push(part);
         }
-        return this.missing;
+        const known: readonly [number, number] | undefined = this.missingPlaced.get(text);
+        if (known !== undefined) {
+            return known;
+        }
+        part.texts.push(text);
+        return [this.missingParts.length - 1, part.texts.length];
     }
 
-    private writeMissing(resource: FontResource): void {
+    private writeMissing(): void {
         // CSS Fonts 4 §5.2: "the user agent should indicate by some means that a character is not being displayed", and the
         // standard fonts have no glyph for that.
         const name: string = MISSING_NAME + this.data.name;
         const data: Buffer = this.missingProgram();
         const program: string = "/FontFile2 " + this.syntax.reference(this.file.addStream("/Length1 " + data.length, data, true));
         const descriptor: number = this.file.add(this.descriptor(name, true, program));
-        const map: Buffer = Buffer.alloc((this.missingCodes.size + 1) * 2);
-        for (let code: number = 1; code <= this.missingCodes.size; code++) {
-            map.writeUInt16BE(MISSING_GID, code * 2);
+        for (const part of this.missingParts) {
+            const map: Buffer = Buffer.alloc((part.texts.length + 1) * 2);
+            for (let code: number = 1; code <= part.texts.length; code++) {
+                map.writeUInt16BE(MISSING_GID, code * 2);
+            }
+            const descendant: number = this.file.add("<< /Type /Font /Subtype /CIDFontType2 /BaseFont " + this.syntax.name(name)
+                + " /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor " + this.syntax.reference(descriptor)
+                + " /DW " + this.syntax.number(this.width(0)) + " /CIDToGIDMap " + this.syntax.reference(this.file.addStream("", map, true)) + " >>");
+            const unicode: Array<readonly [number, string]> = part.texts.map((text: string, index: number): readonly [number, string] => [index + 1, text]);
+            const toUnicode: number = this.file.addStream("", this.unicodeMap(unicode, 2), true);
+            this.file.set(part.resource.object, "<< /Type /Font /Subtype /Type0 /BaseFont " + this.syntax.name(name) + " /Encoding /Identity-H /DescendantFonts ["
+                + this.syntax.reference(descendant) + "] /ToUnicode " + this.syntax.reference(toUnicode) + " >>");
         }
-        const descendant: number = this.file.add("<< /Type /Font /Subtype /CIDFontType2 /BaseFont " + this.syntax.name(name)
-            + " /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor " + this.syntax.reference(descriptor)
-            + " /DW " + this.syntax.number(this.width(0)) + " /CIDToGIDMap " + this.syntax.reference(this.file.addStream("", map, true)) + " >>");
-        const unicode: Array<readonly [number, string]> = [...this.missingCodes].map((entry: [string, number]): readonly [number, string] => [entry[1], entry[0]]);
-        const toUnicode: number = this.file.addStream("", this.unicodeMap(unicode, 2), true);
-        this.file.set(resource.object, "<< /Type /Font /Subtype /Type0 /BaseFont " + this.syntax.name(name) + " /Encoding /Identity-H /DescendantFonts ["
-            + this.syntax.reference(descendant) + "] /ToUnicode " + this.syntax.reference(toUnicode) + " >>");
     }
 
     private missingProgram(): Buffer {
