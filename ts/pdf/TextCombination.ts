@@ -66,7 +66,7 @@ export class TextCombination {
                 // the specified integer"
                 const continued: boolean = (position === start && this.continues(items, starts, codepoints, index, -1)) || (last + 1 === end && this.continues(items, starts, codepoints, index, 1));
                 if (last - position < digits && !continued) {
-                    combinations.push({ start: position, end: last + 1, level: 0, scale: 1, units: last + 1 - position });
+                    combinations.push({ start: position, end: last + 1, level: 0, scale: 1, slack: 0, units: last + 1 - position });
                 }
                 position = last;
             }
@@ -98,7 +98,7 @@ export class TextCombination {
                 trimmed.push(position);
             }
         }
-        combinations.push({ start: starts[index], end: starts[index + 1], level: 0, scale: 1, units: this.unitsIn(codepoints, start, end, collapsedSpaces) });
+        combinations.push({ start: starts[index], end: starts[index + 1], level: 0, scale: 1, slack: 0, units: this.unitsIn(codepoints, start, end, collapsedSpaces) });
     }
 
     private continues(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, index: number, step: number): boolean {

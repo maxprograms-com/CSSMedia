@@ -72,6 +72,7 @@ export interface BoxFragment {
     resumed?: boolean;
     token?: BreakToken;
     children?: Array<BoxFragment | LineFragment>;
+    rules?: Array<readonly [number, number, number]>;
 }
 
 export interface TextPiece {

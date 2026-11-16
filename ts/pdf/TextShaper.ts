@@ -286,6 +286,14 @@ export class TextShaper {
             // "Otherwise, the UA may use any means to compress the text, including ... scaling the text geometrically".
             const advance: number = this.advanceOf(runs, first, last);
             combination.scale = advance > em && advance > 0 ? em / advance : 1;
+            // §9.1.2: "The effective size of the composition is assumed to be 1em square" and the glyphs are centered in it, so
+            // its two ends take what the glyphs leave of the em, or give back what they exceed it by when they are compressed.
+            const owners: ReadonlyArray<ShapedRun> = runs.slice(first, last).filter((run: ShapedRun) => run.advances.length > 0);
+            if (owners.length > 0 && em > 0) {
+                combination.slack = em - advance;
+                owners[0].advances[0] += combination.slack / 2;
+                owners[owners.length - 1].advances[owners[owners.length - 1].advances.length - 1] += combination.slack / 2;
+            }
             first = last;
         }
     }

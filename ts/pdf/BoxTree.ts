@@ -38,6 +38,7 @@ export interface TextSequence {
     namedStrings?: ReadonlyArray<NamedString>;
     collapsedSpaces?: ReadonlyArray<number>;
     leader?: boolean;
+    emptyBase?: boolean;
     target?: FunctionValue;
     named?: readonly [string, string];
     bookmark?: readonly [SourceElement, boolean];
@@ -135,6 +136,7 @@ export interface Combination {
     end: number;
     level: number;
     scale: number;
+    slack: number;
     units: number;
 }
 
@@ -161,9 +163,27 @@ export interface InlineText {
     avoidance: Uint8Array;
 }
 
+export interface RubyColumn {
+    start: number;
+    end: number;
+    from: number;
+    to: number;
+    sequence: InlineSequence;
+    annotation: ElementBox;
+    level: number;
+    under: boolean;
+    segment: number;
+    before: number;
+    after: number;
+    room: number;
+    offset: number;
+    trail: number;
+}
+
 export interface InlineSequence {
     style: ComputedStyle;
     items: Array<InlineItem>;
     firstLine?: InlineSequence;
     text?: InlineText;
+    ruby?: Array<RubyColumn>;
 }

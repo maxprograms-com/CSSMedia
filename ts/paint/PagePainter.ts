@@ -81,6 +81,7 @@ const POINTS_PER_PIXEL: number = 0.75;
 const PHYSICAL: number = 0;
 const SIDE_NAMES: ReadonlyArray<string> = ["block-start", "inline-end", "block-end", "inline-start"];
 const PHYSICAL_NAMES: ReadonlyArray<string> = ["top", "right", "bottom", "left"];
+const RULE_WIDTHS: ReadonlyMap<string, number> = new Map<string, number>([["thin", 1], ["medium", 3], ["thick", 5]]);
 const HIDDEN: ReadonlySet<string> = new Set<string>(["hidden", "collapse"]);
 const NONE_PROPERTIES: ReadonlyArray<string> = ["transform", "translate", "rotate", "scale", "filter", "backdrop-filter", "clip-path", "mask-image", "box-shadow-offset",
     "outline-style", "border-image-source"];
@@ -849,6 +850,31 @@ export class PagePainter {
         } else if (!(box.display.inner === "table" && box.display.internal === undefined && this.keyword(style.values["border-collapse"]) === "collapse")) {
             // CSS 2 §17.6.2: in the collapsing model the borders of the table are those of its cells at its edges.
             this.borders.paint(rectangle, borders, styles, colors, style, pdf, radii);
+        }
+        if (fragment.rules !== undefined) {
+            this.columnRules(fragment, transform, frame, pdf);
+        }
+    }
+
+    private columnRules(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage): void {
+        // CSS Multicol 1 §4: a column rule is drawn in the middle of the gap between two columns that have content, and it takes
+        // the width, style and color that a border does.
+        const style: ComputedStyle = fragment.box.style;
+        const line: string = this.keyword(style.values["column-rule-style"]);
+        const given: CssValue | undefined = style.values["column-rule-width"];
+        const width: number = given === undefined ? 3 : (given.kind === "ident" ? (RULE_WIDTHS.get(given.lower) ?? 3) : this.sizes.pixels(given, 0));
+        if (line === "none" || line === "hidden" || width <= 0) {
+            return;
+        }
+        const named: CssValue | undefined = style.values["column-rule-color"];
+        const color: CssValue | undefined = named === undefined || (named.kind === "ident" && named.lower === "currentcolor") ? style.values["color"] : named;
+        const inner: Transform = this.sizes.compose(transform, this.sizes.inside(fragment, frame));
+        const vertical: boolean = (this.sizes.frame(style) & BoxSizes.VERTICAL) !== 0;
+        for (const [inline, block, extent] of fragment.rules ?? []) {
+            const area: readonly [number, number, number, number] = this.sizes.mapped(inner, inline - width / 2, block, width, extent);
+            const widths: PhysicalSides = vertical ? [width, 0, 0, 0] : [0, 0, 0, width];
+            const styles: ReadonlyArray<string> = vertical ? [line, "none", "none", "none"] : ["none", "none", "none", line];
+            this.borders.paint({ x: area[0], y: area[1], width: area[2], height: area[3] }, widths, styles, [color, color, color, color], style, pdf);
         }
     }
 

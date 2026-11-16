@@ -31,6 +31,7 @@ import { FontSynthesis } from "./FontSynthesis.js";
 import { LineBreaker } from "./LineBreaker.js";
 import { PunctuationSpacing } from "./PunctuationSpacing.js";
 import { ScriptRuns } from "./ScriptRuns.js";
+import { RubyColumns } from "./RubyColumns.js";
 import { TextAutospace } from "./TextAutospace.js";
 import { TextCombination } from "./TextCombination.js";
 import { TextRuns } from "./TextRuns.js";
@@ -83,6 +84,7 @@ export class InlineTextBuilder {
     private readonly spacingTrim: TextSpacingTrim = new TextSpacingTrim(this.breaker);
     private readonly combination: TextCombination = new TextCombination();
     private readonly emoji: EmojiPresentation = new EmojiPresentation();
+    private readonly ruby: RubyColumns = new RubyColumns();
     private readonly displays: DisplayTypes = new DisplayTypes();
     private readonly runs: TextRuns;
     private readonly shaper: TextShaper;
@@ -104,6 +106,7 @@ export class InlineTextBuilder {
                 sequence.firstLine.text = this.build(sequence.firstLine);
             }
         }
+        this.ruby.apply(sequences);
     }
 
     position(sequence: InlineSequence, end: number): number {

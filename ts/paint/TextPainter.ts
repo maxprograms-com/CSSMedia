@@ -19,24 +19,31 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
+import { CharacterMapLookup } from "../fonts/CharacterMapLookup.js";
 import type { OutlineBounds } from "../fonts/CompactOutlines.js";
 import { GlyphOutlines } from "../fonts/GlyphOutlines.js";
 import type { ImageFormats } from "../images/ImageFormats.js";
 import type { FontInstance } from "../fonts/Typeface.js";
 import type { PathData, StrokeStyle } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
+import type { ShadowMask } from "../geometry/ShadowRaster.js";
+import { ShadowRaster } from "../geometry/ShadowRaster.js";
 import type { BoxSizes, Transform } from "../layout/BoxSizes.js";
 import type { LineFragment, TextPiece } from "../layout/Fragment.js";
-import type { GlyphRun, Hyphen, InlineSequence, InlineText, TextRun } from "../pdf/BoxTree.js";
+import { PieceSpans } from "../layout/PieceSpans.js";
+import type { Combination, GlyphRun, Hyphen, InlineSequence, InlineText, TextRun } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
 import type { Size } from "../pdf/PageCanvas.js";
+import { EmphasisMarks } from "../pdf/EmphasisMarks.js";
+import type { EmphasisStyle } from "../pdf/EmphasisMarks.js";
 import { TextSpacingTrim } from "../pdf/TextSpacingTrim.js";
+import { VerticalOrientation } from "../pdf/VerticalOrientation.js";
 import { PdfColorSpaces } from "../writer/PdfColorSpaces.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { FontResource, FontRun, PdfFont } from "../writer/PdfFont.js";
 import type { PdfFonts } from "../writer/PdfFonts.js";
-import type { PdfPage } from "../writer/PdfPage.js";
+import type { ImageResource, PdfPage } from "../writer/PdfPage.js";
 import { PdfSyntax } from "../writer/PdfSyntax.js";
 import type { PaletteRule } from "./ColorGlyphPainter.js";
 import { ColorGlyphPainter } from "./ColorGlyphPainter.js";
@@ -58,6 +65,34 @@ interface PlacedGlyph {
     hyphen?: boolean;
     cluster?: number;
     actual?: string;
+    alone?: boolean;
+}
+
+type Locator = (pen: number, glyph: number, offsetX: number, offsetY: number) => readonly [number, number];
+
+interface Frame {
+    at: Locator;
+    alone: boolean;
+}
+
+interface Placement {
+    glyphs: Array<PlacedGlyph>;
+    matrix?: Transform;
+    marks?: Array<readonly [number, number]>;
+}
+
+interface Shadow {
+    x: number;
+    y: number;
+    blur: number;
+    spread: number;
+    color: CssValue | undefined;
+    inset: boolean;
+}
+
+interface Composition {
+    width: number;
+    offsets: Map<number, number>;
 }
 
 interface Span {
@@ -80,6 +115,8 @@ const SPAN: string = "Span";
 const HYPHEN_SPAN: number = -1;
 const FILL: number = 0;
 const STROKE: number = 1;
+const FILL_STROKE: number = 2;
+const SHADOW_SCALE: number = 2;
 const INVISIBLE: number = 3;
 const CLIP: number = 7;
 const CAPS: Readonly<Record<string, number>> = { "butt": 0, "round": 1, "square": 2 };
@@ -89,6 +126,8 @@ const BEVEL_JOIN: number = 2;
 const MITER_LIMIT: number = 4;
 const FLATNESS: number = 0.05;
 const KAPPA: number = 4 / 3 * (Math.SQRT2 - 1);
+const CLOCKWISE: Transform = [0, 1, -1, 0, 0, 0];
+const COUNTERCLOCKWISE: Transform = [0, -1, 1, 0, 0, 0];
 
 export class TextPainter {
 
@@ -100,6 +139,15 @@ export class TextPainter {
     private readonly viewport: Size;
     private readonly syntax: PdfSyntax = new PdfSyntax();
     private clusters: number = 0;
+    private readonly orientation: VerticalOrientation = new VerticalOrientation();
+    private readonly emphasis: EmphasisMarks = new EmphasisMarks();
+    private readonly spans: PieceSpans = new PieceSpans();
+    private readonly raster: ShadowRaster = new ShadowRaster();
+    private readonly images: ImageFormats;
+    private collected?: Array<PathData>;
+    private readonly graphemes: Intl.Segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+    private readonly characters: CharacterMapLookup = new CharacterMapLookup();
+    private readonly compositions: WeakMap<Combination, Composition> = new WeakMap<Combination, Composition>();
     private readonly outlines: GlyphOutlines = new GlyphOutlines();
     private readonly geometry: PathGeometry = new PathGeometry();
     private readonly colorGlyphs: ColorGlyphPainter;
@@ -113,6 +161,7 @@ export class TextPainter {
         this.sizes = sizes;
         this.metrics = metrics;
         this.viewport = viewport;
+        this.images = images;
         this.colorGlyphs = new ColorGlyphPainter(document, colors, metrics, palettes, images);
     }
 
@@ -121,10 +170,196 @@ export class TextPainter {
         if (runs.length === 0) {
             return;
         }
+        // §4: outer shadows are the bottommost layer, "between the element's border/background and the text and text decoration",
+        // and inner shadows are painted over the text and its decorations.
+        for (const piece of runs) {
+            this.shadows(line, texts, piece, transform, decorators, pdf, false);
+        }
         this.decorate(line, texts, runs, transform, decorators, pdf, false);
         for (const piece of runs) {
             this.paint(line, piece, transform, pdf);
         }
+        for (const piece of runs) {
+            this.shadows(line, texts, piece, transform, decorators, pdf, true);
+        }
+    }
+
+    private shadowsOf(style: ComputedStyle): Array<Shadow> {
+        // CSS Text Decoration 4 §4: the values are those of box-shadow, which are two to four lengths, a color and inset.
+        const layers: Array<Shadow> = [];
+        const value: CssValue | undefined = style.values["text-shadow"];
+        if (this.isNone(value)) {
+            return layers;
+        }
+        for (const layer of this.items(value)) {
+            const lengths: Array<number> = [];
+            let color: CssValue | undefined;
+            let inset: boolean = false;
+            for (const part of layer.kind === "list" ? layer.items : [layer]) {
+                if (part.kind === "ident" && part.lower === "inset") {
+                    inset = true;
+                } else if (part.kind === "length" || part.kind === "dimension" || part.kind === "number" || part.kind === "calc" || part.kind === "percentage") {
+                    lengths.push(this.sizes.pixels(part, this.metrics.fontSize(style.values)));
+                } else {
+                    color = part;
+                }
+            }
+            if (lengths.length >= 2) {
+                layers.push({ x: lengths[0], y: lengths[1], blur: Math.max(0, lengths[2] ?? 0), spread: Math.max(0, lengths[3] ?? 0), color, inset });
+            }
+        }
+        return layers;
+    }
+
+    private shadows(line: LineFragment, texts: ReadonlyArray<TextPiece>, piece: TextPiece, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage, inner: boolean): void {
+        // §4: "Each layer shadows the element's text and all its text decorations (composited together)" and "the first shadow is on
+        // top", so the layers are painted from the last to the first.
+        const text: InlineText = line.sequence.text as InlineText;
+        const style: ComputedStyle = line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style;
+        const layers: Array<Shadow> = this.shadowsOf(style).filter((shadow: Shadow) => shadow.inset === inner);
+        if (layers.length === 0 || this.hidden(style)) {
+            return;
+        }
+        const placement: Placement = this.pieceGlyphs(line, piece, transform);
+        const turn: number = this.turn(line.sequence.style.values);
+        this.collected = [];
+        this.decorate(line, texts, [piece], transform, decorators, pdf, false);
+        this.decorate(line, texts, [piece], transform, decorators, pdf, true);
+        const decorations: Array<PathData> = this.collected.map((path: PathData): PathData => this.mapPath(path, (point: readonly [number, number]) => turn === 0 ? point : this.global(turn, point)));
+        delete this.collected;
+        const matrix: Transform | undefined = placement.matrix;
+        const outline: PathData | undefined = this.glyphPaths(placement.glyphs);
+        const glyphs: PathData | undefined = outline === undefined || matrix === undefined ? outline
+            : this.mapPath(outline, (point: readonly [number, number]) => [matrix[0] * point[0] + matrix[2] * point[1] + matrix[4], matrix[1] * point[0] + matrix[3] * point[1] + matrix[5]]);
+        for (let index: number = layers.length - 1; index >= 0; index--) {
+            pdf.content.save();
+            this.shadow(layers[index], style, placement, glyphs, decorations, pdf);
+            pdf.content.restore();
+        }
+    }
+
+    private mapPath(path: PathData, change: (point: readonly [number, number]) => readonly [number, number]): PathData {
+        const points: Array<number> = [];
+        for (let index: number = 0; index < path.points.length; index += 2) {
+            const point: readonly [number, number] = change([path.points[index], path.points[index + 1]]);
+            points.push(point[0], point[1]);
+        }
+        return { verbs: path.verbs, points };
+    }
+
+    private shadow(shadow: Shadow, style: ComputedStyle, placement: Placement, glyphs: PathData | undefined, decorations: ReadonlyArray<PathData>, pdf: PdfPage): void {
+        const shifted: (path: PathData) => PathData = (path: PathData): PathData => this.mapPath(path, (point: readonly [number, number]) => [point[0] + shadow.x, point[1] + shadow.y]);
+        const color: CssValue | undefined = shadow.color === undefined || (shadow.color.kind === "ident" && shadow.color.lower === "currentcolor") ? style.values["color"] : shadow.color;
+        if (glyphs === undefined) {
+            // A standard font has no outlines, so only the viewer draws its glyphs: a shadow is the text moved, with its outline
+            // widened by the spread, and a blur or an inner shadow needs the shape of the glyphs, so they are left out with a warning.
+            if (shadow.blur > 0 || shadow.inset) {
+                const message: string = "text-shadow with a " + (shadow.inset ? "inset" : "blur") + " on text in a standard PDF font cannot be drawn, because the font has no outlines: "
+                    + (shadow.inset ? "the inner shadow is left out" : "the shadow is drawn without the blur") + ". Use an embedded font for it";
+                if (!this.images.diagnostics.includes(message)) {
+                    this.images.diagnostics.push(message);
+                }
+                if (shadow.inset) {
+                    return;
+                }
+            }
+            this.shadowText(shadow, color, style, placement, pdf);
+            this.fillPaths(decorations.map(shifted), shadow.spread, color, style, pdf);
+            return;
+        }
+        const shapes: Array<PathData> = [glyphs, ...decorations];
+        if (shadow.blur === 0 && !shadow.inset) {
+            this.fillPaths(shapes.map(shifted), shadow.spread, color, style, pdf);
+            return;
+        }
+        const extent: Box | undefined = this.pathsInk(shapes);
+        const mask: ShadowMask | undefined = this.raster.mask(shapes.map(shifted), shadow.spread, shadow.blur / 2, SHADOW_SCALE, extent ?? [0, 0, 0, 0],
+            shadow.inset, shadow.inset);
+        if (mask === undefined) {
+            return;
+        }
+        if (shadow.inset) {
+            // An inner shadow is drawn only where the text is.
+            for (const path of shapes) {
+                this.geometry.trace(path, pdf.content);
+            }
+            pdf.content.clip(false);
+        }
+        this.maskedFill(mask, color, style, pdf);
+    }
+
+    private pathsInk(paths: ReadonlyArray<PathData>): Box | undefined {
+        let left: number = Number.POSITIVE_INFINITY;
+        let top: number = Number.POSITIVE_INFINITY;
+        let right: number = Number.NEGATIVE_INFINITY;
+        let bottom: number = Number.NEGATIVE_INFINITY;
+        for (const path of paths) {
+            for (let index: number = 0; index < path.points.length; index += 2) {
+                left = Math.min(left, path.points[index]);
+                right = Math.max(right, path.points[index]);
+                top = Math.min(top, path.points[index + 1]);
+                bottom = Math.max(bottom, path.points[index + 1]);
+            }
+        }
+        return left > right ? undefined : [left, top, right - left, bottom - top];
+    }
+
+    private fillPaths(paths: ReadonlyArray<PathData>, spread: number, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
+        if (paths.length === 0) {
+            return;
+        }
+        if (this.colors.fill(color, style, pdf, 1)) {
+            for (const path of paths) {
+                this.geometry.trace(path, pdf.content);
+                pdf.content.fill(false);
+            }
+        }
+        if (spread > 0 && this.colors.stroke(color, style, pdf, 1)) {
+            pdf.content.lineWidth(2 * spread);
+            pdf.content.lineCap(1);
+            pdf.content.lineJoin(ROUND_JOIN);
+            for (const path of paths) {
+                this.geometry.trace(path, pdf.content);
+                pdf.content.stroke();
+            }
+        }
+    }
+
+    private shadowText(shadow: Shadow, color: CssValue | undefined, style: ComputedStyle, placement: Placement, pdf: PdfPage): void {
+        // The glyphs of the text, moved by the offsets of the shadow, in its color; ActualText of nothing keeps them out of the text.
+        if (placement.glyphs.length === 0 || !this.colors.fill(color, style, pdf, 1)) {
+            return;
+        }
+        pdf.content.transform(1, 0, 0, 1, shadow.x, shadow.y);
+        if (placement.matrix !== undefined) {
+            this.concatenate(placement.matrix, pdf);
+        }
+        if (shadow.spread > 0 && this.colors.stroke(color, style, pdf, 1)) {
+            pdf.content.lineWidth(2 * shadow.spread);
+            pdf.content.lineCap(1);
+            pdf.content.lineJoin(ROUND_JOIN);
+            this.show(placement.glyphs, pdf, FILL_STROKE, true);
+        } else {
+            this.show(placement.glyphs, pdf, FILL, true);
+        }
+    }
+
+    private maskedFill(mask: ShadowMask, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
+        // The alpha of the shadow is a gray image that becomes the soft mask of the fill of its color (ISO 32000-2 §11.6.5.2).
+        const resource: ImageResource = this.images.write({ width: mask.width, height: mask.height, bits: 8, channels: 1, pixels: mask.pixels }, PdfColorSpaces.GRAY, true);
+        const area: Box = [mask.left, mask.top, mask.width / mask.scale, mask.height / mask.scale];
+        const form: PdfPage = this.document.startForm(area[2], area[3], false);
+        form.content.save();
+        form.content.transform(area[2], 0, 0, -area[3], area[0], area[1] + area[3]);
+        form.content.paintXObject(form.useImage(resource));
+        form.content.restore();
+        pdf.content.save();
+        this.document.applyMask(pdf, form, area, true, PdfColorSpaces.GRAY);
+        if (this.colors.fill(color, style, pdf, 1)) {
+            pdf.content.rectangle(area[0], area[1], area[2], area[3]);
+            pdf.content.fill(false);
+        }
+        pdf.content.restore();
     }
 
     decorate(line: LineFragment, pieces: ReadonlyArray<TextPiece>, shown: ReadonlyArray<TextPiece>, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage, through: boolean): void {
@@ -132,6 +367,9 @@ export class TextPainter {
         // of the line counts for the position, while only the runs given as shown are decorated now.
         const text: InlineText = line.sequence.text as InlineText;
         const owners: Map<ComputedStyle, Array<Span>> = new Map<ComputedStyle, Array<Span>>();
+        // In vertical writing modes the lines are measured in the frame of the glyphs, where the text runs along x with its
+        // alphabetic baseline at y, and the content stream turns that frame to the page.
+        const turn: number = this.turn(line.sequence.style.values);
         for (const piece of pieces) {
             const index: number = this.itemAt(line.sequence, text, text.clusters[piece.from]);
             const applying: ReadonlyArray<ComputedStyle> = [...decorators, ...(this.chain(line.sequence)[index] ?? [])];
@@ -140,8 +378,8 @@ export class TextPainter {
             }
             const inline: number = (line.inline ?? 0) + piece.inline;
             const block: number = line.block + piece.baseline;
-            const start: readonly [number, number] = this.sizes.apply(transform, inline, block);
-            const end: readonly [number, number] = this.sizes.apply(transform, inline + piece.inlineSize, block);
+            const start: readonly [number, number] = this.local(turn, this.sizes.apply(transform, inline, block));
+            const end: readonly [number, number] = this.local(turn, this.sizes.apply(transform, inline + piece.inlineSize, block));
             const parent: ComputedStyle | undefined = this.shiftParent(line.sequence)[index];
             const span: Span = {
                 left: Math.min(start[0], end[0]), right: Math.max(start[0], end[0]), baseline: start[1], run: piece.run, shown: shown.includes(piece),
@@ -156,9 +394,21 @@ export class TextPainter {
                 }
             }
         }
+        if (owners.size === 0) {
+            return;
+        }
+        pdf.content.save();
+        if (turn !== 0) {
+            this.concatenate(turn > 0 ? CLOCKWISE : COUNTERCLOCKWISE, pdf);
+        }
         for (const [owner, spans] of owners) {
             const kinds: ReadonlyArray<string> = this.keywords(owner.values["text-decoration-line"]);
             const thickness: number = this.thickness(owner);
+            // §2.8.1: left and right place the underline on that side of the text "in vertical typographic modes", and the
+            // frame of the glyphs has its over side to the right, so the underline is on the over side with right.
+            const sided: boolean = turn === 1 && this.orientation.of(owner.values) !== "horizontal";
+            const position: ReadonlyArray<string> = this.keywords(owner.values["text-underline-position"]);
+            const over: boolean = sided && position.includes("right");
             if (through && kinds.includes("line-through")) {
                 // §2.5: a line-through goes through each run at the position its font gives.
                 for (const span of spans.filter((candidate: Span) => candidate.shown)) {
@@ -166,19 +416,33 @@ export class TextPainter {
                 }
             }
             if (!through && kinds.includes("underline")) {
-                const top: number = this.underlineTop(owner, spans);
+                const top: number = this.underlineTop(owner, spans, thickness, sided, over);
                 for (const span of spans.filter((candidate: Span) => candidate.shown)) {
-                    this.line(owner, span.left, span.right, top, thickness, 1, pdf);
+                    this.line(owner, span.left, span.right, top, thickness, over ? -1 : 1, pdf);
                 }
             }
             if (!through && kinds.includes("overline")) {
-                // §2.5: over lines "with respect to the highest over EM-box edge of the considered text".
+                // §2.5: over lines "with respect to the highest over EM-box edge of the considered text"; when the underline is
+                // on the over side, the overline "also switches sides and is drawn on the 'under' side".
+                const lowest: number = Math.max(...spans.map((span: Span) => span.baseline + this.metrics.fontExtent(span.run.font, span.run.size, span.run.upright)[1]));
                 const highest: number = Math.min(...spans.map((span: Span) => span.baseline - this.metrics.fontExtent(span.run.font, span.run.size, span.run.upright)[0]));
                 for (const span of spans.filter((candidate: Span) => candidate.shown)) {
-                    this.line(owner, span.left, span.right, highest - thickness, thickness, -1, pdf);
+                    this.line(owner, span.left, span.right, over ? lowest : highest - thickness, thickness, over ? 1 : -1, pdf);
                 }
             }
         }
+        pdf.content.restore();
+    }
+
+    private turn(values: Values): number {
+        // CSS Writing Modes 4 §5.1: sideways text is "rotated 90° clockwise", and sideways-lr turns it the other way.
+        const mode: string = this.keywords(values["writing-mode"])[0] ?? "horizontal-tb";
+        return mode === "horizontal-tb" ? 0 : (mode === "sideways-lr" ? -1 : 1);
+    }
+
+    private local(turn: number, point: readonly [number, number]): readonly [number, number] {
+        // The inverse of CLOCKWISE and COUNTERCLOCKWISE, which turn the frame of the glyphs to the page.
+        return turn === 0 ? point : (turn > 0 ? [point[1], -point[0]] : [-point[1], point[0]]);
     }
 
     private thickness(owner: ComputedStyle): number {
@@ -189,13 +453,17 @@ export class TextPainter {
         return this.metrics.underline(owner.values)[1];
     }
 
-    private underlineTop(owner: ComputedStyle, spans: ReadonlyArray<Span>): number {
+    private underlineTop(owner: ComputedStyle, spans: ReadonlyArray<Span>, thickness: number, sided: boolean, over: boolean): number {
         // §2.8.1: the zero position is the alphabetic baseline for auto, the position of the font for from-font and the
         // text-under edge for under; an auto offset takes the position of the font.
         const position: ReadonlyArray<string> = this.keywords(owner.values["text-underline-position"]);
         const offset: CssValue | undefined = owner.values["text-underline-offset"];
         const given: number | undefined = offset !== undefined && offset.kind !== "ident" ? this.sizes.pixels(offset, this.metrics.fontSize(owner.values)) : undefined;
-        if (position.includes("under")) {
+        if (over) {
+            // "aligned as for under, except it is always aligned to the right edge of the text", the over side of the glyphs.
+            return Math.min(...spans.map((span: Span) => span.baseline - this.metrics.fontExtent(span.run.font, span.run.size, span.run.upright)[0])) - thickness - (given ?? 0);
+        }
+        if (position.includes("under") || (sided && position.includes("left"))) {
             // §2.5: under lines "with respect to the lowest under EM-box edge of the considered text".
             return Math.max(...spans.map((span: Span) => span.baseline + this.metrics.fontExtent(span.run.font, span.run.size, span.run.upright)[1])) + (given ?? 0);
         }
@@ -254,6 +522,11 @@ export class TextPainter {
         const opacity: number = this.opacity(this.paintValue(owner, DECORATION, "fill-opacity"));
         const path: PathData = { verbs: [], points: [] };
         const bounds: Box = this.decorationPath(kind, left, right, top, thickness, outward, path);
+        if (this.collected !== undefined) {
+            // The shape of a decoration, for the shadow of the text, which is drawn from its geometry.
+            this.collected.push(kind === "wavy" ? this.geometry.outline(path, thickness, FLATNESS) : path);
+            return;
+        }
         pdf.content.save();
         if (kind === "wavy") {
             if (this.colors.stroke(color, owner, pdf, opacity)) {
@@ -393,12 +666,107 @@ export class TextPainter {
         if (this.hidden(style)) {
             return;
         }
-        this.supported(values, transform);
-        const glyphs: Array<PlacedGlyph> = this.pieceGlyphs(line, piece, transform);
-        if (glyphs.length === 0) {
+        this.supported(values);
+        const placement: Placement = this.pieceGlyphs(line, piece, transform);
+        if (placement.glyphs.length === 0) {
             return;
         }
-        this.strokeText(glyphs, style, this.fillText(glyphs, style, pdf), pdf);
+        if (placement.matrix !== undefined) {
+            pdf.content.save();
+            this.concatenate(placement.matrix, pdf);
+        }
+        this.strokeText(placement.glyphs, style, this.fillText(placement.glyphs, style, pdf), pdf);
+        if (placement.matrix !== undefined) {
+            pdf.content.restore();
+        }
+        if (placement.marks !== undefined && placement.marks.length > 0) {
+            this.drawMarks(placement.marks, piece.run, style, pdf);
+        }
+    }
+
+    private drawMarks(marks: ReadonlyArray<readonly [number, number]>, run: TextRun, style: ComputedStyle, pdf: PdfPage): void {
+        // CSS Text Decoration 4 §3.1: the marks are the glyphs of the shape at 50% of the size of the text, or a synthesized shape;
+        // §3.2: their color is text-emphasis-color, which is currentcolor unless it is given.
+        const mark: EmphasisStyle = this.emphasis.style(style.values) as EmphasisStyle;
+        const given: CssValue | undefined = style.values["text-emphasis-color"];
+        const color: CssValue | undefined = given === undefined || (given.kind === "ident" && given.lower === "currentcolor") ? style.values["color"] : given;
+        for (const spot of marks) {
+            pdf.content.save();
+            if (mark.shape === "string") {
+                this.markString(mark.text as string, spot, run, color, style, pdf);
+            } else {
+                this.markShape(mark, spot, run.size / 2, color, style, pdf);
+            }
+            pdf.content.restore();
+        }
+    }
+
+    private markString(characters: string, spot: readonly [number, number], run: TextRun, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
+        // The string is shown at half the size of the text, its middle on the spot; a font without a glyph for it shows no mark.
+        const glyph: number = this.characters.glyphOf(run.font.typeface.characters, characters.codePointAt(0) as number);
+        if (glyph === 0 || !this.colors.fill(color, style, pdf, 1)) {
+            return;
+        }
+        const size: number = run.size / 2;
+        const advance: number = (run.font.advances[glyph] ?? 0) * size / run.font.metrics.unitsPerEm;
+        const baseline: number = spot[1] + this.metrics.fontBaseline(run.font, size, "central", false, false);
+        this.show([{ x: spot[0] - advance / 2, y: baseline, glyph, text: "", font: run.font, size }], pdf, FILL, true);
+    }
+
+    private markShape(mark: EmphasisStyle, spot: readonly [number, number], size: number, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
+        // The shapes of the glyphs that §3.1 names, drawn in a square of the given size: a filled shape is filled and an open one is
+        // its outline, a double circle is a ring with a disc or a ring inside it, and a sesame is a slanted drop.
+        const x: number = spot[0];
+        const y: number = spot[1];
+        const line: number = 0.08 * size;
+        const solid: PathData = { verbs: [], points: [] };
+        const lines: PathData = { verbs: [], points: [] };
+        const target: PathData = mark.filled ? solid : lines;
+        const inset: number = mark.filled ? 0 : line / 2;
+        if (mark.shape === "dot") {
+            this.ellipse(target, x, y, 0.19 * size - inset, 0.19 * size - inset, 0);
+        } else if (mark.shape === "circle") {
+            this.ellipse(target, x, y, 0.36 * size - inset, 0.36 * size - inset, 0);
+        } else if (mark.shape === "double-circle") {
+            this.ellipse(lines, x, y, 0.4 * size - line / 2, 0.4 * size - line / 2, 0);
+            this.ellipse(target, x, y, 0.2 * size - inset, 0.2 * size - inset, 0);
+        } else if (mark.shape === "triangle") {
+            const half: number = 0.4 * size - inset;
+            target.verbs.push(PathGeometry.MOVE, PathGeometry.LINE, PathGeometry.LINE, PathGeometry.CLOSE);
+            target.points.push(x, y - 0.36 * size + inset, x + half, y + 0.3 * size - inset, x - half, y + 0.3 * size - inset);
+        } else {
+            this.ellipse(target, x, y, 0.11 * size - inset, 0.3 * size - inset, Math.PI / 7);
+        }
+        if (solid.verbs.length > 0 && this.colors.fill(color, style, pdf, 1)) {
+            this.geometry.trace(solid, pdf.content);
+            pdf.content.fill(false);
+        }
+        if (lines.verbs.length > 0 && this.colors.stroke(color, style, pdf, 1)) {
+            pdf.content.lineWidth(line);
+            pdf.content.lineJoin(MITER_JOIN);
+            this.geometry.trace(lines, pdf.content);
+            pdf.content.stroke();
+        }
+    }
+
+    private ellipse(path: PathData, x: number, y: number, radiusX: number, radiusY: number, angle: number): void {
+        // Four cubic Bézier curves with their control points at 4/3 (√2 - 1) of the radii, turned about the center.
+        const handleX: number = KAPPA * radiusX;
+        const handleY: number = KAPPA * radiusY;
+        const cosine: number = Math.cos(angle);
+        const sine: number = Math.sin(angle);
+        const corners: ReadonlyArray<readonly [number, number]> = [
+            [radiusX, 0], [radiusX, handleY], [handleX, radiusY], [0, radiusY], [-handleX, radiusY], [-radiusX, handleY], [-radiusX, 0],
+            [-radiusX, -handleY], [-handleX, -radiusY], [0, -radiusY], [handleX, -radiusY], [radiusX, -handleY], [radiusX, 0]
+        ];
+        path.verbs.push(PathGeometry.MOVE, PathGeometry.CURVE, PathGeometry.CURVE, PathGeometry.CURVE, PathGeometry.CURVE, PathGeometry.CLOSE);
+        for (const [px, py] of corners) {
+            path.points.push(x + px * cosine - py * sine, y + px * sine + py * cosine);
+        }
+    }
+
+    private concatenate(matrix: Transform, pdf: PdfPage): void {
+        pdf.content.transform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
     }
 
     shapes(line: LineFragment, piece: TextPiece, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage): void {
@@ -407,24 +775,198 @@ export class TextPainter {
         if (this.hidden(line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style)) {
             return;
         }
-        const glyphs: Array<PlacedGlyph> = this.pieceGlyphs(line, piece, transform);
+        const placement: Placement = this.pieceGlyphs(line, piece, transform);
         pdf.content.save();
         this.decorate(line, [piece], [piece], transform, decorators, pdf, false);
         this.decorate(line, [piece], [piece], transform, decorators, pdf, true);
-        if (glyphs.length > 0) {
-            this.show(glyphs, pdf, FILL, true);
+        if (placement.glyphs.length > 0) {
+            if (placement.matrix !== undefined) {
+                this.concatenate(placement.matrix, pdf);
+            }
+            this.show(placement.glyphs, pdf, FILL, true);
         }
         pdf.content.restore();
     }
 
-    private pieceGlyphs(line: LineFragment, piece: TextPiece, transform: Transform): Array<PlacedGlyph> {
+    private pieceGlyphs(line: LineFragment, piece: TextPiece, transform: Transform): Placement {
+        // CSS Writing Modes 4 §5.1: sideways glyphs are drawn as horizontal text turned a quarter, so they are placed in the
+        // frame of the text with a matrix that turns it; upright glyphs and combined text keep the page's frame.
         const text: InlineText = line.sequence.text as InlineText;
+        const run: TextRun = piece.run;
         const inline: number = (line.inline ?? 0) + piece.inline;
         const block: number = line.block + piece.baseline;
         const start: readonly [number, number] = this.sizes.apply(transform, inline, block);
         const end: readonly [number, number] = this.sizes.apply(transform, inline + piece.inlineSize, block);
-        const left: number = Math.min(start[0], end[0]);
-        return piece.leader === true ? this.leader(text, piece.run, piece, left, start[1]) : this.placed(text, piece.run, piece, left, start[1]);
+        const turn: number = this.turn(line.sequence.style.values);
+        const values: Values = line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style.values;
+        if (turn === 0) {
+            const left: number = Math.min(start[0], end[0]);
+            const frame: Frame = { at: (pen: number, _glyph: number, offsetX: number, offsetY: number) => [left + pen + offsetX, start[1] - offsetY], alone: false };
+            return { glyphs: this.glyphsOf(text, piece, frame), marks: this.spots(text, piece, frame, values, 0) };
+        }
+        if (run.upright) {
+            // §4.2: upright glyphs are aligned on the central baseline, which lies "above" the alphabetic one as far as the
+            // font says, and each one hangs from its vertical origin down the line.
+            const top: number = Math.min(start[1], end[1]);
+            const centre: number = start[0] + turn * this.metrics.fontBaseline(run.font, run.size, "central", true, true);
+            const frame: Frame = { at: (pen: number, _glyph: number, offsetX: number, offsetY: number) => [centre + offsetX, top + pen - offsetY], alone: true };
+            return { glyphs: this.glyphsOf(text, piece, frame), marks: this.spots(text, piece, frame, values, turn) };
+        }
+        if (run.combined) {
+            return this.composed(line, piece, transform, text, start[0], values);
+        }
+        const first: readonly [number, number] = this.local(turn, start);
+        const last: readonly [number, number] = this.local(turn, end);
+        const left: number = Math.min(first[0], last[0]);
+        const frame: Frame = { at: (pen: number, _glyph: number, offsetX: number, offsetY: number) => [left + pen + offsetX, first[1] - offsetY], alone: false };
+        return { glyphs: this.glyphsOf(text, piece, frame), matrix: turn > 0 ? CLOCKWISE : COUNTERCLOCKWISE, marks: this.spots(text, piece, frame, values, turn) };
+    }
+
+    private spots(text: InlineText, piece: TextPiece, frame: Frame, values: Values, turn: number): Array<readonly [number, number]> {
+        // CSS Text Decoration 4 §3.4: ruby-like marks centered on each unit, at the edge of the base's em box on the given side.
+        // They stay upright, so they are put on the page, not in the frame of the glyphs.
+        const run: TextRun = piece.run;
+        if (piece.leader === true || this.emphasis.style(values) === undefined) {
+            return [];
+        }
+        const extent: readonly [number, number] = this.metrics.fontExtent(run.font, run.size, run.upright);
+        const under: boolean = this.emphasis.isUnder(values);
+        const reach: number = (under ? extent[1] : extent[0]) + run.size / 4;
+        const signed: number = under ? -reach : reach;
+        return this.centers(text, piece, values).map((center: number): readonly [number, number] => {
+            const point: readonly [number, number] = run.upright ? frame.at(center, -1, signed, 0) : frame.at(center, -1, 0, signed);
+            return turn !== 0 && !run.upright ? this.global(turn, point) : point;
+        });
+    }
+
+    private global(turn: number, point: readonly [number, number]): readonly [number, number] {
+        // The matrix that CLOCKWISE or COUNTERCLOCKWISE puts in the content stream, for a point.
+        return turn > 0 ? [-point[1], point[0]] : [point[1], -point[0]];
+    }
+
+    private centers(text: InlineText, piece: TextPiece, values: Values): Array<number> {
+        // The middle of the glyphs of each typographic character unit that gets a mark, along the line from the start of the
+        // piece, placed as placed() places them.
+        const run: TextRun = piece.run;
+        const from: number = text.clusters[piece.from];
+        const to: number = piece.to < run.glyphEnd ? text.clusters[piece.to] : run.end;
+        const spans: Array<readonly [number, number]> = this.spans.of(text, piece);
+        let characters: string = "";
+        for (let position: number = from; position < to; position++) {
+            characters += String.fromCodePoint(text.codepoints[position]);
+        }
+        const centers: Array<number> = [];
+        let at: number = 0;
+        for (const cluster of this.graphemes.segment(characters)) {
+            const length: number = Array.from(cluster.segment).length;
+            if (this.emphasis.unit(cluster.segment, values)) {
+                let first: number = Number.POSITIVE_INFINITY;
+                let last: number = Number.NEGATIVE_INFINITY;
+                for (let index: number = at; index < at + length; index++) {
+                    first = Math.min(first, spans[index][0]);
+                    last = Math.max(last, spans[index][1]);
+                }
+                centers.push((first + last) / 2);
+            }
+            at += length;
+        }
+        return centers;
+    }
+
+    private glyphsOf(text: InlineText, piece: TextPiece, frame: Frame): Array<PlacedGlyph> {
+        return piece.leader === true ? this.leader(text, piece.run, piece, frame) : this.placed(text, piece.run, piece, frame, 0);
+    }
+
+    private composed(line: LineFragment, piece: TextPiece, transform: Transform, text: InlineText, baseline: number, values: Values): Placement {
+        // §9.1.2: the glyphs are "composed horizontally" in a square of 1em, centered in it along the line and across it on the
+        // central baseline; §9.1.3: what is wider than the square is compressed to it.
+        const run: TextRun = piece.run;
+        const position: number = text.clusters[piece.from];
+        const combination: Combination = text.combinations.find((candidate: Combination) => candidate.start <= position && position < candidate.end) as Combination;
+        let first: number = Number.POSITIVE_INFINITY;
+        let last: number = Number.NEGATIVE_INFINITY;
+        for (const other of line.pieces) {
+            if (other.kind === "text" && other.run.combined) {
+                const at: number = text.clusters[other.from];
+                if (at >= combination.start && at < combination.end) {
+                    first = Math.min(first, other.inline);
+                    last = Math.max(last, other.inline + other.inlineSize);
+                }
+            }
+        }
+        const turn: number = this.turn(line.sequence.style.values);
+        const centreY: number = this.sizes.apply(transform, (line.inline ?? 0) + (first + last) / 2, line.block + piece.baseline)[1];
+        const centreX: number = baseline + turn * this.metrics.fontBaseline(run.font, run.size, "central", true, false);
+        const bottom: number = centreY + this.metrics.fontBaseline(run.font, run.size, "central", false, false);
+        const composition: Composition = this.composition(text, combination);
+        const left: number = centreX - composition.width / 2;
+        const placement: Placement = {
+            glyphs: this.glyphsOf(text, piece, {
+                at: (_pen: number, glyph: number, offsetX: number, offsetY: number) => [left + (composition.offsets.get(glyph) ?? 0) + offsetX, bottom - offsetY], alone: true
+            })
+        };
+        if (combination.scale !== 1) {
+            placement.matrix = [combination.scale, 0, 0, 1, (1 - combination.scale) * centreX, 0];
+        }
+        // §9.1.2: "for other text layout purposes, e.g. emphasis marks, ... the resulting composition is treated as a single glyph", so
+        // it gets one mark, beside its square of 1em.
+        if (position === combination.start && this.emphasis.style(values) !== undefined && this.emphasis.marked(text.codepoints, combination.start, combination.end, values)) {
+            const reach: number = 3 * run.size / 4;
+            placement.marks = [[centreX + (this.emphasis.isUnder(values) ? -reach : reach) * turn, centreY]];
+        }
+        return placement;
+    }
+
+    private composition(text: InlineText, combination: Combination): Composition {
+        // UAX #9 rule L2 orders the runs of the composition, which is bidi-isolated (§9.1.2). Its ends carry the slack that the
+        // shaper added to make it 1em, which is no part of the glyphs.
+        let known: Composition | undefined = this.compositions.get(combination);
+        if (known !== undefined) {
+            return known;
+        }
+        const runs: ReadonlyArray<TextRun> = text.runs.filter((run: TextRun) => run.start >= combination.start && run.start < combination.end && run.glyphEnd > run.glyphStart);
+        const order: Array<number> = Array.from(runs.keys());
+        const levels: ReadonlyArray<number> = runs.map((run: TextRun) => run.level);
+        const lowest: number = Math.min(...levels.filter((level: number) => (level & 1) === 1));
+        for (let level: number = Math.max(...levels); level >= lowest; level--) {
+            for (let from: number = 0; from < order.length; from++) {
+                if (levels[order[from]] < level) {
+                    continue;
+                }
+                let to: number = from;
+                while (to + 1 < order.length && levels[order[to + 1]] >= level) {
+                    to++;
+                }
+                order.splice(from, to - from + 1, ...order.slice(from, to + 1).reverse());
+                from = to;
+            }
+        }
+        const firstGlyph: number = runs.length > 0 ? runs[0].glyphStart : -1;
+        const lastGlyph: number = runs.length > 0 ? runs[runs.length - 1].glyphEnd - 1 : -1;
+        const offsets: Map<number, number> = new Map<number, number>();
+        let width: number = 0;
+        for (const index of order) {
+            const run: TextRun = runs[index];
+            const clusters: Array<Array<number>> = [];
+            for (let glyph: number = run.glyphStart; glyph < run.glyphEnd; glyph++) {
+                const current: Array<number> | undefined = clusters[clusters.length - 1];
+                if (current !== undefined && text.clusters[current[0]] === text.clusters[glyph]) {
+                    current.push(glyph);
+                } else {
+                    clusters.push([glyph]);
+                }
+            }
+            if ((run.level & 1) === 1) {
+                clusters.reverse();
+            }
+            for (const glyph of clusters.flat()) {
+                offsets.set(glyph, width);
+                width += text.advances[glyph] - (glyph === firstGlyph ? combination.slack / 2 : 0) - (glyph === lastGlyph ? combination.slack / 2 : 0);
+            }
+        }
+        known = { width, offsets };
+        this.compositions.set(combination, known);
+        return known;
     }
 
     textInk(line: LineFragment, piece: TextPiece, transform: Transform): Box | undefined {
@@ -436,7 +978,7 @@ export class TextPainter {
             const width: number = this.sizes.pixels(value, this.scaledViewport());
             reach = width > 0 ? Math.max(reach, this.reach(this.strokeOf(style, "", 0, 2 * width, false))) : reach;
         }
-        return this.ink(this.pieceGlyphs(line, piece, transform), reach);
+        return this.ink(this.pieceGlyphs(line, piece, transform).glyphs, reach);
     }
 
     glyphsInk(glyphs: ReadonlyArray<SingleGlyph>, transform: Transform): Box | undefined {
@@ -457,7 +999,7 @@ export class TextPainter {
         if (this.hidden(style) || glyphs.length === 0) {
             return;
         }
-        this.supported(style.values, transform);
+        this.supported(style.values);
         const placed: Array<PlacedGlyph> = this.singleGlyphs(glyphs, transform);
         pdf.content.save();
         const filled: boolean = this.colors.fill(style.values["color"], style, pdf);
@@ -465,11 +1007,8 @@ export class TextPainter {
         pdf.content.restore();
     }
 
-    private supported(values: Values, transform: Transform): void {
-        if (transform[1] !== 0 || transform[2] !== 0) {
-            throw new Error("The painting of text in vertical writing modes is not implemented");
-        }
-        for (const property of ["text-shadow", "text-emphasis-style", "fill-image"]) {
+    private supported(values: Values): void {
+        for (const property of ["fill-image"]) {
             if (!this.isNone(values[property])) {
                 throw new Error("The painting of " + property + " is not implemented");
             }
@@ -793,7 +1332,7 @@ export class TextPainter {
         return value === undefined || this.items(value).every((item: CssValue) => item.kind === "ident" && item.lower === "none");
     }
 
-    private placed(text: InlineText, run: TextRun, piece: TextPiece, left: number, baseline: number): Array<PlacedGlyph> {
+    private placed(text: InlineText, run: TextRun, piece: TextPiece, frame: Frame, origin: number): Array<PlacedGlyph> {
         // The glyphs of a run are in the order of the text, so a right-to-left run is drawn from its last character, with
         // the spacing after each character on its left.
         const from: number = text.clusters[piece.from];
@@ -809,9 +1348,9 @@ export class TextPainter {
         firsts.push(piece.to);
         const reversed: boolean = (run.level & 1) === 1;
         const placed: Array<PlacedGlyph> = [];
-        let pen: number = left;
+        let pen: number = origin;
         if (reversed && piece.hyphenated === true && run.hyphen !== undefined) {
-            this.hyphen(run.hyphen, true, left - run.hyphen.advance, baseline, placed);
+            this.hyphen(run.hyphen, true, origin - run.hyphen.advance, frame, placed);
         }
         for (let step: number = 0; step < to - from; step++) {
             const position: number = reversed ? to - 1 - step : from + step;
@@ -833,10 +1372,13 @@ export class TextPainter {
             const cluster: number | undefined = count > 1 && content.length > 0 ? this.clusters++ : undefined;
             for (let order: number = 0; order < count; order++) {
                 const current: number = reversed ? firsts[index + 1] - 1 - order : firsts[index] + order;
+                const location: readonly [number, number] = frame.at(x, current, text.xOffsets?.[current] ?? 0, text.yOffsets?.[current] ?? 0);
                 const glyph: PlacedGlyph = {
-                    x: x + (text.xOffsets?.[current] ?? 0), y: baseline - (text.yOffsets?.[current] ?? 0), glyph: text.glyphs[current],
-                    text: current === firsts[index] ? content : "", font: run.font, size: run.size
+                    x: location[0], y: location[1], glyph: text.glyphs[current], text: current === firsts[index] ? content : "", font: run.font, size: run.size
                 };
+                if (frame.alone) {
+                    glyph.alone = true;
+                }
                 if (cluster !== undefined) {
                     glyph.cluster = cluster;
                     glyph.actual = content;
@@ -847,15 +1389,14 @@ export class TextPainter {
             pen += used;
         }
         if (!reversed && piece.hyphenated === true && run.hyphen !== undefined) {
-            this.hyphen(run.hyphen, false, pen, baseline, placed);
+            this.hyphen(run.hyphen, false, pen, frame, placed);
         }
         return placed;
     }
 
-    private leader(text: InlineText, run: TextRun, piece: TextPiece, left: number, baseline: number): Array<PlacedGlyph> {
+    private leader(text: InlineText, run: TextRun, piece: TextPiece, frame: Frame): Array<PlacedGlyph> {
         // CSS Content 3 §2.5.3: the leader string is drawn "starting from the end edge, repeating as many times as possible
         // until reaching the start edge", and a copy that does not fit whole is not shown.
-        const copy: Array<PlacedGlyph> = this.placed(text, run, piece, 0, baseline);
         const from: number = text.clusters[piece.from];
         const to: number = piece.to < run.glyphEnd ? text.clusters[piece.to] : run.end;
         let width: number = 0;
@@ -869,18 +1410,8 @@ export class TextPainter {
         const count: number = width > 0 ? Math.floor(piece.inlineSize / width + TOLERANCE) : 0;
         const reversed: boolean = (run.level & 1) === 1;
         for (let copyIndex: number = 0; copyIndex < count; copyIndex++) {
-            const start: number = reversed ? left + copyIndex * width : left + piece.inlineSize - (count - copyIndex) * width;
-            const clusters: Map<number, number> = new Map<number, number>();
-            for (const placed of copy) {
-                const glyph: PlacedGlyph = { ...placed, x: placed.x + start };
-                if (placed.cluster !== undefined) {
-                    // Each copy of the leader string is text of its own, so its clusters are too.
-                    const renamed: number = clusters.get(placed.cluster) ?? this.clusters++;
-                    clusters.set(placed.cluster, renamed);
-                    glyph.cluster = renamed;
-                }
-                glyphs.push(glyph);
-            }
+            // Each copy of the leader string is text of its own, so its clusters are too.
+            glyphs.push(...this.placed(text, run, piece, frame, reversed ? copyIndex * width : piece.inlineSize - (count - copyIndex) * width));
         }
         return glyphs;
     }
@@ -893,7 +1424,7 @@ export class TextPainter {
         return String.fromCodePoint(...text.codepoints.slice(position, position + end - index));
     }
 
-    private hyphen(hyphen: Hyphen, reversed: boolean, left: number, baseline: number, placed: Array<PlacedGlyph>): void {
+    private hyphen(hyphen: Hyphen, reversed: boolean, left: number, frame: Frame, placed: Array<PlacedGlyph>): void {
         // ISO 32000-2 §14.8.2.3: the hyphen of a divided word "may be represented as a soft hyphen", and the writer "shall
         // distinguish explicitly between soft and hard hyphens"; its glyphs also draw hard hyphens, so ActualText says it.
         let pen: number = left;
@@ -902,9 +1433,12 @@ export class TextPainter {
             const part: GlyphRun = parts[reversed ? parts.length - 1 - step : step];
             for (let order: number = 0; order < part.glyphs.length; order++) {
                 const index: number = reversed ? part.glyphs.length - 1 - order : order;
-                placed.push({
-                    x: pen + part.xOffsets[index], y: baseline - part.yOffsets[index], glyph: part.glyphs[index], text: "", font: part.font, size: part.size, hyphen: true
-                });
+                const location: readonly [number, number] = frame.at(pen, -1, part.xOffsets[index], part.yOffsets[index]);
+                const glyph: PlacedGlyph = { x: location[0], y: location[1], glyph: part.glyphs[index], text: "", font: part.font, size: part.size, hyphen: true };
+                if (frame.alone) {
+                    glyph.alone = true;
+                }
+                placed.push(glyph);
                 pen += part.advances[index];
             }
         }
@@ -962,7 +1496,7 @@ export class TextPainter {
             }
             const font: PdfFont = this.fonts.font(placed.font, false);
             const shown: FontRun = font.show(placed.glyph, placed.text);
-            if (Math.abs(placed.y - line) > TOLERANCE || Number.isNaN(pen)) {
+            if (placed.alone === true || Math.abs(placed.y - line) > TOLERANCE || Number.isNaN(pen)) {
                 flush();
                 pdf.content.textMatrix(1, 0, slant, -1, placed.x, placed.y);
                 pen = placed.x;

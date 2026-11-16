@@ -20,7 +20,9 @@
 
 import type { CssValue } from "../css/values/CssValue.js";
 import { ScriptTags } from "../fonts/layout/ScriptTags.js";
-import type { ElementBox, InlineItem, InlineSequence, InlineText, TextRun } from "../pdf/BoxTree.js";
+import type { ElementBox, InlineItem, InlineSequence, InlineText, RubyColumn, TextRun } from "../pdf/BoxTree.js";
+import type { DisplayType } from "../pdf/DisplayTypes.js";
+import { EmphasisMarks } from "../pdf/EmphasisMarks.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
 import type { InlineTextBuilder } from "../pdf/InlineTextBuilder.js";
 import { LineBreaker } from "../pdf/LineBreaker.js";
@@ -30,6 +32,7 @@ import type { BlockLayout, Snapshot } from "./BlockLayout.js";
 import type { UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
 import type { BoxFragment, LineFragment, Margins, TextPiece } from "./Fragment.js";
+import { PieceSpans } from "./PieceSpans.js";
 
 export type TextEdges = readonly [string, string];
 
@@ -166,6 +169,8 @@ const HANGS_LAST: RegExp = /^[\p{Pe}\p{Pf}\p{Pi}'"]$/u;
 const STOPS: ReadonlySet<number> = new Set<number>([0x2C, 0x2E, 0x60C, 0x6D4, 0x3001, 0x3002, 0xFF0C, 0xFF0E, 0xFE50, 0xFE51, 0xFE52, 0xFF61, 0xFF64]);
 const DEFAULT_TAB_SIZE: number = 8;
 const TOLERANCE: number = 0.001;
+const ANNOTATION_LINE: number = 1000000;
+const ANNOTATION_DISPLAY: DisplayType = { outer: "inline", inner: "flow-root", listItem: false };
 const NO_MARGIN: Margins = [0, 0];
 const LINE_RELATIVE: ReadonlySet<string> = new Set<string>(["top", "center", "bottom"]);
 const WORD_SEPARATORS: ReadonlySet<number> = new Set<number>([0x20, 0xA0, 0x1361, 0x10100, 0x10101, 0x1039F, 0x1091F]);
@@ -181,6 +186,8 @@ export class InlineLayout {
     private readonly text: InlineTextBuilder;
     private readonly host: BlockLayout;
     private readonly scripts: ScriptTags = new ScriptTags();
+    private readonly emphasis: EmphasisMarks = new EmphasisMarks();
+    private readonly spans: PieceSpans = new PieceSpans();
 
     constructor(metrics: FontMetrics, sizes: BoxSizes, text: InlineTextBuilder, host: BlockLayout) {
         this.metrics = metrics;
@@ -356,6 +363,7 @@ export class InlineLayout {
             start = after;
             measured = next;
         }
+        this.annotate(lines);
         return lines;
     }
 
@@ -1404,6 +1412,20 @@ export class InlineLayout {
                         -this.metrics.fontBaseline(run.font, run.size, record.fit[1], this.metrics.vertical(record.values), run.upright)];
                 this.bound(record.group, block - extent[0] - record.inflate[0], block + extent[1] + record.inflate[1]);
             }
+            const annotations: readonly [number, number] = this.annotationHeights(measured.sequence, cursor, until);
+            let over: number = annotations[0];
+            let under: number = annotations[1];
+            if (this.emphasis.style(record.values) !== undefined && this.emphasis.marked(text.codepoints, cursor, until, record.values)) {
+                // Text Decoration 4 §3.4: emphasis marks have the effect of ruby on the line height, as an annotation of half the font size.
+                if (this.emphasis.isUnder(record.values)) {
+                    under += this.metrics.fontSize(record.values) / 2;
+                } else {
+                    over += this.metrics.fontSize(record.values) / 2;
+                }
+            }
+            if (over > 0 || under > 0) {
+                this.leading(record, run, block, over, under);
+            }
             const first: number = this.glyphAt(text, run, cursor);
             const last: number = this.glyphAt(text, run, until);
             const unit: Unit = this.chained({ kind: "text", from: cursor, to: until, level, group: record.group, block, width, origin: -kerned, left: 0, expands }, chain);
@@ -1499,6 +1521,13 @@ export class InlineLayout {
             above = 0;
         } else if (type === "middle" || type === "central" || type === "mathematical") {
             above = height / 2;
+        }
+        if (item.node.display.internal === "ruby-text") {
+            // CSS Ruby 1 §3.2: an inter-character annotation is aligned with the content box of its base, by their top edges with
+            // ruby-align: start and otherwise by their centers.
+            const ascent: number = this.metrics.ascent(record.values);
+            const descent: number = this.metrics.descent(record.values);
+            above = this.keyword("space-around", values["ruby-align"]) === "start" ? ascent : (ascent - descent) / 2 + height / 2;
         }
         const shift: CssValue | undefined = values["baseline-shift"];
         const keyword: string = this.keyword("", shift);
@@ -1620,6 +1649,172 @@ export class InlineLayout {
         const under: string = second !== undefined && second.kind === "ident" ? second.lower : (over === "cap" || over === "ex" ? "text" : over);
         return [over === "text" ? "text-top" : (over === "ideographic" ? "ideographic-over" : (over === "ideographic-ink" ? "ideographic-ink-over" : over)),
         under === "text" ? "text-bottom" : (under === "ideographic-ink" ? "ideographic-ink-under" : under)];
+    }
+
+    private annotationHeights(sequence: InlineSequence, from: number, to: number): readonly [number, number] {
+        // CSS Ruby 1 §3.6: the annotation containers of a segment are stacked outward on each side of the base, so its levels add up.
+        const columns: ReadonlyArray<RubyColumn> | undefined = sequence.ruby;
+        if (columns === undefined) {
+            return [0, 0];
+        }
+        const levels: Map<string, readonly [number, boolean]> = new Map<string, readonly [number, boolean]>();
+        for (const column of columns) {
+            if (column.start < to && column.end > from) {
+                const key: string = column.segment + ":" + column.level;
+                levels.set(key, [Math.max(levels.get(key)?.[0] ?? 0, this.metrics.lineHeight(column.sequence.style.values)), column.under]);
+            }
+        }
+        let over: number = 0;
+        let under: number = 0;
+        for (const [height, below] of levels.values()) {
+            over += below ? 0 : height;
+            under += below ? height : 0;
+        }
+        return [over, under];
+    }
+
+    private leading(record: LineBox, run: TextRun, block: number, over: number, under: number): void {
+        // §3.6: when the line-height is less than the base and its annotations together, the leading that makes up the difference
+        // is added on the sides of the annotations, so that none of the lines would overlap.
+        const extent: readonly [number, number] = this.metrics.fontExtent(run.font, run.size, run.upright);
+        const used: number = this.metrics.lineHeight(record.values);
+        const half: number = (used - extent[0] - extent[1]) / 2;
+        const extra: number = Math.max(0, extent[0] + extent[1] + over + under - used);
+        this.bound(record.group, block - extent[0] - (over > 0 ? half + extra * over / (over + under) : 0), block + extent[1] + (under > 0 ? half + extra * under / (over + under) : 0));
+    }
+
+    private annotate(lines: ReadonlyArray<LineFragment>): void {
+        // §3.1: each annotation is a line of its level, over or under the bases of its column, the levels stacked outward without
+        // space between them; it is put into the line as an atomic box, which is how the page paints it.
+        const cache: Map<InlineSequence, LineFragment | undefined> = new Map<InlineSequence, LineFragment | undefined>();
+        for (const line of lines) {
+            const columns: ReadonlyArray<RubyColumn> | undefined = line.sequence.ruby;
+            const text: InlineText | undefined = line.sequence.text;
+            if (columns === undefined || text === undefined) {
+                continue;
+            }
+            const heights: Map<string, number> = new Map<string, number>();
+            for (const column of columns) {
+                const level: LineFragment | undefined = this.levelLine(column.sequence, cache);
+                heights.set(column.segment + ":" + column.under + ":" + column.level, level === undefined ? 0 : level.blockSize);
+            }
+            const up: number = this.overAtEnd(line.sequence.style.values) ? 1 : -1;
+            const placed: Array<BoxFragment> = [];
+            for (const column of columns) {
+                const anchor: number = column.room > 0 ? column.start - 1 : column.start;
+                const fragment: BoxFragment | undefined = anchor >= line.start && anchor < line.end ? this.annotation(line, text, column, heights, up, cache) : undefined;
+                if (fragment !== undefined) {
+                    placed.push(fragment);
+                }
+            }
+            line.pieces.push(...placed);
+        }
+    }
+
+    private levelLine(sequence: InlineSequence, cache: Map<InlineSequence, LineFragment | undefined>): LineFragment | undefined {
+        if (!cache.has(sequence)) {
+            // The annotations of a level are laid out in one line without wrapping, and each takes its pieces from it.
+            cache.set(sequence, this.layout(sequence, ANNOTATION_LINE, 0, 0, 0, [])?.[0]);
+        }
+        return cache.get(sequence);
+    }
+
+    private annotation(line: LineFragment, text: InlineText, column: RubyColumn, heights: ReadonlyMap<string, number>, up: number,
+        cache: Map<InlineSequence, LineFragment | undefined>): BoxFragment | undefined {
+        const level: LineFragment | undefined = this.levelLine(column.sequence, cache);
+        const annotated: InlineText | undefined = column.sequence.text;
+        if (level === undefined || annotated === undefined) {
+            return undefined;
+        }
+        let left: number = Number.POSITIVE_INFINITY;
+        let right: number = Number.NEGATIVE_INFINITY;
+        let base: TextPiece | undefined;
+        let edgeLeft: number = Number.POSITIVE_INFINITY;
+        let edgeRight: number = Number.NEGATIVE_INFINITY;
+        // An annotation with no base stands after the last glyph of the base before it.
+        const first: number = column.room > 0 ? column.start - 1 : column.start;
+        const last: number = column.room > 0 ? column.start : column.end;
+        for (const piece of line.pieces) {
+            if (piece.kind !== "text") {
+                continue;
+            }
+            edgeLeft = Math.min(edgeLeft, piece.inline);
+            edgeRight = Math.max(edgeRight, piece.inline + piece.inlineSize);
+            const from: number = text.clusters[piece.from];
+            const to: number = piece.to < piece.run.glyphEnd ? text.clusters[piece.to] : piece.run.end;
+            if (to <= first || from >= last) {
+                continue;
+            }
+            const spans: Array<readonly [number, number]> = this.spans.of(text, piece);
+            for (let position: number = Math.max(from, first); position < Math.min(to, last); position++) {
+                left = Math.min(left, piece.inline + spans[position - from][0]);
+                right = Math.max(right, piece.inline + spans[position - from][1]);
+            }
+            base = base ?? piece;
+        }
+        if (column.room > 0 && left <= right) {
+            left = right - column.trail + column.offset;
+            right = left + column.room;
+        }
+        const pieces: Array<TextPiece> = level.pieces.filter((piece: TextPiece | BoxFragment): piece is TextPiece => piece.kind === "text"
+            && annotated.clusters[piece.from] >= column.from && annotated.clusters[piece.from] < column.to);
+        if (base === undefined || pieces.length === 0 || left > right) {
+            return undefined;
+        }
+        const origin: number = Math.min(...pieces.map((piece: TextPiece) => piece.inline));
+        const extent: readonly [number, number] = this.metrics.fontExtent(base.run.font, base.run.size, base.run.upright);
+        let stack: number = this.clearance(line.sequence, text, first, column.under);
+        for (let lower: number = 0; lower < column.level; lower++) {
+            stack += heights.get(column.segment + ":" + column.under + ":" + lower) ?? 0;
+        }
+        const side: number = column.under ? -up : up;
+        const start: number = base.baseline + side * ((column.under ? extent[1] : extent[0]) + stack);
+        const height: number = level.blockSize;
+        const own: LineFragment = {
+            kind: "line", sequence: column.sequence, start: column.from, end: column.to, block: 0, blockSize: height, baseline: level.baseline,
+            pieces: pieces.map((piece: TextPiece): TextPiece => ({ ...piece, inline: piece.inline - origin }))
+        };
+        // §5.2: an annotation longer than its base at the start or the end of a line may have that side aligned to the base, so it
+        // does not stand out of the line.
+        const width: number = right - left + column.before + column.after;
+        let inline: number = left - column.before;
+        if (column.room === 0 && inline < edgeLeft - TOLERANCE) {
+            inline = left;
+        } else if (column.room === 0 && inline + width > edgeRight + TOLERANCE) {
+            inline = right - width;
+        }
+        return { kind: "box", box: { ...column.annotation, display: ANNOTATION_DISPLAY }, inline, block: side < 0 ? start - height : start, inlineSize: width, blockSize: height, children: [own] };
+    }
+
+    private clearance(sequence: InlineSequence, text: InlineText, position: number, under: boolean): number {
+        // §4.4: an underline or an overline of the base is "between the base level and any annotations on that side", so the
+        // annotation stands beyond it.
+        const open: Array<Values> = [sequence.style.values];
+        for (const [index, item] of sequence.items.entries()) {
+            if (text.starts[index] > position) {
+                break;
+            }
+            if (item.kind === "open") {
+                open.push(item.node.style.values);
+            } else if (item.kind === "close") {
+                open.pop();
+            }
+        }
+        let reach: number = 0;
+        for (const values of open) {
+            const line: CssValue | undefined = values["text-decoration-line"];
+            const kinds: ReadonlyArray<string> = line === undefined ? [] : (line.kind === "list" ? line.items : [line]).filter((item: CssValue) => item.kind === "ident")
+                .map((item: CssValue) => (item as { lower: string }).lower);
+            const thickness: number = this.metrics.underline(values)[1];
+            if (!under && kinds.includes("overline")) {
+                reach = Math.max(reach, thickness);
+            }
+            if (under && kinds.includes("underline")) {
+                const offset: CssValue | undefined = values["text-underline-offset"];
+                reach = Math.max(reach, thickness + (offset !== undefined && offset.kind !== "ident" ? this.sizes.pixels(offset, this.metrics.fontSize(values)) : 0));
+            }
+        }
+        return reach;
     }
 
     private bound(group: Group, top: number, bottom: number): void {

@@ -608,8 +608,10 @@ export class ImagePainter {
             return NO_LINKS;
         }
         const inner: Transform = this.sizes.compose(transform, this.sizes.inside(fragment, frame));
-        const inlineSize: number = fragment.inlineSize - this.edge(fragment, INLINE_START) - this.edge(fragment, INLINE_END);
-        const blockSize: number = fragment.blockSize - this.edge(fragment, BLOCK_START) - this.edge(fragment, BLOCK_END);
+        // The sizes of the fragment are in the axes of its container and its edges in its own, which an orthogonal flow turns.
+        const turned: boolean = this.sizes.isOrthogonal(this.sizes.frame(fragment.box.style), frame);
+        const inlineSize: number = (turned ? fragment.blockSize : fragment.inlineSize) - this.edge(fragment, INLINE_START) - this.edge(fragment, INLINE_END);
+        const blockSize: number = (turned ? fragment.inlineSize : fragment.blockSize) - this.edge(fragment, BLOCK_START) - this.edge(fragment, BLOCK_END);
         const area: ObjectArea = fragment.object ?? [0, 0, inlineSize, blockSize];
         const box: readonly [number, number, number, number] = this.sizes.mapped(inner, 0, 0, inlineSize, blockSize);
         const target: readonly [number, number, number, number] = this.sizes.mapped(inner, area[0], area[1], area[2], area[3]);

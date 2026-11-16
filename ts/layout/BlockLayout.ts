@@ -67,6 +67,36 @@ export interface WrappingArea {
 }
 
 const UNLIMITED: readonly [number, number] = [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY];
+const COLUMN_EXTENT: number = 1000000000;
+const BALANCING_STEPS: number = 16;
+const BLOCK_DISPLAY: DisplayType = { outer: "block", inner: "flow", listItem: false };
+
+interface Columns {
+    count: number;
+    width: number;
+    gap: number;
+    fill: string;
+}
+
+interface ColumnPart {
+    box: ElementBox;
+    spanner: boolean;
+}
+
+interface ColumnSet {
+    fragments: Array<BoxFragment>;
+    token?: BreakToken;
+    extent: number;
+}
+
+interface ColumnResult {
+    children: Array<BoxFragment>;
+    extent: number;
+    rules: Array<readonly [number, number, number]>;
+    token?: BreakToken;
+    firstBaseline: number | undefined;
+    baseline: number | undefined;
+}
 const BLOCK_ORIENTATION: number = BoxSizes.VERTICAL | BoxSizes.BLOCK_REVERSED;
 
 interface Floats {
@@ -124,6 +154,7 @@ export class BlockLayout {
     private readonly sizes: BoxSizes = new BoxSizes((anchor: CalcAnchor, block: boolean): number | undefined => this.anchorLength(anchor, block));
     private readonly inline: InlineLayout;
     private readonly trimmed: WeakSet<LineFragment> = new WeakSet<LineFragment>();
+    private readonly columnBoxes: WeakMap<ElementBox, Array<ColumnPart>> = new WeakMap<ElementBox, Array<ColumnPart>>();
     private readonly images: ImageFormats;
     readonly tables: TableLayout = new TableLayout(this, this.sizes);
     private readonly displays: DisplayTypes = new DisplayTypes();
@@ -1212,13 +1243,26 @@ export class BlockLayout {
             this.tables.forget();
         }
         const nodes: ReadonlyArray<BoxNode> | undefined = box.replaced ? undefined : box.children;
+        // CSS Multicol 1: the content of a multi-column container is laid out in columns, which are fragmentainers of their own.
+        const columns: Columns | undefined = nodes === undefined ? undefined : this.columnsOf(box, inlineSize);
+        let rules: Array<readonly [number, number, number]> | undefined;
         if (resumed) {
             startTrim = undefined;
         }
         if (independent && incoming?.parallel !== undefined) {
             this.resumeFloats(incoming.parallel, children, sizes.blockSize);
         }
-        for (let index: number = incoming?.child ?? 0; nodes !== undefined && index < nodes.length;) {
+        if (columns !== undefined) {
+            const flowed: ColumnResult = this.columnFlow(box, columns, sizes.blockSize, inlineSize, room, fragmenting !== undefined, incoming);
+            children.push(...flowed.children);
+            offset = flowed.extent;
+            empty = flowed.children.length === 0;
+            firstBaseline = flowed.firstBaseline;
+            baseline = flowed.baseline;
+            token = flowed.token;
+            rules = flowed.rules.length > 0 ? flowed.rules : undefined;
+        }
+        for (let index: number = incoming?.child ?? 0; columns === undefined && nodes !== undefined && index < nodes.length;) {
             if (fragmenting !== undefined && fragmenting.restart) {
                 break;
             }
@@ -1567,6 +1611,9 @@ export class BlockLayout {
         if (children.length > 0) {
             fragment.children = children;
         }
+        if (rules !== undefined) {
+            fragment.rules = rules;
+        }
         // CSS Containment 2 §3.2 and §3.4: a layout or paint containment box "establishes an absolute positioning containing
         // block and a fixed positioning containing block".
         const containing: boolean = (containment & CONTAINING_BLOCK) !== 0 || this.transforms(box);
@@ -1585,6 +1632,169 @@ export class BlockLayout {
         this.limit = outerLimit;
         this.port = outerPort;
         return fragment;
+    }
+
+    private columnsOf(box: ElementBox, inlineSize: number): Columns | undefined {
+        // CSS Multicol 1 §3.4: the used column count and width follow from the available width, the gap and the two properties; with
+        // only a width, the count is the largest number of columns of at least that width that fit.
+        if (box.replaced || box.display.internal !== undefined || !this.displays.isBlockContainer(box.display)) {
+            return undefined;
+        }
+        const values: Readonly<Record<string, CssValue>> = box.style.values;
+        const count: CssValue | undefined = values["column-count"];
+        const width: CssValue | undefined = values["column-width"];
+        const wanted: number | undefined = count !== undefined && count.kind === "number" ? Math.max(1, Math.floor(count.value)) : undefined;
+        const least: number | undefined = width !== undefined && width.kind !== "ident" ? this.sizes.pixels(width, 0) : undefined;
+        if (wanted === undefined && least === undefined) {
+            return undefined;
+        }
+        const gap: CssValue | undefined = values["column-gap"];
+        const size: CssValue | undefined = values["font-size"];
+        const spacing: number = gap === undefined || gap.kind === "ident" ? (size === undefined ? 0 : this.sizes.pixels(size, 0)) : this.sizes.pixels(gap, inlineSize);
+        const fits: number = least === undefined ? 1 : Math.max(1, Math.floor((inlineSize + spacing) / (least + spacing)));
+        const used: number = wanted === undefined ? fits : (least === undefined ? wanted : Math.min(wanted, fits));
+        return { count: used, width: Math.max(0, (inlineSize - (used - 1) * spacing) / used), gap: spacing, fill: this.keyword(values["column-fill"]) === "auto" ? "auto" : "balance" };
+    }
+
+    private columnParts(box: ElementBox): Array<ColumnPart> {
+        // CSS Multicol 1 §6.1: a block with column-span: all spans all the columns, so what comes before it and what comes after it
+        // are columns of their own. The inline sequences go with the children that they are of.
+        const known: Array<ColumnPart> | undefined = this.columnBoxes.get(box);
+        if (known !== undefined) {
+            return known;
+        }
+        const parts: Array<ColumnPart> = [];
+        const nodes: ReadonlyArray<BoxNode> = box.children;
+        let from: number = 0;
+        let sequence: number = 0;
+        let counted: number = 0;
+        const flush: (to: number) => void = (to: number): void => {
+            if (to > from) {
+                parts.push({ box: this.columnContent(box, from, to, counted), spanner: false });
+            }
+        };
+        for (let index: number = 0; index < nodes.length; index++) {
+            const node: BoxNode = nodes[index];
+            if (node.kind === "box" && node.placement === "in-flow" && this.isBlockLevel(node) && this.keyword(node.style.values["column-span"]) === "all") {
+                flush(index);
+                parts.push({ box: node, spanner: true });
+                from = index + 1;
+                counted = sequence;
+            } else if (!this.isBlockLevel(node) && (index === 0 || this.isBlockLevel(nodes[index - 1]))) {
+                sequence++;
+            }
+        }
+        flush(nodes.length);
+        this.columnBoxes.set(box, parts);
+        return parts;
+    }
+
+    private columnContent(box: ElementBox, from: number, to: number, first: number): ElementBox {
+        // The content of a run of columns is a block of its own with no edges, which has the style that an anonymous box has.
+        const nodes: Array<BoxNode> = box.children.slice(from, to);
+        let runs: number = 0;
+        for (let index: number = 0; index < nodes.length; index++) {
+            runs += !this.isBlockLevel(nodes[index]) && (index === 0 || this.isBlockLevel(nodes[index - 1])) ? 1 : 0;
+        }
+        const content: ElementBox = {
+            kind: "box", style: { values: box.style.inherited, inherited: box.style.inherited, custom: box.style.custom }, display: BLOCK_DISPLAY, placement: "in-flow", replaced: false,
+            hasStartEdge: true, hasEndEdge: true, usedPage: box.usedPage, startPage: box.startPage, endPage: box.endPage, children: nodes
+        };
+        if (box.inline !== undefined) {
+            content.inline = box.inline.slice(first, first + runs);
+        }
+        return content;
+    }
+
+    private columnFlow(box: ElementBox, columns: Columns, blockSize: number | undefined, inlineSize: number, room: number, fragmenting: boolean, incoming?: BreakToken): ColumnResult {
+        const parts: Array<ColumnPart> = this.columnParts(box);
+        const result: ColumnResult = { children: [], extent: 0, rules: [], firstBaseline: undefined, baseline: undefined };
+        let offset: number = 0;
+        for (let index: number = incoming?.child ?? 0; index < parts.length; index++) {
+            const part: ColumnPart = parts[index];
+            const inner: BreakToken | undefined = incoming !== undefined && incoming.child === index ? incoming.inner : undefined;
+            const left: number = Math.max(MINIMUM_FRAGMENTAINER, room - offset);
+            let token: BreakToken | undefined;
+            if (part.spanner) {
+                // The spanning block is laid out as a block of the container, across all the columns.
+                const fragment: BoxFragment = this.block(part.box, inlineSize, true, 0, offset, undefined, undefined, 0, fragmenting ? left : undefined, inner, false);
+                fragment.block = offset + (fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1]);
+                result.children.push(fragment);
+                offset = fragment.block + fragment.blockSize + (fragment.token !== undefined || fragment.marginAfter === undefined ? 0 : fragment.marginAfter[0] + fragment.marginAfter[1]);
+                token = fragment.token;
+                result.firstBaseline = result.firstBaseline ?? (fragment.firstBaseline === undefined ? undefined : fragment.block + fragment.firstBaseline);
+                result.baseline = fragment.baseline === undefined ? result.baseline : fragment.block + fragment.baseline;
+            } else {
+                const set: ColumnSet = this.columnSet(part.box, columns, blockSize, left, fragmenting, inner);
+                for (const [position, fragment] of set.fragments.entries()) {
+                    fragment.block = offset;
+                    result.children.push(fragment);
+                    if (position > 0) {
+                        // §4: a rule is drawn "in the middle of each column gap" between two columns that both have content.
+                        result.rules.push([position * (columns.width + columns.gap) - columns.gap / 2, offset, set.extent]);
+                    }
+                }
+                const first: BoxFragment | undefined = set.fragments[0];
+                result.firstBaseline = result.firstBaseline ?? (first?.firstBaseline === undefined ? undefined : offset + first.firstBaseline);
+                result.baseline = first?.baseline === undefined ? result.baseline : offset + first.baseline;
+                offset += set.extent;
+                token = set.token;
+            }
+            if (token !== undefined) {
+                result.token = this.token(box, index, 0, undefined, token, undefined);
+                break;
+            }
+        }
+        result.extent = offset;
+        return result;
+    }
+
+    private columnSet(content: ElementBox, columns: Columns, definite: number | undefined, limit: number, fragmenting: boolean, incoming?: BreakToken): ColumnSet {
+        // CSS Multicol 1 §7: the columns have the definite height, or with an automatic one the least in which the content fits them
+        // (balance, found by trying), or what the fragmentainer around has left (column-fill: auto).
+        const kinds: ReadonlyArray<string> = [...(this.fragmenting?.kinds ?? []), "column"];
+        const lay: (height: number, endless: boolean) => ColumnSet = (height: number, endless: boolean): ColumnSet => {
+            const fragments: Array<BoxFragment> = [];
+            let current: BreakToken | undefined = incoming;
+            for (let index: number = 0; endless || index < columns.count; index++) {
+                const begin: BreakToken | undefined = current;
+                const fragment: BoxFragment = this.fragmented(kinds, height, columns.width, begin, (): BoxFragment => this.block(content, columns.width, true, 0, 0, height, undefined, 0, height, begin, false));
+                fragment.inline = index * (columns.width + columns.gap);
+                fragment.block = 0;
+                fragments.push(fragment);
+                current = fragment.token;
+                if (current === undefined || (current.forced !== undefined && current.forced !== "column")) {
+                    break;
+                }
+            }
+            const set: ColumnSet = { fragments, extent: fragments.reduce((largest: number, fragment: BoxFragment) => Math.max(largest, fragment.blockSize), 0) };
+            if (current !== undefined) {
+                set.token = current;
+            }
+            return set;
+        };
+        let height: number;
+        if (definite !== undefined) {
+            height = Math.min(definite, limit);
+        } else {
+            const total: number = lay(Math.min(limit, COLUMN_EXTENT), false).extent;
+            if (columns.fill === "auto") {
+                height = fragmenting ? limit : total;
+            } else {
+                let low: number = total / columns.count;
+                let high: number = Math.min(total, limit);
+                for (let step: number = 0; step < BALANCING_STEPS && high - low > 0.25; step++) {
+                    const middle: number = (low + high) / 2;
+                    if (lay(middle, false).token === undefined) {
+                        high = middle;
+                    } else {
+                        low = middle;
+                    }
+                }
+                height = high;
+            }
+        }
+        return lay(Math.max(MINIMUM_FRAGMENTAINER, height), !fragmenting);
     }
 
     parallel<T>(run: () => T, token?: BreakToken): T {

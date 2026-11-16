@@ -231,11 +231,11 @@ export class MarginBoxes {
         // and right sides and to its height on the top and bottom sides.
         const style: ComputedStyle = built.box.style;
         const frame: number = this.sizes.frame(style);
-        if ((frame & BoxSizes.VERTICAL) !== 0) {
-            throw new Error("Page-margin boxes in vertical writing modes are not implemented");
-        }
-        const across: UsedSizes = this.sizes.of(style, width, height);
-        const down: UsedSizes = this.sizes.of(style, width, height, height);
+        // The width and the height of a page-margin box are physical, so in a vertical writing mode the width is the block
+        // size and the height is the inline size, and the percentages of the inline size refer to the height.
+        const turned: boolean = this.isTurned(built.box);
+        const across: UsedSizes = turned ? this.sizes.of(style, height, width, width) : this.sizes.of(style, width, height);
+        const down: UsedSizes = turned ? this.sizes.of(style, height, width, height) : this.sizes.of(style, width, height, height);
         const dimensions: Dimensions = built.dimensions;
         for (let side: number = 0; side < 4; side++) {
             const physical: number = this.sizes.physicalSide(frame, side);
@@ -244,13 +244,17 @@ export class MarginBoxes {
             dimensions.border[physical] = source.border === undefined ? 0 : source.border[side];
             dimensions.padding[physical] = source.padding === undefined ? 0 : source.padding[side];
         }
-        this.copy(dimensions, "width", across.inlineSize);
-        this.copy(dimensions, "height", across.blockSize);
-        this.copy(dimensions, "minWidth", across.minInlineSize);
-        this.copy(dimensions, "maxWidth", across.maxInlineSize);
-        this.copy(dimensions, "minHeight", across.minBlockSize);
-        this.copy(dimensions, "maxHeight", across.maxBlockSize);
+        this.copy(dimensions, "width", turned ? across.blockSize : across.inlineSize);
+        this.copy(dimensions, "height", turned ? across.inlineSize : across.blockSize);
+        this.copy(dimensions, "minWidth", turned ? across.minBlockSize : across.minInlineSize);
+        this.copy(dimensions, "maxWidth", turned ? across.maxBlockSize : across.maxInlineSize);
+        this.copy(dimensions, "minHeight", turned ? across.minInlineSize : across.minBlockSize);
+        this.copy(dimensions, "maxHeight", turned ? across.maxInlineSize : across.maxBlockSize);
         return dimensions;
+    }
+
+    private isTurned(box: ElementBox): boolean {
+        return (this.sizes.frame(box.style) & BoxSizes.VERTICAL) !== 0;
     }
 
     private copy(dimensions: Dimensions, field: "width" | "height" | "minWidth" | "maxWidth" | "minHeight" | "maxHeight", value?: number): void {
@@ -276,11 +280,13 @@ export class MarginBoxes {
         placed: Map<MarginBoxName, BoxFragment>): void {
         const slots: Array<Slot> = [];
         const measured: Array<Dimensions | undefined> = [];
+        const heights: Array<readonly [number, number] | undefined> = [];
         for (const name of names) {
             const entry: Built | undefined = built.get(name);
             const dimensions: Dimensions | undefined = entry === undefined ? undefined : this.measure(entry, area.width, area.height);
             measured.push(dimensions);
             if (entry === undefined || dimensions === undefined) {
+                heights.push(undefined);
                 slots.push(NOT_GENERATED);
                 continue;
             }
@@ -288,7 +294,17 @@ export class MarginBoxes {
             // value is zero."
             const extra: number = (dimensions.margin[LEFT] ?? 0) + (dimensions.margin[RIGHT] ?? 0) + dimensions.border[LEFT] + dimensions.padding[LEFT]
                 + dimensions.border[RIGHT] + dimensions.padding[RIGHT];
-            const content: readonly [number, number] = this.layout.marginContent(entry.box);
+            const down: readonly [number, number] = this.fixedHeight(area.height, dimensions, top);
+            heights.push(down);
+            let content: readonly [number, number];
+            if (this.isTurned(entry.box)) {
+                // The width of a vertical box is the extent of its lines across the height that §5.3.3 gives it.
+                const size: number = this.laid(entry.box, dimensions, 0, down[1]).blockSize - dimensions.border[LEFT] - dimensions.padding[LEFT]
+                    - dimensions.border[RIGHT] - dimensions.padding[RIGHT];
+                content = [size, size];
+            } else {
+                content = this.layout.marginContent(entry.box);
+            }
             slots.push(this.slot(dimensions.width, extra, content, dimensions.minWidth, dimensions.maxWidth));
         }
         const outer: readonly [number, number, number] = this.constrained(area.width, slots);
@@ -301,7 +317,7 @@ export class MarginBoxes {
             }
             const before: number = dimensions.margin[LEFT] ?? 0;
             const width: number = outer[index] - before - (dimensions.margin[RIGHT] ?? 0);
-            const down: readonly [number, number] = this.fixedHeight(area.height, dimensions, top);
+            const down: readonly [number, number] = heights[index] as readonly [number, number];
             placed.set(name, this.place(entry, dimensions, starts[index] + before, area.y + down[0], width, down[1]));
         }
     }
@@ -310,7 +326,7 @@ export class MarginBoxes {
         placed: Map<MarginBoxName, BoxFragment>): void {
         // The content heights that §5.3.2 needs follow from laying the boxes out at the widths that §5.3.3 fixes.
         const slots: Array<Slot> = [];
-        const measured: Array<readonly [Dimensions, readonly [number, number], BoxFragment] | undefined> = [];
+        const measured: Array<readonly [Dimensions, readonly [number, number], BoxFragment | undefined] | undefined> = [];
         for (const name of names) {
             const entry: Built | undefined = built.get(name);
             if (entry === undefined) {
@@ -320,9 +336,15 @@ export class MarginBoxes {
             }
             const dimensions: Dimensions = this.measure(entry, area.width, area.height);
             const across: readonly [number, number] = this.fixedWidth(area.width, dimensions, left);
-            const laid: BoxFragment = this.laid(entry.box, dimensions, across[1]);
             const vertical: number = dimensions.border[TOP] + dimensions.padding[TOP] + dimensions.border[BOTTOM] + dimensions.padding[BOTTOM];
             const extra: number = (dimensions.margin[TOP] ?? 0) + (dimensions.margin[BOTTOM] ?? 0) + vertical;
+            if (this.isTurned(entry.box)) {
+                // The height of a vertical box is the inline size of its lines, which its content gives.
+                measured.push([dimensions, across, undefined]);
+                slots.push(this.slot(dimensions.height, extra, this.layout.marginContent(entry.box), dimensions.minHeight, dimensions.maxHeight));
+                continue;
+            }
+            const laid: BoxFragment = this.laid(entry.box, dimensions, across[1], 0);
             const height: number = laid.blockSize - vertical;
             measured.push([dimensions, across, laid]);
             slots.push(this.slot(dimensions.height, extra, [height, height], dimensions.minHeight, dimensions.maxHeight));
@@ -330,15 +352,21 @@ export class MarginBoxes {
         const outer: readonly [number, number, number] = this.constrained(area.height, slots);
         const starts: readonly [number, number, number] = [area.y, area.y + (area.height - outer[1]) / 2, area.y + area.height - outer[2]];
         for (const [index, name] of names.entries()) {
-            const entry: readonly [Dimensions, readonly [number, number], BoxFragment] | undefined = measured[index];
-            if (entry === undefined) {
+            const entry: readonly [Dimensions, readonly [number, number], BoxFragment | undefined] | undefined = measured[index];
+            const box: Built | undefined = built.get(name);
+            if (entry === undefined || box === undefined) {
                 continue;
             }
             const dimensions: Dimensions = entry[0];
             const before: number = dimensions.margin[TOP] ?? 0;
-            const vertical: number = dimensions.border[TOP] + dimensions.padding[TOP] + dimensions.border[BOTTOM] + dimensions.padding[BOTTOM];
-            const height: number = outer[index] - before - (dimensions.margin[BOTTOM] ?? 0) - vertical;
-            placed.set(name, this.aligned(entry[2], dimensions, area.x + entry[1][0], starts[index] + before, height));
+            const height: number = outer[index] - before - (dimensions.margin[BOTTOM] ?? 0);
+            const x: number = area.x + entry[1][0];
+            const y: number = starts[index] + before;
+            if (entry[2] === undefined) {
+                placed.set(name, this.place(box, dimensions, x, y, entry[1][1], height));
+            } else {
+                placed.set(name, this.aligned(entry[2], dimensions, x, y, entry[1][1], height));
+            }
         }
     }
 
@@ -479,11 +507,10 @@ export class MarginBoxes {
     }
 
     private place(built: Built, dimensions: Dimensions, x: number, y: number, width: number, height: number): BoxFragment {
-        return this.aligned(this.laid(built.box, dimensions, width), dimensions, x, y, height - dimensions.border[TOP] - dimensions.padding[TOP]
-            - dimensions.border[BOTTOM] - dimensions.padding[BOTTOM]);
+        return this.aligned(this.laid(built.box, dimensions, width, height), dimensions, x, y, width, height);
     }
 
-    private laid(box: ElementBox, dimensions: Dimensions, width: number): BoxFragment {
+    private laid(box: ElementBox, dimensions: Dimensions, width: number, height: number): BoxFragment {
         const frame: number = this.sizes.frame(box.style);
         const border: [number, number, number, number] = [0, 0, 0, 0];
         const padding: [number, number, number, number] = [0, 0, 0, 0];
@@ -493,15 +520,17 @@ export class MarginBoxes {
             padding[side] = dimensions.padding[physical];
         }
         const sizes: UsedSizes = { border, padding };
-        const inner: number = width - dimensions.border[LEFT] - dimensions.padding[LEFT] - dimensions.border[RIGHT] - dimensions.padding[RIGHT];
+        // The lines of a vertical box run down the height of the box, so its inline size is the height less the edges above and
+        // below its content.
+        const inner: number = this.isTurned(box) ? height - dimensions.border[TOP] - dimensions.padding[TOP] - dimensions.border[BOTTOM] - dimensions.padding[BOTTOM]
+            : width - dimensions.border[LEFT] - dimensions.padding[LEFT] - dimensions.border[RIGHT] - dimensions.padding[RIGHT];
         return this.layout.marginBox(box, sizes, Math.max(0, inner));
     }
 
-    private aligned(fragment: BoxFragment, dimensions: Dimensions, x: number, y: number, height: number): BoxFragment {
+    private aligned(fragment: BoxFragment, dimensions: Dimensions, x: number, y: number, width: number, height: number): BoxFragment {
         // CSS Paged Media 3 §6: "On page-margin boxes, the vertical-align property behaves as specified for table cells", in
         // the vertical dimension, which CSS Inline 3 §4.2 gives by baseline-shift and alignment-baseline.
         const vertical: number = dimensions.border[TOP] + dimensions.padding[TOP] + dimensions.border[BOTTOM] + dimensions.padding[BOTTOM];
-        const content: number = fragment.blockSize - vertical;
         const values: Readonly<Record<string, CssValue>> = fragment.box.style.values;
         const shift: CssValue | undefined = values["baseline-shift"];
         const middle: CssValue | undefined = values["alignment-baseline"];
@@ -511,13 +540,47 @@ export class MarginBoxes {
         } else if (middle !== undefined && middle.kind === "ident" && middle.lower === "middle") {
             share = 0.5;
         }
-        const distance: number = (height - content) * share;
+        const room: number = Math.max(0, height - vertical);
+        if (!this.isTurned(fragment.box)) {
+            const distance: number = (room - (fragment.blockSize - vertical)) * share;
+            for (const child of fragment.children ?? []) {
+                (child as BoxFragment | LineFragment).block += distance;
+            }
+            fragment.inline = x;
+            fragment.block = y;
+            fragment.blockSize = room + vertical;
+            return fragment;
+        }
+        // The vertical dimension is the inline axis of a vertical box, so its content goes along the lines, from the end the
+        // lines start at, and the fragment, laid in its own axes, takes the physical sizes of the box.
+        let first: number = Number.POSITIVE_INFINITY;
+        let last: number = 0;
         for (const child of fragment.children ?? []) {
-            (child as BoxFragment | LineFragment).block += distance;
+            const span: readonly [number, number] = child.kind === "line" ? this.lineSpan(child) : [child.inline, child.inline + child.inlineSize];
+            first = Math.min(first, span[0]);
+            last = Math.max(last, span[1]);
+        }
+        // The lines keep their places relative to each other, so the block of them is what the alignment moves.
+        const toward: number = (this.sizes.frame(fragment.box.style) & BoxSizes.INLINE_REVERSED) !== 0 ? 1 - share : share;
+        const distance: number = first === Number.POSITIVE_INFINITY ? 0 : (room - (last - first)) * toward - first;
+        for (const child of fragment.children ?? []) {
+            (child as BoxFragment | LineFragment).inline = ((child as BoxFragment | LineFragment).inline ?? 0) + distance;
         }
         fragment.inline = x;
         fragment.block = y;
-        fragment.blockSize = Math.max(0, height) + vertical;
+        fragment.inlineSize = width;
+        fragment.blockSize = Math.max(vertical, height);
         return fragment;
+    }
+
+    private lineSpan(line: LineFragment): readonly [number, number] {
+        let first: number = Number.POSITIVE_INFINITY;
+        let last: number = 0;
+        for (const piece of line.pieces) {
+            first = Math.min(first, piece.inline);
+            last = Math.max(last, piece.inline + piece.inlineSize);
+        }
+        const offset: number = line.inline ?? 0;
+        return [offset + (first === Number.POSITIVE_INFINITY ? 0 : first), offset + last];
     }
 }

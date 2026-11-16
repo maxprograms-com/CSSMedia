@@ -200,11 +200,14 @@ export class WhiteSpaceProcessor {
                 this.collect(child);
             } else if (level.hidden.has(child)) {
                 this.resolve(level.container, level.container.style, false, false);
+            } else if (level.separate) {
+                // An inter-character annotation is an atomic inline, so its own content is the text of a formatting context of its own.
+                for (const content of child.children) {
+                    this.collect(content);
+                }
+                this.resolve(child, child.style, false, false);
             } else {
                 this.collectInline(child);
-                if (level.separate) {
-                    this.resolve(level.container, level.container.style, false, false);
-                }
             }
         }
         this.resolve(level.container, level.container.style, false, false);
@@ -275,9 +278,13 @@ export class WhiteSpaceProcessor {
     private collectRuby(ruby: ElementBox): void {
         const horizontal: boolean = this.keyword("horizontal-tb", ruby.style.values["writing-mode"]) === "horizontal-tb";
         const children: ReadonlyArray<BoxNode> = ruby.children;
+        let empty: boolean = false;
         for (let index: number = 0; index < children.length; index++) {
             const child: BoxNode = children[index];
             const internal: string | undefined = this.internalOf(child);
+            if (internal !== "ruby-text-container") {
+                empty = false;
+            }
             if (internal === "ruby-base-container") {
                 // CSS Ruby 1 §2.3.1: the annotation containers that follow a base container are the levels of its segment.
                 let next: number = index + 1;
@@ -300,6 +307,11 @@ export class WhiteSpaceProcessor {
                 }
             } else if (internal === "ruby-text-container") {
                 if (this.pairing.baseContainerOf(ruby, index) === undefined) {
+                    const between: boolean = horizontal && this.keyword("alternate", (child as ElementBox).style.values["ruby-position"]) === "inter-character";
+                    if (!empty && !between) {
+                        this.addEmptyBase(ruby);
+                        empty = true;
+                    }
                     this.scheduleLevel(child as ElementBox, horizontal);
                     this.addSpliced(child);
                 }
@@ -309,6 +321,16 @@ export class WhiteSpaceProcessor {
                 this.collect(child);
             }
         }
+    }
+
+    private addEmptyBase(ruby: ElementBox): void {
+        // CSS Ruby 1 §2.3.1: "an anonymous, empty ruby base container is assumed to exist before" an annotation container with
+        // none. It is a space that keeps its place, even at the end of a line, and the ruby code gives it no advance of its own.
+        const kept: CssValue = { kind: "ident", name: "break-spaces", lower: "break-spaces" };
+        const style: ComputedStyle = { ...ruby.style, values: { ...ruby.style.values, "white-space-collapse": kept } };
+        const base: TextSequence = { kind: "text", text: " ", style, emptyBase: true };
+        this.items.push({ kind: "text", node: base });
+        this.addCharacters(base, BREAK_SPACES);
     }
 
     private scheduleLevel(container: ElementBox, horizontal: boolean, baseContainer?: ElementBox): void {
