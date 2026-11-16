@@ -33,7 +33,6 @@ import type { FontMatcher, FontRequest } from "./FontMatcher.js";
 import type { FontMetrics } from "./FontMetrics.js";
 import { FontSynthesis } from "./FontSynthesis.js";
 import { LineBreaker } from "./LineBreaker.js";
-import type { TextCombination } from "./TextCombination.js";
 import { TextTransformer } from "./TextTransformer.js";
 import type { UnicodeBidi } from "./UnicodeBidi.js";
 
@@ -72,7 +71,6 @@ export class TextShaper {
     private readonly features: FontFeatures;
     private readonly bidi: UnicodeBidi;
     private readonly synthesis: FontSynthesis;
-    private readonly combination: TextCombination;
     private readonly transformer: TextTransformer = new TextTransformer();
     private readonly graphemes: Intl.Segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
     private readonly shaper: GlyphShaper = new GlyphShaper();
@@ -83,13 +81,12 @@ export class TextShaper {
     private readonly styles: WeakMap<Values, Map<FontInstance, FontFeatureSet>> = new WeakMap<Values, Map<FontInstance, FontFeatureSet>>();
     private readonly uprightStyles: WeakMap<Values, Map<FontInstance, FontFeatureSet>> = new WeakMap<Values, Map<FontInstance, FontFeatureSet>>();
 
-    constructor(matcher: FontMatcher, metrics: FontMetrics, features: FontFeatures, bidi: UnicodeBidi, synthesis: FontSynthesis, combination: TextCombination) {
+    constructor(matcher: FontMatcher, metrics: FontMetrics, features: FontFeatures, bidi: UnicodeBidi, synthesis: FontSynthesis) {
         this.matcher = matcher;
         this.metrics = metrics;
         this.features = features;
         this.bidi = bidi;
         this.synthesis = synthesis;
-        this.combination = combination;
     }
 
     shape(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, runs: Array<TextRun>,
@@ -109,7 +106,7 @@ export class TextShaper {
             }
             // CSS Writing Modes 4 §9.1.3.1: in combined text of more than one unit "any full-width typographic character
             // units should first be converted to their non-full-width equivalents".
-            const narrow: boolean = run.combined && this.combination.units(codepoints, combinations[combination]) > 1;
+            const narrow: boolean = run.combined && combinations[combination].units > 1;
             if (run.combined) {
                 sizes.set(run, run.size);
             }
@@ -269,8 +266,7 @@ export class TextShaper {
             const node: TextSequence = items[item].node as TextSequence;
             const size: CssValue | undefined = node.style.values["font-size"];
             const em: number = size !== undefined && size.kind === "length" ? size.px : 0;
-            const units: number = this.combination.units(codepoints, combination);
-            const tag: string | undefined = WIDTH_VARIANTS.get(units);
+            const tag: string | undefined = WIDTH_VARIANTS.get(combination.units);
             if (tag !== undefined && this.advanceOf(runs, first, last) > em) {
                 // "OpenType implementations must use width-specific variants (OpenType features hwid/twid/qwid ...) to
                 // compress text in cases where those variants are available for all typographic character units".

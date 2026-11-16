@@ -28,6 +28,7 @@ import { TrueTypeSubsetter } from "./TrueTypeSubsetter.js";
 interface EncodingPart {
     resource: FontResource;
     glyphs: Array<number>;
+    texts: Array<string>;
 }
 
 const CODES: number = 256;
@@ -54,10 +55,9 @@ export class StandardPdfFont extends PdfFont {
     private readonly syntax: PdfSyntax = new PdfSyntax();
     private readonly parts: Array<EncodingPart> = [];
     private readonly placed: Map<number, readonly [number, number]> = new Map<number, readonly [number, number]>();
-    private readonly texts: Map<number, string> = new Map<number, string>();
+    private readonly variants: Map<string, readonly [number, number]> = new Map<string, readonly [number, number]>();
     private readonly missingCodes: Map<string, number> = new Map<string, number>([["", 1]]);
     private missing?: FontResource;
-    private missingCode: number = 1;
 
     constructor(file: PdfFile, instance: FontInstance, data: StandardFontData) {
         super();
@@ -66,51 +66,20 @@ export class StandardPdfFont extends PdfFont {
         this.data = data;
     }
 
-    show(glyphs: ArrayLike<number>, start: number, end: number): Array<FontRun> {
+    show(glyph: number, text: string): FontRun {
         // ISO 32000-2 §9.6.5.1: a simple font has one-byte codes, so the glyphs of a document are given codes in the order
         // they are first shown, and every 256 of them make another font dictionary with its own encoding.
-        const runs: Array<FontRun> = [];
-        let part: number = -1;
-        let codes: string = "";
-        for (let index: number = start; index < end; index++) {
-            if (glyphs[index] === 0) {
-                if (codes.length > 0) {
-                    runs.push([this.parts[part].resource, "<" + codes + ">"]);
-                    codes = "";
-                }
-                part = -1;
-                runs.push([this.missingResource(), "<" + this.missingCode.toString(16).toUpperCase().padStart(4, "0") + ">"]);
-                continue;
-            }
-            const [where, code]: readonly [number, number] = this.place(glyphs[index]);
-            if (where !== part && codes.length > 0) {
-                runs.push([this.parts[part].resource, "<" + codes + ">"]);
-                codes = "";
-            }
-            part = where;
-            codes += code.toString(16).toUpperCase().padStart(2, "0");
-        }
-        if (codes.length > 0) {
-            runs.push([this.parts[part].resource, "<" + codes + ">"]);
-        }
-        return runs;
-    }
-
-    use(glyph: number, text: string): void {
         if (glyph === 0) {
-            // ISO 32000-2 §9.10.3: one square stands for every missing character, so each gets a code of its own for its text.
-            let code: number | undefined = this.missingCodes.get(text);
-            if (code === undefined) {
-                code = this.missingCodes.size < LAST_CID ? this.missingCodes.size + 1 : 1;
-                this.missingCodes.set(text, code);
+            // §9.10.3: one square stands for every missing character, so each gets a code of its own for its text.
+            let missing: number | undefined = this.missingCodes.get(text);
+            if (missing === undefined) {
+                missing = this.missingCodes.size < LAST_CID ? this.missingCodes.size + 1 : 1;
+                this.missingCodes.set(text, missing);
             }
-            this.missingCode = code;
-            return;
+            return [this.missingResource(), "<" + missing.toString(16).toUpperCase().padStart(4, "0") + ">"];
         }
-        const known: string | undefined = this.texts.get(glyph);
-        if (known === undefined || known.length === 0) {
-            this.texts.set(glyph, text);
-        }
+        const [where, code]: readonly [number, number] = this.place(glyph, text);
+        return [this.parts[where].resource, "<" + code.toString(16).toUpperCase().padStart(2, "0") + ">"];
     }
 
     width(glyph: number): number {
@@ -131,7 +100,7 @@ export class StandardPdfFont extends PdfFont {
         for (const part of this.parts) {
             const names: Array<string> = part.glyphs.map((glyph: number) => this.syntax.name(this.data.glyphNames[glyph - 1]));
             const widths: Array<number> = part.glyphs.map((glyph: number) => this.width(glyph));
-            const unicode: Array<readonly [number, string]> = part.glyphs.map((glyph: number, code: number): readonly [number, string] => [code, this.texts.get(glyph) ?? ""]);
+            const unicode: Array<readonly [number, string]> = part.texts.map((text: string, code: number): readonly [number, string] => [code, text]);
             const toUnicode: number = this.file.addStream("", this.unicodeMap(unicode, 1), true);
             this.file.set(part.resource.object, "<< /Type /Font /Subtype /Type1 /BaseFont " + this.syntax.name(this.data.name) + " /FirstChar 0 /LastChar "
                 + (part.glyphs.length - 1) + " /Widths [" + this.syntax.numbers(widths) + "] /FontDescriptor " + this.syntax.reference(descriptor)
@@ -139,20 +108,45 @@ export class StandardPdfFont extends PdfFont {
         }
     }
 
-    private place(glyph: number): readonly [number, number] {
-        const known: readonly [number, number] | undefined = this.placed.get(glyph);
-        if (known !== undefined) {
-            return known;
+    private place(glyph: number, text: string): readonly [number, number] {
+        // A glyph that more than one character uses, such as the space for the no-break space, has a code for each text, since
+        // a ToUnicode CMap gives one text to a code; the encoding names the same glyph for all of them.
+        const first: readonly [number, number] | undefined = this.placed.get(glyph);
+        if (first === undefined) {
+            const position: readonly [number, number] = this.append(glyph, text);
+            this.placed.set(glyph, position);
+            return position;
         }
+        if (text.length === 0) {
+            return first;
+        }
+        const known: string = this.parts[first[0]].texts[first[1]];
+        if (known.length === 0) {
+            this.parts[first[0]].texts[first[1]] = text;
+            return first;
+        }
+        if (known === text) {
+            return first;
+        }
+        const key: string = glyph + "|" + text;
+        let variant: readonly [number, number] | undefined = this.variants.get(key);
+        if (variant === undefined) {
+            variant = this.append(glyph, text);
+            this.variants.set(key, variant);
+        }
+        return variant;
+    }
+
+    private append(glyph: number, text: string): readonly [number, number] {
         let part: EncodingPart | undefined = this.parts[this.parts.length - 1];
         if (part === undefined || part.glyphs.length === CODES) {
             const object: number = this.file.reserve();
-            part = { resource: { key: "F" + object, object }, glyphs: [] };
+            part = { resource: { key: "F" + object, object }, glyphs: [], texts: [] };
             this.parts.push(part);
         }
         const position: readonly [number, number] = [this.parts.length - 1, part.glyphs.length];
         part.glyphs.push(glyph);
-        this.placed.set(glyph, position);
+        part.texts.push(text);
         return position;
     }
 

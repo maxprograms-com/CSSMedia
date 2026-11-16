@@ -56,6 +56,8 @@ interface PlacedGlyph {
     font: FontInstance;
     size: number;
     hyphen?: boolean;
+    cluster?: number;
+    actual?: string;
 }
 
 interface Span {
@@ -75,6 +77,7 @@ const DECORATION: string = "text-decoration-";
 const MATCH_TEXT: string = "match-text";
 const SOFT_HYPHEN: string = "\u00AD";
 const SPAN: string = "Span";
+const HYPHEN_SPAN: number = -1;
 const FILL: number = 0;
 const STROKE: number = 1;
 const INVISIBLE: number = 3;
@@ -96,6 +99,7 @@ export class TextPainter {
     private readonly metrics: FontMetrics;
     private readonly viewport: Size;
     private readonly syntax: PdfSyntax = new PdfSyntax();
+    private clusters: number = 0;
     private readonly outlines: GlyphOutlines = new GlyphOutlines();
     private readonly geometry: PathGeometry = new PathGeometry();
     private readonly colorGlyphs: ColorGlyphPainter;
@@ -826,12 +830,18 @@ export class TextPainter {
             let x: number = pen + (reversed ? after : before) - (trimmed ? natural - used : 0);
             const content: string = this.clusterText(text, position, firsts, index, to - from);
             const count: number = firsts[index + 1] - firsts[index];
+            const cluster: number | undefined = count > 1 && content.length > 0 ? this.clusters++ : undefined;
             for (let order: number = 0; order < count; order++) {
                 const current: number = reversed ? firsts[index + 1] - 1 - order : firsts[index] + order;
-                placed.push({
+                const glyph: PlacedGlyph = {
                     x: x + (text.xOffsets?.[current] ?? 0), y: baseline - (text.yOffsets?.[current] ?? 0), glyph: text.glyphs[current],
                     text: current === firsts[index] ? content : "", font: run.font, size: run.size
-                });
+                };
+                if (cluster !== undefined) {
+                    glyph.cluster = cluster;
+                    glyph.actual = content;
+                }
+                placed.push(glyph);
                 x += text.advances[current];
             }
             pen += used;
@@ -860,8 +870,16 @@ export class TextPainter {
         const reversed: boolean = (run.level & 1) === 1;
         for (let copyIndex: number = 0; copyIndex < count; copyIndex++) {
             const start: number = reversed ? left + copyIndex * width : left + piece.inlineSize - (count - copyIndex) * width;
+            const clusters: Map<number, number> = new Map<number, number>();
             for (const placed of copy) {
-                glyphs.push({ ...placed, x: placed.x + start });
+                const glyph: PlacedGlyph = { ...placed, x: placed.x + start };
+                if (placed.cluster !== undefined) {
+                    // Each copy of the leader string is text of its own, so its clusters are too.
+                    const renamed: number = clusters.get(placed.cluster) ?? this.clusters++;
+                    clusters.set(placed.cluster, renamed);
+                    glyph.cluster = renamed;
+                }
+                glyphs.push(glyph);
             }
         }
         return glyphs;
@@ -900,7 +918,7 @@ export class TextPainter {
         let size: number = 0;
         let pen: number = Number.NaN;
         let line: number = Number.NaN;
-        let marked: boolean = false;
+        let marked: number | undefined;
         let face: FontInstance | undefined;
         let slant: number = 0;
         const flush: () => void = (): void => {
@@ -919,14 +937,18 @@ export class TextPainter {
             pdf.content.textRenderingMode(mode);
         }
         for (const placed of glyphs) {
-            if ((placed.hyphen === true) !== marked) {
+            // §14.9.4: the glyphs of one cluster, such as the two S that stand for a ß, are the replacement text of the cluster
+            // together, since a code gives one text and the later glyphs would give theirs again.
+            const wanted: number | undefined = placed.hyphen === true ? HYPHEN_SPAN : (replica ? undefined : placed.cluster);
+            if (wanted !== marked) {
                 flush();
-                if (marked) {
+                if (marked !== undefined) {
                     pdf.content.endMarked();
-                } else {
-                    pdf.content.beginMarked(SPAN, "<< /ActualText " + this.syntax.textString(SOFT_HYPHEN) + " >>");
                 }
-                marked = !marked;
+                if (wanted !== undefined) {
+                    pdf.content.beginMarked(SPAN, "<< /ActualText " + this.syntax.textString(placed.hyphen === true ? SOFT_HYPHEN : placed.actual ?? "") + " >>");
+                }
+                marked = wanted;
             }
             if (placed.font !== face) {
                 // CSS Fonts 4 §2.8: a synthesized oblique face is the glyphs sheared.
@@ -939,8 +961,7 @@ export class TextPainter {
                 }
             }
             const font: PdfFont = this.fonts.font(placed.font, false);
-            font.use(placed.glyph, placed.text);
-            const shown: FontRun = font.show([placed.glyph], 0, 1)[0];
+            const shown: FontRun = font.show(placed.glyph, placed.text);
             if (Math.abs(placed.y - line) > TOLERANCE || Number.isNaN(pen)) {
                 flush();
                 pdf.content.textMatrix(1, 0, slant, -1, placed.x, placed.y);
@@ -961,7 +982,7 @@ export class TextPainter {
             pen = placed.x + font.width(placed.glyph) * size / UNITS;
         }
         flush();
-        if (marked) {
+        if (marked !== undefined) {
             pdf.content.endMarked();
         }
         pdf.content.endText();

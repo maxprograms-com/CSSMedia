@@ -33,6 +33,7 @@ import { DisplayTypes } from "../pdf/DisplayTypes.js";
 import type { ElementUnits } from "../pdf/ElementUnits.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
 import { MATH_VARIANTS } from "./generated/MathVariants.js";
+import type { InFlow } from "./InFlow.js";
 import { LengthResolver } from "../pdf/LengthResolver.js";
 import { SelectorMatcher } from "../pdf/SelectorMatcher.js";
 import type { StyleInput } from "../pdf/StyleComputer.js";
@@ -189,6 +190,8 @@ const MATH_WHITE_SPACE_CHARACTER: RegExp = /^[ \t\n\r]$/;
 const MATH_NUMBER: RegExp = /^-?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$/;
 const CARRIES_MULTIPLIER: number = 0.6;
 const SCRIPT_MIN_SIZE: string = "8pt";
+const TWO_CHILDREN: number = 2;
+const THREE_CHILDREN: number = 3;
 
 export class MathMarkup {
 
@@ -200,6 +203,7 @@ export class MathMarkup {
 
     private readonly prefixes: ReadonlyMap<string, string>;
     private readonly rootNamespace?: string;
+    private flow?: InFlow;
     private readonly metrics: FontMetrics;
     private readonly displays: DisplayTypes = new DisplayTypes();
     private readonly lengths: LengthResolver = new LengthResolver();
@@ -395,15 +399,25 @@ export class MathMarkup {
             || (GROUPING_ELEMENTS.has(local) && this.shown(element).every((child: SourceElement) => this.isSpaceLike(child))));
     }
 
+    inFlow(flow: InFlow): void {
+        this.flow = flow;
+    }
+
+    private flowChildren(element: SourceElement): Array<SourceElement> {
+        return this.flow === undefined ? element.getChildren().filter((child: SourceElement) => this.isMath(child))
+            : this.flow.children(element, (child: SourceElement) => this.isMath(child));
+    }
+
     private shown(element: SourceElement): Array<SourceElement> {
-        // The MathML children that are rendered: the first of semantics (MathML Core §3.8) and the selected one of maction.
-        const children: Array<SourceElement> = element.getChildren().filter((child: SourceElement) => this.isMath(child));
+        // The MathML children that are rendered: the first of semantics (MathML Core §3.8) and the selected one of maction, and
+        // only those in flow, since a child with display none generates no box.
+        const children: Array<SourceElement> = this.flowChildren(element);
         if (element.getLocalName() === "semantics") {
             return children.slice(0, 1);
         }
         if (element.getLocalName() === "maction") {
             const chosen: SourceElement | undefined = element.getChildren()[this.selected(element) - 1];
-            return chosen !== undefined && this.isMath(chosen) ? [chosen] : [];
+            return chosen !== undefined && children.includes(chosen) ? [chosen] : [];
         }
         return children;
     }
@@ -593,9 +607,14 @@ export class MathMarkup {
         if (explicit !== undefined) {
             return explicit;
         }
+        // MathML Core §3.4.2.1: the scripts are the second and third in-flow children, and with another number of them the
+        // element is laid out as an mrow, which has no scripts.
+        const children: Array<SourceElement> = this.flowChildren(scripted);
+        if (children.length !== (scripted.getLocalName() === "munderover" ? THREE_CHILDREN : TWO_CHILDREN)) {
+            return false;
+        }
         const position: number = attribute === "accent" && scripted.getLocalName() === "munderover" ? 2 : 1;
-        const script: SourceElement | undefined = scripted.getChildren()[position];
-        const core: SourceElement | undefined = script === undefined ? undefined : this.coreOperator(script);
+        const core: SourceElement | undefined = this.coreOperator(children[position]);
         return core !== undefined && this.boolean(this.scopedAttribute(core, "accent")) === true;
     }
 
@@ -607,7 +626,10 @@ export class MathMarkup {
         if (parent === undefined || name === undefined || !UNDER_OVER.has(name)) {
             return;
         }
-        const index: number = parent.getChildren().indexOf(element);
+        const index: number = this.flowChildren(parent).indexOf(element);
+        if (index < 0) {
+            return;
+        }
         const under: boolean = name !== "mover" && this.boolean(parent.getAttributeValue("accentunder")) === undefined && this.accented(parent, "accentunder");
         const over: boolean = name !== "munder" && this.boolean(parent.getAttributeValue("accent")) === undefined && this.accented(parent, "accent");
         if ((index === 1 && (name === "mover" ? over : under)) || (index === 2 && name === "munderover" && over)) {

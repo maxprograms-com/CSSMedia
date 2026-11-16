@@ -874,7 +874,9 @@ export class PathGeometry {
         let pa: Point = this.bezierAt(a, s);
         let pb: Point = this.bezierAt(b, t);
         let distance: number = Math.hypot(pa[0] - pb[0], pa[1] - pb[1]);
-        while (distance > 0) {
+        // Below the resolution of the coordinates a step only follows rounding noise, which can shrink the distance for ever.
+        const resolution: number = Number.EPSILON * Math.max(1, Math.abs(pa[0]), Math.abs(pa[1]), Math.abs(pb[0]), Math.abs(pb[1]));
+        while (distance > resolution) {
             const da: Point = this.bezierDerivative(a, s);
             const db: Point = this.bezierDerivative(b, t);
             const determinant: number = db[0] * da[1] - da[0] * db[1];

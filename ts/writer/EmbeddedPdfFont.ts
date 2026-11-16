@@ -37,6 +37,8 @@ const ITALIC: number = 64;
 const ITALIC_SELECTION: number = 0x0001;
 const OBLIQUE_SELECTION: number = 0x0200;
 const NAME_EXCLUDED: RegExp = /[^\x21-\x7E]|[()<>[\]{}/%]/g;
+const LAST_CODE: number = 0xFFFF;
+const CMAP_BLOCK: number = 100;
 
 export class EmbeddedPdfFont extends PdfFont {
 
@@ -48,6 +50,9 @@ export class EmbeddedPdfFont extends PdfFont {
     private readonly syntax: PdfSyntax = new PdfSyntax();
     private readonly used: Set<number> = new Set<number>([0]);
     private readonly texts: Map<number, string> = new Map<number, string>();
+    private readonly firsts: Map<number, number> = new Map<number, number>();
+    private readonly variants: Map<string, number> = new Map<string, number>();
+    private readonly targets: Array<number> = [];
     private readonly compact?: CompactOutlines;
     private readonly cids?: Uint32Array;
 
@@ -77,23 +82,78 @@ export class EmbeddedPdfFont extends PdfFont {
         }
     }
 
-    show(glyphs: ArrayLike<number>, start: number, end: number): Array<FontRun> {
-        // ISO 32000-2 §9.7.5.2: with Identity-H and Identity-V each code is two bytes and is the CID itself; §9.7.4.2:
+    show(glyph: number, text: string): FontRun {
+        // ISO 32000-2 §9.7.5.2: each code is two bytes; the encoding CMap of the font gives the CID of each code, and §9.7.4.2:
         // for TrueType outlines and for a CFF font without CIDs the CID is the glyph index.
-        let codes: string = "";
-        for (let index: number = start; index < end; index++) {
-            const glyph: number = glyphs[index];
-            this.used.add(glyph);
-            codes += this.code(glyph).toString(16).toUpperCase().padStart(4, "0");
-        }
-        return codes.length === 0 ? [] : [[this.resource, "<" + codes + ">"]];
+        this.used.add(glyph);
+        return [this.resource, "<" + this.codeOf(glyph, text).toString(16).toUpperCase().padStart(4, "0") + ">"];
     }
 
-    use(glyph: number, text: string): void {
-        const known: string | undefined = this.texts.get(glyph);
-        if (known === undefined || known.length === 0) {
-            this.texts.set(glyph, text);
+    private codeOf(glyph: number, text: string): number {
+        // A glyph that more than one character uses, such as the space for the no-break space, has a code for each text, since a
+        // ToUnicode CMap gives one text to a code. The codes are given in the order of use, because a font such as Noto Sans CJK
+        // has a glyph for every CID, so the CIDs themselves leave no code free for another text.
+        const first: number | undefined = this.firsts.get(glyph);
+        if (first === undefined) {
+            const created: number = this.allocate(glyph, text);
+            this.firsts.set(glyph, created);
+            return created;
         }
+        if (text.length === 0) {
+            return first;
+        }
+        const known: string | undefined = this.texts.get(first);
+        if (known === undefined) {
+            this.texts.set(first, text);
+            return first;
+        }
+        if (known === text) {
+            return first;
+        }
+        const key: string = glyph + "|" + text;
+        let code: number | undefined = this.variants.get(key);
+        if (code === undefined) {
+            code = this.allocate(glyph, text);
+            this.variants.set(key, code);
+        }
+        return code;
+    }
+
+    private allocate(glyph: number, text: string): number {
+        const code: number = this.targets.length;
+        if (code > LAST_CODE) {
+            throw new Error("The font " + this.instance.typeface.names.postScriptName + " has no code left for another glyph or another text of a glyph");
+        }
+        this.targets.push(this.code(glyph));
+        if (text.length > 0) {
+            this.texts.set(code, text);
+        }
+        return code;
+    }
+
+    private encodingCMap(name: string): Buffer {
+        // ISO 32000-2 §9.7.5.3: an embedded CMap with a cidrange for each run of codes whose CIDs follow each other; Adobe
+        // Technical Note #5014 allows at most 100 mappings in each block.
+        const ranges: Array<readonly [number, number, number]> = [];
+        for (let code: number = 0; code < this.targets.length; code++) {
+            const last: readonly [number, number, number] | undefined = ranges[ranges.length - 1];
+            if (last !== undefined && last[1] + 1 === code && this.targets[code] === last[2] + (code - last[0])) {
+                ranges[ranges.length - 1] = [last[0], code, last[2]];
+            } else {
+                ranges.push([code, code, this.targets[code]]);
+            }
+        }
+        let body: string = "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> def\n"
+            + "/CMapName /" + name + " def\n/CMapType 1 def\n/WMode " + (this.vertical ? 1 : 0) + " def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n";
+        for (let start: number = 0; start < ranges.length; start += CMAP_BLOCK) {
+            const block: ReadonlyArray<readonly [number, number, number]> = ranges.slice(start, start + CMAP_BLOCK);
+            body += block.length + " begincidrange\n";
+            for (const [from, to, cid] of block) {
+                body += "<" + from.toString(16).toUpperCase().padStart(4, "0") + "> <" + to.toString(16).toUpperCase().padStart(4, "0") + "> " + cid + "\n";
+            }
+            body += "endcidrange\n";
+        }
+        return Buffer.from(body + "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n", "latin1");
     }
 
     width(glyph: number): number {
@@ -126,17 +186,18 @@ export class EmbeddedPdfFont extends PdfFont {
             program = "/FontFile3 " + this.syntax.reference(this.file.addStream("/Subtype /CIDFontType0C", cff, true));
             subtype = "CIDFontType0";
         }
-        const cmap: string = this.vertical ? "Identity-V" : "Identity-H";
+        const cmap: string = "CSSMedia-" + this.tag + (this.vertical ? "-V" : "-H");
         const descriptor: number = this.file.add(this.descriptor(name, program));
         const descendant: number = this.file.add("<< /Type /Font /Subtype /" + subtype + " /BaseFont " + this.syntax.name(name)
             + " /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor " + this.syntax.reference(descriptor)
             + " /DW " + this.syntax.number(this.width(0)) + " /W [" + this.widths() + "]" + (this.vertical ? " /W2 [" + this.verticalWidths() + "]" : "")
             + (subtype === "CIDFontType2" ? " /CIDToGIDMap /Identity" : "") + " >>");
-        const unicode: Array<readonly [number, string]> = [...this.texts].map((entry: [number, string]): readonly [number, string] => [this.code(entry[0]), entry[1]]);
-        const toUnicode: number = this.file.addStream("", this.unicodeMap(unicode, 2), true);
+        const toUnicode: number = this.file.addStream("", this.unicodeMap([...this.texts], 2), true);
+        const encoding: number = this.file.addStream("/Type /CMap /CMapName /" + cmap + " /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /WMode "
+            + (this.vertical ? 1 : 0), this.encodingCMap(cmap), true);
         // §9.7.6.1, Table 119: the name of the Type 0 font is that of a Type 2 CIDFont, and that of a Type 0 one with the CMap.
         const baseFont: string = subtype === "CIDFontType2" ? name : name + "-" + cmap;
-        this.file.set(this.resource.object, "<< /Type /Font /Subtype /Type0 /BaseFont " + this.syntax.name(baseFont) + " /Encoding /" + cmap + " /DescendantFonts ["
+        this.file.set(this.resource.object, "<< /Type /Font /Subtype /Type0 /BaseFont " + this.syntax.name(baseFont) + " /Encoding " + this.syntax.reference(encoding) + " /DescendantFonts ["
             + this.syntax.reference(descendant) + "] /ToUnicode " + this.syntax.reference(toUnicode) + " >>");
     }
 

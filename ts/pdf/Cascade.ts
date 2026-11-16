@@ -72,6 +72,7 @@ export class Cascade {
     private readonly pseudoElements: Set<string> = new Set<string>();
     private readonly hints?: (element: SourceElement) => ReadonlyArray<Declaration>;
     private readonly attached?: (element: SourceElement) => ReadonlyArray<Declaration>;
+    private hintsBlind: boolean = false;
 
     constructor(root: SourceElement, prefixes: ReadonlyMap<string, string>, documentUri: string, styleRules: ReadonlyArray<StyleRule>,
         userAgentRules: ReadonlyArray<StyleRule>, computer: StyleComputer, hints?: (element: SourceElement) => ReadonlyArray<Declaration>,
@@ -150,6 +151,18 @@ export class Cascade {
             this.matcher.linksBlind = links;
             this.matcher.columnsBlind = columns;
             this.matcher.languageBlind = language;
+        }
+    }
+
+    flowDeclarations(element: SourceElement): Map<string, DeclaredValue> {
+        // Whether a child is in flow comes from the properties that decide its box, cascaded without the presentational hints,
+        // since a hint of the language is itself derived from which children are in flow.
+        const blind: boolean = this.hintsBlind;
+        this.hintsBlind = true;
+        try {
+            return this.collect(element, () => false, undefined, (property: string) => TableColumns.PROPERTIES.has(property) || property.startsWith("--"));
+        } finally {
+            this.hintsBlind = blind;
         }
     }
 
@@ -232,7 +245,7 @@ export class Cascade {
         }
         // CSS Cascade 5 §6.5: presentational hints are rules of an origin of their own between the user and the author origins;
         // §6.1: the declarations attached to the element take precedence over the rules of their importance.
-        for (const [origin, attached, all] of [["presentational-hint", false, this.hints(element)], ["author", true, this.attached(element)]] as
+        for (const [origin, attached, all] of [["presentational-hint", false, this.hintsBlind ? [] : this.hints(element)], ["author", true, this.attached(element)]] as
             ReadonlyArray<readonly [Origin, boolean, ReadonlyArray<Declaration>]>) {
             const declarations: ReadonlyArray<Declaration> = wanted === undefined ? all : all.filter((declaration: Declaration) => wanted(declaration.property));
             const layer: number = attached ? ATTACHED_LAYER : 0;

@@ -50,6 +50,7 @@ import { WhiteSpaceProcessor } from "../pdf/WhiteSpaceProcessor.js";
 import type { ColorSpaceResource } from "../writer/PdfColorSpaces.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { ImageResource, PageRectangle, PdfPage } from "../writer/PdfPage.js";
+import { InFlow } from "./InFlow.js";
 import { MathBoxes } from "./MathBoxes.js";
 import { MathLayout } from "./MathLayout.js";
 import type { MathElement } from "./MathMarkup.js";
@@ -121,6 +122,7 @@ export class MathImage implements ImageFormat {
             (element: SourceElement): ReadonlyArray<Declaration> => markup.hints(element),
             (element: SourceElement): ReadonlyArray<Declaration> => markup.attachedDeclarations(element),
             (element: SourceElement): ReadonlyArray<string> | undefined => markup.classes(element));
+        markup.inFlow(new InFlow(cascade, computer));
         return [markup, cascade, computer];
     }
 

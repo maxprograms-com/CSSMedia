@@ -135,6 +135,7 @@ export interface Combination {
     end: number;
     level: number;
     scale: number;
+    units: number;
 }
 
 export interface InlineText {

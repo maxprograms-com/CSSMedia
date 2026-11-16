@@ -25,6 +25,7 @@ import { VerticalOrientation } from "./VerticalOrientation.js";
 type Values = Readonly<Record<string, CssValue>>;
 
 const SPACE: number = 0x20;
+const FORCED_BREAKS: ReadonlySet<number> = new Set<number>([0x0A, 0x2028, 0x2029]);
 const ALL: number = 0;
 const DEFAULT_DIGITS: number = 2;
 
@@ -33,7 +34,7 @@ export class TextCombination {
     private readonly vertical: VerticalOrientation = new VerticalOrientation();
     private readonly graphemes: Intl.Segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 
-    find(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, trimmed: Array<number>): Array<Combination> {
+    find(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, collapsedSpaces: ReadonlyArray<number>, trimmed: Array<number>): Array<Combination> {
         // CSS Writing Modes 4 §9.1: the property "only has an effect in vertical writing modes", and §9.1.1: it "can only
         // combine plain text: consecutive typographic character units that are not interrupted by a box boundary".
         const combinations: Array<Combination> = [];
@@ -49,7 +50,7 @@ export class TextCombination {
                 continue;
             }
             if (digits === ALL) {
-                this.addAll(items, starts, codepoints, index, values, trimmed, combinations);
+                this.addAll(items, starts, codepoints, index, values, collapsedSpaces, trimmed, combinations);
                 continue;
             }
             const wide: boolean = this.isFullWidth(values);
@@ -65,7 +66,7 @@ export class TextCombination {
                 // the specified integer"
                 const continued: boolean = (position === start && this.continues(items, starts, codepoints, index, -1)) || (last + 1 === end && this.continues(items, starts, codepoints, index, 1));
                 if (last - position < digits && !continued) {
-                    combinations.push({ start: position, end: last + 1, level: 0, scale: 1 });
+                    combinations.push({ start: position, end: last + 1, level: 0, scale: 1, units: last + 1 - position });
                 }
                 position = last;
             }
@@ -73,8 +74,8 @@ export class TextCombination {
         return combinations;
     }
 
-    private addAll(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, index: number, values: Values, trimmed: Array<number>,
-        combinations: Array<Combination>): void {
+    private addAll(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, index: number, values: Values, collapsedSpaces: ReadonlyArray<number>,
+        trimmed: Array<number>, combinations: Array<Combination>): void {
         // §9.1: all combines "all consecutive typographic character units within the box"; §9.1.2: white space at the start
         // and at the end of the combined text "is processed as at the start/end of such an inline block".
         if (this.continues(items, starts, codepoints, index, -1) || this.continues(items, starts, codepoints, index, 1)) {
@@ -97,7 +98,7 @@ export class TextCombination {
                 trimmed.push(position);
             }
         }
-        combinations.push({ start: starts[index], end: starts[index + 1], level: 0, scale: 1 });
+        combinations.push({ start: starts[index], end: starts[index + 1], level: 0, scale: 1, units: this.unitsIn(codepoints, start, end, collapsedSpaces) });
     }
 
     private continues(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: ReadonlyArray<number>, index: number, step: number): boolean {
@@ -123,17 +124,36 @@ export class TextCombination {
         return false;
     }
 
-    units(codepoints: ReadonlyArray<number>, combination: Combination): number {
-        // §9.1.3: "the number of typographic character units ≠ number of Unicode codepoints".
+    private unitsIn(codepoints: ReadonlyArray<number>, start: number, end: number, collapsedSpaces: ReadonlyArray<number>): number {
+        // §9.1.3: "the number of typographic character units ≠ number of Unicode codepoints". A space that was collapsed has no
+        // advance and is not one, a preserved space is, and §9.1.2 has the composition ignore "any forced line breaks".
         let text: string = "";
-        for (let position: number = combination.start; position < combination.end; position++) {
-            text += codepoints[position] === SPACE ? "" : String.fromCodePoint(codepoints[position]);
+        for (let position: number = start; position < end; position++) {
+            const code: number = codepoints[position];
+            text += FORCED_BREAKS.has(code) || (code === SPACE && this.isCollapsed(collapsedSpaces, position)) ? "" : String.fromCodePoint(code);
         }
         let count: number = 0;
         for (const cluster of this.graphemes.segment(text)) {
             count += cluster.segment.length > 0 ? 1 : 0;
         }
         return count;
+    }
+
+    private isCollapsed(collapsedSpaces: ReadonlyArray<number>, position: number): boolean {
+        let low: number = 0;
+        let high: number = collapsedSpaces.length - 1;
+        while (low <= high) {
+            const middle: number = (low + high) >> 1;
+            if (collapsedSpaces[middle] === position) {
+                return true;
+            }
+            if (collapsedSpaces[middle] < position) {
+                low = middle + 1;
+            } else {
+                high = middle - 1;
+            }
+        }
+        return false;
     }
 
     private digitsOf(values: Values): number | undefined {

@@ -1183,8 +1183,7 @@ export class SvgText {
                 current = target;
             }
             const font: PdfFont = this.document.fonts.font(instance, false);
-            font.use(glyph, characters);
-            const [resource, codes]: FontRun = font.show([glyph], 0, 1)[0];
+            const [resource, codes]: FontRun = font.show(glyph, characters);
             if (resource.key !== shown || glyphSize !== size) {
                 content.font(this.painter.pdf.useFont(resource), glyphSize);
                 shown = resource.key;

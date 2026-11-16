@@ -92,7 +92,7 @@ export class InlineTextBuilder {
         const synthesis: FontSynthesis = new FontSynthesis();
         this.runs = new TextRuns(metrics, matcher, synthesis);
         this.spacing = new TextSpacing(metrics);
-        this.shaper = new TextShaper(matcher, metrics, features, this.bidi, synthesis, this.combination);
+        this.shaper = new TextShaper(matcher, metrics, features, this.bidi, synthesis);
     }
 
     prepare(sequences: ReadonlyArray<InlineSequence>): void {
@@ -219,7 +219,7 @@ export class InlineTextBuilder {
         this.characters(items, items.length, codepoints, starts, collapsedSpaces);
         starts.push(codepoints.length);
         const trimmed: Array<number> = [];
-        const combinations: Array<Combination> = this.combination.find(items, starts, codepoints, trimmed);
+        const combinations: Array<Combination> = this.combination.find(items, starts, codepoints, collapsedSpaces, trimmed);
         if (trimmed.length > 0) {
             // CSS Writing Modes 4 §9.1.2: the white space at the edges of combined text goes away as at the edges of an
             // inline block, so it joins the spaces that have no advance.

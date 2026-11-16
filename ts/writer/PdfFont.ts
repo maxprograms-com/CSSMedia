@@ -29,9 +29,7 @@ const CMAP_BLOCK: number = 100;
 
 export abstract class PdfFont {
 
-    abstract show(glyphs: ArrayLike<number>, start: number, end: number): Array<FontRun>;
-
-    abstract use(glyph: number, text: string): void;
+    abstract show(glyph: number, text: string): FontRun;
 
     abstract width(glyph: number): number;
 
