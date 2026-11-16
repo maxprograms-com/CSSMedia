@@ -198,15 +198,16 @@ export class CssValueParser {
         // §5.1: in color() they are r, g and b, or x, y and z in an XYZ space. A function nested in it starts over.
         const first: CssNode = nodes[0];
         const names: ReadonlyArray<string> | undefined = ColorSpaces.CHANNELS.get(name);
-        if (names === undefined || first.type !== "Identifier" || this.asciiCase.foldLower(first.name) !== "from") {
+        if (names === undefined || first.type !== "Identifier" || this.asciiCase.foldLower(this.escaping.unescape(first.name)) !== "from") {
             return undefined;
         }
         const space: CssNode | undefined = name === "color" ? nodes[2] : undefined;
-        if (space !== undefined && space.type === "Identifier" && space.name.startsWith("--")) {
+        const spaceName: string | undefined = space !== undefined && space.type === "Identifier" ? this.escaping.unescape(space.name) : undefined;
+        if (spaceName !== undefined && spaceName.startsWith("--")) {
             // The names of a custom color space come from its profile, which is not known while the value is read.
             return ColorSpaces.PROFILE_CHANNELS;
         }
-        const xyz: boolean = space !== undefined && space.type === "Identifier" && this.asciiCase.foldLower(space.name).startsWith("xyz");
+        const xyz: boolean = spaceName !== undefined && this.asciiCase.foldLower(spaceName).startsWith("xyz");
         return new Set<string>([...(xyz ? ColorSpaces.XYZ_CHANNELS : names), ColorSpaces.ALPHA_CHANNEL]);
     }
 

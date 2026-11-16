@@ -19,12 +19,14 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
+import { CaseMapper } from "./CaseMapper.js";
 import { FULL_SIZE_KANA, FULL_WIDTH, MATH_ITALIC, TITLECASE } from "./generated/TextTransforms.js";
 
 const LOWERCASE: RegExp = /^\p{Lowercase}/u;
 
 export class TextTransformer {
 
+    private readonly cases: CaseMapper = new CaseMapper();
     private readonly titles: Map<number, string> = new Map<number, string>();
     private readonly fullWidth: Map<number, number> = new Map<number, number>(FULL_WIDTH);
     private readonly fullSizeKana: Map<number, number> = new Map<number, number>(FULL_SIZE_KANA);
@@ -52,7 +54,7 @@ export class TextTransformer {
         return this.narrowed.get(code) ?? code;
     }
 
-    apply(text: string, before: string, value?: CssValue, language?: string): string {
+    apply(text: string, before: string, value?: CssValue, language?: string, after: string = ""): string {
         // CSS Text 4 §2.3: the case transformation comes first, then full-width, then full-size-kana. The text before this one
         // in its inline formatting context is given because "inline box boundaries must not introduce a text-transform word boundary".
         const keywords: Array<string> | undefined = this.keywords(value);
@@ -66,9 +68,9 @@ export class TextTransformer {
         const locale: string | undefined = this.locale(language);
         let result: string = text;
         if (keywords.includes("uppercase")) {
-            result = locale === undefined ? result.toUpperCase() : result.toLocaleUpperCase(locale);
+            result = this.cases.map(result, before, after, true, locale);
         } else if (keywords.includes("lowercase")) {
-            result = locale === undefined ? result.toLowerCase() : result.toLocaleLowerCase(locale);
+            result = this.cases.map(result, before, after, false, locale);
         } else if (keywords.includes("capitalize")) {
             result = this.capitalize(result, before, locale);
         }

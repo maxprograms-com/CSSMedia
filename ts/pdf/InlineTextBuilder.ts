@@ -61,11 +61,14 @@ const RLI: number = 0x2067;
 const FSI: number = 0x2068;
 const PDI: number = 0x2069;
 const NO_CONTROLS: Controls = { start: [], end: [] };
+const SPACE_CHARACTER: string = " ";
 const ZERO_WIDTH_SPACE: string = "\u200B";
 const IDEOGRAPHIC_SPACE: string = "\u3000";
 const EDGE: number = -1;
 const FORCED_BREAKS: ReadonlySet<number> = new Set<number>([EDGE, 0x0A, 0x2028, 0x2029]);
 const WORD_CONTEXT: number = 64;
+const CONTEXT_CHARACTERS: number = 3;
+const IGNORED_IN_CONTEXT: RegExp = /^[\p{Case_Ignorable}\p{Grapheme_Extend}\p{M}\p{Cf}\p{Emoji_Modifier}\p{Regional_Indicator}]$/u;
 
 export class InlineTextBuilder {
 
@@ -178,7 +181,8 @@ export class InlineTextBuilder {
                 const after: number = partial ? whole.text.charCodeAt(cut as number) : this.characterAfter(items, index);
                 const source: string = this.separated(node, codepoints, after);
                 const from: number = codepoints.length;
-                this.addText(node, source, codepoints, collapsedSpaces, word);
+                const following: string = node.style.values["text-transform"] === undefined ? "" : this.followingText(items, index, partial ? whole.text.substring(cut as number) : "");
+                this.addText(node, source, codepoints, collapsedSpaces, word, following);
                 const emoji: string = this.keyword("normal", node.style.values["font-variant-emoji"]);
                 if (emoji !== "normal") {
                     this.emoji.apply(codepoints, from, collapsedSpaces, emoji, after);
@@ -340,7 +344,30 @@ export class InlineTextBuilder {
         return EDGE;
     }
 
-    private addText(node: TextSequence, source: string, codepoints: Array<number>, collapsedSpaces: Array<number>, word: string): void {
+    private followingText(items: ReadonlyArray<InlineItem>, index: number, rest: string): string {
+        // The final sigma and the other mappings that look ahead skip marks, so a fixed length could end before the letter that decides.
+        let text: string = rest;
+        let position: number = 0;
+        let next: number = index + 1;
+        while (true) {
+            while (position < text.length) {
+                const character: string = String.fromCodePoint(text.codePointAt(position) as number);
+                position += character.length;
+                if (!IGNORED_IN_CONTEXT.test(character)) {
+                    return text.substring(0, position);
+                }
+            }
+            while (next < items.length && items[next].kind !== "object" && items[next].node.kind !== "text") {
+                next++;
+            }
+            if (next >= items.length || items[next].kind === "object") {
+                return text;
+            }
+            text += (items[next++].node as TextSequence).text;
+        }
+    }
+
+    private addText(node: TextSequence, source: string, codepoints: Array<number>, collapsedSpaces: Array<number>, word: string, after: string): void {
         const transform: CssValue | undefined = node.style.values["text-transform"];
         const keyword: string | undefined = transform !== undefined && transform.kind === "ident" ? transform.lower : undefined;
         const marks: ReadonlyArray<number> | undefined = node.collapsedSpaces;
@@ -349,7 +376,7 @@ export class InlineTextBuilder {
             return;
         }
         if (marks === undefined || keyword === "math-auto") {
-            const text: string = this.transformer.apply(source, word, transform, node.language);
+            const text: string = this.transformer.apply(source, word, transform, node.language, after);
             this.append(text, codepoints, collapsedSpaces, text === source ? marks : undefined);
             return;
         }
@@ -359,7 +386,7 @@ export class InlineTextBuilder {
         let before: string = word;
         for (const mark of marks) {
             if (mark > start) {
-                this.append(this.transformer.apply(source.substring(start, mark), before, transform, node.language), codepoints, collapsedSpaces);
+                this.append(this.transformer.apply(source.substring(start, mark), before, transform, node.language, SPACE_CHARACTER), codepoints, collapsedSpaces);
             }
             collapsedSpaces.push(codepoints.length);
             codepoints.push(SPACE);
@@ -367,7 +394,7 @@ export class InlineTextBuilder {
             start = mark + 1;
         }
         if (start < source.length) {
-            this.append(this.transformer.apply(source.substring(start), before, transform, node.language), codepoints, collapsedSpaces);
+            this.append(this.transformer.apply(source.substring(start), before, transform, node.language, after), codepoints, collapsedSpaces);
         }
     }
 
@@ -389,7 +416,21 @@ export class InlineTextBuilder {
         // text leaves open is given to the next one; a few characters are enough to find where a word starts.
         const last: number = Math.max(text.lastIndexOf(" "), text.lastIndexOf("\t"), text.lastIndexOf("\n"));
         const open: string = last < 0 ? word + text : text.substring(last + 1);
-        return open.length > WORD_CONTEXT ? open.substring(open.length - WORD_CONTEXT) : open;
+        if (open.length <= WORD_CONTEXT) {
+            return open;
+        }
+        // A fixed length could cut off the letter that a run of marks belongs to, and UAX #29 skips such a run.
+        let index: number = open.length;
+        let others: number = 0;
+        while (index > 0) {
+            const low: number = open.charCodeAt(index - 1);
+            const from: number = index > 1 && low >= 0xDC00 && low <= 0xDFFF && open.charCodeAt(index - 2) >= 0xD800 && open.charCodeAt(index - 2) <= 0xDBFF ? index - 2 : index - 1;
+            if (!IGNORED_IN_CONTEXT.test(open.substring(from, index)) && ++others > CONTEXT_CHARACTERS) {
+                break;
+            }
+            index = from;
+        }
+        return open.substring(index);
     }
 
     private keywords(value?: CssValue): ReadonlyArray<string> | undefined {

@@ -133,8 +133,12 @@ export class CrossReferences {
         if ((this.linkIds.size === 0 && this.bookmarked.size === 0) || box.pseudoElement !== undefined) {
             return undefined;
         }
-        const id: string | undefined = this.idOf(box);
-        const names: Array<string> = id !== undefined && this.linkIds.has(id) ? [id] : [];
+        const names: Array<string> = [];
+        for (const id of this.idsOf(box) ?? []) {
+            if (this.linkIds.has(id)) {
+                names.push(id);
+            }
+        }
         for (const name of (box.element === undefined ? undefined : this.anchors.get(box.element)) ?? []) {
             if (!names.includes(name)) {
                 names.push(name);
@@ -225,7 +229,9 @@ export class CrossReferences {
     }
 
     recordPage(box: ElementBox, page: number): void {
-        this.recordName(this.idOf(box), page);
+        for (const id of this.idsOf(box) ?? []) {
+            this.recordName(id, page);
+        }
         if (this.bookmarked.size > 0) {
             this.recordName(this.bookmarked.get(box.element ?? box), page);
         }
@@ -281,7 +287,9 @@ export class CrossReferences {
     private visit(box: ElementBox, pending: Set<string>, found: Map<string, Target>): void {
         const element: SourceElement | undefined = box.pseudoElement === undefined ? box.element : undefined;
         if (element !== undefined) {
-            this.take(box, this.idOf(box), pending, found);
+            for (const id of this.idsOf(box) ?? []) {
+                this.take(box, id, pending, found);
+            }
             this.take(box, this.bookmarked.get(element), pending, found);
             for (const name of this.anchors.get(element) ?? []) {
                 this.take(box, name, pending, found);
@@ -309,18 +317,25 @@ export class CrossReferences {
         found.set(id, target);
     }
 
-    private idOf(box: ElementBox): string | undefined {
+    private idsOf(box: ElementBox): ReadonlyArray<string> | undefined {
+        // Selectors and links recognize id and xml:id alike, so an element with both is the target of either.
         const element: SourceElement | undefined = box.element;
         if (element === undefined) {
             return undefined;
         }
+        let ids: Array<string> | undefined;
         for (const name of SelectorMatcher.ID_ATTRIBUTES) {
             const value: string | undefined = element.getAttributeValue(name);
-            if (value !== undefined) {
-                return value;
+            if (value === undefined) {
+                continue;
+            }
+            if (ids === undefined) {
+                ids = [value];
+            } else if (!ids.includes(value)) {
+                ids.push(value);
             }
         }
-        return undefined;
+        return ids;
     }
 
     private texts(box: ElementBox): Record<string, string> {

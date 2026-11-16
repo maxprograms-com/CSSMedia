@@ -586,16 +586,23 @@ export class SelectorCompiler {
         if (pseudoClass.children === null) {
             throw new InvalidSelector();
         }
+        // Selectors 4 §7.2: ranges alternate with commas, with no leading, trailing or doubled comma.
+        let expectRange: boolean = true;
         for (const child of pseudoClass.children) {
-            if (child.type === "Identifier") {
-                ranges.push(this.escaping.unescape(child.name));
-            } else if (child.type === "String") {
-                ranges.push(child.value);
+            if (expectRange) {
+                if (child.type === "Identifier") {
+                    ranges.push(this.escaping.unescape(child.name));
+                } else if (child.type === "String") {
+                    ranges.push(child.value);
+                } else {
+                    throw new InvalidSelector();
+                }
             } else if (child.type !== "Operator" || child.value !== ",") {
                 throw new InvalidSelector();
             }
+            expectRange = !expectRange;
         }
-        if (ranges.length === 0) {
+        if (ranges.length === 0 || expectRange) {
             throw new InvalidSelector();
         }
         return ranges;
