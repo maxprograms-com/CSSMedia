@@ -1163,12 +1163,12 @@ ditac|titlePage *[class~="topic/image"] {
 /* the width and height attributes are read as a CSS length, or else
    as a number of CSS pixels, and printed at 0.8 of that size */
 *[class~="topic/image"][width] {
-    width: calc(attr(width <length>, calc(attr(width <number>) * 1px)) * 0.8);
+    width: calc(attr(width type(<length>), calc(attr(width type(<number>)) * 1px)) * 0.8);
     height: auto;
 }
 
 *[class~="topic/image"][height] {
-    height: calc(attr(height <length>, calc(attr(height <number>) * 1px)) * 0.8);
+    height: calc(attr(height type(<length>), calc(attr(height type(<number>)) * 1px)) * 0.8);
 }
 
 *[class~="topic/image"][placement="inline"][height] {
@@ -1182,7 +1182,7 @@ ditac|titlePage *[class~="topic/image"] {
 }
 
 *[class~="topic/image"][scale] {
-    zoom: calc(attr(scale <number>) / 100);
+    zoom: calc(attr(scale type(<number>)) / 100);
     max-width: none;
 }
 

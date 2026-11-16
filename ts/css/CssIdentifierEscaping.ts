@@ -63,6 +63,32 @@ export class CssIdentifierEscaping {
         return result;
     }
 
+    canonical(raw: string): string {
+        // CSSOM, "serialize an identifier": the same name written with the escapes that its characters need and no others.
+        if (!raw.includes("\\")) {
+            return raw;
+        }
+        let result: string = "";
+        let index: number = 0;
+        let first: number = 0;
+        for (const character of this.unescape(raw)) {
+            const code: number = character.codePointAt(0) as number;
+            const digit: boolean = code >= 0x30 && code <= 0x39;
+            if (code === 0) {
+                result += String.fromCodePoint(0xFFFD);
+            } else if (code <= 0x1F || code === 0x7F || (digit && (index === 0 || (index === 1 && first === 0x2D)))) {
+                result += "\\" + code.toString(16) + " ";
+            } else if (code >= 0x80 || digit || code === 0x2D || code === 0x5F || (code >= 0x41 && code <= 0x5A) || (code >= 0x61 && code <= 0x7A)) {
+                result += character;
+            } else {
+                result += "\\" + character;
+            }
+            first = index === 0 ? code : first;
+            index++;
+        }
+        return index === 1 && first === 0x2D ? "\\-" : result;
+    }
+
     rawPipeIndex(raw: string): number {
         // An escaped "|" (e.g. "x\00007Ctest") is identifier data, not the namespace-prefix delimiter.
         for (let index: number = 0; index < raw.length; index++) {

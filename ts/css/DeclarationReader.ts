@@ -90,7 +90,12 @@ export class DeclarationReader {
         if (!shorthand && this.table.definition(property) === undefined) {
             return undefined;
         }
-        const text: string = this.textOf(declaration.value).trim();
+        let written: string = this.textOf(declaration.value);
+        if (written.includes("\\")) {
+            this.canonical(declaration.value);
+            written = this.textOf(declaration.value);
+        }
+        const text: string = written.trim();
         const keyword: CssWideKeyword | undefined = this.wideKeyword(declaration.value);
         if (keyword !== undefined) {
             return this.targets(property, shorthand).map((target: string) => ({ property: target, value: { kind: "keyword", keyword }, important }));
@@ -154,6 +159,18 @@ export class DeclarationReader {
             }
         }
         return declarations.length === 0 ? undefined : declarations;
+    }
+
+    private canonical(value: CssNode): void {
+        // CSS Syntax 3 §4: a name written with escapes is the same name as without them, and the grammars match keywords and
+        // function names by their text, so the names of the value are rewritten with only the escapes they need.
+        walk(value, (node: CssNode): void => {
+            if (node.type === "Identifier" || node.type === "Function") {
+                node.name = this.escaping.canonical(node.name);
+            } else if (node.type === "Dimension") {
+                node.unit = this.escaping.canonical(node.unit);
+            }
+        });
     }
 
     private validRandom(property: string, text: string, baseUrl: string, namespaces: ReadonlyMap<string, string>): boolean {
