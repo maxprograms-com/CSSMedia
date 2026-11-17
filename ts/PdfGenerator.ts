@@ -172,6 +172,8 @@ export class PdfGenerator {
         images.setNamespaces(input.prefixes, input.root.getAttributeValue("xmlns"));
         try {
             setup = this.pageSetup(input, references, images, colors);
+            // CSS Writing Modes 4 §8.2: the page progression is right to left when the first page is a left page.
+            document.setProgression(setup.recto === "left");
             this.settleTexts(setup);
             // CSS Content 3 §2.6: the page of a target is known only from a layout, so the layout that shows it comes after.
             const ends: Map<number, Candidate> = new Map<number, Candidate>();

@@ -141,6 +141,9 @@ const TRANSPARENT_IMAGE: CssValue = {
 const CANONICAL_TYPES: ReadonlySet<string> = new Set<string>(["angle", "time", "resolution"]);
 const ZOOM: string = "zoom";
 const PIXELS: string = "px";
+const TABLE_TRACKS: ReadonlySet<string> = new Set<string>([
+    "table-row-group", "table-header-group", "table-footer-group", "table-row", "table-column-group", "table-column"
+]);
 
 export class StyleComputer {
 
@@ -280,12 +283,33 @@ export class StyleComputer {
             }
         }
         const inherited: Readonly<Record<string, CssValue>> = inheritedOwn === undefined ? parentLayer : Object.assign(Object.create(parentLayer) as Record<string, CssValue>, inheritedOwn);
+        own = this.unapplied(inherited, input.parent?.values ?? this.initial().values, own);
         const values: Readonly<Record<string, CssValue>> = own === undefined ? inherited : Object.assign(Object.create(inherited) as Record<string, CssValue>, own);
         const style: ComputedStyle = resolution.owner === undefined ? { values, inherited, custom } : { values, inherited, custom, anchorOwner: resolution.owner };
         if (zoom !== 1) {
             style.zoom = zoom;
         }
         return style;
+    }
+
+    private unapplied(inherited: Readonly<Record<string, CssValue>>, parent: Readonly<Record<string, CssValue>>, own?: Record<string, CssValue>): Record<string, CssValue> | undefined {
+        // CSS Writing Modes 4 §3.2 and §5.1: writing-mode does not apply to table row groups, column groups, rows and columns nor to ruby
+        // base and annotation containers, and text-orientation not to the table ones; such a box lays out with the mode its parent
+        // lays out with (a row in a row group with the table's), while what it holds inherits its computed values.
+        const display: CssValue | undefined = own?.["display"] ?? inherited["display"];
+        const internal: string | undefined = display === undefined ? undefined : this.displays.parse(display).internal;
+        const table: boolean = internal !== undefined && TABLE_TRACKS.has(internal);
+        if (!table && internal !== "ruby-base-container" && internal !== "ruby-text-container") {
+            return own;
+        }
+        const kept: Record<string, CssValue> = own ?? {};
+        if (inherited["writing-mode"] !== parent["writing-mode"]) {
+            kept["writing-mode"] = parent["writing-mode"];
+        }
+        if (table && inherited["text-orientation"] !== parent["text-orientation"]) {
+            kept["text-orientation"] = parent["text-orientation"];
+        }
+        return Object.keys(kept).length === 0 ? own : kept;
     }
 
     private zoomOf(resolution: Resolution): Zoom {
@@ -939,6 +963,8 @@ export class StyleComputer {
         let value: CssValue | undefined = this.computeProperty(property, resolution, phase);
         if (property === "writing-mode") {
             value = this.forcedWritingMode(resolution, value);
+        } else if (property === "line-height") {
+            value = this.forcedLineHeight(resolution, value);
         }
         if (this.leave(key, resolution)) {
             const inherited: boolean = !this.isDescriptor(property, resolution.input) && this.definition(property)?.inherited === true;
@@ -1439,6 +1465,13 @@ export class StyleComputer {
             }
         }
         return false;
+    }
+
+    private forcedLineHeight(resolution: Resolution, value?: CssValue): CssValue | undefined {
+        // CSS Ruby 1 §3.3: line-height "does not apply" to ruby annotations and annotation containers, so it computes to normal on
+        // them, and what they hold inherits that.
+        const internal: string | undefined = this.displays.parse(this.standard("display", resolution)).internal;
+        return internal === "ruby-text" || internal === "ruby-text-container" ? { kind: "ident", name: "normal", lower: "normal" } : value;
     }
 
     private forcedWritingMode(resolution: Resolution, value?: CssValue): CssValue | undefined {

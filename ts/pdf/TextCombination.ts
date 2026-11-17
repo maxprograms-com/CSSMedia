@@ -158,7 +158,7 @@ export class TextCombination {
 
     private digitsOf(values: Values): number | undefined {
         // §9.1: none, all, or digits with an integer from 2 to 4, which is 2 when it is omitted.
-        if (this.vertical.of(values) === "horizontal") {
+        if (!this.vertical.verticalWritingMode(values)) {
             return undefined;
         }
         const value: CssValue | undefined = values["text-combine-upright"];

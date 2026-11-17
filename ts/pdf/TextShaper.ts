@@ -28,7 +28,7 @@ import { LanguageSystems } from "../fonts/layout/LanguageSystems.js";
 import { ScriptTags } from "../fonts/layout/ScriptTags.js";
 import type { CatalogFace, FontInstance } from "../fonts/Typeface.js";
 import type { Combination, GlyphRun, Hyphen, InlineItem, ShapedRun, TextRun, TextSequence } from "./BoxTree.js";
-import type { FeatureContext, FontFeatureSet, FontFeatures } from "./FontFeatures.js";
+import type { FeatureContext, FontFeatureSet, FontFeatures, GlyphOrientation } from "./FontFeatures.js";
 import type { FontMatcher, FontRequest } from "./FontMatcher.js";
 import type { FontMetrics } from "./FontMetrics.js";
 import { FontSynthesis } from "./FontSynthesis.js";
@@ -78,8 +78,7 @@ export class TextShaper {
     private readonly languages: LanguageSystems = new LanguageSystems();
     private readonly joining: ArabicJoining = new ArabicJoining();
     private readonly sets: Map<string, Map<FontInstance, FontFeatureSet>> = new Map<string, Map<FontInstance, FontFeatureSet>>();
-    private readonly styles: WeakMap<Values, Map<FontInstance, FontFeatureSet>> = new WeakMap<Values, Map<FontInstance, FontFeatureSet>>();
-    private readonly uprightStyles: WeakMap<Values, Map<FontInstance, FontFeatureSet>> = new WeakMap<Values, Map<FontInstance, FontFeatureSet>>();
+    private readonly styles: Map<GlyphOrientation, WeakMap<Values, Map<FontInstance, FontFeatureSet>>> = new Map<GlyphOrientation, WeakMap<Values, Map<FontInstance, FontFeatureSet>>>();
 
     constructor(matcher: FontMatcher, metrics: FontMetrics, features: FontFeatures, bidi: UnicodeBidi, synthesis: FontSynthesis) {
         this.matcher = matcher;
@@ -223,7 +222,7 @@ export class TextShaper {
     }
 
     private glyphRun(codes: ReadonlyArray<number>, run: TextRun, node: TextSequence, font: FontInstance): GlyphRun {
-        const set: FontFeatureSet = this.featureSet(node.style.values, font, run.upright);
+        const set: FontFeatureSet = this.featureSet(node.style.values, font, this.orientationOf(run, node.style.values));
         const request: ShapeRequest = {
             rtl: (run.level & 1) === 1, scriptTags: this.scripts.openTypeTagsOf(run.script), features: set.tags, joining: false, vertical: run.upright
         };
@@ -323,7 +322,7 @@ export class TextShaper {
         const codes: Array<number> = before ? [ZERO_WIDTH_JOINER] : [];
         // §5.1.1: upright typesetting uses "vertical font metrics" and the vertical font features; sideways typesetting
         // uses "horizontal metrics and composition".
-        const set: FontFeatureSet = this.featureSet(node.style.values, run.font, run.upright);
+        const set: FontFeatureSet = this.featureSet(node.style.values, run.font, this.orientationOf(run, node.style.values));
         let tags: ReadonlyMap<string, number> = set.tags;
         // CSS Fonts 4 §6.6: unicase without unic in a font that has small capitals lowercases the uppercase letters for
         // smcp; with smcp turned off by font-feature-settings they stay as they are, "without any small-caps".
@@ -436,13 +435,28 @@ export class TextShaper {
         return language === undefined || language.length === 0 ? undefined : this.languages.tagsOf(language);
     }
 
-    private featureSet(values: Values, font: FontInstance, upright: boolean): FontFeatureSet {
+    private orientationOf(run: TextRun, values: Values): GlyphOrientation {
+        // CSS Writing Modes 4 §5.1.1: in vertical-rl and vertical-lr text is typeset upright or sideways; combined text is composed
+        // horizontally (§9.1.2), and the other writing modes are horizontal typographic modes.
+        if (run.upright) {
+            return "upright";
+        }
+        const mode: CssValue | undefined = values["writing-mode"];
+        const vertical: boolean = mode !== undefined && mode.kind === "ident" && (mode.lower === "vertical-rl" || mode.lower === "vertical-lr");
+        return vertical && !run.combined ? "sideways" : "horizontal";
+    }
+
+    private featureSet(values: Values, font: FontInstance, orientation: GlyphOrientation): FontFeatureSet {
         // The features depend on these properties alone, so styles that have the same ones share one set.
         // A style object is asked many times, so it remembers the sets it shares, and the key is built once for it.
-        const remembered: WeakMap<Values, Map<FontInstance, FontFeatureSet>> = upright ? this.uprightStyles : this.styles;
+        let remembered: WeakMap<Values, Map<FontInstance, FontFeatureSet>> | undefined = this.styles.get(orientation);
+        if (remembered === undefined) {
+            remembered = new WeakMap<Values, Map<FontInstance, FontFeatureSet>>();
+            this.styles.set(orientation, remembered);
+        }
         let sets: Map<FontInstance, FontFeatureSet> | undefined = remembered.get(values);
         if (sets === undefined) {
-            const key: string = (upright ? "u" : "") + JSON.stringify(FEATURE_PROPERTIES.map((property: string) => values[property] ?? null));
+            const key: string = orientation + JSON.stringify(FEATURE_PROPERTIES.map((property: string) => values[property] ?? null));
             sets = this.sets.get(key);
             if (sets === undefined) {
                 sets = new Map<FontInstance, FontFeatureSet>();
@@ -457,7 +471,7 @@ export class TextShaper {
             const spacing: CssValue | undefined = values["letter-spacing"];
             const letterSpaced: boolean = spacing !== undefined && ((spacing.kind === "length" && spacing.px !== 0) || (spacing.kind === "percentage" && spacing.value !== 0)
                 || spacing.kind === "calc");
-            const context: FeatureContext = { upright, letterSpaced, available: (tag: string): boolean => this.synthesis.hasFeature(font, tag) };
+            const context: FeatureContext = { orientation, letterSpaced, available: (tag: string): boolean => this.synthesis.hasFeature(font, tag) };
             if (face !== undefined && face.rule !== undefined) {
                 context.face = face.rule;
             }

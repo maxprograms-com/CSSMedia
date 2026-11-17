@@ -18,7 +18,7 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
-import type { ElementBox, InlineSequence, TextRun } from "../pdf/BoxTree.js";
+import type { ElementBox, InlineSequence, RubyColumn, TextRun } from "../pdf/BoxTree.js";
 
 export type Sides = readonly [number, number, number, number];
 
@@ -85,6 +85,9 @@ export interface TextPiece {
     baseline: number;
     hyphenated?: boolean;
     advances?: Float64Array;
+    extras?: Float64Array;
+    shifts?: Float64Array;
+    lifts?: Float64Array;
     leader?: boolean;
 }
 
@@ -104,4 +107,5 @@ export interface LineFragment {
     baseline: number;
     pieces: Array<TextPiece | BoxFragment>;
     plain?: PlainLine;
+    ruby?: Array<RubyColumn>;
 }

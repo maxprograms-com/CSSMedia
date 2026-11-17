@@ -68,7 +68,7 @@ export class TableLayout {
     private readonly sizes: BoxSizes;
     private readonly grids: WeakMap<ElementBox, Grid> = new WeakMap<ElementBox, Grid>();
     private gridWidth?: number;
-    private measured?: readonly [ElementBox, readonly [Float64Array, Float64Array]];
+    private measured?: readonly [ElementBox, readonly [Float64Array, Float64Array], number | undefined];
     private constraints?: readonly [ElementBox, Uint8Array, Uint8Array];
 
     constructor(host: BlockLayout, sizes: BoxSizes) {
@@ -380,7 +380,7 @@ export class TableLayout {
             const extra: number = (references[position] - row.blockSize) * share + (autos === 0 || automatic[position] ? increment : 0);
             row.block += moved;
             if (extra > 0) {
-                this.stretch(row, extra);
+                this.stretch(grid, row, extra);
             }
             moved += extra;
         });
@@ -392,12 +392,15 @@ export class TableLayout {
         const own: number | undefined = this.sizes.of(grid.rows[index].style, undefined, tableHeight).blockSize;
         let reference: number = Math.max(row.blockSize, own ?? 0);
         let automatic: boolean = own === undefined;
+        const tableFrame: number = this.sizes.frame(grid.table.style);
         for (const slot of grid.cells[index]) {
-            const asked: number | undefined = this.sizes.of(slot.cell.style, undefined, tableHeight).blockSize;
+            // A cell in an orthogonal flow asks for its height as its inline size.
+            const turned: boolean = this.sizes.isOrthogonal(tableFrame, this.sizes.frame(slot.cell.style));
+            const asked: number | undefined = turned ? this.sizes.of(slot.cell.style, tableHeight).inlineSize : this.sizes.of(slot.cell.style, undefined, tableHeight).blockSize;
             const cell: BoxFragment | LineFragment | undefined = asked === undefined ? undefined : row.children?.find((child: BoxFragment | LineFragment) => child.kind === "box" && child.box === slot.cell);
             if (asked !== undefined && cell !== undefined && cell.kind === "box") {
                 automatic = false;
-                reference = Math.max(reference, asked + cell.blockSize - this.contentBlock(cell));
+                reference = Math.max(reference, asked + cell.blockSize - this.contentBlock(grid, cell));
             }
         }
         return [reference, automatic];
@@ -496,6 +499,7 @@ export class TableLayout {
         // being put on one baseline, which is that of the first line box of a cell, or the bottom of its content edge.
         const row: ElementBox = grid.rows[index];
         const slots: ReadonlyArray<Slot> = grid.cells[index];
+        const tableFrame: number = this.sizes.frame(grid.table.style);
         const cells: Array<BoxFragment> = [];
         const baselines: Array<number> = [];
         const tokens: Array<BreakToken> = [];
@@ -511,8 +515,8 @@ export class TableLayout {
             const resuming: BreakToken | undefined = incoming?.parallel?.[position];
             // CSS Fragmentation 4 §2.1: the contents of the cells of a row are parallel flows, each breaking on its own;
             // a cell that ended before the break continues as an empty fragment.
-            const fragment: BoxFragment = space === undefined ? this.host.cell(cell, width, edges, undefined, resuming)
-                : this.host.parallel((): BoxFragment => this.host.cell(cell, width, edges, space, resuming), resuming);
+            const fragment: BoxFragment = space === undefined ? this.host.cell(cell, tableFrame, width, edges, undefined, resuming)
+                : this.host.parallel((): BoxFragment => this.host.cell(cell, tableFrame, width, edges, space, resuming), resuming);
             if (space !== undefined) {
                 broken = broken || fragment.token !== undefined;
                 appeal = Math.min(appeal, this.host.breakAppeal(fragment.token));
@@ -527,11 +531,14 @@ export class TableLayout {
             }
             fragment.inline = offsets[slot.column];
             const asked: UsedSizes = this.sizes.of(cell.style);
-            const blockEdges: number = fragment.blockSize - this.contentBlock(fragment);
-            height = Math.max(height, fragment.blockSize, asked.blockSize === undefined || incoming !== undefined ? 0 : asked.blockSize + blockEdges);
+            const blockEdges: number = fragment.blockSize - this.contentBlock(grid, fragment);
+            // A cell in an orthogonal flow is sized in its own axes, where the height of the row is its inline size.
+            const askedHeight: number | undefined = this.sizes.isOrthogonal(tableFrame, this.sizes.frame(cell.style)) ? asked.inlineSize : asked.blockSize;
+            height = Math.max(height, fragment.blockSize, askedHeight === undefined || incoming !== undefined ? 0 : askedHeight + blockEdges);
             const aligned: string = this.cellAlignment(cell.style);
+            const end: number = this.sizes.side(tableFrame, this.sizes.frame(cell.style), BoxSizes.BLOCK_END);
             const baseline: number = aligned !== "baseline" ? Number.NaN
-                : fragment.firstBaseline ?? fragment.blockSize - (this.side(BoxSizes.BLOCK_END, fragment.border) + this.side(BoxSizes.BLOCK_END, fragment.padding));
+                : fragment.firstBaseline ?? fragment.blockSize - (this.side(end, fragment.border) + this.side(end, fragment.padding));
             if (!Number.isNaN(baseline)) {
                 above = Math.max(above, baseline);
                 below = Math.max(below, fragment.blockSize - baseline);
@@ -547,7 +554,7 @@ export class TableLayout {
             const baseline: number = baselines[position];
             const free: number = height - fragment.blockSize;
             if (!broken && incoming === undefined) {
-                this.lower(fragment, !Number.isNaN(baseline) ? above - baseline : (aligned === "bottom" ? free : (aligned === "middle" ? free / 2 : 0)));
+                this.lower(grid, fragment, !Number.isNaN(baseline) ? above - baseline : (aligned === "bottom" ? free : (aligned === "middle" ? free / 2 : 0)));
             }
             fragment.blockSize = height;
         }
@@ -599,7 +606,7 @@ export class TableLayout {
         return weights;
     }
 
-    private stretch(row: BoxFragment, extra: number): void {
+    private stretch(grid: Grid, row: BoxFragment, extra: number): void {
         row.blockSize += extra;
         if (row.children === undefined) {
             return;
@@ -607,19 +614,29 @@ export class TableLayout {
         for (const cell of row.children) {
             if (cell.kind === "box") {
                 const aligned: string = this.cellAlignment(cell.box.style);
-                this.lower(cell, aligned === "bottom" ? extra : (aligned === "middle" ? extra / 2 : 0));
+                this.lower(grid, cell, aligned === "bottom" ? extra : (aligned === "middle" ? extra / 2 : 0));
                 cell.blockSize += extra;
             }
         }
     }
 
-    private lower(cell: BoxFragment, distance: number): void {
+    private lower(grid: Grid, cell: BoxFragment, distance: number): void {
+        // The content moves towards the table's block-end, which is a side of the cell's own writing mode that its children are placed in.
         if (distance === 0) {
             return;
         }
+        const side: number = this.sizes.side(this.sizes.frame(grid.table.style), this.sizes.frame(cell.box.style), BoxSizes.BLOCK_START);
+        const step: number = side === BoxSizes.BLOCK_START || side === BoxSizes.INLINE_START ? distance : -distance;
+        const along: boolean = side === BoxSizes.INLINE_START || side === BoxSizes.INLINE_END;
         if (cell.children !== undefined) {
             for (const child of cell.children) {
-                child.block += distance;
+                if (!along) {
+                    child.block += step;
+                } else if (child.kind === "line") {
+                    child.inline = (child.inline ?? 0) + step;
+                } else {
+                    child.inline += step;
+                }
             }
         }
         if (cell.firstBaseline !== undefined) {
@@ -639,9 +656,13 @@ export class TableLayout {
         return this.keyword(style, "alignment-baseline") === "middle" ? "middle" : "baseline";
     }
 
-    private contentBlock(fragment: BoxFragment): number {
-        return fragment.blockSize - this.side(BoxSizes.BLOCK_START, fragment.border) - this.side(BoxSizes.BLOCK_START, fragment.padding)
-            - this.side(BoxSizes.BLOCK_END, fragment.padding) - this.side(BoxSizes.BLOCK_END, fragment.border);
+    private contentBlock(grid: Grid, fragment: BoxFragment): number {
+        // The edges of a cell are on the sides of its own writing mode; those across the table's block axis are taken off.
+        const tableFrame: number = this.sizes.frame(grid.table.style);
+        const own: number = this.sizes.frame(fragment.box.style);
+        const start: number = this.sizes.side(tableFrame, own, BoxSizes.BLOCK_START);
+        const end: number = this.sizes.side(tableFrame, own, BoxSizes.BLOCK_END);
+        return fragment.blockSize - this.side(start, fragment.border) - this.side(start, fragment.padding) - this.side(end, fragment.padding) - this.side(end, fragment.border);
     }
 
     private columns(grid: Grid, offsets: Float64Array, widths: Float64Array, spacing: readonly [number, number], blockSize: number,
@@ -805,7 +826,8 @@ export class TableLayout {
 
     private tracks(box: ElementBox, grid: Grid): readonly [Float64Array, Float64Array] {
         // CSS 2 §17.5.2.2: a width given to a cell or column counts for both its minimum and maximum when larger.
-        if (this.measured !== undefined && this.measured[0] === box) {
+        const limit: number | undefined = this.host.cellLimit(box);
+        if (this.measured !== undefined && this.measured[0] === box && this.measured[2] === limit) {
             return this.measured[1];
         }
         const minimum: Float64Array = new Float64Array(grid.count);
@@ -813,19 +835,30 @@ export class TableLayout {
         const constrained: Uint8Array = new Uint8Array(grid.count);
         const originating: Uint8Array = new Uint8Array(grid.count);
         const collapse: boolean = this.collapses(box);
+        const tableFrame: number = this.sizes.frame(box.style);
         for (const origins of grid.cells) {
             for (const slot of origins) {
                 const sizes: UsedSizes = this.sizes.of(slot.cell.style);
-                const borders: [number, number, number, number] | undefined = collapse ? this.cellBorders(grid, slot) : sizes.border;
-                const edges: number = (borders === undefined ? 0 : borders[BoxSizes.INLINE_START] + borders[BoxSizes.INLINE_END])
-                    + (sizes.padding === undefined ? 0 : sizes.padding[BoxSizes.INLINE_START] + sizes.padding[BoxSizes.INLINE_END]);
-                const content: readonly [number, number] = this.host.contentSizes(slot.cell);
-                const least: number = Math.max(content[0], sizes.inlineSize ?? 0, sizes.minInlineSize ?? 0) + edges;
-                const most: number = sizes.inlineSize === undefined ? Math.max(content[1] + edges, least) : least;
+                // The edges of a cell are on the sides of its own writing mode, and the collapsed borders on those of the table.
+                const frame: number = this.sizes.frame(slot.cell.style);
+                const start: number = this.sizes.side(tableFrame, frame, BoxSizes.INLINE_START);
+                const end: number = this.sizes.side(tableFrame, frame, BoxSizes.INLINE_END);
+                const collapsed: [number, number, number, number] | undefined = collapse ? this.cellBorders(grid, slot) : undefined;
+                const borders: number = collapsed !== undefined ? collapsed[BoxSizes.INLINE_START] + collapsed[BoxSizes.INLINE_END]
+                    : (sizes.border === undefined ? 0 : sizes.border[start] + sizes.border[end]);
+                const edges: number = borders + (sizes.padding === undefined ? 0 : sizes.padding[start] + sizes.padding[end]);
+                // CSS Writing Modes 4 §7.3: a cell in an orthogonal flow gives the table its used block size as its contribution.
+                const turned: boolean = this.sizes.isOrthogonal(tableFrame, frame);
+                const content: readonly [number, number] = turned ? this.host.crossedContent(slot.cell) : this.host.contentSizes(slot.cell);
+                const given: number | undefined = turned ? sizes.blockSize : sizes.inlineSize;
+                const least: number = Math.max(content[0], given ?? 0, (turned ? sizes.minBlockSize : sizes.minInlineSize) ?? 0) + edges;
+                // §7.3.3 and §7.3.2: in infinite inline space a cell's content is as wide as min(max-content, max(min-content, constraint)).
+                const widest: number = limit === undefined || turned ? content[1] : Math.min(content[1], Math.max(content[0], limit - edges));
+                const most: number = given === undefined ? Math.max(widest + edges, least) : least;
                 originating[slot.column] = 1;
                 minimum[slot.column] = Math.max(minimum[slot.column], least);
                 maximum[slot.column] = Math.max(maximum[slot.column], most);
-                constrained[slot.column] = sizes.inlineSize === undefined ? constrained[slot.column] : 1;
+                constrained[slot.column] = given === undefined ? constrained[slot.column] : 1;
             }
         }
         if (grid.columns !== undefined) {
@@ -839,7 +872,7 @@ export class TableLayout {
             }
         }
         // The widths of a table are asked for more than once while it is laid out, and measuring its cells is the costly part.
-        this.measured = [box, [minimum, maximum]];
+        this.measured = [box, [minimum, maximum], limit];
         this.constraints = [box, constrained, originating];
         return this.measured[1];
     }

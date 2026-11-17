@@ -31,6 +31,7 @@
                             <entry>See the two properties</entry>
                             <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-columns" scope="external" format="html">CSS Multi-column 2 §4.3</xref></entry>
                         </row>
+                        <!-- TODO: the keywords thin, medium and thick of column-gap compute as normal, and the keywords of column-width are ignored, so the rows list only the values that work -->
                         <row id="row-column-gap">
                             <entry><codeph>column-gap</codeph></entry>
                             <entry>The space between two columns. <codeph>normal</codeph> is 1em. A percentage is of the width of the element.</entry>

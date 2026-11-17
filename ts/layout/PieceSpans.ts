@@ -19,14 +19,13 @@
  *******************************************************************************/
 
 import type { InlineText, TextRun } from "../pdf/BoxTree.js";
-import { TextSpacingTrim } from "../pdf/TextSpacingTrim.js";
 import type { TextPiece } from "./Fragment.js";
 
 export class PieceSpans {
 
     of(text: InlineText, piece: TextPiece): Array<readonly [number, number]> {
         // Where the glyphs of each character of a piece are along its line, from the start of the piece, as they are placed: a
-        // right-to-left run is placed from its last character, and a mark that was set half-width loses what has no ink.
+        // right-to-left run is placed from its last character, and shifts move a glyph within the room its character takes.
         const run: TextRun = piece.run;
         const from: number = text.clusters[piece.from];
         const to: number = piece.to < run.glyphEnd ? text.clusters[piece.to] : run.end;
@@ -51,10 +50,11 @@ export class PieceSpans {
                 natural += text.advances[current];
                 glyphs += text.advances[current];
             }
+            // The space that a ruby adds around a character on this line is part of what the character takes, and where it goes
+            // is in shifts: the part of it before the glyph on the left.
+            natural += piece.extras?.[index] ?? 0;
             const used: number = piece.advances === undefined ? natural : piece.advances[index];
-            const type: number = text.punctuation[position];
-            const trimmed: boolean = (type === TextSpacingTrim.OPENING && !reversed) || (type === TextSpacingTrim.CLOSING && reversed);
-            const start: number = pen + (reversed ? text.spacingAfter[position] : text.spacingBefore[position]) - (trimmed ? natural - used : 0);
+            const start: number = pen + (reversed ? text.spacingAfter[position] : text.spacingBefore[position]) + (piece.shifts?.[index] ?? 0);
             spans[index] = [start, start + glyphs];
             pen += used;
         }

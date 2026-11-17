@@ -63,6 +63,7 @@ export class PdfDocument {
     private readonly created: Date = new Date();
     private metadata: DocumentMetadata = {};
     private language?: string;
+    private rightToLeft: boolean = false;
 
     constructor(path: string) {
         this.file = new PdfFile(path);
@@ -203,6 +204,10 @@ export class PdfDocument {
         this.language = language;
     }
 
+    setProgression(rightToLeft: boolean): void {
+        this.rightToLeft = rightToLeft;
+    }
+
     finish(): void {
         // §7.7.2, Table 29: the catalog with the page tree, the outline, the name dictionary with the destinations, the
         // metadata stream and the language; §7.7.3.2: one page tree node holds every page.
@@ -215,6 +220,10 @@ export class PdfDocument {
         }
         if (this.destinations.size > 0) {
             entries += " /Names << /Dests " + this.syntax.reference(this.writeDestinations()) + " >>";
+        }
+        if (this.rightToLeft) {
+            // §12.2, Table 147: Direction is the reading order a viewer follows for pages shown side by side.
+            entries += " /ViewerPreferences << /Direction /R2L >>";
         }
         entries += " /Metadata " + this.syntax.reference(this.writeMetadata());
         if (this.language !== undefined) {

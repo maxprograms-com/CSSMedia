@@ -226,7 +226,7 @@ export class TextRuns {
             const fonts: ReadonlyArray<FontInstance> = letter === undefined ? this.clusterFonts(codepoints, position, length, request, known) : [letter];
             // CSS Writing Modes 4 §5.1.2: with mixed, "the UA must determine the orientation of each typographic character
             // unit by its Vertical_Orientation property".
-            const upright: boolean = !combined && (orientation === "upright" || (orientation === "mixed" && this.vertical.isUpright(codepoints[position])));
+            const upright: boolean = !combined && (orientation === "upright" || (orientation === "mixed" && this.vertical.isUprightCluster(cluster.segment)));
             for (let offset: number = 0; offset < length; offset++) {
                 const font: FontInstance = fonts[offset];
                 // UAX #24 §5.2: a cluster is not split between scripts, and it has the level of its first character.

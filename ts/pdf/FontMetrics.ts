@@ -229,11 +229,15 @@ export class FontMetrics {
                 break;
             case "central":
                 // CSS Inline 3 A.2: the central baseline is halfway between the ideographic ones, which "are typically 1em
-                // apart", and the ascent and descent stand for them "when both are missing".
+                // apart". Writing Modes 4 §4.2: without them it is "halfway between the ascender (over) and descender (under)
+                // edges of the em box", whose edges Inline 3 A.1 gets by scaling the ascent and descent to add up to 1em.
                 if (under !== undefined) {
                     units = over !== undefined ? (over + under) / 2 : under + metrics.unitsPerEm / 2;
+                } else if (over !== undefined) {
+                    units = over - metrics.unitsPerEm / 2;
                 } else {
-                    units = over !== undefined ? over - metrics.unitsPerEm / 2 : (line.ascender + line.descender) / 2;
+                    const extent: number = line.ascender - line.descender;
+                    units = extent > 0 ? (line.ascender + line.descender) * metrics.unitsPerEm / (2 * extent) : 0;
                 }
                 break;
             case "ideographic":
@@ -273,6 +277,26 @@ export class FontMetrics {
         const scale: number = size / instance.metrics.unitsPerEm;
         const half: number = Math.max(0, line.lineGap) / 2;
         return [(line.ascender + half) * scale, (half - line.descender) * scale];
+    }
+
+    fontContent(instance: FontInstance, size: number, upright: boolean): readonly [number, number] {
+        // CSS Inline 3 §3.2: text-over and text-under are the ascent and descent metrics that make the line-over and line-under
+        // edges of an inline box's content box, without the line gap.
+        const line: LineMetrics = this.lines(instance, upright);
+        const scale: number = size / instance.metrics.unitsPerEm;
+        return [line.ascender * scale, -line.descender * scale];
+    }
+
+    fontEmBox(instance: FontInstance, size: number, vertical: boolean, upright: boolean): readonly [number, number] {
+        // CSS Inline 3 A.1: with an ideographic baseline in the font, em-over and em-under are 0.5em over and under the central
+        // baseline; "otherwise, the ascent and descent are both proportionally augmented or reduced to add up to exactly 1em".
+        if (this.tableBaseline(instance, "ideo", vertical) !== undefined || this.tableBaseline(instance, "idtp", vertical) !== undefined) {
+            const central: number = this.fontBaseline(instance, size, "central", vertical, upright);
+            return [central + size / 2, size / 2 - central];
+        }
+        const line: LineMetrics = this.lines(instance, upright);
+        const extent: number = line.ascender - line.descender;
+        return extent > 0 ? [line.ascender * size / extent, -line.descender * size / extent] : [size, 0];
     }
 
     private tableBaseline(instance: FontInstance, tag: string, vertical: boolean): number | undefined {

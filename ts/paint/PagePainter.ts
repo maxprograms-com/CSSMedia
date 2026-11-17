@@ -284,9 +284,6 @@ export class PagePainter {
     }
 
     private pageSupported(canvas: PageCanvas): void {
-        if (canvas.orientation !== "upright") {
-            throw new Error("The painting of page-orientation: " + canvas.orientation + " is not implemented");
-        }
         if (canvas.bleed > 0 || canvas.cropMarks || canvas.crossMarks) {
             throw new Error("The painting of bleed and marks is not implemented");
         }

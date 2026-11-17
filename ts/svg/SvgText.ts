@@ -209,7 +209,7 @@ export class SvgText {
             if (this.middle[index] === 0 && this.hidden[index] === 0 && this.forced[index] === 0 && (within === undefined || this.holds(this.owner[index], within))) {
                 // An upright glyph's cell is 1em across, centred on the central baseline.
                 const run: TextRun = this.runOf[index];
-                const [ascent, descent]: readonly [number, number] = this.metrics.fontExtent(run.font, run.size, this.upright(index));
+                const [ascent, descent]: readonly [number, number] = this.metrics.fontEmBox(run.font, run.size, this.upright(index), this.upright(index));
                 const central: number = this.upright(index) ? this.metrics.baseline((this.nodeStyles.get(this.owner[index]) as ComputedStyle).values, "central") : 0;
                 const cell: Box = this.upright(index) ? [Math.min(0, this.advance[index]), -central - run.size / 2, Math.abs(this.advance[index]), run.size]
                     : [Math.min(0, this.advance[index]), -ascent, Math.abs(this.advance[index]), ascent + descent];
@@ -268,8 +268,8 @@ export class SvgText {
         this.turn = mode === "horizontal-tb" ? 0 : (mode === "sideways-lr" ? -90 : 90);
     }
 
-    private typographic(values: Readonly<Record<string, CssValue>>): boolean {
-        // CSS Writing Modes 4 §5.1: the vertical typographic mode is a vertical writing mode not typeset sideways.
+    private centralBaseline(values: Readonly<Record<string, CssValue>>): boolean {
+        // CSS Inline 3 §4.1: central "in vertical writing modes when text-orientation is mixed or upright", alphabetic with sideways.
         const mode: string = this.keyword(values["writing-mode"]) ?? "horizontal-tb";
         return (mode === "vertical-rl" || mode === "vertical-lr") && (this.keyword(values["text-orientation"]) ?? "mixed") !== "sideways";
     }
@@ -278,9 +278,9 @@ export class SvgText {
         // SVG 2 §11.5: the text laid out on one line by CSS, then each character moved by the positioning attributes, by
         // textLength, by the anchoring of its chunk and by its text path.
         this.axes(this.keyword(style.values["writing-mode"]) ?? "horizontal-tb");
-        // CSS Inline 3 §4.1: auto is central in the vertical typographic mode and alphabetic otherwise.
+        // CSS Inline 3 §4.1: auto is central in vertical writing modes with mixed or upright text, and alphabetic otherwise.
         const dominant: string = this.keyword(style.values["dominant-baseline"]) ?? "auto";
-        this.dominant = this.metrics.baseline(style.values, dominant === "auto" && this.typographic(style.values) ? "central" : BASELINES[dominant] ?? dominant);
+        this.dominant = this.metrics.baseline(style.values, dominant === "auto" && this.centralBaseline(style.values) ? "central" : BASELINES[dominant] ?? dominant);
         const mirror: number = this.rightToLeft(style.values) ? -1 : 1;
         const shape: Outline | undefined = this.insideShape(style, [mirror * this.inline[0], -this.forward * this.over[0], mirror * this.inline[1],
             -this.forward * this.over[1], 0, 0]);
@@ -405,7 +405,7 @@ export class SvgText {
 
     private rightToLeft(values: Readonly<Record<string, CssValue>>): boolean {
         // CSS Writing Modes 4 §6.4: in vertical modes "a text-orientation value of upright forces the used direction to ltr".
-        return this.keyword(values["direction"]) === "rtl" && !(this.typographic(values) && this.keyword(values["text-orientation"]) === "upright");
+        return this.keyword(values["direction"]) === "rtl" && !(this.centralBaseline(values) && this.keyword(values["text-orientation"]) === "upright");
     }
 
     private inShape(sequence: InlineSequence, shape: Outline, size: number, anchor: string, rtl: boolean): readonly [Array<LineFragment>, number, number] {
@@ -811,7 +811,7 @@ export class SvgText {
 
     private lineExtent(start: number, end: number): readonly [number, number] {
         // CSS 2 §10.8.1: each inline box on the line, the text's strut included, spans its ascent and descent, centred on the
-        // central baseline in the vertical typographic mode, with half the leading on each side; the line box spans them all.
+        // central baseline where that is the dominant one, with half the leading on each side; the line box spans them all.
         let top: number = 0;
         let bottom: number = 0;
         const seen: Set<SvgNode> = new Set<SvgNode>();
@@ -822,7 +822,7 @@ export class SvgText {
                 const ascent: number = this.metrics.ascent(values);
                 const descent: number = this.metrics.descent(values);
                 const half: number = (this.metrics.lineHeight(values) - ascent - descent) / 2;
-                const centred: boolean = this.typographic(values);
+                const centred: boolean = this.centralBaseline(values);
                 const middle: number = centred ? (ascent + descent) / 2 : 0;
                 const reference: number = this.baselineShift(node) + this.dominant - (centred ? this.metrics.baseline(values, "central") : 0);
                 top = Math.min(top, reference - (centred ? middle : ascent) - half);

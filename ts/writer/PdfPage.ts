@@ -55,6 +55,7 @@ export class PdfPage {
     private readonly annotations: Array<number> = [];
     private readonly boxes: Map<string, PageRectangle> = new Map<string, PageRectangle>();
     private annotationArray?: number;
+    private turn: number = 0;
 
     constructor(object: number, width: number, height: number, turned: boolean = true) {
         // The page is given in points with its origin at the top left corner and y going down, as the layout has it;
@@ -136,6 +137,11 @@ export class PdfPage {
         this.annotationArray = array;
     }
 
+    rotate(degrees: number): void {
+        // §7.7.3.3, Table 31: Rotate is the number of degrees, a multiple of 90, that a viewer turns the page clockwise.
+        this.turn = ((degrees % 360) + 360) % 360;
+    }
+
     setBox(name: "CropBox" | "BleedBox" | "TrimBox" | "ArtBox", rectangle: PageRectangle): void {
         // §14.11.2: the page boundaries, given like everything else on the page, from its top left corner.
         this.boxes.set(name, rectangle);
@@ -157,7 +163,7 @@ export class PdfPage {
             annotations = " /Annots " + this.syntax.reference(this.annotationArray);
         }
         return "<< /Type /Page /Parent " + this.syntax.reference(parent) + " /MediaBox [0 0 " + this.syntax.number(this.width) + " " + this.syntax.number(this.height) + "]"
-            + boxes + " /Resources " + this.resources() + " /Contents " + this.syntax.reference(contents) + annotations + " >>";
+            + (this.turn === 0 ? "" : " /Rotate " + this.turn) + boxes + " /Resources " + this.resources() + " /Contents " + this.syntax.reference(contents) + annotations + " >>";
     }
 
     resources(): string {

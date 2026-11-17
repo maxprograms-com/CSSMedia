@@ -23,6 +23,8 @@ import { VERTICAL_UPRIGHT_RANGES } from "./generated/VerticalOrientationData.js"
 
 export type TextOrientation = "horizontal" | "upright" | "mixed";
 
+const ENCLOSING_MARK: RegExp = /\p{Me}/u;
+
 export class VerticalOrientation {
 
     of(values: Readonly<Record<string, CssValue>>): TextOrientation {
@@ -35,6 +37,24 @@ export class VerticalOrientation {
         const orientation: CssValue | undefined = values["text-orientation"];
         const keyword: string = orientation !== undefined && orientation.kind === "ident" ? orientation.lower : "mixed";
         return keyword === "sideways" ? "horizontal" : (keyword === "upright" ? "upright" : "mixed");
+    }
+
+    typographicVertical(values: Readonly<Record<string, CssValue>>): boolean {
+        // CSS Writing Modes 4 §3.2: vertical-rl and vertical-lr make "both the writing mode and the typographic mode" vertical,
+        // whatever text-orientation is; with sideways-rl and sideways-lr "the typographic mode is horizontal".
+        const mode: CssValue | undefined = values["writing-mode"];
+        return mode !== undefined && mode.kind === "ident" && (mode.lower === "vertical-rl" || mode.lower === "vertical-lr");
+    }
+
+    verticalWritingMode(values: Readonly<Record<string, CssValue>>): boolean {
+        const mode: CssValue | undefined = values["writing-mode"];
+        return mode !== undefined && mode.kind === "ident" && mode.lower !== "horizontal-tb";
+    }
+
+    isUprightCluster(cluster: string): boolean {
+        // UTR #50 §3.2.1: a grapheme cluster takes "the orientation of the first character in the cluster", but "if the cluster
+        // contains an enclosing combining mark (general category Me), then the whole cluster has the Vertical_Orientation property value U".
+        return ENCLOSING_MARK.test(cluster) || this.isUpright(cluster.codePointAt(0) as number);
     }
 
     isUpright(codepoint: number): boolean {

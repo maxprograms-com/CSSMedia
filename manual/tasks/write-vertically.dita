@@ -93,7 +93,7 @@ book {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>In <codeph>vertical-rl</codeph>, the block start is the right side, so the border is on the right of the paragraph and the space is on its left. The border, the padding and the margin of a box, its background, its list markers and its tables all follow this rule. A background image is placed by physical terms: <codeph>background-position: top right</codeph> is the top right corner of the box in every writing mode. The values <codeph>left</codeph> and <codeph>right</codeph> of <codeph>float</codeph> are physical too. <codeph>inline-start</codeph> and <codeph>inline-end</codeph> follow the line.</p>
+                    <p>In <codeph>vertical-rl</codeph>, the block start is the right side, so the border is on the right of the paragraph and the space is on its left. The border, the padding and the margin of a box, its background, its list markers and its tables all follow this rule. A background image is placed by physical terms: <codeph>background-position: top right</codeph> is the top right corner of the box in every writing mode. The values <codeph>left</codeph> and <codeph>right</codeph> of <codeph>float</codeph> and of <codeph>text-align</codeph> are the two sides of the line: in a vertical line, <codeph>left</codeph> is the top and <codeph>right</codeph> is the bottom. <codeph>inline-start</codeph> and <codeph>inline-end</codeph> follow the direction of the text.</p>
                 </info>
             </step>
             <step id="break-the-lines">
@@ -148,7 +148,7 @@ book {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>Images and formulas that are in the text are not turned. A MathML formula is always laid out horizontally, and its size in a vertical line is the same as in a horizontal one.</p>
+                    <p>A MathML formula is always laid out horizontally, whatever the writing mode of the text around it. In a vertical line it takes its place as one box, upright, and the line makes room for it.</p>
                 </info>
             </step>
             <step id="use-vertical-text-in-drawings">

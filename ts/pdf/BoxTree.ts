@@ -163,6 +163,53 @@ export interface InlineText {
     avoidance: Uint8Array;
 }
 
+export interface RubyBase {
+    box: ElementBox;
+    from: number;
+    to: number;
+    align: string;
+}
+
+export interface RubyNote {
+    sequence: InlineSequence;
+    box: ElementBox;
+    from: number;
+    to: number;
+    first: number;
+    last: number;
+    align: string;
+}
+
+export interface RubyLevel {
+    container: ElementBox;
+    level: number;
+    under: boolean;
+    merge: string;
+    align: string;
+    notes: Array<RubyNote>;
+    hidden: Array<readonly [number, number, ElementBox]>;
+}
+
+export interface RubyEmpty {
+    sequence: InlineSequence;
+    box: ElementBox;
+    from: number;
+    to: number;
+    level: number;
+    under: boolean;
+}
+
+export interface RubySegment {
+    index: number;
+    bases: Array<RubyBase>;
+    levels: Array<RubyLevel>;
+    empties: Array<RubyEmpty>;
+    tail: number;
+    marks: Uint8Array;
+}
+
+export type RubyExtras = Map<number, readonly [number, number]>;
+
 export interface RubyColumn {
     start: number;
     end: number;
@@ -178,6 +225,7 @@ export interface RubyColumn {
     room: number;
     offset: number;
     trail: number;
+    extras: RubyExtras;
 }
 
 export interface InlineSequence {
@@ -185,5 +233,5 @@ export interface InlineSequence {
     items: Array<InlineItem>;
     firstLine?: InlineSequence;
     text?: InlineText;
-    ruby?: Array<RubyColumn>;
+    ruby?: Array<RubySegment>;
 }

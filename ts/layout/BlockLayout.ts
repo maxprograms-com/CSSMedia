@@ -34,8 +34,8 @@ import { InlineLayout } from "./InlineLayout.js";
 import { TableLayout } from "./TableLayout.js";
 
 const NO_MARGIN: Margins = [0, 0];
-const DEFAULT_INLINE_SIZE: number = 300;
-const DEFAULT_BLOCK_SIZE: number = 150;
+const DEFAULT_WIDTH: number = 300;
+const DEFAULT_HEIGHT: number = 150;
 const VISIBLE_OVERFLOW: ReadonlyArray<string> = ["visible", "clip"];
 const TOLERANCE: number = 0.001;
 const FLOAT_FIELDS: number = 4;
@@ -96,6 +96,12 @@ interface ColumnResult {
     token?: BreakToken;
     firstBaseline: number | undefined;
     baseline: number | undefined;
+}
+
+interface ForcedColumns {
+    box: ElementBox;
+    columns: Columns;
+    length: number;
 }
 const BLOCK_ORIENTATION: number = BoxSizes.VERTICAL | BoxSizes.BLOCK_REVERSED;
 
@@ -160,6 +166,8 @@ export class BlockLayout {
     private readonly displays: DisplayTypes = new DisplayTypes();
     private readonly contents?: ContainerContents;
     private floats?: Floats;
+    private forcedColumns?: ForcedColumns;
+    private unboundedTable: readonly [ElementBox, number] | undefined = undefined;
     private wrapping?: Wrapping;
     private pending?: Set<BoxFragment>;
     private initialInline: number = 0;
@@ -187,11 +195,16 @@ export class BlockLayout {
         }
     }
 
-    cell(box: ElementBox, inlineSize: number, border?: [number, number, number, number], space?: number, incoming?: BreakToken): BoxFragment {
+    cell(box: ElementBox, tableFrame: number, inlineSize: number, border?: [number, number, number, number], space?: number, incoming?: BreakToken): BoxFragment {
         // CSS 2 §17.5.2 and §17.5.3: the table gives a cell its width and its height, and in the collapsing border model
-        // its borders too.
-        const sizes: UsedSizes = this.sizes.of(box.style, inlineSize);
+        // its borders too, given on the sides of the table's writing mode.
+        const frame: number = this.sizes.frame(box.style);
+        const orthogonal: boolean = this.sizes.isOrthogonal(tableFrame, frame);
+        const sizes: UsedSizes = orthogonal ? this.sizes.of(box.style, undefined, inlineSize, inlineSize) : this.sizes.of(box.style, inlineSize);
         delete sizes.margin;
+        delete sizes.inlineSize;
+        delete sizes.minInlineSize;
+        delete sizes.maxInlineSize;
         delete sizes.blockSize;
         delete sizes.minBlockSize;
         delete sizes.maxBlockSize;
@@ -200,9 +213,23 @@ export class BlockLayout {
         delete sizes.ratio;
         delete sizes.calculations;
         if (border !== undefined) {
-            sizes.border = border;
+            sizes.border = [0, 1, 2, 3].map((side: number) => border[this.sizes.side(frame, tableFrame, side)]) as [number, number, number, number];
         }
-        return this.flow(box, sizes, Math.max(0, inlineSize - this.inlineEdges(sizes)), 0, true, 0, 0, undefined, space, incoming);
+        const outerFrame: number = this.frame;
+        this.frame = tableFrame;
+        try {
+            if (orthogonal) {
+                // CSS Writing Modes 4 §7.3: a cell in an orthogonal flow is sized in its own writing mode, the column width being its block
+                // size, and is monolithic; its inline size comes from its content in the available space of §7.3.1.
+                sizes.blockSize = Math.max(0, inlineSize - this.sizes.edges(sizes, BoxSizes.BLOCK_START) - this.sizes.edges(sizes, BoxSizes.BLOCK_END));
+                return this.turned(this.crossed(box, sizes, frame, undefined, inlineSize, false), 0, sizes, tableFrame, frame);
+            }
+            const fragment: BoxFragment = this.flow(box, sizes, Math.max(0, inlineSize - this.inlineEdges(sizes)), 0, true, 0, 0, undefined, space, incoming);
+            this.reoriented(fragment, tableFrame, frame);
+            return fragment;
+        } finally {
+            this.frame = outerFrame;
+        }
     }
 
     page(box: ElementBox, inlineSize: number, blockSize: number, token?: BreakToken, end?: Candidate): BoxFragment {
@@ -407,6 +434,23 @@ export class BlockLayout {
         return this.displays.isTransformable(box.display, box.replaced) && this.displays.isTransforming(box.style.values);
     }
 
+    crossedContent(box: ElementBox): readonly [number, number] {
+        // CSS Writing Modes 4 §7.3: the content-based block size of a box in an orthogonal flow "is used as input to the inline-axis
+        // min-content size and max-content size" of its container, laid out in the available space of §7.3.1.
+        const given: UsedSizes = this.sizes.of(box.style, undefined, undefined, 0);
+        delete given.margin;
+        const laid: BoxFragment = this.crossed(box, given, this.sizes.frame(box.style), undefined, undefined, true);
+        const content: number = Math.max(0, laid.blockSize - this.sizes.edges(given, BoxSizes.BLOCK_START) - this.sizes.edges(given, BoxSizes.BLOCK_END));
+        return [content, content];
+    }
+
+    cellLimit(table: ElementBox): number | undefined {
+        // CSS Writing Modes 4 §7.3.3: the cells of a table laid out in infinite inline space are block containers that get that
+        // space, and so size by §7.3.2 against its constraint.
+        const entry: readonly [ElementBox, number] | undefined = this.unboundedTable;
+        return entry !== undefined && entry[0].children.includes(table) ? entry[1] : undefined;
+    }
+
     blockContentSizes(box: ElementBox): readonly [number, number] {
         // The content of a box laid out as a block box, for a layout that places the box itself and gives it its edges.
         return this.flowSizes(box);
@@ -445,6 +489,24 @@ export class BlockLayout {
 
     hasExclusions(): boolean {
         return this.floats !== undefined || this.wrapping !== undefined;
+    }
+
+    apart<T>(run: () => T): T {
+        // A layout that stands outside the block formatting context, such as a level of ruby annotations, meets none of its floats.
+        const floats: Floats | undefined = this.floats;
+        const wrapping: Wrapping | undefined = this.wrapping;
+        delete this.floats;
+        delete this.wrapping;
+        try {
+            return run();
+        } finally {
+            if (floats !== undefined) {
+                this.floats = floats;
+            }
+            if (wrapping !== undefined) {
+                this.wrapping = wrapping;
+            }
+        }
     }
 
     wrapIn(area?: WrappingArea): void {
@@ -848,21 +910,90 @@ export class BlockLayout {
     }
 
     private crossed(box: ElementBox, given: UsedSizes, frame: number, available: number | undefined, blockBasis: number | undefined, probe: boolean): BoxFragment {
+        // CSS Fragmentation 4 §4.1: an orthogonal flow is monolithic, and "Any forced breaks within such boxes therefore cannot split
+        // the box, and must therefore also be ignored by the box's own fragmentation context", so it is laid out outside that context.
+        const outer: Fragmentation | undefined = this.fragmenting;
+        delete this.fragmenting;
+        try {
+            return this.crossedLayout(box, given, frame, available, blockBasis, probe);
+        } finally {
+            if (outer !== undefined) {
+                this.fragmenting = outer;
+            }
+        }
+    }
+
+    private crossedLayout(box: ElementBox, given: UsedSizes, frame: number, available: number | undefined, blockBasis: number | undefined, probe: boolean): BoxFragment {
         // CSS Writing Modes 4 §7.3: in the sizing phase of an orthogonal flow the box and its containing block are measured
         // "using the writing mode of the box establishing the orthogonal flow"; the fragment comes back in that mode.
         const space: number = available ?? this.fallback(frame);
         const margins: number = (this.sizes.margin(given, BoxSizes.INLINE_START) ?? 0) + (this.sizes.margin(given, BoxSizes.INLINE_END) ?? 0);
         const stretch: number = Math.max(0, space - margins - this.inlineEdges(given));
         const sizes: UsedSizes = this.resolved(box, given, stretch, blockBasis);
-        let size: number | undefined = sizes.inlineSize;
-        if (size === undefined) {
-            // §7.3.2: an auto inline size is "min(max-content, max(min-content, constraint))", and the content then flows into
-            // columns of that width.
-            const content: readonly [number, number] = this.contentSizes(box, sizes.blockSize);
-            size = this.sizes.adjusted(sizes, BoxSizes.PREFERRED_INLINE, Math.min(Math.max(content[0], stretch), content[1]));
+        const lay: (inlineSize: number) => BoxFragment = (inlineSize: number): BoxFragment => probe ? this.probe(box, sizes, inlineSize, 0, true, 0, 0)
+            : this.flow(box, sizes, inlineSize, 0, true, 0, 0);
+        if (sizes.inlineSize !== undefined) {
+            return lay(this.clamped(sizes.inlineSize, sizes.minInlineSize, sizes.maxInlineSize));
         }
-        size = this.clamped(size, sizes.minInlineSize, sizes.maxInlineSize);
-        return probe ? this.probe(box, sizes, size, 0, true, 0, 0) : this.flow(box, sizes, size, 0, true, 0, 0);
+        if (this.tables.isWrapper(box)) {
+            // §7.3.3: a table "is laid out into its given available space", and with an infinite one "at its max-content size",
+            // while its cells get that infinite space and size as §7.3.2 says against the constraint of §7.3.1.
+            const outer: readonly [ElementBox, number] | undefined = this.unboundedTable;
+            this.unboundedTable = available === undefined ? [box, space] : undefined;
+            try {
+                const own: readonly [number, number] = this.contentSizes(box, sizes.blockSize);
+                const room: number = available === undefined ? Number.POSITIVE_INFINITY : stretch;
+                return lay(this.clamped(this.sizes.adjusted(sizes, BoxSizes.PREFERRED_INLINE, Math.min(Math.max(own[0], room), own[1])), sizes.minInlineSize,
+                    sizes.maxInlineSize));
+            } finally {
+                this.unboundedTable = outer;
+            }
+        }
+        const content: readonly [number, number] = this.contentSizes(box, sizes.blockSize);
+        const fit: (constraint: number) => number = (constraint: number): number => this.clamped(this.sizes.adjusted(sizes, BoxSizes.PREFERRED_INLINE,
+            Math.min(Math.max(content[0], constraint), content[1])), sizes.minInlineSize, sizes.maxInlineSize);
+        const values: Readonly<Record<string, CssValue>> = box.style.values;
+        const countValue: CssValue | undefined = values["column-count"];
+        const widthValue: CssValue | undefined = values["column-width"];
+        const count: number | undefined = countValue !== undefined && countValue.kind === "number" ? Math.max(1, Math.floor(countValue.value)) : undefined;
+        const width: number | undefined = widthValue !== undefined && widthValue.kind !== "ident" ? this.sizes.pixels(widthValue, 0) : undefined;
+        const container: boolean = !box.replaced && box.display.internal === undefined && this.displays.isBlockContainer(box.display) && !this.tables.isWrapper(box);
+        // §7.3.2: a block container that establishes an orthogonal flow with an auto inline size is a multi-column container, its
+        // column length the block size, else the stretch-fit block size, else the max-content block size (one column).
+        const blockEdges: number = (this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0) + (this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0)
+            + this.sizes.edges(sizes, BoxSizes.BLOCK_START) + this.sizes.edges(sizes, BoxSizes.BLOCK_END);
+        const length: number | undefined = sizes.blockSize ?? (blockBasis === undefined ? undefined : Math.max(0, blockBasis - blockEdges));
+        if (!container || length === undefined || (count !== undefined && width !== undefined)) {
+            return lay(fit(stretch));
+        }
+        const gap: number = this.columnGap(values, space);
+        // "If column-count and column-width are both auto", the shrink-to-fit formula; with a count, the constraint less the gaps.
+        const columnWidth: number = width ?? fit(count === undefined ? stretch : stretch - (count - 1) * gap);
+        if (content[1] <= columnWidth + TOLERANCE) {
+            // "If the content neither line-wraps nor fragments", the box is as wide as its max-content inline size.
+            const single: BoxFragment = lay(fit(stretch));
+            if (single.blockSize - this.sizes.edges(sizes, BoxSizes.BLOCK_START) - this.sizes.edges(sizes, BoxSizes.BLOCK_END) <= length + TOLERANCE) {
+                return single;
+            }
+        }
+        const columns: Columns = { count: count ?? 1, width: columnWidth, gap, fill: "auto" };
+        this.forcedColumns = { box, columns, length };
+        try {
+            // The used column-count "follows from filling the resulting multi-column layout with the box's content".
+            const filled: BoxFragment = this.probe(box, sizes, columnWidth, 0, true, 0, 0);
+            const used: number = count ?? Math.max(1, (filled.children ?? []).filter((child: BoxFragment | LineFragment) => child.kind === "box").length);
+            columns.count = used;
+            return lay(used * columnWidth + (used - 1) * gap);
+        } finally {
+            delete this.forcedColumns;
+        }
+    }
+
+    private columnGap(values: Readonly<Record<string, CssValue>>, basis: number): number {
+        // CSS Multicol 1 §5.1 and CSS Align 3 §8.1: normal is 1em in multi-column containers, a percentage of the content box.
+        const gap: CssValue | undefined = values["column-gap"];
+        const size: CssValue | undefined = values["font-size"];
+        return gap === undefined || gap.kind === "ident" ? (size === undefined ? 0 : this.sizes.pixels(size, 0)) : this.sizes.pixels(gap, basis);
     }
 
     private fallback(frame: number): number {
@@ -1244,7 +1375,8 @@ export class BlockLayout {
         }
         const nodes: ReadonlyArray<BoxNode> | undefined = box.replaced ? undefined : box.children;
         // CSS Multicol 1: the content of a multi-column container is laid out in columns, which are fragmentainers of their own.
-        const columns: Columns | undefined = nodes === undefined ? undefined : this.columnsOf(box, inlineSize);
+        const forced: ForcedColumns | undefined = this.forcedColumns !== undefined && this.forcedColumns.box === box ? this.forcedColumns : undefined;
+        const columns: Columns | undefined = nodes === undefined ? undefined : (forced?.columns ?? this.columnsOf(box, inlineSize));
         let rules: Array<readonly [number, number, number]> | undefined;
         if (resumed) {
             startTrim = undefined;
@@ -1253,7 +1385,7 @@ export class BlockLayout {
             this.resumeFloats(incoming.parallel, children, sizes.blockSize);
         }
         if (columns !== undefined) {
-            const flowed: ColumnResult = this.columnFlow(box, columns, sizes.blockSize, inlineSize, room, fragmenting !== undefined, incoming);
+            const flowed: ColumnResult = this.columnFlow(box, columns, forced?.length ?? sizes.blockSize, inlineSize, room, fragmenting !== undefined, incoming);
             children.push(...flowed.children);
             offset = flowed.extent;
             empty = flowed.children.length === 0;
@@ -1648,9 +1780,7 @@ export class BlockLayout {
         if (wanted === undefined && least === undefined) {
             return undefined;
         }
-        const gap: CssValue | undefined = values["column-gap"];
-        const size: CssValue | undefined = values["font-size"];
-        const spacing: number = gap === undefined || gap.kind === "ident" ? (size === undefined ? 0 : this.sizes.pixels(size, 0)) : this.sizes.pixels(gap, inlineSize);
+        const spacing: number = this.columnGap(values, inlineSize);
         const fits: number = least === undefined ? 1 : Math.max(1, Math.floor((inlineSize + spacing) / (least + spacing)));
         const used: number = wanted === undefined ? fits : (least === undefined ? wanted : Math.min(wanted, fits));
         return { count: used, width: Math.max(0, (inlineSize - (used - 1) * spacing) / used), gap: spacing, fill: this.keyword(values["column-fill"]) === "auto" ? "auto" : "balance" };
@@ -2701,7 +2831,7 @@ export class BlockLayout {
             }
         }
         if (box.replaced) {
-            const final: readonly [number, number] = this.replacedSizes(used, inlineStretch);
+            const final: readonly [number, number] = this.replacedSizes(used, this.defaultObject(box), inlineStretch);
             used.inlineSize = this.settled(used, BoxSizes.PREFERRED_INLINE, final[0]);
             used.blockSize = this.settled(used, BoxSizes.PREFERRED_BLOCK, final[1]);
         }
@@ -2737,8 +2867,15 @@ export class BlockLayout {
         for (const field of BoxSizes.FIELDS) {
             delete bare[field];
         }
-        const own: readonly [number, number] = this.replacedSizes(bare, stretch);
-        return [this.replacedSizes(bare, 0)[0], own[0], own[1]];
+        const defaults: readonly [number, number] = this.defaultObject(box);
+        const own: readonly [number, number] = this.replacedSizes(bare, defaults, stretch);
+        return [this.replacedSizes(bare, defaults, 0)[0], own[0], own[1]];
+    }
+
+    private defaultObject(box: ElementBox): readonly [number, number] {
+        // CSS Writing Modes 4 §3.2: "the default object size of 300px×150px does not re-orient", so in a vertical writing mode
+        // the inline size is the 150px height.
+        return (this.sizes.frame(box.style) & BoxSizes.VERTICAL) !== 0 ? [DEFAULT_HEIGHT, DEFAULT_WIDTH] : [DEFAULT_WIDTH, DEFAULT_HEIGHT];
     }
 
     private contained(sizes: UsedSizes, block: boolean, inlineStretch?: number, blockStretch?: number): number | undefined {
@@ -2786,7 +2923,7 @@ export class BlockLayout {
         }
     }
 
-    private replacedSizes(sizes: UsedSizes, available?: number): readonly [number, number] {
+    private replacedSizes(sizes: UsedSizes, defaults: readonly [number, number], available?: number): readonly [number, number] {
         // The sizes are counted on the box that the preferred aspect ratio works with, and given back for the content box.
         const natural: NaturalSizes = sizes.natural ?? NO_NATURAL_SIZES;
         const ratio: number | undefined = sizes.ratio;
@@ -2805,19 +2942,19 @@ export class BlockLayout {
         if (sizes.inlineSize !== undefined) {
             // CSS 2 §10.3.2 and §10.6.2: a size that is given is used, and an auto one follows from it by the ratio.
             const inline: number = this.clamped(sizes.inlineSize + inlineExtra, minimum[0], maximum[0]);
-            const block: number = sizes.blockSize !== undefined ? sizes.blockSize + blockExtra : (ratio !== undefined ? inline / ratio : down ?? DEFAULT_BLOCK_SIZE + blockExtra);
+            const block: number = sizes.blockSize !== undefined ? sizes.blockSize + blockExtra : (ratio !== undefined ? inline / ratio : down ?? defaults[1] + blockExtra);
             pair = [inline, this.clamped(block, minimum[1], maximum[1])];
         } else if (sizes.blockSize !== undefined) {
             const block: number = this.clamped(sizes.blockSize + blockExtra, minimum[1], maximum[1]);
-            pair = [this.clamped(ratio !== undefined ? block * ratio : across ?? DEFAULT_INLINE_SIZE + inlineExtra, minimum[0], maximum[0]), block];
+            pair = [this.clamped(ratio !== undefined ? block * ratio : across ?? defaults[0] + inlineExtra, minimum[0], maximum[0]), block];
         } else {
-            pair = this.automaticSizes(sizes, minimum, maximum, across, down, inlineExtra, blockExtra, available);
+            pair = this.automaticSizes(sizes, minimum, maximum, across, down, inlineExtra, blockExtra, defaults, available);
         }
         return [Math.max(0, pair[0] - inlineExtra), Math.max(0, pair[1] - blockExtra)];
     }
 
     private automaticSizes(sizes: UsedSizes, minimum: readonly [number, number], maximum: readonly [number, number], across: number | undefined, down: number | undefined,
-        inlineExtra: number, blockExtra: number, available?: number): readonly [number, number] {
+        inlineExtra: number, blockExtra: number, defaults: readonly [number, number], available?: number): readonly [number, number] {
         const ratio: number | undefined = sizes.ratio;
         const lowInline: number = sizes.minInlineSize ?? 0;
         const lowBlock: number = sizes.minBlockSize ?? 0;
@@ -2841,7 +2978,7 @@ export class BlockLayout {
             width = lowInline + inlineExtra;
         } else {
             // CSS 2 §10.3.2: 300px, or the widest rectangle with a 2:1 ratio that fits.
-            width = (available !== undefined && available > 0 ? Math.min(DEFAULT_INLINE_SIZE, available) : DEFAULT_INLINE_SIZE) + inlineExtra;
+            width = (available !== undefined && available > 0 ? Math.min(defaults[0], available) : defaults[0]) + inlineExtra;
         }
         let height: number;
         if (down !== undefined) {
@@ -2852,7 +2989,7 @@ export class BlockLayout {
             height = lowBlock + blockExtra;
         } else {
             // CSS Sizing 3 §5.1: without a ratio the block size is 150px, which stays half of a default width that was reduced.
-            height = (across !== undefined || lowInline > 0 ? DEFAULT_BLOCK_SIZE : (width - inlineExtra) * DEFAULT_BLOCK_SIZE / DEFAULT_INLINE_SIZE) + blockExtra;
+            height = (across !== undefined || lowInline > 0 ? defaults[1] : (width - inlineExtra) * defaults[1] / defaults[0]) + blockExtra;
         }
         if (ratio === undefined || width <= 0 || height <= 0) {
             return [this.clamped(width, minimum[0], maximum[0]), this.clamped(height, minimum[1], maximum[1])];

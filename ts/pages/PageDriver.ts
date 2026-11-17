@@ -1039,6 +1039,10 @@ export class PageDriver {
     private emit(page: PageLayout, later?: Omit<LaterMargins, "page" | "annotations" | "earlier">): void {
         const sheet: Size = page.canvas.sheet;
         const pdf: PdfPage = this.document.addPage(sheet.width * POINTS_PER_PIXEL, sheet.height * POINTS_PER_PIXEL);
+        // CSS Page 3 §7.1.2: the page is laid out as it is and then displayed a quarter turn to the left or to the right.
+        if (page.canvas.orientation !== "upright") {
+            pdf.rotate(page.canvas.orientation === "rotate-right" ? 90 : 270);
+        }
         this.painter.paint(page, pdf);
         if (later !== undefined) {
             this.later.push({ ...later, page: pdf.object, annotations: this.document.deferAnnotations(pdf), earlier: [...pdf.annotationObjects] });

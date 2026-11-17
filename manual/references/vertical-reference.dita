@@ -47,7 +47,8 @@
                         </row>
                         <row id="row-unicode-bidi-vertical">
                             <entry><codeph>unicode-bidi</codeph></entry>
-                            <entry>How an element takes part in the ordering of text that mixes directions. It works along the vertical line as it does along a horizontal one.</entry>
+                            <!-- TODO: the values of unicode-bidi are not tested in vertical lines -->
+                            <entry>How an element takes part in the ordering of text that mixes directions.</entry>
                             <entry><codeph>normal</codeph>, <codeph>embed</codeph>, <codeph>isolate</codeph>, <codeph>bidi-override</codeph>, <codeph>isolate-override</codeph> or <codeph>plaintext</codeph></entry>
                             <entry><codeph>normal</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-unicode-bidi" scope="external" format="html">CSS Writing Modes 4 §2.2</xref></entry>
@@ -183,9 +184,10 @@
                             <entry><codeph>spaces punctuation</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis-skip" scope="external" format="html">CSS Text Decoration 4 §3.5</xref></entry>
                         </row>
+                        <!-- TODO: the blur and inset of text-shadow have no effect on text in the 14 standard fonts of PDF, which have no outlines in CSSMedia; the row names embedded fonts for them -->
                         <row id="row-text-shadow">
                             <entry><codeph>text-shadow</codeph></entry>
-                            <entry>One or more shadows of the text and of its decorations. Each one has a horizontal and a vertical offset, a blur, a spread and a color, and it can be <codeph>inset</codeph>. The offsets are on the page whatever the writing mode: a positive horizontal offset is to the right. The first shadow is on top. It is inherited.</entry>
+                            <entry>One or more shadows of the text and of its decorations. Each one has a horizontal and a vertical offset, a spread and a color. In a font that you embed with <codeph>@font-face</codeph>, it can also have a blur and be <codeph>inset</codeph>. The offsets are on the page whatever the writing mode: a positive horizontal offset is to the right. The first shadow is on top. It is inherited.</entry>
                             <entry><codeph>none</codeph> or a comma separated list of shadows</entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-shadow" scope="external" format="html">CSS Text Decoration 4 §4</xref></entry>

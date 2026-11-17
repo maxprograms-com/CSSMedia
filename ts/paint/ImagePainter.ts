@@ -23,7 +23,8 @@ import type { ColorValue, CssValue, FunctionValue } from "../css/values/CssValue
 import type { Matrix } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
 import type { ImageAlpha, ImageFormats, ImageSize } from "../images/ImageFormats.js";
-import type { BoxSizes, Transform } from "../layout/BoxSizes.js";
+import { BoxSizes } from "../layout/BoxSizes.js";
+import type { Transform } from "../layout/BoxSizes.js";
 import type { BoxFragment, ObjectArea } from "../layout/Fragment.js";
 import type { BoxNode } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
@@ -208,17 +209,18 @@ export class ImagePainter {
         if (natural === undefined) {
             return;
         }
-        const values: Readonly<Record<string, CssValue>> = style.values;
         const size: readonly [number, number] = this.size(layer.size, natural, area, layer.repeatX === "round", layer.repeatY === "round");
         if (!(size[0] > 0) || !(size[1] > 0)) {
             return;
         }
-        const rtl: boolean = this.keyword(values["direction"]) === "rtl";
-        const mode: string = this.keyword(values["writing-mode"]);
-        const vertical: boolean = mode !== "horizontal-tb" && mode !== "none";
-        const flipped: boolean = vertical && mode.endsWith("-rl");
-        const x: readonly [number, number] = this.axis(layer.x, area.x, area.width, size[0], layer.repeatX, vertical ? flipped : rtl);
-        const y: readonly [number, number] = this.axis(layer.y, area.y, area.height, size[1], layer.repeatY, vertical && rtl);
+        // CSS Backgrounds 4 §2.6: the start of each physical axis is the start of the flow-relative axis that runs along it, whose
+        // direction the frame of the box gives (CSS Writing Modes 4 §6.4).
+        const frame: number = this.sizes.frame(style);
+        const vertical: boolean = (frame & BoxSizes.VERTICAL) !== 0;
+        const inlineReversed: boolean = (frame & BoxSizes.INLINE_REVERSED) !== 0;
+        const blockReversed: boolean = (frame & BoxSizes.BLOCK_REVERSED) !== 0;
+        const x: readonly [number, number] = this.axis(layer.x, area.x, area.width, size[0], layer.repeatX, vertical ? blockReversed : inlineReversed);
+        const y: readonly [number, number] = this.axis(layer.y, area.y, area.height, size[1], layer.repeatY, vertical ? inlineReversed : blockReversed);
         const tile: readonly [number, number, number, number] = [x[0], y[0], size[0], size[1]];
         const across: boolean = layer.repeatX !== "no-repeat" && x[1] > 0;
         const down: boolean = layer.repeatY !== "no-repeat" && y[1] > 0;
@@ -488,11 +490,10 @@ export class ImagePainter {
         }
         const first: CssValue | undefined = value.args[0];
         const tag: CssValue | undefined = first !== undefined && first.kind === "list" ? first.items[0] : undefined;
-        const direction: CssValue | undefined = style.values["direction"];
-        const rtl: boolean = direction !== undefined && direction.kind === "ident" && direction.lower === "rtl";
+        const frame: number = this.sizes.frame(style);
+        const rtl: boolean = (frame & BoxSizes.RIGHT_TO_LEFT) !== 0;
         const flip: boolean = tag !== undefined && tag.kind === "ident" && (tag.lower === "rtl") !== rtl && (tag.lower === "ltr" || tag.lower === "rtl");
-        const mode: CssValue | undefined = style.values["writing-mode"];
-        const vertical: boolean = mode !== undefined && mode.kind === "ident" && mode.lower !== "horizontal-tb";
+        const vertical: boolean = (frame & BoxSizes.VERTICAL) !== 0;
         pdf.content.save();
         pdf.content.rectangle(target[0], target[1], target[2], target[3]);
         pdf.content.clip(false);

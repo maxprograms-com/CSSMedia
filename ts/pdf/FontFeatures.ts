@@ -27,10 +27,12 @@ export interface FontFeatureSet {
     languageOverride?: string;
 }
 
+export type GlyphOrientation = "horizontal" | "upright" | "sideways";
+
 export interface FeatureContext {
     face?: FontFaceRule;
     family?: string;
-    upright: boolean;
+    orientation: GlyphOrientation;
     letterSpaced: boolean;
     available(tag: string): boolean;
 }
@@ -85,10 +87,14 @@ export class FontFeatures {
         // font-variant properties and font-kerning, what other properties imply, and the font-feature-settings property.
         const tags: Map<string, number> = new Map<string, number>(DEFAULT_FEATURES.map((tag: string): [string, number] => [tag, 1]));
         // §6.3 and §7.1: kern for horizontal and sideways text and vkrn for upright text in vertical lines, where vert "must be enabled".
-        const kerning: string = context.upright ? "vkrn" : "kern";
+        // CSS Writing Modes 4 §5.1.1: sideways text in vertical lines uses the features "meant to be enabled" for it, such as vrtr.
+        const upright: boolean = context.orientation === "upright";
+        const kerning: string = upright ? "vkrn" : "kern";
         tags.set(kerning, 1);
-        if (context.upright) {
+        if (upright) {
             tags.set("vert", 1);
+        } else if (context.orientation === "sideways") {
+            tags.set("vrtr", 1);
         }
         let languageOverride: string | undefined = this.language(context.face?.descriptors["font-language-override"]);
         this.settings(tags, context.face?.descriptors["font-feature-settings"]);

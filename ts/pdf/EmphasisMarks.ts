@@ -70,8 +70,7 @@ export class EmphasisMarks {
     }
 
     isVertical(values: Values): boolean {
-        // CSS Writing Modes 4 §5.1: the typographic mode is vertical in a vertical writing mode not typeset sideways.
-        return this.orientation.of(values) !== "horizontal";
+        return this.orientation.typographicVertical(values);
     }
 
     isUnder(values: Values): boolean {

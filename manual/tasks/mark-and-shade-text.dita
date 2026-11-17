@@ -59,7 +59,7 @@
             <step id="add-a-shadow">
                 <cmd>Add a shadow</cmd>
                 <info>
-                    <p><codeph>text-shadow</codeph> takes a list of shadows. Each one has a horizontal and a vertical offset, then an optional blur, an optional spread and a color:</p>
+                    <p><codeph>text-shadow</codeph> takes a list of shadows. Each one has a horizontal and a vertical offset, then an optional blur, an optional spread and a color. Use a font that you embed with <codeph>@font-face</codeph>, as <xref href="font-faces.dita"/> explains, when the shadow has a blur:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">title {
@@ -84,7 +84,7 @@
             <step id="inset-shadows">
                 <cmd>Draw a shadow inside the letters</cmd>
                 <info>
-                    <p>Write <codeph>inset</codeph> before the lengths of a shadow to draw it inside the letters, as if they were cut into the page:</p>
+                    <p>In a font that you embed with <codeph>@font-face</codeph>, write <codeph>inset</codeph> before the lengths of a shadow to draw it inside the letters, as if they were cut into the page:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">title {
@@ -94,13 +94,8 @@
 </pre>
                 </stepxmp>
             </step>
-            <step id="know-the-limits-of-blur">
-                <cmd>Embed a font for blurs and inset shadows</cmd>
-                <info>
-                    <p>A blur and an inset shadow are drawn from the outlines of the letters. CSSMedia has the outlines of the fonts that you embed with <codeph>@font-face</codeph>, but it does not have those of the 14 standard fonts of PDF, whose letters the PDF viewer draws. For text in a standard font, CSSMedia draws a shadow without its blur, and it leaves out an inset shadow. In both cases it shows a warning. Shadows with offsets and spreads, and the emphasis marks, are drawn in any font. Declare an embedded font when you need the blur or an inset shadow, as <xref href="font-faces.dita"/> explains.</p>
-                </info>
-            </step>
         </steps>
+        <!-- TODO: text-shadow blur and inset in the 14 standard fonts of PDF need their outlines, which CSSMedia does not have; document them when they are drawn -->
         <result>
             <p>The text of your document has marks and shadows in horizontal and vertical lines.</p>
         </result>
