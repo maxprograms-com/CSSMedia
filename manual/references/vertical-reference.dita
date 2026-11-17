@@ -33,7 +33,7 @@
                         </row>
                         <row id="row-text-combine-upright">
                             <entry><codeph>text-combine-upright</codeph></entry>
-                            <entry>Sets several characters side by side in the space of one, upright, inside a vertical line. <codeph>all</codeph> combines the text of the element. <codeph>digits</codeph> combines each run of digits that has as many digits as the integer or fewer. It has no effect in horizontal text or in the sideways modes. It is inherited.</entry>
+                            <entry>Sets several characters side by side in the space of one, upright, inside a vertical line. <codeph>all</codeph> combines the text of the element. <codeph>digits</codeph> combines each run of digits that has as many digits as the integer or fewer. The result fits in a square of one em, with half-width forms for two characters when the font has them. It works in every vertical writing mode, the sideways modes included, and has no effect in <codeph>horizontal-tb</codeph>. It is inherited.</entry>
                             <entry><codeph>none</codeph>, <codeph>all</codeph> or <codeph>digits</codeph> with an optional integer from 2 to 4, which is 2 when it is left out</entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-writing-modes-4/#propdef-text-combine-upright" scope="external" format="html">CSS Writing Modes 4 §9.1</xref></entry>
@@ -55,17 +55,31 @@
                         </row>
                         <row id="row-line-break-vertical">
                             <entry><codeph>line-break</codeph></entry>
-                            <entry>How strict the rules are that keep some characters off the start or the end of a line: closing brackets and stops do not start a line, opening brackets do not end one, and a dash or an ellipsis of two characters is not split. They apply in vertical lines as they do in horizontal ones. <codeph>strict</codeph> also keeps small kana off the start of a line, and <codeph>loose</codeph> lets them start it. <codeph>anywhere</codeph> allows a break after every character.</entry>
+                            <entry>How strict the rules are that keep some characters off the start or the end of a line: closing brackets and stops do not start a line, opening brackets do not end one, and a dash or an ellipsis of two characters is not split. They apply in vertical lines as they do in horizontal ones. <codeph>normal</codeph> and <codeph>strict</codeph> also keep small kana, the long vowel mark and iteration marks off the start of a line and do not split an ellipsis; <codeph>loose</codeph> allows those breaks. In Chinese and Japanese, <codeph>normal</codeph> and <codeph>loose</codeph> let 〜 and ゠ start a line. <codeph>anywhere</codeph> allows a break after every character.</entry>
                             <entry><codeph>auto</codeph>, <codeph>loose</codeph>, <codeph>normal</codeph>, <codeph>strict</codeph> or <codeph>anywhere</codeph></entry>
                             <entry><codeph>auto</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-line-break" scope="external" format="html">CSS Text 4 §6.2</xref></entry>
                         </row>
+                        <row id="row-text-spacing-trim">
+                            <entry><codeph>text-spacing-trim</codeph></entry>
+                            <entry>When the blank half of full-width brackets, commas, stops and middle dots is removed. <codeph>normal</codeph> keeps an opening bracket full at the start of a line, makes a closing mark half at the end of a line only when the line does not fit otherwise, and removes one blank between two marks that stand together. <codeph>space-all</codeph> keeps all marks full. <codeph>trim-start</codeph> makes opening brackets half at the start of every line, and <codeph>space-first</codeph> does so except on the first line and after a line feed. <codeph>trim-both</codeph> also makes closing marks half at the end of every line. <codeph>trim-all</codeph> makes all of them half everywhere. It is inherited.</entry>
+                            <entry><codeph>space-all</codeph>, <codeph>normal</codeph>, <codeph>space-first</codeph>, <codeph>trim-start</codeph>, <codeph>trim-both</codeph> or <codeph>trim-all</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-4/#text-spacing-trim-property" scope="external" format="html">CSS Text 4 §8.5</xref></entry>
+                        </row>
                         <row id="row-text-underline-position-vertical">
                             <entry><codeph>text-underline-position</codeph></entry>
-                            <entry>Where an underline is drawn. In a vertical line, <codeph>right</codeph> puts it on the right of the text and <codeph>left</codeph> on the left, and so does <codeph>auto</codeph>, which is the left. In horizontal text, <codeph>under</codeph> puts it under the characters and <codeph>from-font</codeph> takes its position from the font. It is inherited.</entry>
+                            <entry>Where an underline is drawn. <codeph>auto</codeph> puts it just under the alphabetic baseline, <codeph>from-font</codeph> where the font says, and <codeph>under</codeph> under the whole text; in a vertical line all three are on the left. In a vertical line, <codeph>left</codeph> puts it outside the text on the left and <codeph>right</codeph> outside the text on the right, and then the overline moves to the left. In horizontal text and in the sideways modes, <codeph>left</codeph> and <codeph>right</codeph> act as <codeph>auto</codeph>. It is inherited.</entry>
                             <entry><codeph>auto</codeph>, or <codeph>from-font</codeph> or <codeph>under</codeph> with <codeph>left</codeph> or <codeph>right</codeph></entry>
                             <entry><codeph>auto</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-underline-position" scope="external" format="html">CSS Text Decoration 4 §2.7</xref></entry>
+                        </row>
+                        <row id="row-text-underline-offset">
+                            <entry><codeph>text-underline-offset</codeph></entry>
+                            <entry>How far the underline is moved away from the place that <codeph>text-underline-position</codeph> gives it. A percentage is of the font size. It is inherited.</entry>
+                            <entry><codeph>auto</codeph>, a length or a percentage</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-underline-offset" scope="external" format="html">CSS Text Decoration 4 §2.8</xref></entry>
                         </row>
                     </tbody>
                 </tgroup>
@@ -113,7 +127,7 @@
                     <tbody>
                         <row id="row-ruby-position">
                             <entry><codeph>ruby-position</codeph></entry>
-                            <entry>Where the annotations are. <codeph>over</codeph> is above the bases in horizontal text and on the right in vertical text. <codeph>under</codeph> is the other side. <codeph>alternate</codeph> puts the first level over and the next levels on the other side of the level before. <codeph>inter-character</codeph> puts each annotation after its base, on the right of it in vertical text. It is inherited.</entry>
+                            <entry>Where the annotations are. <codeph>over</codeph> is above the bases in horizontal text and on the right in vertical text. <codeph>under</codeph> is the other side. <codeph>alternate</codeph> puts the first level over, or under with <codeph>alternate under</codeph>, and the next levels on the other side of the level before. <codeph>inter-character</codeph> puts each annotation after its base in horizontal text, and acts as <codeph>over</codeph> in vertical text. It is inherited.</entry>
                             <entry><codeph>alternate</codeph> or <codeph>over</codeph> or <codeph>under</codeph>, with <codeph>alternate</codeph> optional beside them, or <codeph>inter-character</codeph></entry>
                             <entry><codeph>alternate</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-ruby-1/#propdef-ruby-position" scope="external" format="html">CSS Ruby 1 §4.1</xref></entry>
@@ -151,7 +165,7 @@
                     <tbody>
                         <row id="row-text-emphasis-style">
                             <entry><codeph>text-emphasis-style</codeph></entry>
-                            <entry>The mark that is put beside each character. <codeph>filled</codeph> or <codeph>open</codeph> alone gives a circle in horizontal text and a sesame in vertical text. A shape alone is filled. A string gives a mark that is the first character of the string. It is inherited.</entry>
+                            <entry>The mark that is put beside each character. <codeph>filled</codeph> or <codeph>open</codeph> alone gives a circle in horizontal text and in the sideways modes, and a sesame in <codeph>vertical-rl</codeph> and <codeph>vertical-lr</codeph>. A shape alone is filled. A string gives a mark that is the first character of the string. It is inherited.</entry>
                             <entry><codeph>none</codeph>, <codeph>filled</codeph> or <codeph>open</codeph> with <codeph>dot</codeph>, <codeph>circle</codeph>, <codeph>double-circle</codeph>, <codeph>triangle</codeph> or <codeph>sesame</codeph>, or a string</entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis-style" scope="external" format="html">CSS Text Decoration 4 §3.1</xref></entry>
@@ -172,7 +186,7 @@
                         </row>
                         <row id="row-text-emphasis-position">
                             <entry><codeph>text-emphasis-position</codeph></entry>
-                            <entry>The side where the marks are. In horizontal text and in the sideways modes, <codeph>over</codeph> and <codeph>under</codeph> choose the side of the line. In vertical lines, <codeph>right</codeph> and <codeph>left</codeph> choose it. It is inherited.</entry>
+                            <entry>The side where the marks are. In horizontal text and in the sideways modes, <codeph>over</codeph> and <codeph>under</codeph> choose the side of the line. In <codeph>vertical-rl</codeph> and <codeph>vertical-lr</codeph>, <codeph>right</codeph> and <codeph>left</codeph> choose it. The marks stand outside a ruby on the same side, even one that is hidden or empty, and outside an underline or an overline. It is inherited.</entry>
                             <entry><codeph>over</codeph> or <codeph>under</codeph>, and <codeph>right</codeph> or <codeph>left</codeph></entry>
                             <entry><codeph>over right</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-text-decor-4/#propdef-text-emphasis-position" scope="external" format="html">CSS Text Decoration 4 §3.4</xref></entry>

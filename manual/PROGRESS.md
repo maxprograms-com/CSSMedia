@@ -745,7 +745,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] text-indent
 - [ ] text-justify
 - [ ] text-spacing
-- [ ] text-spacing-trim
+- [~] text-spacing-trim
 - [x] text-transform
 - [ ] text-wrap
 - [ ] text-wrap-mode
@@ -779,7 +779,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [~] text-emphasis-skip
 - [~] text-emphasis-style
 - [~] text-shadow
-- [ ] text-underline-offset
+- [~] text-underline-offset
 - [~] text-underline-position
 
 ### CSS UI 3 (css-ui-3)

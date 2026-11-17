@@ -159,7 +159,7 @@
                     <div outputclass="role-h3" id="page-pseudo-classes">Page pseudo-classes</div>
                     <ul>
                         <li><codeph>:first</codeph> matches the first page.</li>
-                        <li><codeph>:left</codeph> and <codeph>:right</codeph> match left and right pages. In a document that is read left to right, the first page is a right page.</li>
+                        <li><codeph>:left</codeph> and <codeph>:right</codeph> match left and right pages. In a document that is read left to right, the first page is a right page. In one that is read right to left, such as Arabic text or Japanese text in <codeph>vertical-rl</codeph>, it is a left page. The writing mode and the direction of the root element decide the reading order: in vertical text the pages follow the lines, and in horizontal text the direction. A page break before the first content, as with <codeph>break-before: page</codeph> on the first element, starts the document on the other side.</li>
                         <li><codeph>:blank</codeph> matches the empty pages that forced page breaks produce.</li>
                         <li><codeph>:nth(An+B)</codeph> matches pages by their position in the document. <codeph>:nth(2n)</codeph> selects pages 2, 4, 6 and so on, and <codeph>:nth(3n+1)</codeph> selects pages 1, 4, 7 and so on.</li>
                     </ul>

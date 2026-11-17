@@ -20,7 +20,7 @@
 </pre>
                 </stepxmp>
                 <info>
-                    <p>A mark is <codeph>filled</codeph> or <codeph>open</codeph>, and it has one of five shapes: <codeph>dot</codeph>, <codeph>circle</codeph>, <codeph>double-circle</codeph>, <codeph>triangle</codeph> or <codeph>sesame</codeph>. If you give only <codeph>filled</codeph> or <codeph>open</codeph>, the shape is a circle in horizontal text and a sesame in vertical text. If you give only a shape, the mark is filled. A string, such as <codeph>"*"</codeph>, uses its first character as the mark, in the font of the text. If that font has no such character, the text has no marks.</p>
+                    <p>A mark is <codeph>filled</codeph> or <codeph>open</codeph>, and it has one of five shapes: <codeph>dot</codeph>, <codeph>circle</codeph>, <codeph>double-circle</codeph>, <codeph>triangle</codeph> or <codeph>sesame</codeph>. If you give only <codeph>filled</codeph> or <codeph>open</codeph>, the shape is a circle in horizontal text and in the sideways modes, and a sesame in <codeph>vertical-rl</codeph> and <codeph>vertical-lr</codeph>, where the marks stay upright. If you give only a shape, the mark is filled. A string, such as <codeph>"*"</codeph>, uses its first character as the mark, in the font of the text. If that font has no such character, the text has no marks.</p>
                     <fig id="emphasis-marks-figure">
                         <title>The emphasis marks</title>
                         <image href="../images/emphasis-marks.svg" placement="break" scale="100">
@@ -33,7 +33,7 @@
             <step id="place-the-marks">
                 <cmd>Place and color the marks</cmd>
                 <info>
-                    <p><codeph>text-emphasis-position</codeph> chooses the side of the text. In horizontal text, <codeph>over</codeph> is above the characters and <codeph>under</codeph> is below them. In vertical lines, <codeph>right</codeph> is on the right of the characters and <codeph>left</codeph> is on the left. The initial value, <codeph>over right</codeph>, puts the marks above horizontal text and on the right of vertical text. <codeph>text-emphasis-color</codeph> sets the color, which is the color of the text when you do not set it:</p>
+                    <p><codeph>text-emphasis-position</codeph> chooses the side of the text. In horizontal text and in the sideways modes, <codeph>over</codeph> and <codeph>under</codeph> choose the side of the line, above and below the characters in horizontal text. In <codeph>vertical-rl</codeph> and <codeph>vertical-lr</codeph>, <codeph>right</codeph> is on the right of the characters and <codeph>left</codeph> is on the left. Each mark is centered on its character. When a ruby, an underline or an overline is on the same side, the marks go outside it. That holds for a ruby annotation that is hidden or empty too, so the marks stand at the same height over all the words. The initial value, <codeph>over right</codeph>, puts the marks above horizontal text and on the right of vertical text. <codeph>text-emphasis-color</codeph> sets the color, which is the color of the text when you do not set it:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">em {

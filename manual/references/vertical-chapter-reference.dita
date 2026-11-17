@@ -6,6 +6,5 @@
     <refbody>
         <section conkeyref="ref-vertical/vertical-properties"/>
         <section conkeyref="ref-vertical/ruby-properties"/>
-        <section conkeyref="ref-vertical/emphasis-properties"/>
-    </refbody>
+        <section conkeyref="ref-vertical/emphasis-properties"/>    </refbody>
 </reference>

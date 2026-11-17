@@ -54,7 +54,8 @@ book {
                         </image>
                     </fig>
                     <p><codeph>glyph-orientation-vertical</codeph> is an older property that makes the same choice as <codeph>text-orientation</codeph>, and CSSMedia reads it as that property: <codeph>auto</codeph> is <codeph>mixed</codeph>, <codeph>0deg</codeph> is <codeph>upright</codeph> and <codeph>90deg</codeph> is <codeph>sideways</codeph>. Use <codeph>text-orientation</codeph> in new stylesheets.</p>
-                    <p>Punctuation that has a vertical form, such as the Japanese stop and brackets, is drawn in that form. CSSMedia shapes complex scripts such as Arabic, Hebrew, Thai and Devanagari as a line first, and then turns the result, so letters still join and marks stay in place in sideways text.</p>
+                    <p>With <codeph>mixed</codeph>, the Unicode property Vertical_Orientation of each character decides: characters marked upright stand upright, and the others are turned. A character with its accents or marks is one unit and turns as a whole, and a character inside an enclosing mark, such as a circle, stands upright.</p>
+                    <p>Upright characters use the vertical metrics of the font and its vertical forms, so the Japanese stop, the brackets and the long vowel mark are drawn in the forms made for vertical lines. Arabic letters set upright take their isolated forms. Turned text keeps the horizontal widths, ligatures and forms of the font. CSSMedia shapes complex scripts such as Arabic, Hebrew, Thai and Devanagari as a line first, and then turns the result, so letters still join and marks stay in place in sideways text.</p>
                 </info>
             </step>
             <step id="combine-digits">
@@ -69,13 +70,15 @@ book {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>With this rule, <codeph>12</codeph> in the text is one upright unit, the width of a character. <codeph>2026</codeph> has four digits, so it stays as it is. The property has no effect in horizontal text or with the sideways values.</p>
+                    <p>With this rule, <codeph>12</codeph> in the text is one upright unit, the width of a character. <codeph>2026</codeph> has four digits, so it stays as it is. Digits that are split by the start or the end of an element are not combined when, together, they would be too long: with <codeph>digits 4</codeph>, the <codeph>12</codeph> and the <codeph>34</codeph> of <codeph>12&lt;span&gt;34&lt;/span&gt;</codeph> stay as they are.</p>
+                    <p>The combined text fits in a square of one em, centered on the line. Two characters take the half-width forms of the font when it has them. Longer text is compressed. Full-width digits are set as ordinary digits first. Spaces at the start and at the end of the element are dropped, and letter spacing and line feeds inside it are ignored. For emphasis marks the unit counts as one character and gets one mark.</p>
+                    <p>The property works in all the vertical writing modes. In <codeph>sideways-rl</codeph> and <codeph>sideways-lr</codeph> the combined text stands upright in the turned line. It has no effect in <codeph>horizontal-tb</codeph>.</p>
                 </info>
             </step>
             <step id="set-the-direction">
                 <cmd>Set the direction of the text</cmd>
                 <info>
-                    <p>The properties <codeph>direction</codeph> and <codeph>unicode-bidi</codeph> work along the line. With <codeph>direction: rtl</codeph>, a vertical line goes from the bottom to the top, and text of a script that is written from right to left, such as Arabic or Hebrew, is ordered as it is in horizontal text. A paragraph that mixes Japanese and Arabic orders its parts by the Unicode bidirectional algorithm, as horizontal text does.</p>
+                    <p>The properties <codeph>direction</codeph> and <codeph>unicode-bidi</codeph> work along the line. With <codeph>direction: rtl</codeph>, a vertical line goes from the bottom to the top, and text of a script that is written from right to left, such as Arabic or Hebrew, is ordered as it is in horizontal text. A paragraph that mixes Japanese and Arabic orders its parts by the Unicode bidirectional algorithm, as horizontal text does. With <codeph>text-orientation: upright</codeph>, the direction is always <codeph>ltr</codeph> and every character counts as left to right, so an upright Hebrew or Arabic word reads from top to bottom in the order of its letters.</p>
                 </info>
             </step>
             <step id="size-with-logical-properties">
@@ -99,7 +102,13 @@ book {
             <step id="break-the-lines">
                 <cmd>Break the lines</cmd>
                 <info>
-                    <p>CSSMedia breaks vertical lines where horizontal ones are broken, with the rules of Chinese, Japanese and Korean text. A closing bracket, a comma or a stop does not start a line, an opening bracket does not end one, and a dash or an ellipsis of two characters is not split. <codeph>line-break</codeph> sets how strict the rules are. <codeph>strict</codeph> also keeps small kana off the start of a line, <codeph>loose</codeph> allows them there, and <codeph>anywhere</codeph> breaks after any character:</p>
+                    <p>CSSMedia breaks vertical lines where horizontal ones are broken, with the rules of Chinese, Japanese and Korean text. A closing bracket, a comma or a stop does not start a line, an opening bracket does not end one, and a dash or an ellipsis of two characters is not split. <codeph>line-break</codeph> sets how strict the rules are:</p>
+                    <ul>
+                        <li><codeph>normal</codeph> and <codeph>strict</codeph> keep small kana such as ゃ, the long vowel mark ー and the iteration marks such as 々 off the start of a line, and do not break between the dots of an ellipsis.</li>
+                        <li><codeph>loose</codeph> allows those breaks.</li>
+                        <li>In Chinese and Japanese text, <codeph>normal</codeph> and <codeph>loose</codeph> let the wave dash 〜 and ゠ start a line, and <codeph>strict</codeph> does not. In other languages they never start a line.</li>
+                        <li><codeph>anywhere</codeph> breaks after any character.</li>
+                    </ul>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">book:lang(ja) {
@@ -111,10 +120,40 @@ book {
                     <p>Set the language of the document, as <xref href="document-language.dita"/> explains, so that the rules of the right language apply.</p>
                 </info>
             </step>
+            <step id="space-the-punctuation">
+                <cmd>Space the punctuation</cmd>
+                <info>
+                    <p>Japanese brackets, commas and stops are drawn in a full square, half of which is blank. <codeph>text-spacing-trim</codeph> says when that blank half is removed, so that the mark takes half a square:</p>
+                    <ul>
+                        <li><codeph>normal</codeph>, the initial value, keeps an opening bracket at the start of a line full, removes the blank half of a closing mark at the end of a line only when that lets the line fit, and removes one blank between two marks that stand together, such as <codeph>」「</codeph> or <codeph>。」</codeph>.</li>
+                        <li><codeph>space-all</codeph> keeps every mark full.</li>
+                        <li><codeph>trim-start</codeph> also makes an opening bracket half at the start of every line.</li>
+                        <li><codeph>space-first</codeph> makes it half at the start of a line, except on the first line of a paragraph and after a line feed.</li>
+                        <li><codeph>trim-both</codeph> makes opening brackets half at the start of lines and closing marks half at the end of lines.</li>
+                        <li><codeph>trim-all</codeph> makes every opening, closing and middle dot mark half, wherever it is.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">book:lang(ja) {
+    text-spacing-trim: trim-start;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>An opening bracket loses the blank before it, on the left in horizontal text and at the top in vertical text, and a closing mark loses the blank after it. The glyph stays the same, and only its space changes. In Japanese text, the colon counts as a middle dot and the comma and the stop as closing marks. Marks of a font that draws them in their own narrow width, such as the quotation marks of a Latin font, keep that width.</p>
+                </info>
+            </step>
             <step id="draw-decorations">
                 <cmd>Draw underlines and other decorations</cmd>
                 <info>
-                    <p>Underlines, overlines and lines through the text are drawn along the line, on the sides of the characters. An underline of a vertical line is on its left, and <codeph>text-underline-position: right</codeph> puts it on the right. Emphasis marks and shadows work in vertical text too. <xref href="mark-and-shade-text.dita"/> explains them.</p>
+                    <p>Underlines, overlines and lines through the text are drawn along the line, on the sides of the characters. An underline of a vertical line is on its left, under the text, and an overline is on its right. <codeph>text-underline-position</codeph> chooses the place of the underline:</p>
+                    <ul>
+                        <li><codeph>auto</codeph> puts it just under the alphabetic baseline, the line on which Latin letters stand.</li>
+                        <li><codeph>from-font</codeph> takes its place from the font.</li>
+                        <li><codeph>under</codeph> puts it under the whole text, below the lowest character.</li>
+                        <li><codeph>left</codeph> and <codeph>right</codeph> put it on that side of a vertical line, outside the characters. With <codeph>right</codeph>, the overline moves to the left. In horizontal text, <codeph>left</codeph> and <codeph>right</codeph> act as <codeph>auto</codeph>.</li>
+                    </ul>
+                    <p><codeph>text-underline-offset</codeph> moves the underline that far away from the text. When the line crosses characters of several sizes, the overline goes over the tallest of them and an underline with <codeph>under</codeph> below the lowest. Other underlines take the average place that the fonts and sizes give, below the lowest baseline. A line through the text is drawn through each size at its own height. Emphasis marks and shadows work in vertical text too. <xref href="mark-and-shade-text.dita"/> explains them.</p>
                 </info>
             </step>
             <step id="style-the-page-boxes">
@@ -137,7 +176,8 @@ book {
             <step id="mix-writing-modes">
                 <cmd>Mix horizontal and vertical text</cmd>
                 <info>
-                    <p>An element with a different writing mode from its parent is laid out in its own mode, as a box of its own, and then placed in the flow of its parent. A vertical box inside horizontal text needs a height, because its lines are as long as its height:</p>
+                    <p>An element with a different writing mode from its parent is laid out in its own mode, as a box of its own, and then placed in the flow of its parent. Its margins are those of the parent's sides, so <codeph>margin-left: auto</codeph> and <codeph>margin-right: auto</codeph> center a vertical box in horizontal text, and its margins collapse with those of the boxes above and below it. An inline element with another writing mode becomes an inline block.</p>
+                    <p>The lines of a vertical box inside horizontal text are as long as its height. Give it a height to choose that length:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">note {
@@ -148,7 +188,8 @@ book {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>A MathML formula is always laid out horizontally, whatever the writing mode of the text around it. In a vertical line it takes its place as one box, upright, and the line makes room for it.</p>
+                    <p>Without a height, CSSMedia sizes the box for you. A short text that fits on one line makes the box as long as the text. A longer text is set in lines as long as the height of the parent when the parent has a fixed or maximum height, or else as long as the page area. The lines fill the width of the parent, and the text that does not fit goes on in a second band of lines below the first, as in columns. With <codeph>column-count</codeph> or <codeph>column-width</codeph> on the box, you choose the columns yourself. A float, an inline block or a table cell that holds such a box is as wide as the box. A table of the other writing mode takes the size of its content, and the text of a cell is broken into lines as long as the page area.</p>
+                    <p>A MathML formula is always laid out horizontally, whatever the writing mode of the text around it. In a vertical line it takes its place as one box, upright, and the line makes room for it. Images are never turned: an image keeps its width and its height on the page, and so does the default size of 300px by 150px of an image that has no size of its own.</p>
                 </info>
             </step>
             <step id="use-vertical-text-in-drawings">
