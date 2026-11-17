@@ -216,14 +216,12 @@ export class TableLayout {
         const footer: number | undefined = page[2] ? this.repeatable(grid, grid.rows.length - grid.footer, grid.footer, page[0] / 4, spacing[1], whole) : undefined;
         const resumed: boolean = incoming !== undefined;
         const repeatsHeader: boolean = header !== undefined && incoming !== undefined && incoming.child >= grid.header;
-        // CSS Fragmentation 4 §5.4: with slice no border and no padding are inserted at a break; §6.2: the table "top border"
-        // is rendered with the repeated header rows, and its bottom border with the footer rows.
-        const clone: boolean = this.keyword(box.style, "box-decoration-break") === "clone";
-        const opens: boolean = resumed && !clone && !repeatsHeader;
+        // CSS Tables 3 §6.1, "Expected rendering of table containing a tall row fragmented across two pages": the table keeps its
+        // border and padding on both sides of every break, and only its cells are cut there.
         const blockStart: number = border[BoxSizes.BLOCK_START] + padding[BoxSizes.BLOCK_START];
         const blockEnd: number = border[BoxSizes.BLOCK_END] + padding[BoxSizes.BLOCK_END];
-        const startEdge: number = opens ? 0 : blockStart;
-        const limit: number = room - startEdge - (clone || footer !== undefined ? blockEnd : 0) - (footer ?? 0);
+        const startEdge: number = blockStart;
+        const limit: number = room - startEdge - blockEnd - (footer ?? 0);
         const children: Array<BoxFragment | LineFragment> = [];
         const rows: Array<BoxFragment> = [];
         const indexes: Array<number> = [];
@@ -310,9 +308,28 @@ export class TableLayout {
         // CSS 2 §17.6.2: a collapsed border is centered on its grid line, so each line is painted once, by the cell after it,
         // and the cells of the last row of this fragment paint the line below them.
         const final: BoxFragment | undefined = rows[rows.length - 1];
-        for (const cell of collapse && final !== undefined ? final.children ?? [] : []) {
-            if (cell.kind === "box" && cell.collapsed !== undefined) {
-                cell.collapsed.lastBlock = true;
+        // A row that goes on from the page before paints no line before it (§6.1), so a repeated header row above it paints the
+        // line below itself, which is not broken.
+        const repeated: number = repeatsHeader ? indexes.filter((index: number) => index < grid.header).length : 0;
+        const continued: BoxFragment | undefined = rows[repeated]?.resumed === true ? rows[repeated] : undefined;
+        const above: BoxFragment | undefined = repeated > 0 && continued !== undefined ? rows[repeated - 1] : undefined;
+        for (const row of collapse ? [final, above] : []) {
+            for (const cell of row?.children ?? []) {
+                if (cell.kind === "box" && cell.collapsed !== undefined) {
+                    cell.collapsed.lastBlock = true;
+                }
+            }
+        }
+        // §6.1, "Expected rendering of table containing a tall row fragmented across two pages": the cells are open at the break and
+        // the table border closes each fragment, so the line there is the table's block-end edge, and a continued row with no
+        // header above it starts with the table's block-start edge.
+        const cut: BoxFragment | undefined = rows.find((row: BoxFragment) => row.token !== undefined);
+        for (const [row, side] of collapse ? [[cut, BoxSizes.BLOCK_END], [above === undefined ? continued : undefined, BoxSizes.BLOCK_START]] as const : []) {
+            for (const cell of row?.children ?? []) {
+                if (cell.kind === "box" && cell.collapsed !== undefined) {
+                    cell.collapsed[side === BoxSizes.BLOCK_END ? "blockEnd" : "blockStart"] = [box, side];
+                    cell.collapsed.lastBlock = cell.collapsed.lastBlock === true || side === BoxSizes.BLOCK_END;
+                }
             }
         }
         if (fragmenting && !restarted && token === undefined && startEdge + (rows.length === 0 ? 0 : block) + blockEnd > room + TOLERANCE) {
@@ -326,8 +343,7 @@ export class TableLayout {
         if (tall !== undefined && left !== undefined && rows.length > 0 && token === undefined && left > block + TOLERANCE) {
             block += this.shareHeight(grid, rows, indexes, tall, left - block);
         }
-        const closes: boolean = token !== undefined && !clone && footer === undefined;
-        const endEdge: number = closes ? 0 : blockEnd;
+        const endEdge: number = blockEnd;
         let extent: number = rows.length === 0 ? 0 : block;
         if (token !== undefined) {
             // §5.3: the content box of a box that breaks "extends to fill any remaining fragmentainer extent".
@@ -339,10 +355,10 @@ export class TableLayout {
         this.grouped(grid, rows, children);
         const fragment: BoxFragment = { kind: "box", box, inline: 0, block: 0, inlineSize: outer, blockSize: startEdge + extent + endEdge, children };
         if (border.some((width: number) => width !== 0)) {
-            fragment.border = opens || closes ? this.sliced(border, opens, closes) : border;
+            fragment.border = border;
         }
         if (padding.some((width: number) => width !== 0)) {
-            fragment.padding = opens || closes ? this.sliced(padding, opens, closes) : padding;
+            fragment.padding = padding;
         }
         if (resumed) {
             fragment.resumed = true;
@@ -477,16 +493,37 @@ export class TableLayout {
         return token;
     }
 
-    private sliced(sides: Sides, opens: boolean, closes: boolean): Sides {
-        return [opens ? 0 : sides[BoxSizes.BLOCK_START], sides[BoxSizes.INLINE_END], closes ? 0 : sides[BoxSizes.BLOCK_END], sides[BoxSizes.INLINE_START]];
-    }
-
-    private sliceCollapsed(borders: CollapsedBorders, opens: boolean, closes: boolean): void {
-        if (opens) {
-            delete borders.blockStart;
+    private sliceCell(fragment: BoxFragment, cell: ElementBox, tableFrame: number, opens: boolean, closes: boolean): void {
+        if ((!opens && !closes) || this.keyword(cell.style, "box-decoration-break") === "clone") {
+            return;
         }
-        if (closes) {
-            delete borders.blockEnd;
+        if (fragment.collapsed !== undefined) {
+            if (opens) {
+                delete fragment.collapsed.blockStart;
+            }
+            if (closes) {
+                delete fragment.collapsed.blockEnd;
+            }
+        }
+        // The cell's own edges are on the sides of its writing mode, which face the table's block start and end.
+        const frame: number = this.sizes.frame(cell.style);
+        const start: number = this.sizes.side(tableFrame, frame, BoxSizes.BLOCK_START);
+        const end: number = this.sizes.side(tableFrame, frame, BoxSizes.BLOCK_END);
+        const cut: (sides: Sides) => Sides = (sides: Sides): Sides => {
+            const kept: [number, number, number, number] = [sides[0], sides[1], sides[2], sides[3]];
+            if (opens) {
+                kept[start] = 0;
+            }
+            if (closes) {
+                kept[end] = 0;
+            }
+            return kept;
+        };
+        if (fragment.border !== undefined) {
+            fragment.border = cut(fragment.border);
+        }
+        if (fragment.padding !== undefined) {
+            fragment.padding = cut(fragment.padding);
         }
     }
 
@@ -524,10 +561,6 @@ export class TableLayout {
             }
             if (collapse) {
                 fragment.collapsed = this.collapsedBorders(grid, slot);
-                // CSS Tables 3 §6.1: "top borders must not be repainted in continuation fragments", nor drawn where the cell breaks.
-                if (this.keyword(cell.style, "box-decoration-break") !== "clone") {
-                    this.sliceCollapsed(fragment.collapsed, fragment.resumed === true, fragment.token !== undefined);
-                }
             }
             fragment.inline = offsets[slot.column];
             const asked: UsedSizes = this.sizes.of(cell.style);
@@ -549,6 +582,12 @@ export class TableLayout {
         // CSS Tables 3 §6.1: a row that breaks gives "all the remaining height in the fragmentainer to the cells", and each
         // continues "where it was stopped in its previous fragment", so no fragment of it aligns its cells.
         height = broken && space !== undefined ? space : Math.max(height, above + below);
+        // CSS Tables 3 §6.1: "top borders must not be repainted in continuation fragments", and CSS Fragmentation 4 §5.4: with slice
+        // "no border and no padding are inserted at a break". The break is the row's, so a cell whose content ended before it is
+        // broken there too, and goes on as an empty fragment.
+        for (const [position, fragment] of cells.entries()) {
+            this.sliceCell(fragment, slots[position].cell, tableFrame, incoming !== undefined, broken);
+        }
         for (const [position, fragment] of cells.entries()) {
             const aligned: string = this.cellAlignment(slots[position].cell.style);
             const baseline: number = baselines[position];

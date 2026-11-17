@@ -183,7 +183,7 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 
 - [~] @page / bleed
 - [~] @page / marks
-- [~] @page / page-orientation
+- [x] @page / page-orientation
 - [x] @page / size
 
 ### @property
@@ -733,7 +733,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [x] hyphenate-limit-zone
 - [x] hyphens
 - [ ] letter-spacing
-- [~] line-break
+- [x] line-break
 - [ ] line-padding
 - [x] overflow-wrap
 - [ ] tab-size
@@ -745,7 +745,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] text-indent
 - [ ] text-justify
 - [ ] text-spacing
-- [~] text-spacing-trim
+- [x] text-spacing-trim
 - [x] text-transform
 - [ ] text-wrap
 - [ ] text-wrap-mode
@@ -773,14 +773,14 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [ ] text-decoration-skip-spaces
 - [ ] text-decoration-style
 - [ ] text-decoration-thickness
-- [~] text-emphasis
-- [~] text-emphasis-color
-- [~] text-emphasis-position
-- [~] text-emphasis-skip
-- [~] text-emphasis-style
-- [~] text-shadow
-- [~] text-underline-offset
-- [~] text-underline-position
+- [x] text-emphasis
+- [x] text-emphasis-color
+- [x] text-emphasis-position
+- [x] text-emphasis-skip
+- [x] text-emphasis-style
+- [x] text-shadow
+- [x] text-underline-offset
+- [x] text-underline-position
 
 ### CSS UI 3 (css-ui-3)
 
@@ -788,19 +788,19 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Writing Modes 4 (css-writing-modes-4)
 
-- [~] direction
-- [~] glyph-orientation-vertical
-- [~] text-combine-upright
-- [~] text-orientation
+- [x] direction
+- [x] glyph-orientation-vertical
+- [x] text-combine-upright
+- [x] text-orientation
 - [~] unicode-bidi
-- [~] writing-mode
+- [x] writing-mode
 
 ### CSS Ruby 1 (css-ruby-1)
 
-- [~] ruby-align
-- [~] ruby-merge
-- [~] ruby-overhang
-- [~] ruby-position
+- [x] ruby-align
+- [x] ruby-merge
+- [x] ruby-overhang
+- [x] ruby-position
 
 ### CSS Rhythmic Sizing 1 (css-rhythm-1)
 

@@ -120,7 +120,11 @@ const PROSE_GRAMMARS: ReadonlyMap<string, readonly [string, string]> = new Map<s
     ["fill-stroke-3 stroke-width", ["<length-percentage>#", "<length-percentage [0,\u221E]>#"]],
     ["fill-stroke-3 stroke-linejoin", ["[ crop | arcs | miter ] || [ bevel | round | stupid ]", "[ crop | arcs | miter ] || [ bevel | round | fallback ]"]],
     ["fill-stroke-3 stroke-miterlimit", ["<number>", "<number [1,\u221E]>"]],
-    ["fill-stroke-3 stroke-dasharray", ["none | <length-percentage>+#", "none | <length-percentage [0,\u221E]>+#"]]
+    ["fill-stroke-3 stroke-dasharray", ["none | <length-percentage>+#", "none | <length-percentage [0,\u221E]>+#"]],
+    ["css-writing-modes-4 text-combine-upright", ["none | all | [ digits <integer>? ]", "none | all | [ digits <integer [2,4]>? ]"]],
+    ["css-backgrounds-3 <shadow>", ["<color>? && [<length>{2} <length [0,∞]>? <length>?] && inset?",
+        "<color>? && [<length>{2} [<length [0,∞]> <length>?]?] && inset?"]],
+    ["css-text-decor-4 text-shadow", ["none | <shadow>#", "none | [<color>? && [<length>{2} [<length [0,∞]> <length [0,∞]>?]?] && inset?]#"]]
 ]);
 
 const PROSE_TYPES: ReadonlyArray<readonly [string, string, string]> = [
@@ -751,8 +755,8 @@ class CssDefinitionsGenerator {
     }
 
     private proseGrammar(name: string, shortname: string, line: string): string {
-        // Where the grammar line does not say what the text does: CSS Content 3 §2.7.1 with GCPM 3 §1.1.1, CSS Page Floats 3 §3.2, SVG 2 §9.6.2, CSS Shapes 1
-        // §3.1.1, CSS Round Display 1 §5.1, CSS Images 3 §5.2, Fill and Stroke 3 §3.3.7, §4.2.1, §4.2.4, §4.2.5, §4.3.1 and §4.4.7. A changed line is read again.
+        // Where the grammar line does not say what the text does: CSS Content 3 §2.7.1 with GCPM 3 §1.1.1, CSS Page Floats 3 §3.2, SVG 2 §9.6.2, CSS Shapes 1 §3.1.1,
+        // Round Display 1 §5.1, Images 3 §5.2, Fill and Stroke 3 §3.3.7 to §4.4.7, Writing Modes 4 §9.1, Backgrounds 3 §6.1, Text Decoration 4 §4.
         const prose: readonly [string, string] | undefined = PROSE_GRAMMARS.get(shortname + " " + name);
         if (prose === undefined) {
             return line;

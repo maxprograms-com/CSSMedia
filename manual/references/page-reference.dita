@@ -87,11 +87,11 @@
                                 </xref>
                             </entry>
                         </row>
-                        <row valign="middle">
+                        <row id="row-page-orientation" valign="middle">
                             <entry>
                                 <codeph>page-orientation</codeph>
                             </entry>
-                            <entry>Rotates the laid-out page in the output.</entry>
+                            <entry>Turns the page a quarter turn when it is shown, after it is laid out: <codeph>rotate-left</codeph> to the left (counterclockwise), <codeph>rotate-right</codeph> to the right (clockwise). The layout of the page does not change.</entry>
                             <entry>
                                 <codeph>upright</codeph>, <codeph>rotate-left</codeph>, or <codeph>rotate-right</codeph>
                             </entry>

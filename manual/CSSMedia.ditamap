@@ -109,11 +109,8 @@
         <topicref href="references/page-setup-chapter-reference.dita"/>
     </chapter>
 
-    <chapter>
-        <topicmeta>
-            <navtitle>Page orientation, bleed and marks</navtitle>
-        </topicmeta>
-        <!-- TODO: placeholder, write this chapter -->
+    <chapter href="tasks/rotate-pages.dita">
+        <topicref href="references/rotate-pages-chapter-reference.dita"/>
     </chapter>
 
     <chapter href="tasks/named-strings.dita">

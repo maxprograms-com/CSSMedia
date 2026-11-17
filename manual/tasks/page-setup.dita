@@ -195,7 +195,7 @@ wide-table {
                     <p>With <codeph>auto</codeph>, an element takes the page type of its nearest ancestor that has a name. A box with a different page type than the page before it starts on a new page.</p>
                 </info>
             </step>
-            <!-- TODO: document marks, bleed and page-orientation when the painting of bleed, marks and rotated pages is implemented -->
+            <!-- TODO: document marks and bleed when they are painted; page-orientation is in tasks/rotate-pages.dita -->
             <step id="page-margin-rules">
                 <cmd>Fill the page margins</cmd>
                 <info>

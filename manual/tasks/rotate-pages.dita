@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="rotate-pages">
+    <title>Page orientation, bleed and marks</title>
+    <shortdesc>A page can be turned a quarter turn after it is laid out. The PDF then tells viewers and printers to show it turned. Use this to put a wide table on a landscape page in a document of portrait pages, so that all the pages face the same way in the book. The <xref href="../references/rotate-pages-chapter-reference.dita#rotate-pages-chapter-reference">page orientation, bleed and marks reference</xref> lists the descriptor used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>wide</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>. <xref href="page-setup.dita"/> explains <codeph>@page</codeph> rules and named pages.</p>
+        </context>
+        <steps>
+            <step id="name-the-page">
+                <cmd>Give the page a name and a size</cmd>
+                <info>
+                    <p>Write a named page rule with the size that the content needs, and send the element to it with <codeph>page</codeph>:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page {
+    size: A4;
+    margin: 20mm;
+}
+
+@page wide {
+    size: A4 landscape;
+}
+
+wide {
+    display: block;
+    page: wide;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The element starts on a new page, which is laid out in landscape. The pages after it are portrait again.</p>
+                </info>
+            </step>
+            <step id="turn-the-page">
+                <cmd>Turn the page</cmd>
+                <info>
+                    <p>Add <codeph>page-orientation</codeph> to the named page rule:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@page wide {
+    size: A4 landscape;
+    page-orientation: rotate-left;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>CSSMedia lays out the page as usual and then turns it when it is shown: <codeph>rotate-left</codeph> turns it a quarter turn to the left (counterclockwise) and <codeph>rotate-right</codeph> a quarter turn to the right (clockwise). <codeph>upright</codeph>, the initial value, does not turn it. The landscape page of the example is then shown as a portrait page, with the table reading from the bottom to the top, as in a printed book.</p>
+                    <p>The layout does not change: the margin boxes, the page number and the rest of the page are laid out on the page as it is, and they turn with it. A page that you do not name keeps <codeph>upright</codeph>, so only the pages of the named rule turn. You can also turn the pages of a selector, such as <codeph>@page :left</codeph>.</p>
+                </info>
+            </step>
+        </steps>
+        <!-- TODO: bleed and marks stop the run (PagePainter.pageSupported()); document them in this chapter when they are painted -->
+        <result>
+            <p>The pages that hold wide content are laid out in the size they need and shown turned, in line with the other pages.</p>
+        </result>
+    </taskbody>
+</task>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="rotate-pages-chapter-reference">
+    <title>Page orientation, bleed and marks reference</title>
+    <shortdesc>This reference lists the descriptor that turns a page after it is laid out.</shortdesc>
+    <refbody>
+        <section id="rotate-pages-descriptors">
+            <title>Page descriptors</title>
+            <table id="rotate-pages-descriptors__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row conkeyref="ref-page/row-page-orientation"/>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

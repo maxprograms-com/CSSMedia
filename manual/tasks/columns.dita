@@ -84,7 +84,7 @@
             <step id="columns-in-vertical-text">
                 <cmd>Use columns in vertical text</cmd>
                 <info>
-                    <p>The columns follow the writing mode. In vertical lines, the columns are one above the other, and the lines of each column are as long as a column is tall. A vertical element with columns, inside horizontal text, needs a height. <xref href="write-vertically.dita"/> explains writing modes.</p>
+                    <p>The columns follow the writing mode. In vertical lines, the columns are one above the other, and the lines of each column are as long as a column is tall. A vertical element inside horizontal text takes the height you give it; without one, CSSMedia sizes it and sets a long text in columns by itself. <xref href="write-vertically.dita"/> explains writing modes and boxes of another writing mode.</p>
                 </info>
             </step>
         </steps>
