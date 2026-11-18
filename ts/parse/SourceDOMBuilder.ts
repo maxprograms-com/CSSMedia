@@ -24,7 +24,6 @@ import { SourceElement } from "./SourceElement.js";
 export class SourceDOMBuilder extends DOMBuilder {
 
     static readonly XML_NAMESPACE: string = "http://www.w3.org/XML/1998/namespace";
-    private static readonly ABSOLUTE: RegExp = /^[A-Za-z][A-Za-z0-9+.-]*:/;
 
     private readonly prefixes: Map<string, string> = new Map<string, string>([
         ["xml", SourceDOMBuilder.XML_NAMESPACE]
@@ -32,9 +31,14 @@ export class SourceDOMBuilder extends DOMBuilder {
 
     private readonly scopes: Array<readonly [SourceElement, XMLAttribute]> = [];
     private rootNamespace?: string;
+    private location: string = "";
 
     getPrefixes(): ReadonlyMap<string, string> {
         return this.prefixes;
+    }
+
+    setLocation(location: string): void {
+        this.location = location;
     }
 
     override startElement(name: string, atts: Array<XMLAttribute>): void {
@@ -53,7 +57,8 @@ export class SourceDOMBuilder extends DOMBuilder {
             } else if (attribute === "xml:lang") {
                 language = att.getValue();
             } else if (attribute === "xml:base") {
-                base = this.baseOf(att.getValue(), base);
+                // XML Base §4.2: without an xml:base above, the base is the location of the file being parsed.
+                base = this.baseOf(att.getValue(), base ?? this.location);
             }
         }
         // XML 1.0 §2.12: xml:lang applies "to all attributes and content of the element where it is specified, unless
@@ -95,23 +100,11 @@ export class SourceDOMBuilder extends DOMBuilder {
         this.prefixes.set(prefix, uri);
     }
 
-    private baseOf(declared: string, inherited?: string): string {
-        // An xml:base value may be relative, and then it adds to the base declared above it; the address of the document,
-        // which the element's base is resolved against when it is used, is not part of what is kept here.
-        if (inherited === undefined || SourceDOMBuilder.ABSOLUTE.test(declared)) {
+    private baseOf(declared: string, inherited: string): string {
+        if (!URL.canParse(inherited)) {
             return declared;
         }
-        if (SourceDOMBuilder.ABSOLUTE.test(inherited)) {
-            if (!URL.canParse(inherited)) {
-                return inherited;
-            }
-            return URL.canParse(declared, inherited) ? new URL(declared, inherited).href : declared;
-        }
-        if (declared.startsWith("/")) {
-            return declared;
-        }
-        const slash: number = inherited.lastIndexOf("/");
-        return inherited.startsWith("//") && slash < 2 ? inherited + "/" + declared : inherited.substring(0, slash + 1) + declared;
+        return URL.canParse(declared, inherited) ? new URL(declared, inherited).href : declared;
     }
 
     override startCDATA(): void {

@@ -21,7 +21,7 @@
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { gunzipSync } from "node:zlib";
 import type { ContentHandler, XMLDocument, XMLNode } from "typesxml";
 import { Catalog, ProcessingInstruction, SAXParser, XMLElement } from "typesxml";
@@ -40,6 +40,7 @@ export class XmlTreeBuilder {
     buildFromFile(path: string, catalogFile?: string): SourceElement {
         const parser: SAXParser = new SAXParser();
         const builder: SourceDOMBuilder = new SourceDOMBuilder();
+        builder.setLocation(pathToFileURL(path).href);
         parser.setContentHandler(builder);
         if (catalogFile) {
             const catalog: Catalog = new Catalog(catalogFile);
@@ -51,6 +52,7 @@ export class XmlTreeBuilder {
 
     buildFromImage(read: ImageReader, url: string): SourceElement {
         const builder: SourceDOMBuilder = new SourceDOMBuilder();
+        builder.setLocation(url);
         this.parseImage(builder, read, url);
         const root: SourceElement = this.rootOf(builder);
         this.instructions = this.styleInstructions(builder.getDocument() as XMLDocument, root);
