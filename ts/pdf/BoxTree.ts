@@ -121,6 +121,7 @@ export interface TextRun {
     glyphStart: number;
     glyphEnd: number;
     hyphen?: Hyphen;
+    isolatedEnd?: boolean;
 }
 
 export interface ShapedRun extends TextRun {
@@ -228,10 +229,28 @@ export interface RubyColumn {
     extras: RubyExtras;
 }
 
+export interface InitialLetter {
+    box: ElementBox;
+    open: number;
+    close: number;
+    start: number;
+    end: number;
+    atomic: boolean;
+    size: number;
+    sink: number;
+    textOver: string;
+    textUnder: string;
+    letterOver: string;
+    letterUnder: string;
+    scale: number;
+    wrap: CssValue;
+}
+
 export interface InlineSequence {
     style: ComputedStyle;
     items: Array<InlineItem>;
     firstLine?: InlineSequence;
     text?: InlineText;
     ruby?: Array<RubySegment>;
+    initial?: InitialLetter;
 }

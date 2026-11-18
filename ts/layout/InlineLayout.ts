@@ -20,18 +20,25 @@
 
 import type { CssValue } from "../css/values/CssValue.js";
 import { ScriptTags } from "../fonts/layout/ScriptTags.js";
-import type { ElementBox, InlineItem, InlineSequence, InlineText, RubyColumn, RubyExtras, RubySegment, TextRun } from "../pdf/BoxTree.js";
+import type { Matrix } from "../geometry/PathGeometry.js";
+import type { ImageAlpha } from "../images/ImageFormats.js";
+import type { ElementBox, InitialLetter, InlineItem, InlineSequence, InlineText, RubyColumn, RubyExtras, RubySegment, TextRun } from "../pdf/BoxTree.js";
 import type { DisplayType } from "../pdf/DisplayTypes.js";
 import { EmphasisMarks } from "../pdf/EmphasisMarks.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
+import { InitialLetters } from "../pdf/InitialLetters.js";
 import type { InlineTextBuilder } from "../pdf/InlineTextBuilder.js";
 import { LineBreaker } from "../pdf/LineBreaker.js";
 import { TextAutospace } from "../pdf/TextAutospace.js";
 import { TextSpacingTrim } from "../pdf/TextSpacingTrim.js";
+import type { SvgPath } from "../svg/SvgGeometry.js";
+import { SvgGeometry } from "../svg/SvgGeometry.js";
 import type { BlockLayout, Snapshot } from "./BlockLayout.js";
 import type { UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
-import type { BoxFragment, LineFragment, Margins, TextPiece } from "./Fragment.js";
+import type { BoxFragment, LineFragment, Margins, ObjectArea, TextPiece } from "./Fragment.js";
+import type { Ink } from "./LetterGeometry.js";
+import { LetterGeometry } from "./LetterGeometry.js";
 import { PieceSpans } from "./PieceSpans.js";
 import { RubyLayout } from "./RubyLayout.js";
 
@@ -59,6 +66,16 @@ interface Measured {
     places?: Array<number>;
     ruby?: RubyExtras;
     placed?: Array<RubyColumn>;
+    letter?: LetterMeasure;
+}
+
+interface LetterMeasure {
+    initial: InitialLetter;
+    ink: Ink;
+    origin: number;
+    content: number;
+    edges?: ReadonlyArray<number>;
+    margin: number;
 }
 
 interface Group {
@@ -129,6 +146,10 @@ interface LineState {
     units: Array<Unit>;
     place: number;
     run: number;
+    letterGroup?: Group;
+    letterBox?: BoxFragment;
+    letterAt?: readonly [number, ReadonlyArray<ElementBox> | undefined];
+    letterSpread?: readonly [number, number];
 }
 
 interface AnnotationLevel {
@@ -182,6 +203,11 @@ const ANNOTATION_LINE: number = 1000000;
 const ANNOTATION_DISPLAY: DisplayType = { outer: "inline", inner: "flow-root", listItem: false };
 const NO_MARGIN: Margins = [0, 0];
 const LINE_RELATIVE: ReadonlySet<string> = new Set<string>(["top", "center", "bottom"]);
+const LETTER: string = "initial-letter";
+const BASIC_SHAPES: ReadonlySet<string> = new Set<string>(["inset", "xywh", "rect", "circle", "ellipse", "polygon", "path", "shape"]);
+const IDENTITY_MATRIX: Matrix = [1, 0, 0, 1, 0, 0];
+const SHAPE_FLATNESS: number = 0.05;
+const SPACE_SEPARATOR: RegExp = /^\p{Zs}$/u;
 const WORD_SEPARATORS: ReadonlySet<number> = new Set<number>([0x20, 0xA0, 0x1361, 0x10100, 0x10101, 0x1039F, 0x1091F]);
 const SPACED_SCRIPTS: ReadonlySet<number> = new Set<number>(
     ["Bopo", "Hani", "Hang", "Hira", "Kana", "Yiii", "Khmr", "Laoo", "Mymr", "Talu", "Tale", "Lana", "Tavt", "Thai"].map((code: string) => ScriptTags.indexOf(code))
@@ -199,8 +225,12 @@ export class InlineLayout {
     private readonly spans: PieceSpans = new PieceSpans();
     private readonly ruby: RubyLayout = new RubyLayout();
     private readonly levels: WeakMap<InlineSequence, AnnotationLevel | null> = new WeakMap<InlineSequence, AnnotationLevel | null>();
+    private readonly initials: InitialLetters;
+    private readonly geometry: LetterGeometry = new LetterGeometry();
+    private readonly shapes: SvgGeometry = new SvgGeometry();
 
     constructor(metrics: FontMetrics, sizes: BoxSizes, text: InlineTextBuilder, host: BlockLayout) {
+        this.initials = new InitialLetters(metrics);
         this.metrics = metrics;
         this.sizes = sizes;
         this.text = text;
@@ -304,7 +334,10 @@ export class InlineLayout {
                     }
                     continue;
                 }
-                const height: number = this.bandHeight(probe);
+                // CSS Inline 3 §7.9.3: an initial letter "must not overlap the margin boxes of any floats", and its line moves with it, so
+                // the room beside the floats is that of the letter's whole height.
+                const reach: ObjectArea | undefined = probe[0].line.initial;
+                const height: number = Math.max(this.bandHeight(probe), reach === undefined ? 0 : reach[1] + reach[3]);
                 if (beside && height > guess + TOLERANCE && !this.sameSegments(segments, this.host.segments(inlineStart, inlineSize, origin + top + lineTop, height))) {
                     guess = height;
                     continue;
@@ -350,6 +383,14 @@ export class InlineLayout {
                 }
             }
             this.equalize(parts);
+            // CSS Inline 3 §7.8.4: an initial letter "too long to fit on one line" wraps, "each line filled and formatted exactly as if
+            // it were the first line": each line that holds a part of it places that part and excludes it from the lines after.
+            const letter: ObjectArea | undefined = parts[0].line.initial;
+            if (first && letter !== undefined && top + lineTop + letter[1] < 0) {
+                // CSS Inline 3 §7.6.1: the letter's "own block-start margin edge is below its containing block's block-start content
+                // edge", which "can force its originating line box (and subsequent content) to shift further away from that edge".
+                lineTop = -top - letter[1];
+            }
             for (const part of parts) {
                 part.line.block = lineTop;
                 if (part.offset !== 0) {
@@ -362,6 +403,9 @@ export class InlineLayout {
                 hyphenated = this.isHyphenated(part.measured, part.end) ? hyphenated + 1 : 0;
             }
             block = lineTop + last.line.blockSize;
+            if (letter !== undefined) {
+                this.excludeLetter(parts[0], letter, inlineStart, inlineSize, origin + top + lineTop);
+            }
             if (deferred !== undefined) {
                 for (const box of deferred) {
                     this.host.place(box, inlineStart, inlineSize, origin, top + block, -1, out, blockBasis);
@@ -702,7 +746,10 @@ export class InlineLayout {
                     measured.minimums.set(position, sizes[0] + measured.advances[position]);
                     measured.advances[position] += sizes[1];
                 } else {
-                    const placed: readonly [BoxFragment, number] = this.host.atomic(item.node, inlineSize, blockBasis);
+                    const initial: InitialLetter | undefined = sequence.initial;
+                    const letterBlock: number | undefined = initial !== undefined && initial.atomic && initial.box === item.node ? this.initials.span(initial, sequence.style.values)
+                        : undefined;
+                    const placed: readonly [BoxFragment, number] = this.host.atomic(item.node, inlineSize, blockBasis, undefined, undefined, letterBlock);
                     measured.atomics = measured.atomics ?? new Map<number, readonly [BoxFragment, number]>();
                     measured.atomics.set(position, [placed[0], placed[0].inline]);
                     measured.advances[position] += placed[1];
@@ -720,7 +767,71 @@ export class InlineLayout {
                 textEnd = end;
             }
         }
+        this.measureLetter(measured, inlineSize);
         return measured;
+    }
+
+    private measureLetter(measured: Measured, inlineSize: number): void {
+        const initial: InitialLetter | undefined = measured.sequence.initial;
+        const text: InlineText = measured.text;
+        const count: number = text.codepoints.length;
+        if (initial === undefined || initial.atomic || initial.end <= initial.start) {
+            return;
+        }
+        // CSS Inline 3 §7.8.1: "any letter-spacing or justification opportunity that would normally be introduced by the juxtaposition"
+        // of a sunken initial and what follows "is suppressed", and the collapsible white space between them "is collapsed away".
+        const last: number = initial.end - 1;
+        measured.advances[last] -= text.spacingAfter[last];
+        if (initial.end < count) {
+            measured.advances[initial.end] -= text.spacingBefore[initial.end];
+            if (measured.gaps !== undefined) {
+                measured.gaps[initial.end] = 0;
+            }
+        }
+        for (let position: number = initial.end; initial.sink > 1 && position < count && text.codepoints[position] === SPACE && (measured.flags[position] & COLLAPSIBLE) !== 0; position++) {
+            measured.advances[position] = 0;
+        }
+        let advance: number = 0;
+        for (let position: number = initial.start; position < initial.end; position++) {
+            advance += measured.advances[position];
+        }
+        const values: Values = initial.box.style.values;
+        const ascent: number = this.metrics.ascent(values) * initial.scale;
+        const central: (run: TextRun) => number = (run: TextRun): number => this.metrics.fontBaseline(run.font, run.size, "central", true, true);
+        const ink: Ink = this.geometry.ink(text, initial.start, initial.end, central) ?? [0, advance, ascent, this.metrics.descent(values) * initial.scale];
+        const sizes: UsedSizes = measured.sizes?.get(initial.box) ?? this.sizes.of(initial.box.style, inlineSize);
+        // §7.5.5: an automatic content box fits the glyph outlines; §7.5.6: in a definite one text-align places the contents "using its
+        // inline-axis bearings as usual".
+        let content: number = ink[1] - ink[0];
+        let origin: number = -ink[0];
+        if (sizes.inlineSize !== undefined) {
+            content = sizes.inlineSize;
+            const align: string = this.alignKeyword("start", values["text-align"]);
+            origin = (content - advance) * (align === "center" ? 0.5 : (align === "end" || align === "right" ? 1 : 0));
+        } else if (this.sizes.edges(sizes, BoxSizes.INLINE_START) === 0) {
+            // §7.6.2: with zero padding and borders the margin box "is kerned (negatively inset) by the distance" from its content box
+            // to its start side bearing, "effectively an additional inline-start margin on the box".
+            measured.opens[initial.start] += ink[0];
+        }
+        measured.advances[last] += content - advance;
+        const margin: CssValue | undefined = values["shape-margin"];
+        const letter: LetterMeasure = { initial, ink, origin, content, margin: margin === undefined ? 0 : this.sizes.pixels(margin, inlineSize) };
+        const wrap: CssValue = initial.wrap;
+        const outside: CssValue | undefined = values["shape-outside"];
+        if (wrap.kind === "ident" && wrap.lower === "all" && outside !== undefined && !(outside.kind === "ident" && outside.lower === "none")) {
+            // §7.7: "If the value of shape-outside is not none, shape-outside is used instead of the glyph outline."
+            letter.edges = this.outsideEdges(outside, letter, sizes, measured.sequence.style.values);
+        } else if (wrap.kind === "ident" && (wrap.lower === "all" || wrap.lower === "first")) {
+            // The outline is kept in the letter's content box: x from its line-start edge, which is on the right in a right-to-left
+            // line, and y down from its baseline.
+            const edges: Array<number> = this.geometry.edges(text, initial.start, initial.end, central);
+            const mirrored: boolean = this.isRtl(measured.sequence.style.values);
+            for (let index: number = 0; index < edges.length; index += 2) {
+                edges[index] = mirrored ? content - (edges[index] + origin) : edges[index] + origin;
+            }
+            letter.edges = edges;
+        }
+        measured.letter = letter;
     }
 
     private measurePadding(measured: Measured, values: Values, start: number, end: number): void {
@@ -1167,6 +1278,7 @@ export class InlineLayout {
                 pieces.push(token.piece);
             }
         }
+        this.ancestorEdges(state);
         const extent: readonly [number, number] = this.alignBlocks(state);
         for (const unit of order) {
             if (unit.piece !== undefined && unit.piece.kind === "text") {
@@ -1226,6 +1338,19 @@ export class InlineLayout {
         const fragment: LineFragment = { kind: "line", sequence, start, end, block: 0, blockSize: lineSize, baseline: flipped ? extent[1] : extent[0], pieces };
         if (measured.placed !== undefined && measured.placed.length > 0) {
             fragment.ruby = measured.placed;
+        }
+        const letterBox: BoxFragment | undefined = state.letterBox;
+        if (letterBox !== undefined && sequence.initial !== undefined) {
+            // CSS Inline 3 §7.7: the exclusion area of the letter is its margin box, which the lines after this one keep clear of.
+            const letterSizes: UsedSizes = measured.sizes?.get(sequence.initial.box) ?? this.sizes.of(sequence.initial.box.style, inlineSize);
+            const startMargin: number = this.sizes.margin(letterSizes, BoxSizes.INLINE_START) ?? 0;
+            const before: number = this.sizes.margin(letterSizes, BoxSizes.BLOCK_START) ?? 0;
+            // With grid the exclusion area is the letter's margin box with the space that justify-self puts before and after it.
+            const spread: readonly [number, number] = state.letterSpread ?? [0, 0];
+            const area: ObjectArea = [letterBox.inline - startMargin - spread[0], letterBox.block - before,
+                letterBox.inlineSize + startMargin + (this.sizes.margin(letterSizes, BoxSizes.INLINE_END) ?? 0) + spread[0] + spread[1],
+                letterBox.blockSize + before + (this.sizes.margin(letterSizes, BoxSizes.BLOCK_END) ?? 0)];
+            fragment.initial = area;
         }
         return [fragment, natural];
     }
@@ -1369,6 +1494,9 @@ export class InlineLayout {
                 break;
             }
             if (item.kind === "open") {
+                if (measured.letter !== undefined && measured.letter.initial.box === item.node) {
+                    state.letterAt = [state.units.length, chain];
+                }
                 chain = chain === undefined ? [item.node as ElementBox] : [...chain, item.node as ElementBox];
                 const record: LineBox = this.lineBox(state, chain.length - 1, chain);
                 record.starts = true;
@@ -1383,6 +1511,24 @@ export class InlineLayout {
                 record.ends = true;
                 state.place += (item.node as ElementBox).hasEndEdge ? this.edge(record.sizes as UsedSizes, record.trail) : 0;
                 chain = chain === undefined || chain.length < 2 ? undefined : chain.slice(0, -1);
+                let pull: number = measured.letter !== undefined && measured.letter.initial.box === item.node ? this.letterPull(state) : 0;
+                const at: readonly [number, ReadonlyArray<ElementBox> | undefined] | undefined = state.letterAt;
+                if (pull > 0 && at !== undefined && this.gridStep(measured.letter?.initial as InitialLetter, measured.sequence.style.values) > 0) {
+                    // §7.7: with grid "the justify-self property can then be used to align the initial letter box within the exclusion area".
+                    const before: number = pull * this.justifyFactor((measured.letter as LetterMeasure).initial.box.style.values, state.reversed);
+                    if (before > 0) {
+                        state.units.splice(at[0], 0, this.chained({ kind: "space", from: position, to: position, level: state.level, group: state.root.group, block: 0, width: before, origin: 0,
+                            left: 0, expands: false }, at[1]));
+                        state.place += before;
+                    }
+                    pull -= before;
+                    state.letterSpread = [before, pull];
+                }
+                if (pull !== 0) {
+                    state.units.push(this.chained({ kind: "space", from: position, to: position, level: state.level, group: state.root.group, block: 0, width: pull, origin: 0, left: 0, expands: false },
+                        chain));
+                    state.place += pull;
+                }
             } else if (item.kind === "object" && position >= state.from && position < state.to) {
                 this.atomicUnit(state, item, position, chain);
             } else if (item.kind === "out-of-flow" && item.node.kind === "box" && (item.node.placement === "absolute" || item.node.placement === "fixed")) {
@@ -1463,7 +1609,8 @@ export class InlineLayout {
             // CSS Inline 3 §4: "For a glyph, the alignment baseline is always determined by the parent's dominant baseline."
             // CSS Writing Modes 4 §9.1.2: the square of combined text "is centered between the text-over and text-under baselines of its
             // parent inline box", and the painter centers it on the central baseline of its font.
-            const block: number = run.combined
+            // An initial letter is placed by its alphabetic baseline (§7.6.1), and an upright glyph's painting adds its central baseline.
+            const block: number = record.group === state.letterGroup ? record.baseline : run.combined
                 ? record.baseline - (this.metrics.ascent(record.values) - this.metrics.descent(record.values)) / 2 + this.metrics.fontBaseline(run.font, run.size, "central", true, false)
                 : (record.dominant === "alphabetic" ? record.baseline
                     : record.baseline - this.metrics.baseline(record.values, record.dominant)
@@ -1495,7 +1642,10 @@ export class InlineLayout {
             }
             const first: number = this.glyphAt(text, run, cursor);
             const last: number = this.glyphAt(text, run, until);
-            const unit: Unit = this.chained({ kind: "text", from: cursor, to: until, level, group: record.group, block, width, origin: 0, left: 0, expands }, chain);
+            const letter: LetterMeasure | undefined = measured.letter;
+            // CSS Inline 3 §7.5.5: the glyphs of an initial letter stand where its ink fits its content box.
+            const shift: number = letter !== undefined && cursor >= letter.initial.start && until <= letter.initial.end ? letter.origin : 0;
+            const unit: Unit = this.chained({ kind: "text", from: cursor, to: until, level, group: record.group, block, width, origin: shift, left: 0, expands }, chain);
             if (leader) {
                 unit.leader = true;
             }
@@ -1634,6 +1784,10 @@ export class InlineLayout {
         if (mode === "none" || (next < run.end && !this.startsGlyph(text, run, next))) {
             return false;
         }
+        // CSS Inline 3 §7.8.1: no justification opportunity comes from an initial letter meeting the content after it.
+        if (measured.letter !== undefined && next === measured.letter.initial.end) {
+            return false;
+        }
         const code: number = text.codepoints[position];
         if (WORD_SEPARATORS.has(code)) {
             // §7.5.1: the space goes to a word separator "under the same rules as for word-spacing", so not to one that has
@@ -1705,7 +1859,22 @@ export class InlineLayout {
         const keyword: string = item.node.display.internal === "ruby-text" && (requested === "top" || requested === "bottom") ? "" : requested;
         let group: Group = record.group;
         let top: number = 0;
-        if (LINE_RELATIVE.has(keyword)) {
+        const initial: InitialLetter | undefined = measured.sequence.initial;
+        if (initial !== undefined && initial.atomic && initial.box === item.node) {
+            // CSS Inline 3 §7.6.1: an atomic initial letter aligns its content-box edges, or its border-box edges, to the text; it stays
+            // out of the line height, and its margins and its place are those of the box.
+            group = { over: Number.NEGATIVE_INFINITY, under: Number.NEGATIVE_INFINITY, shift: LETTER, baseline: 0 };
+            state.groups.push(group);
+            const container: Values = measured.sequence.style.values;
+            const border: boolean = initial.letterOver === InitialLetters.BORDER_BOX;
+            const startEdge: number = border ? 0 : (fragment.border?.[0] ?? 0) + (fragment.padding?.[0] ?? 0);
+            const endEdge: number = border ? 0 : (fragment.border?.[2] ?? 0) + (fragment.padding?.[2] ?? 0);
+            top = initial.size >= initial.sink
+                ? -this.initials.textUnder(initial, container) + (initial.sink - 1) * this.initials.lineHeight(container) - (fragment.blockSize - endEdge)
+                : -this.initials.textOver(initial, container) - startEdge;
+            state.letterBox = fragment;
+            top -= before;
+        } else if (LINE_RELATIVE.has(keyword)) {
             group = { over: 0, under: height, shift: keyword, baseline: 0 };
             state.groups.push(group);
         } else {
@@ -1749,7 +1918,13 @@ export class InlineLayout {
         const keyword: string = ruby && (requested === "top" || requested === "bottom") ? "" : requested;
         let group: Group = parent.group;
         let baseline: number = 0;
-        if (LINE_RELATIVE.has(keyword)) {
+        if (state.measured.letter !== undefined && state.measured.letter.initial.box === box) {
+            // CSS Inline 3 §7.6.1: "The initial letter does not increase the logical height of the line box in which it participates";
+            // vertical-align does not apply to it (§7.5.1), and it is placed once the line has its baseline.
+            group = { over: Number.NEGATIVE_INFINITY, under: Number.NEGATIVE_INFINITY, shift: LETTER, baseline: 0 };
+            state.groups.push(group);
+            state.letterGroup = group;
+        } else if (LINE_RELATIVE.has(keyword)) {
             // CSS Inline 3 §4.2.3: top, center and bottom "shift the inline box and its contents relative to the bounds of
             // its line box", so the box and what is aligned to it are placed once the line has its height.
             group = { over: Number.NEGATIVE_INFINITY, under: Number.NEGATIVE_INFINITY, shift: keyword, baseline: 0 };
@@ -2311,6 +2486,9 @@ export class InlineLayout {
         let under: number = state.root.group.under;
         for (const group of state.groups) {
             const height: number = group.over + group.under;
+            if (group.shift === LETTER) {
+                continue;
+            }
             if (group.shift === "top") {
                 under = Math.max(under, height - over);
             } else if (group.shift === "bottom") {
@@ -2323,7 +2501,9 @@ export class InlineLayout {
         }
         for (const group of state.groups) {
             // §4.2.3: the over edge, the center or the under edge of the aligned subtree goes on that of the line box.
-            if (group.shift === "top") {
+            if (group.shift === LETTER) {
+                group.baseline = group === state.letterGroup ? this.letterBaseline(state) : 0;
+            } else if (group.shift === "top") {
                 group.baseline = group.over - over;
             } else if (group.shift === "bottom") {
                 group.baseline = under - group.under;
@@ -2342,7 +2522,9 @@ export class InlineLayout {
                 continue;
             }
             for (const mark of record.marks) {
-                if (mark.kind === "open" && stretches) {
+                if (mark.kind === "open" && record.group === state.letterGroup) {
+                    this.letterBlock(state, mark.fragment, sizes, over);
+                } else if (mark.kind === "open" && stretches) {
                     const flipped: boolean = this.overAtEnd(record.values);
                     mark.fragment.block = this.sizes.margin(sizes, flipped ? BoxSizes.BLOCK_END : BoxSizes.BLOCK_START) ?? 0;
                     mark.fragment.blockSize = over + under - mark.fragment.block - (this.sizes.margin(sizes, flipped ? BoxSizes.BLOCK_START : BoxSizes.BLOCK_END) ?? 0);
@@ -2352,6 +2534,256 @@ export class InlineLayout {
             }
         }
         return [over, under];
+    }
+
+    private letterBaseline(state: LineState): number {
+        // CSS Inline 3 §7.6.1: with a size not less than its sink, the letter satisfies "its under alignment" and is shifted by "(sink - 1)
+        // × line-height of containing block"; with a smaller size it satisfies its over alignment. Positions run down from the baseline.
+        const letter: LetterMeasure = state.measured.letter as LetterMeasure;
+        const initial: InitialLetter = letter.initial;
+        const container: Values = state.measured.sequence.style.values;
+        const values: Values = initial.box.style.values;
+        const sizes: UsedSizes | undefined = state.measured.sizes?.get(initial.box);
+        const border: boolean = initial.letterOver === InitialLetters.BORDER_BOX;
+        const startEdge: number = border && sizes !== undefined ? this.sizes.edges(sizes, BoxSizes.BLOCK_START) : 0;
+        const endEdge: number = border && sizes !== undefined ? this.sizes.edges(sizes, BoxSizes.BLOCK_END) : 0;
+        if (initial.size >= initial.sink) {
+            return -this.initials.textUnder(initial, container) + (initial.sink - 1) * this.initials.lineHeight(container) + this.initials.letterUnder(initial, values) - endEdge;
+        }
+        return this.initials.letterOver(initial, values) + startEdge - this.initials.textOver(initial, container);
+    }
+
+    private letterBlock(state: LineState, fragment: BoxFragment, sizes: UsedSizes, over: number): void {
+        // §7.5.5: the content box fits "the specified sink" and "the glyph outlines of all the glyphs it contains", and "if its block-start
+        // padding and border are both zero, then its block-start content edge instead coincides with its over alignment point exactly".
+        const range: readonly [number, number] = this.letterRange(state.measured.letter as LetterMeasure, sizes);
+        const baseline: number = over + (state.letterGroup?.baseline ?? 0);
+        const startEdge: number = this.sizes.edges(sizes, BoxSizes.BLOCK_START);
+        fragment.block = baseline + range[0] - startEdge;
+        fragment.blockSize = startEdge + range[1] - range[0] + this.sizes.edges(sizes, BoxSizes.BLOCK_END);
+        state.letterBox = fragment;
+    }
+
+    private letterRange(letter: LetterMeasure, sizes: UsedSizes): readonly [number, number] {
+        // The over and under edges of the letter's content box, down from its baseline.
+        const initial: InitialLetter = letter.initial;
+        const values: Values = initial.box.style.values;
+        const overPoint: number = -this.initials.letterOver(initial, values);
+        const underPoint: number = -this.initials.letterUnder(initial, values);
+        if (sizes.blockSize !== undefined) {
+            // §7.5.6: "If the block size is definite, align-content is honored for aligning its contents in the block axis (using its
+            // block-axis bearings", the letter's ascent and descent at its used size; normal acts as start in a block container.
+            const free: number = sizes.blockSize - (this.metrics.ascent(values) + this.metrics.descent(values)) * initial.scale;
+            // CSS Align 3 §5.3: a distribution falls back to its alignment, center for space-around and space-evenly, start otherwise.
+            const words: ReadonlyArray<string> = this.keywords(values["align-content"]) ?? [];
+            const factor: number = words.some((word: string) => word === "center" || word === "space-around" || word === "space-evenly") ? 0.5
+                : (words.some((word: string) => word === "end" || word === "flex-end") ? 1 : 0);
+            const top: number = -this.metrics.ascent(values) * initial.scale - free * factor;
+            return [top, top + sizes.blockSize];
+        }
+        if (initial.letterOver === InitialLetters.BORDER_BOX) {
+            return [overPoint, underPoint];
+        }
+        return [this.sizes.edges(sizes, BoxSizes.BLOCK_START) === 0 ? overPoint : Math.min(overPoint, -letter.ink[2]), Math.max(underPoint, letter.ink[3])];
+    }
+
+    private excludeLetter(part: Part, area: ObjectArea, inlineStart: number, inlineSize: number, lineBlock: number): void {
+        // CSS Inline 3 §7.7: none excludes the margin box; grid widens it to "a multiple of (1ic + letter-spacing) as computed on the
+        // containing block"; all follows the glyph outline grown by shape-margin, "clipped by the initial letter's margin edges".
+        const line: LineFragment = part.line;
+        const initial: InitialLetter = line.sequence.initial as InitialLetter;
+        const container: Values = line.sequence.style.values;
+        const wrap: CssValue = initial.wrap;
+        const firstLine: number = lineBlock + line.blockSize;
+        const letter: LetterMeasure | undefined = part.measured.letter;
+        if (wrap.kind === "ident" && wrap.lower === "all" && letter?.edges !== undefined) {
+            // The outline goes to the block formatting context as distances from the margin box's line-start edge.
+            const piece: TextPiece | BoxFragment | undefined = line.pieces.find((candidate: TextPiece | BoxFragment) => candidate.kind === "text"
+                && candidate.run.start >= initial.start && candidate.run.end <= initial.end);
+            const sizes: UsedSizes = part.measured.sizes?.get(initial.box) ?? this.sizes.of(initial.box.style, inlineSize);
+            const contentStart: number = (this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0) + this.sizes.edges(sizes, BoxSizes.INLINE_START);
+            const baseline: number = lineBlock + (piece !== undefined && piece.kind === "text" ? piece.baseline : area[1] + area[3]);
+            const edges: Array<number> = [];
+            for (let index: number = 0; index < letter.edges.length; index += 2) {
+                edges.push(contentStart + letter.edges[index], baseline + letter.edges[index + 1]);
+            }
+            this.host.excludeLetter(inlineStart, part.offset + area[0], lineBlock + area[1], area[2], area[3], firstLine, edges, letter.margin);
+            return;
+        }
+        let width: number = area[2];
+        const step: number = this.gridStep(initial, container);
+        if (step > 0) {
+            width = Math.ceil((area[0] + area[2]) / step - TOLERANCE) * step - area[0];
+        }
+        this.host.excludeLetter(inlineStart, part.offset + area[0], lineBlock + area[1], width, area[3], firstLine);
+    }
+
+    private outsideEdges(value: CssValue, letter: LetterMeasure, sizes: UsedSizes, container: Values): Array<number> {
+        // CSS Shapes 1 §6.1: a basic shape in its reference box, margin-box when none is given, the box alone, or the shape of an image's
+        // alpha channel above shape-image-threshold (§6.2). The shape is drawn in the physical axes of the margin box and kept, as the
+        // glyph outline is, along the line from the content box's line-start edge and down from the letter's baseline.
+        const initial: InitialLetter = letter.initial;
+        const values: Values = initial.box.style.values;
+        const range: readonly [number, number] = this.letterRange(letter, sizes);
+        const before: number = this.sizes.edges(sizes, BoxSizes.INLINE_START) + (this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0);
+        const over: number = range[0] - this.sizes.edges(sizes, BoxSizes.BLOCK_START) - (this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0);
+        const area: ObjectArea = [-before, over, before + letter.content + this.sizes.edges(sizes, BoxSizes.INLINE_END) + (this.sizes.margin(sizes, BoxSizes.INLINE_END) ?? 0),
+            range[1] + this.sizes.edges(sizes, BoxSizes.BLOCK_END) + (this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0) - over];
+        const items: ReadonlyArray<CssValue> = value.kind === "list" ? value.items : [value];
+        const mode: string = this.keyword("horizontal-tb", container["writing-mode"]);
+        const vertical: boolean = mode !== "horizontal-tb";
+        const rtl: boolean = this.isRtl(container);
+        const width: number = vertical ? area[3] : area[2];
+        const height: number = vertical ? area[2] : area[3];
+        const boxName: string = this.keywords(value)?.find((word: string) => word.endsWith("-box")) ?? "margin-box";
+        // The insets of the reference box from the margin box, logical side by side, then put on the physical sides.
+        const inset: (side: number) => number = (side: number): number => (boxName === "margin-box" ? 0 : this.sizes.margin(sizes, side) ?? 0)
+            + (boxName === "padding-box" || boxName === "content-box" ? sizes.border?.[side] ?? 0 : 0) + (boxName === "content-box" ? sizes.padding?.[side] ?? 0 : 0);
+        const lineStart: number = inset(BoxSizes.INLINE_START);
+        const lineEnd: number = inset(BoxSizes.INLINE_END);
+        const blockStart: number = inset(BoxSizes.BLOCK_START);
+        const blockEnd: number = inset(BoxSizes.BLOCK_END);
+        const left: number = vertical ? (mode === "vertical-rl" ? blockEnd : blockStart) : (rtl ? lineEnd : lineStart);
+        const right: number = vertical ? (mode === "vertical-rl" ? blockStart : blockEnd) : (rtl ? lineStart : lineEnd);
+        const top: number = vertical ? (rtl ? lineEnd : lineStart) : blockStart;
+        const bottom: number = vertical ? (rtl ? lineStart : lineEnd) : blockEnd;
+        const reference: readonly [number, number, number, number] = [left, top, Math.max(0, width - left - right), Math.max(0, height - top - bottom)];
+        const physical: Array<number> = this.shapeEdges(items, values, reference);
+        const edges: Array<number> = [];
+        for (let index: number = 0; index < physical.length; index += 2) {
+            const x: number = physical[index];
+            const y: number = physical[index + 1];
+            const along: number = vertical ? (rtl ? height - y : y) : (rtl ? width - x : x);
+            const across: number = vertical ? (mode === "vertical-rl" ? width - x : x) : y;
+            edges.push(area[0] + along, area[1] + across);
+        }
+        return edges;
+    }
+
+    private shapeEdges(items: ReadonlyArray<CssValue>, values: Values, reference: readonly [number, number, number, number]): Array<number> {
+        const shape: CssValue | undefined = items.find((item: CssValue) => item.kind === "function" && BASIC_SHAPES.has(item.name.toLowerCase()));
+        const image: CssValue | undefined = items.find((item: CssValue) => item.kind === "url");
+        if (image !== undefined && image.kind === "url") {
+            // §6.2: the pixels whose alpha is greater than the threshold, the image stretched over the reference box; one without alpha is opaque.
+            const alpha: ImageAlpha | undefined = this.host.imageAlpha(image.href);
+            const given: CssValue | undefined = values["shape-image-threshold"];
+            const threshold: number = given === undefined ? 0 : (given.kind === "percentage" ? given.value / 100 : (given.kind === "number" ? given.value : 0));
+            return alpha === undefined ? [] : this.alphaEdges(alpha, threshold, reference);
+        }
+        const path: readonly [SvgPath, boolean] | undefined = shape === undefined
+            ? [this.shapes.rectangle(reference[0], reference[1], reference[2], reference[3], 0, 0), false]
+            : this.shapes.basicShape(shape, reference, this.isRtl(values));
+        return path === undefined ? [] : this.shapes.edges(path[0], IDENTITY_MATRIX, SHAPE_FLATNESS);
+    }
+
+    private alphaEdges(image: ImageAlpha, threshold: number, reference: readonly [number, number, number, number]): Array<number> {
+        const samples: Buffer | undefined = image.alpha;
+        const scaleX: number = reference[2] / image.width;
+        const scaleY: number = reference[3] / image.height;
+        const edges: Array<number> = [];
+        const box: (x0: number, y0: number, x1: number, y1: number) => void = (x0: number, y0: number, x1: number, y1: number): void => {
+            edges.push(x0, y0, x1, y0, x1, y0, x1, y1, x1, y1, x0, y1, x0, y1, x0, y0);
+        };
+        if (samples === undefined) {
+            if (threshold < 1) {
+                box(reference[0], reference[1], reference[0] + reference[2], reference[1] + reference[3]);
+            }
+            return edges;
+        }
+        const opacity: (index: number) => number = (index: number): number => image.bits === 16 ? samples.readUInt16BE(index * 2) / 65535 : samples[index] / 255;
+        for (let row: number = 0; row < image.height; row++) {
+            for (let column: number = 0; column < image.width; column++) {
+                if (opacity(row * image.width + column) <= threshold) {
+                    continue;
+                }
+                let end: number = column + 1;
+                while (end < image.width && opacity(row * image.width + end) > threshold) {
+                    end++;
+                }
+                box(reference[0] + column * scaleX, reference[1] + row * scaleY, reference[0] + end * scaleX, reference[1] + (row + 1) * scaleY);
+                column = end;
+            }
+        }
+        return edges;
+    }
+
+    private justifyFactor(values: Values, reversed: boolean): number {
+        // CSS Align 3 §6.1: the part of the free space before the box, in the inline direction of the line; left and right are line-left
+        // and line-right, the start or the end of a right-to-left line.
+        const words: ReadonlyArray<string> = this.keywords(values["justify-self"]) ?? [];
+        if (words.includes("center") || words.includes("anchor-center")) {
+            return 0.5;
+        }
+        const end: boolean = words.some((word: string) => word === "end" || word === "self-end" || word === "flex-end") || (words.includes("right") && !reversed)
+            || (words.includes("left") && reversed);
+        return end ? 1 : 0;
+    }
+
+    private gridStep(initial: InitialLetter, container: Values): number {
+        // §7.7: with grid the exclusion ends on "a multiple of (1ic + letter-spacing) as computed on the containing block", counted
+        // from the start of the line box.
+        if (initial.wrap.kind !== "ident" || initial.wrap.lower !== "grid") {
+            return 0;
+        }
+        const spacing: CssValue | undefined = container["letter-spacing"];
+        return this.metrics.ideographicAdvance(container) + (spacing !== undefined && spacing.kind !== "ident" ? this.sizes.pixels(spacing, 0) : 0);
+    }
+
+    private ancestorEdges(state: LineState): void {
+        // CSS Inline 3 §7.8.3: "the boundaries of those inline boxes are drawn to exclude the initial letter box, as if it were outside
+        // their startmost margin edge", a purely geometric change.
+        const initial: InitialLetter | undefined = state.measured.sequence.initial;
+        if (initial === undefined || state.boxes === undefined) {
+            return;
+        }
+        const own: BoxFragment | undefined = initial.atomic ? state.letterBox : state.boxes.get(initial.box)?.marks?.[0]?.fragment;
+        if (own === undefined) {
+            return;
+        }
+        const sizes: UsedSizes = state.measured.sizes?.get(initial.box) ?? this.sizes.of(initial.box.style, state.inlineSize);
+        const end: number = own.inline + own.inlineSize + (this.sizes.margin(sizes, BoxSizes.INLINE_END) ?? 0);
+        for (const [box, record] of state.boxes) {
+            const fragment: BoxFragment | undefined = record.marks?.[0]?.fragment;
+            if (box === initial.box || fragment === undefined) {
+                continue;
+            }
+            if (fragment.inline <= own.inline + TOLERANCE && fragment.inline + fragment.inlineSize > end) {
+                fragment.inlineSize -= end - fragment.inline;
+                fragment.inline = end;
+            }
+        }
+    }
+
+    private letterPull(state: LineState): number {
+        // §7.7: first pulls the first line in to the glyph outline unless "the first typographic character unit after the initial letter
+        // belongs to Unicode General Category Zs"; a length or a percentage of the letter's width gives that adjustment explicitly.
+        const letter: LetterMeasure | undefined = state.measured.letter;
+        if (letter === undefined) {
+            return 0;
+        }
+        const wrap: CssValue = letter.initial.wrap;
+        if (wrap.kind === "length" || wrap.kind === "percentage") {
+            return this.sizes.pixels(wrap, letter.content);
+        }
+        const step: number = this.gridStep(letter.initial, state.measured.sequence.style.values);
+        if (step > 0) {
+            // grid: the first line's content after the letter starts on the character grid too.
+            return Math.ceil(state.place / step - TOLERANCE) * step - state.place;
+        }
+        if (wrap.kind !== "ident" || (wrap.lower !== "first" && wrap.lower !== "all") || letter.edges === undefined) {
+            return 0;
+        }
+        const next: number | undefined = state.measured.text.codepoints[letter.initial.end];
+        if (wrap.lower === "first" && (next === undefined || SPACE_SEPARATOR.test(String.fromCodePoint(next)))) {
+            return 0;
+        }
+        const baseline: number = this.letterBaseline(state);
+        const right: number = this.geometry.reach(letter.edges, letter.margin, -state.root.group.over - baseline, state.root.group.under - baseline);
+        // The content after the letter starts at its margin box's line-end edge, so the pull is counted from there.
+        const sizes: UsedSizes = state.measured.sizes?.get(letter.initial.box) ?? this.sizes.of(letter.initial.box.style, state.inlineSize);
+        const end: number = letter.content + this.sizes.edges(sizes, BoxSizes.INLINE_END) + (this.sizes.margin(sizes, BoxSizes.INLINE_END) ?? 0);
+        const start: number = -this.sizes.edges(sizes, BoxSizes.INLINE_START) - (this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0);
+        return Math.min(0, Math.max(start, right) - end);
     }
 
     private alignment(values: Values, forced: boolean, reversed: boolean): string {

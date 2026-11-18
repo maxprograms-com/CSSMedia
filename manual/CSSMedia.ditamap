@@ -59,6 +59,7 @@
         <topicref href="tasks/font-faces.dita"/>
         <topicref href="tasks/font-variants.dita"/>
         <topicref href="tasks/variable-and-color-fonts.dita"/>
+        <topicref href="tasks/initial-letters.dita"/>
         <topicref href="references/font-chapter-reference.dita"/>
     </chapter>
 

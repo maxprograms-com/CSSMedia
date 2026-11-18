@@ -20,7 +20,7 @@
 
 import type { CssValue } from "../css/values/CssValue.js";
 import type { FontInstance } from "../fonts/Typeface.js";
-import type { Combination, ElementBox, InlineItem, TextRun, TextSequence } from "./BoxTree.js";
+import type { Combination, ElementBox, InitialLetter, InlineItem, TextRun, TextSequence } from "./BoxTree.js";
 import { DisplayTypes } from "./DisplayTypes.js";
 import type { FamilyReference, FontMatcher, FontRequest } from "./FontMatcher.js";
 import type { FontMetrics } from "./FontMetrics.js";
@@ -75,7 +75,7 @@ export class TextRuns {
     }
 
     cut(items: ReadonlyArray<InlineItem>, starts: ReadonlyArray<number>, codepoints: Array<number>, collapsedSpaces: ReadonlyArray<number>, scripts: Uint16Array,
-        levels: Uint8Array, combinations: ReadonlyArray<Combination>): Array<TextRun> {
+        levels: Uint8Array, combinations: ReadonlyArray<Combination>, initial?: InitialLetter): Array<TextRun> {
         // A run is text that a font shapes in one piece: one script, one bidi level and one font, with no shaping break in
         // it. The characters that have no glyph of their own are outside the runs: forced breaks, tabs and collapsed spaces.
         const runs: Array<TextRun> = [];
@@ -83,13 +83,18 @@ export class TextRuns {
         let combination: number = 0;
         let isolated: boolean = false;
         let broken: boolean = true;
+        let joined: boolean = false;
         let previous: TextSequence | undefined;
         for (const [index, item] of items.entries()) {
             if (item.kind === "out-of-flow") {
                 continue;
             }
             if (item.kind !== "text") {
-                broken = broken || item.kind === "object" || this.breaksShaping(item.node as ElementBox, item.kind === "open");
+                // CSS Inline 3 §7.5.4: an initial letter "is isolated for glyph shaping; however the text after it should shape across
+                // the inline initial letter box's boundaries", so the text after takes the letter as context in a run of its own.
+                const edge: boolean = initial !== undefined && !initial.atomic && item.node === initial.box;
+                joined = joined || (edge && item.kind === "close");
+                broken = broken || edge || item.kind === "object" || this.breaksShaping(item.node as ElementBox, item.kind === "open");
                 continue;
             }
             const node: TextSequence = item.node as TextSequence;
@@ -118,10 +123,12 @@ export class TextRuns {
                     const combined: boolean = next !== undefined && next.start <= from;
                     const to: number = next === undefined ? position : Math.min(position, combined ? next.end : next.start);
                     request = request ?? this.metrics.request(node.style.values);
-                    const first: boolean = from === starts[index];
+                    const leading: boolean = from === starts[index];
                     const apart: boolean = combined || isolated;
-                    this.shaped(codepoints, from, to, scripts, levels, request, known, runs, !apart && (first ? !broken : true), !apart && (first ? same : true), node, combined);
+                    this.shaped(codepoints, from, to, scripts, levels, request, known, runs, !apart && (leading ? !broken || joined : true), !apart && (leading ? same : true), node,
+                        combined);
                     isolated = combined;
+                    joined = false;
                     from = to;
                 }
                 start = position + 1;
@@ -129,6 +136,18 @@ export class TextRuns {
             if (end > starts[index]) {
                 broken = false;
                 previous = node;
+            }
+        }
+        if (initial !== undefined && !initial.atomic && initial.scale !== 1) {
+            for (const run of runs) {
+                if (run.start >= initial.start && run.end <= initial.end) {
+                    run.size *= initial.scale;
+                }
+            }
+        }
+        for (const run of runs) {
+            if (initial !== undefined && !initial.atomic && run.end === initial.end) {
+                run.isolatedEnd = true;
             }
         }
         return runs;

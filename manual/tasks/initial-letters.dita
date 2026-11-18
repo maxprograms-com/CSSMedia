@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="initial-letters">
+    <title>Initial letters</title>
+    <shortdesc>An initial letter is a large letter at the start of a paragraph, such as a drop cap. You give its size and its sink in lines, and CSSMedia sizes the font, places the letter and shortens the lines beside it. The <xref href="../references/font-chapter-reference.dita#font-chapter-reference">text and fonts reference</xref> lists the properties used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>para</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="make-a-drop-cap">
+                <cmd>Make a drop cap</cmd>
+                <info>
+                    <p>Set <codeph>initial-letter</codeph> on <codeph>::first-letter</codeph>. The number is the size of the letter in lines. The letter's cap height meets the cap height of the first line, and its baseline sits on the baseline of the last line it covers:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">para::first-letter { initial-letter: 3; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>CSSMedia computes the font size of the letter from the line height of the paragraph and the font's cap height, so you do not set <codeph>font-size</codeph> on it. The lines beside the letter are shortened, and the lines below it take the full width again. The letter does not make its line taller.</p>
+                </info>
+            </step>
+            <step id="sink-or-raise">
+                <cmd>Sink or raise the letter</cmd>
+                <info>
+                    <p>A second number sets how many lines the letter sinks. With fewer lines than its size, the letter rises above the first line, and the paragraph moves down to make room. <codeph>raise</codeph> is a sink of one line, and <codeph>drop</codeph>, the default, sinks as many lines as the size:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">chapter > para:first-of-type::first-letter { initial-letter: 3 2; }
+quote::first-letter { initial-letter: 3 raise; }
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The size can be a fraction, such as <codeph>2.5</codeph>. When the size is smaller than the sink, only the top of the letter is aligned with the first line.</p>
+                    <fig id="initial-letters-figure">
+                        <title>Dropped, sunken and raised initial letters</title>
+                        <image href="../images/initial-letters.svg" placement="break" scale="100">
+                            <alt>Three paragraphs drawn as rows of bars, each starting with a large red T three lines tall. In the first, the letter's top meets the cap height of the first line and its foot the baseline of the third, and the first three lines are shortened. In the second, the letter sinks two lines and rises one line above the paragraph, and two lines are shortened. In the third, the letter stands on the first baseline and rises above the paragraph, and only the first line is shortened.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="other-boxes">
+                <cmd>Use a word or an image as the initial letter</cmd>
+                <info>
+                    <p><codeph>initial-letter</codeph> also works on an inline element or an image that is the first child of its block. A phrase that is too long for one line wraps, and the text of the paragraph starts on the phrase's last line. An image without a height gets the height of the letter's lines:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">para > lead { initial-letter: 3; }
+para > ornament { content: url("images/ornament.svg"); initial-letter: 3; }
+</pre>
+                </stepxmp>
+            </step>
+            <step id="align-the-letter">
+                <cmd>Choose what the letter aligns to</cmd>
+                <info>
+                    <p><codeph>initial-letter-align</codeph> chooses the lines of the text that the top and the foot of the letter meet:</p>
+                    <ul>
+                        <li><codeph>alphabetic</codeph>: the cap height and the baseline. This is the initial value.</li>
+                        <li><codeph>ideographic</codeph>: the top and the bottom of the ideographs. Text in Chinese, Japanese, Korean or Yi takes it by default.</li>
+                        <li><codeph>hanging</codeph>: the hanging baseline, the headline of Devanagari. Hindi, Marathi, Nepali, Sanskrit and some other languages of India take it by default.</li>
+                        <li><codeph>leading</codeph>: the middle of the space between the lines.</li>
+                        <li><codeph>border-box</codeph>: the border box of the letter instead of its glyphs, so its padding and borders count.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">para::first-letter {
+    initial-letter: 3;
+    initial-letter-align: border-box alphabetic;
+    padding: 3pt;
+    background-color: #eeeeee;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The default alignments depend on the language that <codeph>xml:lang</codeph> declares. In vertical text with upright letters, the letter and the text align by the edges of their em boxes.</p>
+                </info>
+            </step>
+            <step id="wrap-the-lines">
+                <cmd>Choose how the lines meet the letter</cmd>
+                <info>
+                    <p>By default, the lines beside the letter stop at its margin box. <codeph>initial-letter-wrap</codeph> brings them closer:</p>
+                    <ul>
+                        <li><codeph>first</codeph>: the first line moves in to the outline of the letter, unless a space follows the letter.</li>
+                        <li><codeph>all</codeph>: every line beside the letter starts where the outline of the letter ends at that height. <codeph>shape-margin</codeph> keeps the lines that far from the outline, and <codeph>shape-outside</codeph> replaces the outline with a shape.</li>
+                        <li><codeph>grid</codeph>: the lines beside the letter start on a column of the character grid, a multiple of the width of an ideograph. <codeph>justify-self</codeph> places the letter in that space.</li>
+                        <li>A length or a percentage: the first line moves in by that amount. A negative value moves it toward the letter.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">para::first-letter {
+    initial-letter: 3;
+    initial-letter-wrap: all;
+    shape-margin: 2pt;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="size-the-box">
+                <cmd>Give the letter a size of its own</cmd>
+                <info>
+                    <p>Without a size, the box of the letter fits its glyph. With a <codeph>width</codeph>, <codeph>text-align</codeph> places the letter in it. With a <codeph>height</codeph>, <codeph>align-content</codeph> does:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">para::first-letter {
+    initial-letter: 3;
+    height: 60pt;
+    align-content: center;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+        <result>
+            <p>Your paragraphs start with an initial letter. A letter is never split between pages: CSSMedia avoids page breaks between the lines beside it. When a paragraph is shorter than its letter, the next paragraph wraps around the letter too, unless it starts with its own initial letter.</p>
+        </result>
+    </taskbody>
+</task>

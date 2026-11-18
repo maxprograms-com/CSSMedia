@@ -51,6 +51,12 @@ export class UserAgentRules {
         // marker's "default style should include list-style-position: inside", and its default text ends with ". ".
         rules.push(this.rule("::footnote-call", "content: counter(footnote); font-variant-position: super", 3));
         rules.push(this.rule("::footnote-marker", "content: counter(footnote) \". \"; list-style-position: inside", 4));
+        // CSS Inline 3 §7.4.1: "UAs must include in their default UA style sheet the following rules"; in XML the language an
+        // element declares is its xml:lang, which stands for the HTML lang attribute of the rules.
+        rules.push(this.rule("[xml|lang]:lang(zh, ja, ko, ii)", "initial-letter-align: ideographic", 5));
+        rules.push(this.rule("[xml|lang]:lang(hi, mr, ne, pi, kok, brx, mai, sd, sa)", "initial-letter-align: hanging", 6));
+        rules.push(this.rule("[xml|lang]:lang('*-Latn', '*-Cyrl')", "initial-letter-align: alphabetic", 7));
+        rules.push(this.rule("[xml|lang]:lang('*-Hani', '*-Hant', '*-Hans')", "initial-letter-align: ideographic", 8));
         return rules;
     }
 

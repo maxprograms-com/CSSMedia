@@ -318,7 +318,8 @@ export class TextShaper {
         // character on the other side of the boundary calls for.
         const next: TextRun | undefined = runs[index + 1];
         const before: boolean = joins && run.contextBefore && JOINS_NEXT.has(this.joining.joiningTypeOf(codepoints[run.start - 1]));
-        const after: boolean = joins && next !== undefined && next.contextBefore && next.start === run.end && JOINS_PREVIOUS.has(this.joining.joiningTypeOf(codepoints[run.end]));
+        const after: boolean = joins && run.isolatedEnd !== true && next !== undefined && next.contextBefore && next.start === run.end
+            && JOINS_PREVIOUS.has(this.joining.joiningTypeOf(codepoints[run.end]));
         const codes: Array<number> = before ? [ZERO_WIDTH_JOINER] : [];
         // §5.1.1: upright typesetting uses "vertical font metrics" and the vertical font features; sideways typesetting
         // uses "horizontal metrics and composition".

@@ -543,5 +543,36 @@
                 </tgroup>
             </table>
         </section>
+        <section id="initial-letters">
+            <title>Initial letters</title>
+            <table id="initial-letters__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-initial-letter">
+                            <entry><codeph>initial-letter</codeph></entry>
+                            <entry>Makes a <codeph>::first-letter</codeph> box, or an inline box or image that is the first child of its block, an initial letter as many lines tall as the first number, sunk as many lines as the second.</entry>
+                            <entry><codeph>normal</codeph>, or a number not less than 1 followed by an integer not less than 1, <codeph>drop</codeph> or <codeph>raise</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-inline-3/#sizing-drop-initials" scope="external" format="html">CSS Inline 3 §7.3</xref></entry>
+                        </row>
+                        <row id="row-initial-letter-align">
+                            <entry><codeph>initial-letter-align</codeph></entry>
+                            <entry>Chooses the lines of the text that the top and the foot of the letter meet: cap height and baseline, the ideographic edges, the hanging and alphabetic baselines, or the half-leading edges; <codeph>border-box</codeph> aligns the letter's border box instead of its glyphs.</entry>
+                            <entry><codeph>border-box</codeph>, <codeph>alphabetic</codeph>, <codeph>ideographic</codeph>, <codeph>hanging</codeph> or <codeph>leading</codeph>, or <codeph>border-box</codeph> followed by one of the others</entry>
+                            <entry><codeph>alphabetic</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-inline-3/#aligning-initial-letter" scope="external" format="html">CSS Inline 3 §7.4</xref></entry>
+                        </row>
+                        <row id="row-initial-letter-wrap">
+                            <entry><codeph>initial-letter-wrap</codeph></entry>
+                            <entry>Chooses how the lines beside the letter meet it: its margin box, the outline of its glyph on the first line or on every line, a character grid, or a length that pulls the first line in.</entry>
+                            <entry><codeph>none</codeph>, <codeph>first</codeph>, <codeph>all</codeph>, <codeph>grid</codeph>, or a length or a percentage of the letter's width</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-inline-3/#initial-letter-wrapping" scope="external" format="html">CSS Inline 3 §7.7</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
     </refbody>
 </reference>

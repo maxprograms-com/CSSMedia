@@ -19,7 +19,7 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
-import type { BidiRange, BoxNode, Combination, ElementBox, InlineItem, InlineSequence, InlineText, ShapedRun, TextRun, TextSequence } from "./BoxTree.js";
+import type { BidiRange, BoxNode, Combination, ElementBox, InitialLetter, InlineItem, InlineSequence, InlineText, ShapedRun, TextRun, TextSequence } from "./BoxTree.js";
 import { BreakOpportunities } from "./BreakOpportunities.js";
 import type { ComputedStyle } from "./ComputedStyle.js";
 import { DisplayTypes } from "./DisplayTypes.js";
@@ -28,6 +28,7 @@ import type { FontFeatures } from "./FontFeatures.js";
 import type { FontMatcher } from "./FontMatcher.js";
 import type { FontMetrics } from "./FontMetrics.js";
 import { FontSynthesis } from "./FontSynthesis.js";
+import { InitialLetters } from "./InitialLetters.js";
 import { LineBreaker } from "./LineBreaker.js";
 import { PunctuationSpacing } from "./PunctuationSpacing.js";
 import { ScriptRuns } from "./ScriptRuns.js";
@@ -89,9 +90,11 @@ export class InlineTextBuilder {
     private readonly runs: TextRuns;
     private readonly shaper: TextShaper;
     private readonly spacing: TextSpacing;
+    private readonly initials: InitialLetters;
 
     constructor(metrics: FontMetrics, matcher: FontMatcher, features: FontFeatures) {
         const synthesis: FontSynthesis = new FontSynthesis();
+        this.initials = new InitialLetters(metrics);
         this.runs = new TextRuns(metrics, matcher, synthesis);
         this.spacing = new TextSpacing(metrics);
         this.shaper = new TextShaper(matcher, metrics, features, this.bidi, synthesis);
@@ -234,8 +237,15 @@ export class InlineTextBuilder {
         const paragraphs: Array<BidiRange> = this.resolveLevels(sequence, codepoints, starts, levels, combinations);
         this.combinedLevels(items, starts, codepoints, levels, combinations);
         const scripts: Uint16Array = this.scripts.resolve(codepoints);
-        const runs: Array<ShapedRun> = this.shaper.shape(items, starts, codepoints, this.runs.cut(items, starts, codepoints, collapsedSpaces, scripts, levels, combinations),
-            combinations);
+        // CSS Inline 3 §7.5.3: the contents of an initial letter are set at the font size its size and alignment points give.
+        const initial: InitialLetter | undefined = this.initials.find(sequence, starts, collapsedSpaces, scripts, levels, paragraphs);
+        if (initial === undefined) {
+            delete sequence.initial;
+        } else {
+            sequence.initial = initial;
+        }
+        const runs: Array<ShapedRun> = this.shaper.shape(items, starts, codepoints,
+            this.runs.cut(items, starts, codepoints, collapsedSpaces, scripts, levels, combinations, initial), combinations);
         const spacingBefore: Float64Array = new Float64Array(codepoints.length);
         const spacingAfter: Float64Array = new Float64Array(codepoints.length);
         this.spacing.apply(sequence, starts, codepoints, runs, combinations, spacingBefore, spacingAfter);

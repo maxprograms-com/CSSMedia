@@ -108,4 +108,5 @@ export interface LineFragment {
     pieces: Array<TextPiece | BoxFragment>;
     plain?: PlainLine;
     ruby?: Array<RubyColumn>;
+    initial?: ObjectArea;
 }

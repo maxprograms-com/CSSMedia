@@ -11,5 +11,6 @@
         <section conkeyref="ref-fonts/font-face-rule"/>
         <section conkeyref="ref-fonts/font-feature-values-rule"/>
         <section conkeyref="ref-fonts/font-palette-values-rule"/>
+        <section conkeyref="ref-fonts/initial-letters"/>
     </refbody>
 </reference>

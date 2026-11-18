@@ -712,9 +712,9 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 - [~] baseline-shift
 - [ ] baseline-source
 - [~] dominant-baseline
-- [ ] initial-letter
-- [ ] initial-letter-align
-- [ ] initial-letter-wrap
+- [x] initial-letter
+- [x] initial-letter-align
+- [x] initial-letter-wrap
 - [ ] inline-sizing
 - [ ] line-fit-edge
 - [x] line-height
