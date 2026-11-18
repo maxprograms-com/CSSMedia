@@ -227,9 +227,9 @@ export class TextPainter {
         const decorations: Array<PathData> = this.collected.map((path: PathData): PathData => this.mapPath(path, (point: readonly [number, number]) => turn === 0 ? point : this.global(turn, point)));
         delete this.collected;
         const matrix: Transform | undefined = placement.matrix;
-        const outline: PathData | undefined = this.glyphPaths(placement.glyphs);
-        const glyphs: PathData | undefined = outline === undefined || matrix === undefined ? outline
-            : this.mapPath(outline, (point: readonly [number, number]) => [matrix[0] * point[0] + matrix[2] * point[1] + matrix[4], matrix[1] * point[0] + matrix[3] * point[1] + matrix[5]]);
+        const outlines: Array<PathData> | undefined = this.glyphShapes(placement.glyphs);
+        const glyphs: Array<PathData> | undefined = outlines === undefined || matrix === undefined ? outlines : outlines.map((outline: PathData): PathData =>
+            this.mapPath(outline, (point: readonly [number, number]) => [matrix[0] * point[0] + matrix[2] * point[1] + matrix[4], matrix[1] * point[0] + matrix[3] * point[1] + matrix[5]]));
         for (let index: number = layers.length - 1; index >= 0; index--) {
             pdf.content.save();
             this.shadow(layers[index], style, placement, glyphs, decorations, pdf);
@@ -246,7 +246,8 @@ export class TextPainter {
         return { verbs: path.verbs, points };
     }
 
-    private shadow(shadow: Shadow, style: ComputedStyle, placement: Placement, glyphs: PathData | undefined, decorations: ReadonlyArray<PathData>, pdf: PdfPage): void {
+    private shadow(shadow: Shadow, style: ComputedStyle, placement: Placement, glyphs: ReadonlyArray<PathData> | undefined, decorations: ReadonlyArray<PathData>,
+        pdf: PdfPage): void {
         const color: CssValue | undefined = shadow.color === undefined || (shadow.color.kind === "ident" && shadow.color.lower === "currentcolor") ? style.values["color"] : shadow.color;
         if (glyphs === undefined) {
             // A standard font has no outlines, so the viewer draws its glyphs: a shadow is the text moved, with its outline widened
@@ -259,7 +260,7 @@ export class TextPainter {
             this.rasterShadow(decorations, shadow, color, style, pdf);
             return;
         }
-        this.rasterShadow([glyphs, ...decorations], shadow, color, style, pdf);
+        this.rasterShadow([...glyphs, ...decorations], shadow, color, style, pdf);
     }
 
     private rasterShadow(shapes: ReadonlyArray<PathData>, shadow: Shadow, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
@@ -277,14 +278,7 @@ export class TextPainter {
         if (mask === undefined) {
             return;
         }
-        if (shadow.inset) {
-            // An inner shadow is drawn only where the text is.
-            for (const path of shapes) {
-                this.geometry.trace(path, pdf.content);
-            }
-            pdf.content.clip(false);
-        }
-        this.maskedFill(mask, color, style, pdf);
+        this.maskedFill(mask, shadow.inset ? shapes : undefined, color, style, pdf);
     }
 
     private viewerShadow(shadow: Shadow, color: CssValue | undefined, style: ComputedStyle, placement: Placement, pdf: PdfPage): void {
@@ -408,23 +402,43 @@ export class TextPainter {
     }
 
     private fillPaths(paths: ReadonlyArray<PathData>, spread: number, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
+        // Text Decoration 4 §4: the text and its decorations are "composited together", so each shape is filled with its own
+        // winding; ISO 32000-2 §11.6.4.3 NOTE 2: an alpha compounds where fills overlap, so a group takes the alpha once.
         if (paths.length === 0) {
             return;
         }
-        if (this.colors.fill(color, style, pdf, 1)) {
-            for (const path of paths) {
-                this.geometry.trace(path, pdf.content);
-                pdf.content.fill(false);
+        const alpha: number = this.colors.color(color, style)?.[2] ?? 0;
+        const ink: Box | undefined = alpha > 0 && alpha < 1 && (paths.length > 1 || spread > 0) ? this.pathsInk(paths) : undefined;
+        if (ink !== undefined) {
+            const reach: number = spread + 1;
+            const area: Box = [ink[0] - reach, ink[1] - reach, ink[2] + 2 * reach, ink[3] + 2 * reach];
+            const form: PdfPage = this.document.startForm(area[2], area[3], false);
+            if (this.colors.solid(color, style, form, false) && (spread <= 0 || this.colors.solid(color, style, form, true))) {
+                this.drawPaths(paths, spread, form);
             }
+            pdf.content.graphicsState(pdf.useState(alpha, 1, "Normal"));
+            pdf.content.paintXObject(pdf.useImage(this.document.finishForm(form, area, PathGeometry.IDENTITY)));
+            return;
         }
-        if (spread > 0 && this.colors.stroke(color, style, pdf, 1)) {
-            pdf.content.lineWidth(2 * spread);
-            pdf.content.lineCap(1);
-            pdf.content.lineJoin(ROUND_JOIN);
-            for (const path of paths) {
-                this.geometry.trace(path, pdf.content);
-                pdf.content.stroke();
-            }
+        if (this.colors.fill(color, style, pdf, 1) && (spread <= 0 || this.colors.stroke(color, style, pdf, 1))) {
+            this.drawPaths(paths, spread, pdf);
+        }
+    }
+
+    private drawPaths(paths: ReadonlyArray<PathData>, spread: number, pdf: PdfPage): void {
+        for (const path of paths) {
+            this.geometry.trace(path, pdf.content);
+            pdf.content.fill(false);
+        }
+        if (spread <= 0) {
+            return;
+        }
+        pdf.content.lineWidth(2 * spread);
+        pdf.content.lineCap(1);
+        pdf.content.lineJoin(ROUND_JOIN);
+        for (const path of paths) {
+            this.geometry.trace(path, pdf.content);
+            pdf.content.stroke();
         }
     }
 
@@ -447,15 +461,22 @@ export class TextPainter {
         }
     }
 
-    private maskedFill(mask: ShadowMask, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
+    private maskedFill(mask: ShadowMask, within: ReadonlyArray<PathData> | undefined, color: CssValue | undefined, style: ComputedStyle, pdf: PdfPage): void {
         // The alpha of the shadow is a gray image that becomes the soft mask of the fill of its color (ISO 32000-2 §11.6.5.2).
+        // An inner shadow is only where the text is: the image is drawn once in the clip of each shape, which makes their union.
         const resource: ImageResource = this.images.write({ width: mask.width, height: mask.height, bits: 8, channels: 1, pixels: mask.pixels }, PdfColorSpaces.GRAY, true);
         const area: Box = [mask.left, mask.top, mask.width / mask.scale, mask.height / mask.scale];
         const form: PdfPage = this.document.startForm(area[2], area[3], false);
-        form.content.save();
-        form.content.transform(area[2], 0, 0, -area[3], area[0], area[1] + area[3]);
-        form.content.paintXObject(form.useImage(resource));
-        form.content.restore();
+        for (const shape of within ?? [undefined]) {
+            form.content.save();
+            if (shape !== undefined) {
+                this.geometry.trace(shape, form.content);
+                form.content.clip(false);
+            }
+            form.content.transform(area[2], 0, 0, -area[3], area[0], area[1] + area[3]);
+            form.content.paintXObject(form.useImage(resource));
+            form.content.restore();
+        }
         pdf.content.save();
         this.document.applyMask(pdf, form, area, true, PdfColorSpaces.GRAY);
         if (this.colors.fill(color, style, pdf, 1)) {
@@ -1291,21 +1312,46 @@ export class TextPainter {
     }
 
     private glyphPaths(glyphs: ReadonlyArray<PlacedGlyph>): PathData | undefined {
-        // A glyph's stroke follows the outline of its area, which differs from its contours where they overlap.
         const path: PathData = { verbs: [], points: [] };
         for (const placed of glyphs) {
-            const outline: PathData | undefined = this.outlines.overlapping(placed.font, placed.glyph) ?? this.outlines.path(placed.font, placed.glyph);
+            const outline: PathData | undefined = this.glyphPath(placed);
             if (outline === undefined) {
                 return undefined;
             }
-            const scale: number = placed.size / placed.font.metrics.unitsPerEm;
-            const skew: number = Math.tan((placed.font.skew ?? 0) * Math.PI / 180);
             path.verbs.push(...outline.verbs);
-            for (let index: number = 0; index < outline.points.length; index += 2) {
-                path.points.push(placed.x + (outline.points[index] + skew * outline.points[index + 1]) * scale, placed.y - outline.points[index + 1] * scale);
-            }
+            path.points.push(...outline.points);
         }
         return path;
+    }
+
+    private glyphShapes(glyphs: ReadonlyArray<PlacedGlyph>): Array<PathData> | undefined {
+        // Each glyph apart, since the outlines of two glyphs can wind in opposite senses where they overlap.
+        const shapes: Array<PathData> = [];
+        for (const placed of glyphs) {
+            const outline: PathData | undefined = this.glyphPath(placed);
+            if (outline === undefined) {
+                return undefined;
+            }
+            if (outline.verbs.length > 0) {
+                shapes.push(outline);
+            }
+        }
+        return shapes;
+    }
+
+    private glyphPath(placed: PlacedGlyph): PathData | undefined {
+        // A glyph's stroke follows the outline of its area, which differs from its contours where they overlap.
+        const outline: PathData | undefined = this.outlines.overlapping(placed.font, placed.glyph) ?? this.outlines.path(placed.font, placed.glyph);
+        if (outline === undefined) {
+            return undefined;
+        }
+        const scale: number = placed.size / placed.font.metrics.unitsPerEm;
+        const skew: number = Math.tan((placed.font.skew ?? 0) * Math.PI / 180);
+        const points: Array<number> = [];
+        for (let index: number = 0; index < outline.points.length; index += 2) {
+            points.push(placed.x + (outline.points[index] + skew * outline.points[index + 1]) * scale, placed.y - outline.points[index + 1] * scale);
+        }
+        return { verbs: outline.verbs, points };
     }
 
     private strokeOf(style: ComputedStyle, prefix: string, layer: number, width: number, inset: boolean): StrokeStyle {

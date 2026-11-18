@@ -102,6 +102,7 @@ export interface MathElement {
 }
 
 const NO_DECLARATIONS: ReadonlyArray<Declaration> = [];
+const ERROR_STYLE: string = "border: 1px solid red; background-color: lightYellow";
 const MATHML_RULES: ReadonlyArray<readonly [string, string]> = [
     ["*", "font-size: math; display: block math; writing-mode: horizontal-tb !important"],
     ["math", "direction: ltr; text-indent: 0; letter-spacing: normal; line-height: normal; word-spacing: normal; font-family: math; font-size: inherit; "
@@ -109,11 +110,11 @@ const MATHML_RULES: ReadonlyArray<readonly [string, string]> = [
     ["math[display=\"block\" i]", "display: block math; math-style: normal"],
     ["math[display=\"inline\" i]", "display: inline math; math-style: compact"],
     ["semantics > :not(:first-child)", "display: none"],
-    ["merror", "border: 1px solid red; background-color: lightYellow"],
+    ["merror", ERROR_STYLE],
     ["mphantom", "visibility: hidden"],
     ["mi", "text-transform: math-auto"],
     ["ci, csymbol", "text-transform: math-auto"],
-    ["cerror", "border: 1px solid red; background-color: lightYellow"],
+    ["cerror", ERROR_STYLE],
     ["mtable", "display: inline-table; math-style: compact"],
     ["mtr", "display: table-row"],
     ["mtd", "display: table-cell; text-align: center; padding: 0.5ex 0.4em"],
@@ -196,6 +197,7 @@ const THREE_CHILDREN: number = 3;
 export class MathMarkup {
 
     static readonly NAMESPACE: string = "http://www.w3.org/1998/Math/MathML";
+    static readonly ERROR: string = ERROR_STYLE;
     static readonly COMPUTED: ReadonlySet<string> = new Set<string>(["font-size", "display"]);
     static readonly TOKENS: ReadonlySet<string> = new Set<string>(["mi", "mn", "mo", "ms", "mtext"]);
     static readonly STACKS: ReadonlySet<string> = new Set<string>(["mstack", "mlongdiv", "msgroup"]);

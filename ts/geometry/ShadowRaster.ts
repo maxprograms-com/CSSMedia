@@ -18,7 +18,7 @@
  * or in the LICENSE file provided in the root of this repository.
  *******************************************************************************/
 
-import type { PathData, Point } from "./PathGeometry.js";
+import type { PathData, Point, StrokeStyle } from "./PathGeometry.js";
 import { PathGeometry } from "./PathGeometry.js";
 
 export interface ShadowMask {
@@ -29,6 +29,8 @@ export interface ShadowMask {
     scale: number;
     pixels: Buffer;
 }
+
+type Edge = readonly [number, number, number, number, number, number];
 
 const SAMPLES: number = 4;
 const FLATNESS: number = 0.05;
@@ -41,32 +43,41 @@ export class ShadowRaster extends PathGeometry {
         eroded: boolean): ShadowMask | undefined {
         // CSS Backgrounds 3 §7.2: the blur is a Gaussian with a deviation of half the radius; Text Decoration 4 §4: the spread is an
         // outset distance from the outline, so a band around it. An inner shadow is what the eroded shape leaves of the area.
-        const shape: Array<Array<Point>> = [];
-        const band: Array<Array<Point>> = [];
+        const tolerance: number = FLATNESS / scale;
+        const stroke: StrokeStyle = { width: 2 * spread, cap: "round", extension: "crop", shape: "round", limit: 4 };
+        const shape: Array<Array<Array<Point>>> = [];
+        const band: Array<Array<Array<Point>>> = [];
         for (const path of shapes) {
-            for (const [points] of this.flattened(path, FLATNESS / scale, PathGeometry.IDENTITY3)) {
-                shape.push(points);
+            const polygons: Array<Array<Point>> = this.polygons(path, tolerance);
+            if (polygons.length === 0) {
+                continue;
             }
-            if (spread > 0) {
-                const outline: PathData = this.strokeOutline(path, { width: 2 * spread, cap: "round", extension: "crop", shape: "round", limit: 4 }, FLATNESS, PathGeometry.IDENTITY3);
-                for (const [points] of this.flattened(outline, FLATNESS / scale, PathGeometry.IDENTITY3)) {
-                    band.push(points);
-                }
+            shape.push(polygons);
+            if (spread > 0 && !eroded) {
+                // The outset of a union is the union of the outsets, so each shape adds the band around its own outline.
+                band.push(this.polygons(this.strokeOutline(path, stroke, FLATNESS, PathGeometry.IDENTITY3), tolerance));
             }
         }
         if (shape.length === 0) {
             return undefined;
         }
+        if (spread > 0 && eroded) {
+            // Text Decoration 4 §4: an inner shadow is cast by the canvas, so the spread goes from the outline of the shapes composited
+            // together, of which the edges that one shape has inside another are no part.
+            band.push(this.polygons(this.strokeOutline(this.unionOutline(shapes, tolerance), stroke, FLATNESS, PathGeometry.IDENTITY3), tolerance));
+        }
         let left: number = extent[0];
         let top: number = extent[1];
         let right: number = extent[0] + extent[2];
         let bottom: number = extent[1] + extent[3];
-        for (const points of [...shape, ...band]) {
-            for (const point of points) {
-                left = Math.min(left, point[0]);
-                right = Math.max(right, point[0]);
-                top = Math.min(top, point[1]);
-                bottom = Math.max(bottom, point[1]);
+        for (const polygons of [...shape, ...band]) {
+            for (const points of polygons) {
+                for (const point of points) {
+                    left = Math.min(left, point[0]);
+                    right = Math.max(right, point[0]);
+                    top = Math.min(top, point[1]);
+                    bottom = Math.max(bottom, point[1]);
+                }
             }
         }
         const margin: number = KERNEL_RADII * deviation + 1;
@@ -77,13 +88,7 @@ export class ShadowRaster extends PathGeometry {
         const factor: number = Math.min(scale, Math.sqrt(MAXIMUM_PIXELS / Math.max(1, (right - left) * (bottom - top))));
         const width: number = Math.max(1, Math.ceil((right - left) * factor));
         const height: number = Math.max(1, Math.ceil((bottom - top) * factor));
-        const covered: Float32Array = this.coverage(shape, left, top, factor, width, height);
-        if (spread > 0) {
-            const outer: Float32Array = this.coverage(band, left, top, factor, width, height);
-            for (let index: number = 0; index < covered.length; index++) {
-                covered[index] = eroded ? Math.max(0, covered[index] - outer[index]) : Math.max(covered[index], outer[index]);
-            }
-        }
+        const covered: Float32Array = this.coverage([...shape, ...band], shape.length, eroded, left, top, factor, width, height);
         const blurred: Float32Array = this.blur(covered, width, height, deviation * factor);
         const pixels: Buffer = Buffer.alloc(width * height);
         for (let index: number = 0; index < blurred.length; index++) {
@@ -93,38 +98,76 @@ export class ShadowRaster extends PathGeometry {
         return { left, top, width, height, scale: factor, pixels };
     }
 
-    private coverage(polygons: ReadonlyArray<ReadonlyArray<Point>>, left: number, top: number, scale: number, width: number, height: number): Float32Array {
-        // Each pixel row is sampled by SAMPLES scanlines, and on each the parts inside the shape, by the nonzero rule, add their
-        // length within each pixel.
-        const grid: Float32Array = new Float32Array(width * height);
-        const edges: Array<readonly [number, number, number, number, number]> = [];
-        for (const points of polygons) {
-            for (let index: number = 0; index < points.length; index++) {
-                const from: Point = points[index];
-                const to: Point = points[(index + 1) % points.length];
-                if (from[1] !== to[1]) {
-                    edges.push(from[1] < to[1] ? [from[0], from[1], to[0], to[1], 1] : [to[0], to[1], from[0], from[1], -1]);
-                }
+    private polygons(path: PathData, tolerance: number): Array<Array<Point>> {
+        return this.flattened(path, tolerance, PathGeometry.IDENTITY3).map(([points]: readonly [Array<Point>, boolean]) => points);
+    }
+
+    private unionOutline(shapes: ReadonlyArray<PathData>, tolerance: number): PathData {
+        // Each shape as the contours of its own nonzero area, turned so that its area winds positively: the windings of the shapes
+        // then add up, and the nonzero area of them all is their union.
+        const union: PathData = { verbs: [], points: [] };
+        for (const path of shapes) {
+            const contours: Array<Array<Point>> = this.polygons(this.outlineOf(path, tolerance, tolerance), tolerance);
+            const area: number = contours.reduce((total: number, points: Array<Point>) => total + this.area(points), 0);
+            for (const points of contours) {
+                (area < 0 ? [...points].reverse() : points).forEach((point: Point, index: number) => {
+                    union.verbs.push(index === 0 ? PathGeometry.MOVE : PathGeometry.LINE);
+                    union.points.push(point[0], point[1]);
+                });
+                union.verbs.push(PathGeometry.CLOSE);
             }
         }
-        edges.sort((first: readonly [number, number, number, number, number], second: readonly [number, number, number, number, number]) => first[1] - second[1]);
+        return this.outlineOf(union, tolerance, tolerance);
+    }
+
+    private coverage(groups: ReadonlyArray<ReadonlyArray<ReadonlyArray<Point>>>, cut: number, eroded: boolean, left: number, top: number, scale: number, width: number,
+        height: number): Float32Array {
+        // Each pixel row is sampled by SAMPLES scanlines. Each group is one path, inside by the nonzero rule with its own winding,
+        // so that paths wound in opposite senses add up; the groups from cut on are the band, which an eroded shape loses.
+        const grid: Float32Array = new Float32Array(width * height);
+        const edges: Array<Edge> = [];
+        groups.forEach((polygons: ReadonlyArray<ReadonlyArray<Point>>, group: number) => {
+            for (const points of polygons) {
+                for (let index: number = 0; index < points.length; index++) {
+                    const from: Point = points[index];
+                    const to: Point = points[(index + 1) % points.length];
+                    if (from[1] !== to[1]) {
+                        edges.push(from[1] < to[1] ? [from[0], from[1], to[0], to[1], 1, group] : [to[0], to[1], from[0], from[1], -1, group]);
+                    }
+                }
+            }
+        });
+        edges.sort((first: Edge, second: Edge) => first[1] - second[1]);
+        const windings: Int32Array = new Int32Array(groups.length);
         let next: number = 0;
-        let active: Array<readonly [number, number, number, number, number]> = [];
+        let active: Array<Edge> = [];
         for (let line: number = 0; line < height * SAMPLES; line++) {
             const y: number = top + (line + 0.5) / (SAMPLES * scale);
             while (next < edges.length && edges[next][1] <= y) {
                 active.push(edges[next++]);
             }
-            active = active.filter((edge: readonly [number, number, number, number, number]) => edge[3] > y);
-            const crossings: Array<readonly [number, number]> = active.map((edge: readonly [number, number, number, number, number]): readonly [number, number] => [
-                edge[0] + (y - edge[1]) * (edge[2] - edge[0]) / (edge[3] - edge[1]), edge[4]
+            active = active.filter((edge: Edge) => edge[3] > y);
+            const crossings: Array<readonly [number, number, number]> = active.map((edge: Edge): readonly [number, number, number] => [
+                edge[0] + (y - edge[1]) * (edge[2] - edge[0]) / (edge[3] - edge[1]), edge[4], edge[5]
             ]);
-            crossings.sort((first: readonly [number, number], second: readonly [number, number]) => first[0] - second[0]);
-            let winding: number = 0;
+            crossings.sort((first: readonly [number, number, number], second: readonly [number, number, number]) => first[0] - second[0]);
+            let inShape: number = 0;
+            let inBand: number = 0;
             const row: number = Math.floor(line / SAMPLES) * width;
-            for (let index: number = 0; index + 1 < crossings.length; index++) {
-                winding += crossings[index][1];
-                if (winding !== 0) {
+            for (let index: number = 0; index < crossings.length; index++) {
+                const group: number = crossings[index][2];
+                const before: number = windings[group];
+                windings[group] += crossings[index][1];
+                if ((before === 0) !== (windings[group] === 0)) {
+                    const change: number = before === 0 ? 1 : -1;
+                    if (group < cut) {
+                        inShape += change;
+                    } else {
+                        inBand += change;
+                    }
+                }
+                const inside: boolean = eroded ? inShape > 0 && inBand === 0 : inShape > 0 || inBand > 0;
+                if (inside && index + 1 < crossings.length) {
                     this.span(grid, row, width, (crossings[index][0] - left) * scale, (crossings[index + 1][0] - left) * scale);
                 }
             }

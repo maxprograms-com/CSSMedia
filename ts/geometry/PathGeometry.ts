@@ -406,7 +406,7 @@ export class PathGeometry {
         return this.area(points) > 0 ? [...points].reverse() : points;
     }
 
-    private area(points: ReadonlyArray<Point>): number {
+    protected area(points: ReadonlyArray<Point>): number {
         let area: number = 0;
         points.forEach((point: Point, index: number) => {
             const next: Point = points[(index + 1) % points.length];

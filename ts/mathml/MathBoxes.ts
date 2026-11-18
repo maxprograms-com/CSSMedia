@@ -91,6 +91,7 @@ const INDEX: string = MATH + "math-depth: add(2); math-style: compact";
 const NUMERATOR: string = MATH + "math-depth: auto-add; math-style: compact";
 const DENOMINATOR: string = NUMERATOR + "; math-shift: compact";
 const IDENTIFIER: string = MATH + "text-transform: math-auto";
+const ERROR: string = MATH + MathMarkup.ERROR;
 const TABLE: string = "display: inline-table; math-style: compact; font-size: math";
 const ROW: string = "display: table-row; font-size: math";
 const CELL: string = "display: table-cell; text-align: center; padding: 0.5ex 0.4em; font-size: math";
@@ -109,6 +110,7 @@ export class MathBoxes {
     private readonly contentValues: ContentValues = new ContentValues();
     private readonly dictionary: MathOperators = new MathOperators();
     private readonly arithmetic: WeakMap<ElementBox, string> = new WeakMap<ElementBox, string>();
+    private readonly cyclic: WeakMap<SourceElement, boolean> = new WeakMap<SourceElement, boolean>();
     private readonly styles: WeakMap<ComputedStyle, Map<string, ComputedStyle>> = new WeakMap<ComputedStyle, Map<string, ComputedStyle>>();
     private viewport: Size = { width: 0, height: 0 };
     private root?: ComputedStyle;
@@ -489,15 +491,56 @@ export class MathBoxes {
     }
 
     private share(element: SourceElement, style: ComputedStyle): ElementBox {
-        // §4.2.7.4: "using the rendering of the element referenced by the src attribute".
+        // §4.2.7.4: "using the rendering of the element referenced by the src attribute"; Appendix D.2: a share without a
+        // target, or one that dominates itself against §4.2.7.2, renders an error message "as if enclosed in an merror element".
         const source: string = element.getAttributeValue("src") ?? "";
-        const id: string = source.startsWith("#") ? source.substring(1) : source;
-        const target: SourceElement | undefined = id.length === 0 ? undefined : this.byId(this.top(element), id);
-        if (target === undefined || target === element) {
-            return this.own(element, style, "mrow", []);
+        const target: SourceElement | undefined = this.shareTarget(element);
+        if (target === undefined) {
+            return this.invalid(element, style, "Unresolved share: src=\"" + source + "\"");
+        }
+        if (this.dominatesItself(element, target)) {
+            return this.invalid(element, style, "Cyclic share: src=\"" + source + "\"");
         }
         const built: ElementBox | undefined = this.childBox(target, style);
         return this.own(element, style, "mrow", built === undefined ? [] : [built]);
+    }
+
+    private shareTarget(share: SourceElement): SourceElement | undefined {
+        const source: string = share.getAttributeValue("src") ?? "";
+        const id: string = source.startsWith("#") ? source.substring(1) : source;
+        return id.length === 0 ? undefined : this.byId(this.top(share), id);
+    }
+
+    private dominatesItself(share: SourceElement, target: SourceElement): boolean {
+        // §4.2.7.2: an element dominates its children and what they dominate, and a share dominates its target, so the share
+        // dominates itself when its target reaches it; each element is visited once, so the walk ends on any input.
+        let known: boolean | undefined = this.cyclic.get(share);
+        if (known !== undefined) {
+            return known;
+        }
+        known = false;
+        const pending: Array<SourceElement> = [target];
+        const visited: Set<SourceElement> = new Set<SourceElement>();
+        while (pending.length > 0 && !known) {
+            const current: SourceElement = pending.pop() as SourceElement;
+            if (current === share) {
+                known = true;
+            } else if (!visited.has(current)) {
+                visited.add(current);
+                pending.push(...current.getChildren());
+                const next: SourceElement | undefined = current.getLocalName() === "share" && this.markup.isMath(current) ? this.shareTarget(current) : undefined;
+                if (next !== undefined) {
+                    pending.push(next);
+                }
+            }
+        }
+        this.cyclic.set(share, known);
+        return known;
+    }
+
+    private invalid(element: SourceElement, style: ComputedStyle, message: string): ElementBox {
+        const error: ComputedStyle = this.derivedStyle(style, element, ERROR);
+        return this.own(element, style, "mrow", [this.internal(error, "merror", [this.token(error, "mtext", message)])]);
     }
 
     private error(element: SourceElement, style: ComputedStyle): ElementBox {
