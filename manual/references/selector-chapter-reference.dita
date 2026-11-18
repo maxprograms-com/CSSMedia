@@ -6,7 +6,7 @@
     <refbody>
         <section conkeyref="ref-selectors/selector-reference-basic"/>
         <section conkeyref="ref-selectors/selector-reference-combinators"/>
-        <section conkeyref="ref-selectors/selector-reference-pseudo-classes"/>
-        <section conkeyref="ref-selectors/selector-reference-pseudo-elements"/>
+        <section id="selector-chapter-pseudo-classes" conkeyref="ref-selectors/selector-reference-pseudo-classes"/>
+        <section id="selector-chapter-pseudo-elements" conkeyref="ref-selectors/selector-reference-pseudo-elements"/>
     </refbody>
 </reference>

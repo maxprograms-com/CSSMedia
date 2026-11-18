@@ -7,7 +7,7 @@
         <p>Write a pseudo-class after a selector. The rule applies only to elements that pass the test:</p>
         <pre outputclass="language-css21">chapter:first-child { color: navy; }
 </pre>
-        <p>The <xref href="../references/selector-reference.dita#selector-reference">selector reference</xref> lists every pseudo-class that CSSMedia accepts.</p>
+        <p>The <xref href="../references/selector-chapter-reference.dita#selector-chapter-reference">selector reference</xref> lists every pseudo-class that CSSMedia accepts.</p>
         <section id="child-and-sibling-position">
             <title>Child and sibling position</title>
             <p>Structural pseudo-classes select elements by their position among the elements that share a parent. Text, comments and processing instructions are not counted.</p>
@@ -66,7 +66,7 @@ title:has(+ paragraph) { color: gray; }
         <section id="states-that-do-not-occur-in-a-pdf">
             <title>States that do not occur in a PDF</title>
             <p>A PDF has no pointer, keyboard focus, media playback, form controls or browsing history. Pseudo-classes that test those states are valid selectors, but they never match an element. Examples are <codeph>:hover</codeph>, <codeph>:focus</codeph>, <codeph>:visited</codeph>, <codeph>:target</codeph>, <codeph>:playing</codeph>, <codeph>:checked</codeph> and <codeph>:disabled</codeph>. The same holds for <codeph>:state()</codeph> and <codeph>:heading</codeph>, because an XML element has no custom state and no heading role.</p>
-            <p><codeph>:read-only</codeph> and <codeph>:defined</codeph> match every element. The <xref href="../references/selector-reference.dita#selector-reference/selector-reference-pseudo-classes">selector reference</xref> gives the result for each pseudo-class.</p>
+            <p><codeph>:read-only</codeph> and <codeph>:defined</codeph> match every element. The <xref href="../references/selector-chapter-reference.dita#selector-chapter-reference/selector-chapter-pseudo-classes">selector reference</xref> gives the result for each pseudo-class.</p>
         </section>
     </conbody>
 </concept>

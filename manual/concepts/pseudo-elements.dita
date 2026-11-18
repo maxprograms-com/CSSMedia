@@ -7,7 +7,7 @@
         <pre outputclass="language-css21">paragraph::first-letter { color: navy; }
 paragraph::before { content: "Note: "; }
 </pre>
-        <p>The <xref href="../references/selector-reference.dita#selector-reference/selector-reference-pseudo-elements">selector reference</xref> lists every pseudo-element that CSSMedia accepts.</p>
+        <p>The <xref href="../references/selector-chapter-reference.dita#selector-chapter-reference/selector-chapter-pseudo-elements">selector reference</xref> lists every pseudo-element that CSSMedia accepts.</p>
         <section id="text-parts">
             <title>Text parts</title>
             <p><codeph>::first-line</codeph> selects the first formatted line of a block. <codeph>::first-letter</codeph> selects its first letter, together with the punctuation around it. <codeph>::first-letter::prefix</codeph> and <codeph>::first-letter::suffix</codeph> select that punctuation.</p>

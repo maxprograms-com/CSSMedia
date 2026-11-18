@@ -221,7 +221,7 @@ wide-table {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>The <xref href="../references/page-reference.dita#page-reference">page reference</xref> lists the 16 page-margin rules and where each box is. See <xref href="named-strings.dita#named-strings">Named strings</xref> to show the text of an element in a margin box.</p>
+                    <p>The <xref href="../references/page-setup-chapter-reference.dita#page-setup-chapter-reference/page-setup-margin-rules">page setup reference</xref> lists the 16 page-margin rules and where each box is. See <xref href="named-strings.dita#named-strings">Named strings</xref> to show the text of an element in a margin box.</p>
                 </info>
             </step>
         </steps>

@@ -161,11 +161,11 @@
         </topicmeta>
         <!-- TODO: placeholder, write this chapter -->
     </chapter>
-
+<!--
     <chapter href="concepts/intro-reference.dita">
         <mapref href="CompleteReference.ditamap"/>
     </chapter>
-
+-->
     <chapter href="concepts/licenses.dita"/>
 
     <backmatter>

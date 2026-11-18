@@ -12,7 +12,7 @@
         <p>The guides are grouped by selector type and matching behavior:</p>
         <ul>
             <li>
-                <xref href="../references/selector-reference.dita#selector-reference">Selector reference</xref>: a compact reference to the selector forms and their <xref href="../glossaries/PDF.dita">PDF</xref> behavior.</li>
+                <xref href="../references/selector-chapter-reference.dita#selector-chapter-reference">Selector reference</xref>: a compact reference to the selector forms and their <xref href="../glossaries/PDF.dita">PDF</xref> behavior.</li>
             <li>
                 <xref href="basic-selectors.dita#basic-selectors">Basic selectors and namespaces</xref>: element names, IDs, classes, attributes and XML namespaces.</li>
             <li>
