@@ -117,14 +117,14 @@
                             <entry>
                                 <codeph>content()</codeph>
                             </entry>
-                            <entry>Gives text of an element. Use it in the value of <codeph>string-set</codeph>.</entry>
+                            <entry>Gives the text of an element, the text of its <codeph>::before</codeph>, <codeph>::after</codeph> or <codeph>::marker</codeph>, or its first letter. Use it in <codeph>string-set</codeph>, in <codeph>bookmark-label</codeph>, and in the <codeph>content</codeph> of the element and of its pseudo-elements.</entry>
                             <entry>
-                                <codeph>text</codeph>, <codeph>before</codeph>, <codeph>after</codeph> or <codeph>first-letter</codeph></entry>
+                                <codeph>text</codeph>, <codeph>before</codeph>, <codeph>after</codeph>, <codeph>first-letter</codeph> or <codeph>marker</codeph></entry>
                             <entry>
                                 <codeph>text</codeph>
                             </entry>
                             <entry>
-                                <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-content" scope="external" format="html">CSS GCPM 3 §1.1.1.1</xref>
+                                <xref href="https://www.w3.org/TR/css-content-3/#content-function" scope="external" format="html">CSS Content 3 §2.7.3</xref>
                             </entry>
                         </row>
                         <row id="row-link-counter" valign="middle">

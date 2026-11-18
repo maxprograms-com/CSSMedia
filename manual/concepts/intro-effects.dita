@@ -65,6 +65,6 @@
                 <alt>Five boxes in a row joined by arrows: Drawing, Transform, Clip, Mask, and Opacity and blend.</alt>
             </image>
         </fig>
-        <!-- TODO: box-shadow, outline, filter, and clip-path and mask on the boxes of the document or on the svg element itself, stop the run; they work on the elements inside the drawing, and opacity, mix-blend-mode, isolation, transform, translate, rotate, scale and perspective work on the boxes of the document -->
+        <!-- TODO: box-shadow, outline, filter, and clip-path and mask on the boxes of the document or on the svg element itself, stop the run; clip-path and mask work on the elements inside the drawing, filter is not painted there, and opacity, mix-blend-mode, isolation, transform, translate, rotate, scale and perspective work on the boxes of the document -->
     </conbody>
 </concept>

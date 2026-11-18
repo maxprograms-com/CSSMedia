@@ -21,7 +21,7 @@
 import { TextNode } from "typesxml";
 import { PropertyTable } from "../css/PropertyTable.js";
 import type { ContainerQuery, Declaration, DeclaredValue, TocRule } from "../css/Stylesheet.js";
-import type { CssValue } from "../css/values/CssValue.js";
+import type { CssValue, FunctionValue } from "../css/values/CssValue.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import type { BoxNode, ElementBox, NamedString, Placement, TextSequence } from "./BoxTree.js";
 import type { Cascade } from "./Cascade.js";
@@ -56,9 +56,16 @@ interface Context {
     placement: Placement;
     quotes?: ReadonlyArray<QuotePair>;
     generated?: Record<string, ReadonlyArray<BoxNode>>;
+    copies?: Array<TextSequence>;
     scope?: number;
     size?: Size;
     formula?: boolean;
+}
+
+interface Copy {
+    context: Context;
+    keyword: string;
+    language?: string;
 }
 
 interface Deferral {
@@ -174,6 +181,8 @@ export class BoxBuilder {
     private readonly tocRules: ReadonlyArray<TocRule>;
     private readonly tocs: Array<TocPlaceholder> = [];
     private readonly calls: Array<readonly [ElementBox, SourceElement]> = [];
+    private readonly copies: Map<TextSequence, Copy> = new Map<TextSequence, Copy>();
+    private readonly cyclic: Set<TextSequence> = new Set<TextSequence>();
     readonly targets: Map<TextSequence, string> = new Map<TextSequence, string>();
     readonly namedTexts: Map<readonly [string, string], [TextSequence, string]> = new Map<readonly [string, string], [TextSequence, string]>();
     stringLabels?: Set<SourceElement | ElementBox>;
@@ -453,6 +462,8 @@ export class BoxBuilder {
             } else if (node.kind === "text") {
                 if (node.target !== undefined || node.bookmark !== undefined) {
                     this.targets.delete(node);
+                    this.copies.delete(node);
+                    this.cyclic.delete(node);
                 }
                 if (node.named !== undefined) {
                     this.namedTexts.delete(node.named);
@@ -467,6 +478,9 @@ export class BoxBuilder {
     }
 
     targetText(node: TextSequence): string {
+        if (this.copies.has(node)) {
+            return this.copyText(node, new Set<TextSequence>());
+        }
         if (node.bookmark !== undefined) {
             return this.labelText(node.bookmark[0], node.bookmark[1], this.labelStrings?.get(node.bookmark[0]));
         }
@@ -839,6 +853,12 @@ export class BoxBuilder {
         // §2.7: ::footnote-marker "is placed at the beginning of the superior parent's content, and is inline by default".
         const nodes: Array<BoxNode> = [];
         let sibling: CounterSet | undefined;
+        if (context.generated !== undefined) {
+            // A container built again for another size keeps only the pseudo-elements that this build generates.
+            for (const name of Object.keys(context.generated)) {
+                delete context.generated[name];
+            }
+        }
         // CSS Containment 2 §3.3: with style containment the quotes of the subtree start at the depth that their context
         // implies, and do not change the depth outside; the element's own content is outside.
         let inner: number = 0;
@@ -870,6 +890,7 @@ export class BoxBuilder {
         if (items !== undefined && this.contentValues.isReplacement(items)) {
             // CSS Content 3 §1: a replaced element has no ::before or ::after.
             nodes.push({ kind: "deferred", value: items[0], style: this.anonymousStyle(context.style) });
+            this.fillCopies(context);
             return nodes;
         }
         const before: PseudoElement | undefined = this.pseudoElement(context, "before");
@@ -896,7 +917,8 @@ export class BoxBuilder {
                 sibling = built.counters;
                 return built.nodes;
             }) : undefined;
-            const state: ContentState = this.contentState(context.counters, context.node, context.element, (): ReadonlyArray<QuotePair> => this.contextQuotes(context), contents);
+            const state: ContentState = this.contentState(context.counters, context.node, context.element, (): ReadonlyArray<QuotePair> => this.contextQuotes(context), contents,
+                context);
             nodes.push(...this.withTocs(this.content.evaluate(this.withLinkCounters(items, context.element), this.anonymousStyle(context.style), state), context.style,
                 context.element, state, context.usedPage));
         }
@@ -905,14 +927,73 @@ export class BoxBuilder {
             nodes.push(...built.nodes);
             this.keepGenerated(context, "after", built.nodes);
         }
+        this.fillCopies(context);
         return nodes;
     }
 
     private keepGenerated(context: Context, name: string, nodes: ReadonlyArray<BoxNode>): void {
-        // CSS Content 3 §2.7.3: content() in a named string can ask for the text of these boxes.
-        if (context.generated !== undefined) {
-            context.generated[name] = nodes;
+        // CSS Content 3 §2.7.3: content() takes the text of these boxes, in the content of the element and of its pseudo-elements
+        // and in a named string.
+        const generated: Record<string, ReadonlyArray<BoxNode>> = context.generated ?? {};
+        context.generated = generated;
+        generated[name] = nodes;
+    }
+
+    private copyOf(context: Context, value: FunctionValue, text: ComputedStyle, language?: string): string | TextSequence {
+        // CSS Content 3 §2.7.3: the text of the element is the document's; a pseudo-element can be built after the value that copies
+        // it and can hold texts that only layout settles, so its copy is a text that the later stages fill as they fill a target.
+        const keyword: string = GeneratedContent.contentKeyword(value);
+        if (keyword === "text") {
+            return this.content.stringValue(keyword, context.element, undefined, text, language, (node: TextSequence): string => node.text);
         }
+        const node: TextSequence = { kind: "text", text: "", style: text, target: value };
+        const copy: Copy = { context, keyword };
+        if (language !== undefined) {
+            node.language = language;
+            copy.language = language;
+        }
+        this.copies.set(node, copy);
+        this.targets.set(node, "");
+        context.copies = context.copies ?? [];
+        context.copies.push(node);
+        return node;
+    }
+
+    private fillCopies(context: Context): void {
+        // Every pseudo-element of the element is built by now, so the copies of their texts can be made.
+        for (const node of context.copies ?? []) {
+            node.text = this.copyText(node, new Set<TextSequence>());
+            this.targets.set(node, node.text);
+        }
+        delete context.copies;
+    }
+
+    private copyText(node: TextSequence, active: Set<TextSequence>): string {
+        // The texts that the copied boxes hold are read as they are now, the texts of cross-references and other copies included.
+        // A copy whose text holds itself has no string value to take, and neither has any copy on that loop, so they show nothing.
+        if (this.cyclic.has(node)) {
+            return "";
+        }
+        if (active.has(node)) {
+            const loop: Array<TextSequence> = [...active];
+            for (const member of loop.slice(loop.indexOf(node))) {
+                this.cyclic.add(member);
+            }
+            return "";
+        }
+        const copy: Copy = this.copies.get(node) as Copy;
+        active.add(node);
+        const text: string = this.content.stringValue(copy.keyword, copy.context.element, copy.context.generated, node.style, copy.language,
+            (source: TextSequence): string => this.liveText(source, active));
+        active.delete(node);
+        return this.cyclic.has(node) ? "" : text;
+    }
+
+    private liveText(node: TextSequence, active: Set<TextSequence>): string {
+        if (this.copies.has(node)) {
+            return this.copyText(node, active);
+        }
+        return this.targets.has(node) ? this.targetText(node) : node.text;
     }
 
     private childBoxes(context: Context, firstSibling?: CounterSet): Built {
@@ -995,6 +1076,7 @@ export class BoxBuilder {
             const built: Built = this.pseudoBoxes(context, before, false, context, sibling);
             boxes.before = built.nodes;
             sibling = built.counters;
+            this.keepGenerated(context, "before", built.nodes);
         }
         for (const child of context.element.getChildren()) {
             sibling = this.formulaChild(child, context, sibling, generated);
@@ -1002,7 +1084,9 @@ export class BoxBuilder {
         const after: PseudoElement | undefined = this.pseudoElement(context, "after");
         if (after !== undefined) {
             boxes.after = this.pseudoBoxes(context, after, false, context, sibling).nodes;
+            this.keepGenerated(context, "after", boxes.after);
         }
+        this.fillCopies(context);
         if (boxes.before !== undefined || boxes.after !== undefined) {
             generated.set(context.element, boxes);
         }
@@ -1040,7 +1124,7 @@ export class BoxBuilder {
         const pseudoContext: Context = { ...context, node, counters };
         const contents: (() => Array<BoxNode>) | undefined = takesContents ? this.once((): Array<BoxNode> => this.childBoxes(pseudoContext).nodes) : undefined;
         const state: ContentState = this.contentState(counters, node, context.element,
-            (): ReadonlyArray<QuotePair> => this.quoteSystem(context.element, pseudo.style.values["quotes"], context), contents);
+            (): ReadonlyArray<QuotePair> => this.quoteSystem(context.element, pseudo.style.values["quotes"], context), contents, context);
         if (this.pageFootnotes && (pseudo.name === FOOTNOTE_CALL || pseudo.name === FOOTNOTE_MARKER)) {
             state.footnote = context.element;
         }
@@ -1105,7 +1189,7 @@ export class BoxBuilder {
         this.applyCounters(counters, node, style, false, context.scope);
         this.previous = counters;
         const state: ContentState = this.contentState(counters, node, context.element,
-            (): ReadonlyArray<QuotePair> => this.quoteSystem(context.element, style.values["quotes"], context));
+            (): ReadonlyArray<QuotePair> => this.quoteSystem(context.element, style.values["quotes"], context), undefined, origin);
         const generated: Array<BoxNode> = items === undefined ? this.content.marker(text, state)
             : this.content.evaluate(this.withLinkCounters(items, context.element, name, style.values[PropertyTable.LINK]), text, state);
         // CSS Lists 3 §3.5: an outside marker of a block container is a block container placed outside the principal box; for an
@@ -1163,7 +1247,7 @@ export class BoxBuilder {
     }
 
     private contentState(counters: Array<Counter>, node: number, element: SourceElement, quotes: () => ReadonlyArray<QuotePair>,
-        contents?: () => Array<BoxNode>): ContentState {
+        contents?: () => Array<BoxNode>, source?: Context): ContentState {
         const state: ContentState = { counters, node, quotes, references: this.references, targets: this.targets, named: this.namedTexts };
         const language: string | undefined = this.cascade.languageOf(element);
         if (language !== undefined) {
@@ -1171,6 +1255,9 @@ export class BoxBuilder {
         }
         if (contents !== undefined) {
             state.contents = contents;
+        }
+        if (source !== undefined) {
+            state.copy = (value: FunctionValue, text: ComputedStyle): string | TextSequence => this.copyOf(source, value, text, language);
         }
         return state;
     }

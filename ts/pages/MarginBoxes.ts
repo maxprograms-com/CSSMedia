@@ -162,7 +162,8 @@ export class MarginBoxes {
                     children.push({ ...found, placement: "in-flow" });
                     element = true;
                 }
-            } else {
+            } else if (item.kind !== "function" || item.name !== "content") {
+                // CSS Content 3 §2.7.3 takes the text of content() from an element, and a page-margin box has none, so it adds nothing.
                 children.push(...this.content.evaluate([item], text, state));
             }
         }

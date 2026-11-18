@@ -42,6 +42,7 @@ export interface ContentState {
     targets?: Map<TextSequence, string>;
     named?: Map<readonly [string, string], [TextSequence, string]>;
     footnote?: SourceElement;
+    copy?: (value: FunctionValue, text: ComputedStyle) => string | TextSequence;
 }
 
 const TARGETS: ReadonlySet<string> = new Set<string>(["target-counter", "target-counters", "target-text"]);
@@ -128,6 +129,13 @@ export class GeneratedContent {
                         state.targets.set(node, node.text);
                     } else if (item.name === "string" && state.named !== undefined) {
                         this.addNamed(nodes, item.args, text, state.named, state.language);
+                    } else if (item.name === "content" && state.copy !== undefined) {
+                        const value: string | TextSequence = state.copy(item, text);
+                        if (typeof value === "string") {
+                            this.addText(nodes, value, text, state.language);
+                        } else {
+                            nodes.push(value);
+                        }
                     } else {
                         nodes.push({ kind: "deferred", value: item, style: text });
                     }
@@ -218,6 +226,22 @@ export class GeneratedContent {
         return result + this.normalText(line, text);
     }
 
+    static contentKeyword(value: FunctionValue): string {
+        // CSS Content 3 §2.7.3: "If no value is specified in content(), it acts as if text were specified."
+        const argument: CssValue | undefined = value.args[0];
+        return argument !== undefined && argument.kind === "ident" ? argument.lower : "text";
+    }
+
+    stringValue(keyword: string, element: SourceElement, generated: Readonly<Record<string, ReadonlyArray<BoxNode>>> | undefined, style: ComputedStyle,
+        language: string | undefined, read: (node: TextSequence) => string): string {
+        // CSS Content 3 §2.7.3 and GCPM 3 §1.1.1.1: the string value of the element or of a pseudo-element, "determined as if
+        // white-space: normal had been set", or the first letter of the element "as defined for the ::first-letter pseudo-element".
+        if (keyword === "first-letter") {
+            return this.firstLetterText(element, language, generated, read);
+        }
+        return this.normalText(keyword === "text" ? this.textOf(element) : this.boxText(generated?.[keyword], read), style);
+    }
+
     private normalText(line: string, style: ComputedStyle): string {
         if (line.length === 0) {
             return line;
@@ -226,10 +250,11 @@ export class GeneratedContent {
         return this.whiteSpace.normalText(line, style);
     }
 
-    private firstLetterText(element: SourceElement, language: string | undefined, generated?: Readonly<Record<string, ReadonlyArray<BoxNode>>>): string {
+    private firstLetterText(element: SourceElement, language: string | undefined, generated?: Readonly<Record<string, ReadonlyArray<BoxNode>>>,
+        read?: (node: TextSequence) => string): string {
         // CSS Pseudo-Elements 4 §2.2.1: the first letter can come from the content of ::before, and the white space before
         // it is not part of it.
-        const text: string = this.boxText(generated?.["before"]) + this.textOf(element);
+        const text: string = this.boxText(generated?.["before"], read) + this.textOf(element);
         const start: number = (LEADING_WHITE_SPACE.exec(text) as RegExpExecArray)[0].length;
         const found: readonly [number, number, number] | undefined = GeneratedContent.firstLetter(text, start, language);
         return found === undefined ? "" : text.substring(start, found[2]);
@@ -247,16 +272,16 @@ export class GeneratedContent {
         return text;
     }
 
-    private boxText(nodes?: ReadonlyArray<BoxNode>): string {
+    private boxText(nodes?: ReadonlyArray<BoxNode>, read?: (node: TextSequence) => string): string {
         let text: string = "";
         if (nodes === undefined) {
             return text;
         }
         for (const node of nodes) {
             if (node.kind === "text") {
-                text += node.text;
+                text += read === undefined ? node.text : read(node);
             } else if (node.kind === "box") {
-                text += this.boxText(node.children);
+                text += this.boxText(node.children, read);
             }
         }
         return text;

@@ -24,6 +24,12 @@ item::marker { color: navy; }
             <p><codeph>::marker</codeph> selects the marker of a list item. <codeph>::before::marker</codeph> and <codeph>::after::marker</codeph> select the marker of generated content that is a list item.</p>
             <p><codeph>::footnote-call</codeph> and <codeph>::footnote-marker</codeph> select the reference that replaces a footnote in the text and the marker at the start of the footnote.</p>
             <!-- TODO: link to the Footnotes chapter when it is written -->
+            <p>The <codeph>content()</codeph> function copies text into generated content. <codeph>content(text)</codeph>, the default, copies the text of the element. <codeph>content(before)</codeph>, <codeph>content(after)</codeph> and <codeph>content(marker)</codeph> copy the text of those pseudo-elements. <codeph>content(first-letter)</codeph> copies the first letter of the element, with the punctuation around it. Each copy is one line, with its white space collapsed.</p>
+            <pre outputclass="language-css21">term::after { content: " (" content() ")"; }
+figure-title::before { content: "Figure " counter(figure) ": "; }
+figure-title::after { content: " [" content(before) "]"; }
+</pre>
+            <p>A copy follows the text it copies: a page number in <codeph>::before</codeph> appears in the copy too. A copy cannot copy itself. <codeph>content(before)</codeph> in <codeph>::before</codeph> shows nothing, and so do the copies of a <codeph>::before</codeph> and an <codeph>::after</codeph> that copy each other. <codeph>content()</codeph> in a page margin box shows nothing either, because the box has no element. See the <xref href="../references/named-strings-chapter-reference.dita#named-strings-chapter-reference">Named strings reference</xref>.</p>
             <p>To copy the text of an element into a page margin box, use <codeph>string-set</codeph>. See <xref href="../tasks/named-strings.dita#named-strings">Named strings</xref>.</p>
         </section>
         <section id="pseudo-elements-without-a-target">

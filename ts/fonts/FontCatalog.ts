@@ -59,7 +59,6 @@ export class FontCatalog {
     private standardFaces?: ReadonlyArray<CatalogFace>;
     private standardFamilies?: Map<string, Array<CatalogFace>>;
     private mathFamily?: string | null;
-    private warnedMath: boolean = false;
     private readonly common: FontCatalog;
     private readonly faces: Map<string, Typeface | null> = new Map<string, Typeface | null>();
     readonly diagnostics: Array<string>;
@@ -95,10 +94,6 @@ export class FontCatalog {
         const math: ReadonlyArray<CatalogFace> | undefined = keyword === MATH_GENERIC ? this.common.installedMath() : undefined;
         if (math !== undefined) {
             return math;
-        }
-        if (keyword === MATH_GENERIC && !this.common.warnedMath) {
-            this.common.warnedMath = true;
-            this.diagnostics.push("Times was used for MathML instead of a specialized font");
         }
         const standard: string | undefined = STANDARD_GENERICS[keyword];
         return standard === undefined ? undefined : this.common.standardFamily(this.caseFolder.fold(standard));

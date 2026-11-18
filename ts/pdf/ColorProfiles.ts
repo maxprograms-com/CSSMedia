@@ -172,7 +172,6 @@ export class ColorProfiles implements ProfileColors {
     private load(name: string, rule: DescriptorRule): ColorProfile | undefined {
         const source: CssValue | undefined = this.valueOf(rule.descriptors["src"]);
         if (source === undefined || source.kind !== "url") {
-            this.diagnostics.push("The color profile " + name + " has no src descriptor, so the colors that use it are not valid");
             return undefined;
         }
         const data: Uint8Array | undefined = this.bytes(source.href);

@@ -322,9 +322,6 @@ export class SvgPainter {
                     this.textLinks(node, style);
                 });
                 break;
-            case "foreignObject":
-                this.unsupported("The painting of the foreignObject element in the SVG image " + styles.url + " is not implemented and the element is skipped");
-                break;
             default:
                 if (SHAPES.has(name)) {
                     this.effects(node, style, SvgGeometry.IDENTITY, () => this.shape(node, style));
@@ -467,17 +464,9 @@ export class SvgPainter {
             this.keyword(values["height"]) === "auto" ? this.height : this.styles.pixels(values["height"], this.height)];
     }
 
-    unsupported(message: string): void {
-        this.images.diagnose(message);
-    }
-
     private effects(node: SvgNode, style: ComputedStyle, after: Matrix, draw: () => void): void {
         // SVG 2 §3.6: the transforms, then clipping and masking, then the group composited with its opacity and blend mode.
         // CSS Transforms 2 §4.1: an element in a 3D rendering context goes into the plane of its own or its parent's.
-        const filter: CssValue | undefined = style.values["filter"];
-        if (filter !== undefined && this.keyword(filter) !== "none") {
-            this.unsupported("The painting of the filter property in the SVG image " + this.styles.url + " is not implemented and the elements are painted unfiltered");
-        }
         const own: Matrix4 = this.geometry.multiply4(this.geometry.multiply4(this.perspective(node), this.spatial(node, style)), this.geometry.lift(after));
         if (this.space !== undefined) {
             this.participate(node, style, own, draw);
