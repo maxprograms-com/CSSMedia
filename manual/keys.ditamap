@@ -24,4 +24,5 @@
     <keydef keys="ref-cascade" href="references/cascade-reference.dita"/>
     <keydef keys="ref-vertical" href="references/vertical-reference.dita"/>
     <keydef keys="ref-columns" href="references/columns-reference.dita"/>
+    <keydef keys="ref-floats" href="references/floats-reference.dita"/>
 </map>

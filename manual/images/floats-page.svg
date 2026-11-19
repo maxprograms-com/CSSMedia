@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320" viewBox="0 0 480 320">
+    <g font-family="Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle" fill="#222222">
+        <rect x="140" y="10" width="200" height="280" fill="#ffffff" stroke="#888888"/>
+        <rect x="155" y="25" width="170" height="250" fill="none" stroke="#bbbbbb" stroke-dasharray="3 3"/>
+        <rect x="155" y="25" width="170" height="40" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text x="240" y="49">float: top</text>
+        <rect x="155" y="65" width="170" height="26" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text x="240" y="82" font-size="10">float: top, stacked</text>
+        <rect x="155" y="91" width="50" height="144" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text x="180" y="160" font-size="10">float:</text>
+        <text x="180" y="173" font-size="10">left</text>
+        <rect x="155" y="235" width="170" height="40" fill="#fdf1d6" stroke="#7a4a10"/>
+        <text x="240" y="259">float: bottom</text>
+        <g fill="#cfe3f5" stroke="#1d4f7a">
+            <rect x="211" y="97" width="114" height="8"/>
+            <rect x="211" y="111" width="114" height="8"/>
+            <rect x="211" y="125" width="114" height="8"/>
+            <rect x="211" y="139" width="114" height="8"/>
+            <rect x="211" y="153" width="114" height="8"/>
+            <rect x="211" y="167" width="114" height="8"/>
+            <rect x="211" y="181" width="114" height="8"/>
+            <rect x="211" y="195" width="114" height="8"/>
+            <rect x="211" y="209" width="80" height="8"/>
+        </g>
+        <text x="70" y="45" font-size="10">page area</text>
+        <path d="M100 41H153" stroke="#4a2700" fill="none"/>
+        <text x="240" y="308" font-size="10" fill="#555555">The page floats take the edges of the page area; the text goes on in what they leave.</text>
+    </g>
+</svg>

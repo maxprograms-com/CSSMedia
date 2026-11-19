@@ -28,6 +28,8 @@ import type { FontMetrics } from "../pdf/FontMetrics.js";
 import type { InlineTextBuilder } from "../pdf/InlineTextBuilder.js";
 import type { NaturalSizes, Transform, UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
+import type { FloatArea, StackedFloat } from "./FloatStack.js";
+import { FloatStack } from "./FloatStack.js";
 import type { BoxFragment, BreakToken, LineFragment, Margins, ObjectArea, PlainLine, Sides } from "./Fragment.js";
 import type { TextEdges } from "./InlineLayout.js";
 import { InlineLayout } from "./InlineLayout.js";
@@ -40,7 +42,13 @@ const DEFAULT_HEIGHT: number = 150;
 const VISIBLE_OVERFLOW: ReadonlyArray<string> = ["visible", "clip"];
 const TOLERANCE: number = 0.001;
 const FLOAT_FIELDS: number = 4;
-const INLINE_FLOATS: ReadonlySet<string> = new Set<string>(["left", "right", "inline-start", "inline-end"]);
+const START_FLOATS: ReadonlySet<string> = new Set<string>(["inline-start", "block-start", "top"]);
+const END_FLOATS: ReadonlySet<string> = new Set<string>(["inline-end", "block-end", "bottom"]);
+const FULL_SIZE: CssValue = { kind: "percentage", value: 100 };
+const NO_SIDES: readonly [boolean, boolean] = [false, false];
+const START_SIDE: readonly [boolean, boolean] = [true, false];
+const END_SIDE: readonly [boolean, boolean] = [false, true];
+const BOTH_SIDES: readonly [boolean, boolean] = [true, true];
 const KEYWORD_ORDER: ReadonlyArray<number> = [BoxSizes.MINIMUM_INLINE, BoxSizes.MAXIMUM_INLINE, BoxSizes.MINIMUM_BLOCK, BoxSizes.MAXIMUM_BLOCK, BoxSizes.PREFERRED_INLINE,
     BoxSizes.PREFERRED_BLOCK];
 const CONTENT_SIZES: ReadonlySet<string> = new Set<string>(["min-content", "max-content", "fit-content", BoxSizes.FIT_FUNCTION]);
@@ -86,6 +94,7 @@ interface ColumnPart {
 
 interface ColumnSet {
     fragments: Array<BoxFragment>;
+    floats: Array<BoxFragment>;
     token?: BreakToken;
     extent: number;
 }
@@ -125,6 +134,7 @@ interface Contour {
     bottom: number;
     margin: number;
     edges: ReadonlyArray<number>;
+    shaped?: boolean;
 }
 
 interface Wrapping {
@@ -132,6 +142,14 @@ interface Wrapping {
     critical: Float64Array;
     top: number;
     bottom: number;
+}
+
+export interface SnapPlace {
+    box: ElementBox;
+    inlineStart: number;
+    inlineEnd: number;
+    blockStart: number;
+    blockEnd: number;
 }
 
 export interface Candidate {
@@ -203,6 +221,16 @@ export class BlockLayout {
     private anchorNames?: Map<string, Array<ReadonlyArray<ElementBox>>>;
     private readonly anchoring: Array<readonly [number, ElementBox, BoxFragment]> = [];
     private pushed: ReadonlySet<ElementBox> = NO_CALLS;
+    readonly floatStack: FloatStack = new FloatStack(this.sizes);
+    shapeImages?: (value: CssValue, style: ComputedStyle, width: number, height: number) => ImageAlpha | undefined;
+    private readonly floatCopies: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
+    private readonly pageCopies: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
+    private pageFlow: boolean = false;
+    private columnDepth: number = 0;
+    private readonly snapped: Map<ElementBox, number> = new Map<ElementBox, number>();
+    private readonly snapMarkers: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
+    private readonly snapOrigins: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
+    private readonly snapBoxes: WeakMap<ElementBox, ReadonlyArray<ElementBox>> = new WeakMap<ElementBox, ReadonlyArray<ElementBox>>();
 
     constructor(metrics: FontMetrics, text: InlineTextBuilder, images: ImageFormats, contents?: ContainerContents) {
         this.images = images;
@@ -249,15 +277,18 @@ export class BlockLayout {
         }
     }
 
-    page(box: ElementBox, inlineSize: number, blockSize: number, token?: BreakToken, end?: Candidate): BoxFragment {
+    page(box: ElementBox, inlineSize: number, blockSize: number, token?: BreakToken, end?: Candidate, whole?: readonly [number, number]): BoxFragment {
         // CSS Paged Media 3 §3: the page area of the first page is the initial containing block, the containing block of the
-        // root element (CSS 2 §10.1); CSS Writing Modes 4 §8.1: it takes the writing mode of the root element.
+        // root element (CSS 2 §10.1); CSS Writing Modes 4 §8.1: it takes the writing mode of the root element. The page floats
+        // take part of the page area, which stays the initial containing block.
         this.frame = this.sizes.frame(box.style);
         this.sign = 1;
+        this.pageFlow = true;
         if (token === undefined) {
-            this.initialInline = inlineSize;
+            const area: readonly [number, number] = whole ?? [inlineSize, blockSize];
+            this.initialInline = area[0];
             this.rootBox = box;
-            this.initial = (this.frame & BoxSizes.VERTICAL) === 0 ? [inlineSize, blockSize] : [blockSize, inlineSize];
+            this.initial = (this.frame & BoxSizes.VERTICAL) === 0 ? [area[0], area[1]] : [area[1], area[0]];
         }
         const initialBlock: number = (this.frame & BoxSizes.VERTICAL) === 0 ? this.initial[1] : this.initial[0];
         // CSS Fragmentation 4 §5.1: "Layout is performed per-fragmentainer, with each fragmentainer continuing progress from the
@@ -315,15 +346,18 @@ export class BlockLayout {
     }
 
     marginBox(box: ElementBox, sizes: UsedSizes, inlineSize: number): BoxFragment {
-        // A page-margin box inherits from the page context, not from the content, so it starts its own writing mode.
+        // A page-margin box inherits from the page context, not from the content, so it starts its own writing mode; CSS Page Floats 3
+        // §3.1: it is outside the page area that the pages of the document fragment, so a page float in it has its line box as reference.
         this.frame = this.sizes.frame(box.style);
         this.sign = 1;
+        this.pageFlow = false;
         return this.flow(box, sizes, inlineSize, 0, true, 0, 0);
     }
 
     marginContent(box: ElementBox): readonly [number, number] {
         this.frame = this.sizes.frame(box.style);
         this.sign = 1;
+        this.pageFlow = false;
         return this.contentSizes(box);
     }
 
@@ -338,6 +372,7 @@ export class BlockLayout {
         const appeal: number = this.flowAppeal;
         this.frame = this.sizes.frame(area.style);
         this.sign = 1;
+        this.pageFlow = true;
         // The space is the margin box of the area, whose block-start margin comes before the fragmentainer that it breaks in.
         const before: number = this.sizes.margin(this.sizes.of(area.style, inlineSize, blockSize), BoxSizes.BLOCK_START) ?? 0;
         const room: number = Math.max(MINIMUM_FRAGMENTAINER, space - before);
@@ -579,7 +614,7 @@ export class BlockLayout {
     segments(inlineStart: number, inlineSize: number, top: number, size: number): Array<readonly [number, number]> {
         // CSS 2 §9.5 and CSS Exclusions 1 §2: the room beside the floats that the wrapping area leaves, as stretches given by
         // their offset from the inline start of the box that asks and their size, in its inline direction.
-        const width: number = this.band(inlineStart, inlineSize, top, size);
+        const width: number = this.band(inlineStart, inlineSize, top, size, true);
         const offset: number = this.bandOffset;
         const free: ReadonlyArray<readonly [number, number]> | undefined = this.free(top, top + Math.max(size, TOLERANCE));
         if (free === undefined) {
@@ -713,7 +748,7 @@ export class BlockLayout {
         return result;
     }
 
-    private band(inlineStart: number, inlineSize: number, top: number, size: number): number {
+    private band(inlineStart: number, inlineSize: number, top: number, size: number, lines: boolean = false): number {
         // CSS 2 §9.5: the room between the floats at one block position, kept in the block formatting context's inline axis,
         // which runs against that of a box asking with the other direction.
         const floats: Floats | undefined = this.floats;
@@ -722,19 +757,20 @@ export class BlockLayout {
         let end: number = low + inlineSize;
         const bottom: number = top + Math.max(size, TOLERANCE);
         for (let index: number = 0; floats !== undefined && index < floats.starts.length; index += FLOAT_FIELDS) {
-            if (floats.starts[index + 1] < bottom && floats.starts[index + 1] + floats.starts[index + 3] > top) {
+            if (floats.starts[index + 1] < bottom && floats.starts[index + 1] + floats.starts[index + 3] > top && !(lines && this.isShaped(floats, true, index))) {
                 start = Math.max(start, floats.starts[index] + floats.starts[index + 2]);
             }
         }
         for (let index: number = 0; floats !== undefined && index < floats.ends.length; index += FLOAT_FIELDS) {
-            if (floats.ends[index + 1] < bottom && floats.ends[index + 1] + floats.ends[index + 3] > top) {
+            if (floats.ends[index + 1] < bottom && floats.ends[index + 1] + floats.ends[index + 3] > top && !(lines && this.isShaped(floats, false, index))) {
                 end = Math.min(end, floats.ends[index]);
             }
         }
         for (const contour of floats === undefined ? [] : floats.contours) {
             // CSS Inline 3 §7.7: with initial-letter-wrap: all a line starts "at the start-most point that does not overlap the initial
-            // letter's glyph outline", grown by shape-margin and "clipped by the initial letter's margin edges".
-            if (contour.top >= bottom || contour.bottom <= top) {
+            // letter's glyph outline", grown by shape-margin and "clipped by the initial letter's margin edges"; CSS Shapes 1 §2: the
+            // float area of a shape-outside is for the lines only.
+            if (contour.top >= bottom || contour.bottom <= top || (contour.shaped === true && !lines)) {
                 continue;
             }
             const reach: number = Math.min(contour.width, this.letters.reach(contour.edges, contour.margin, Math.max(top, contour.top), Math.min(bottom, contour.bottom)));
@@ -787,10 +823,12 @@ export class BlockLayout {
         const values: Readonly<Record<string, CssValue>> = box.style.values;
         const floated: CssValue | undefined = values["float"];
         const side: string = this.keyword(floated);
-        if (!INLINE_FLOATS.has(side)) {
-            // A float placed nowhere would vanish from the PDF, so the page floats of CSS Page Floats 3 stop the run.
+        // CSS Page Floats 3 §3.2: when the float reference is a line box, block-start "behaves like inline-start" and block-end like inline-end,
+        // and top and bottom behave like block-start or inline-start and like block-end or inline-end.
+        if (side !== "left" && side !== "right" && !START_FLOATS.has(side) && !END_FLOATS.has(side)) {
             throw new Error("The layout of float: " + (floated !== undefined && floated.kind === "function" ? floated.name + "()" : side) + " is not implemented");
         }
+        const laid: ElementBox = this.floatBox(box);
         // CSS Fragmentation 4 §2.1: a float is a parallel flow; one that starts after the end of the fragmentainer goes whole to
         // the next one, and so does every later float, since CSS 2 §9.5.1 rules 5 and 6 keep their order.
         const fragmenting: Fragmentation | undefined = this.end < Number.POSITIVE_INFINITY ? this.fragmenting : undefined;
@@ -798,8 +836,8 @@ export class BlockLayout {
             this.pushFloat(box, inlineStart, inlineSize);
             return true;
         }
-        let placed: readonly [BoxFragment, number] = incoming === undefined ? this.atomic(box, inlineSize, blockBasis)
-            : this.parallel((): readonly [BoxFragment, number] => this.atomic(box, inlineSize, blockBasis, this.end - origin - top, incoming), incoming);
+        let placed: readonly [BoxFragment, number] = incoming === undefined ? this.atomic(laid, inlineSize, blockBasis)
+            : this.parallel((): readonly [BoxFragment, number] => this.atomic(laid, inlineSize, blockBasis, this.end - origin - top, incoming), incoming);
         let fragment: BoxFragment = placed[0];
         const before: number = fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1];
         let height: number = before + fragment.blockSize + (fragment.marginAfter === undefined ? 0 : fragment.marginAfter[0] + fragment.marginAfter[1]);
@@ -807,7 +845,7 @@ export class BlockLayout {
         // box generated by an element earlier in the source document."
         let block: number = Math.max(origin + top, this.clearEdge(box));
         const reversed: boolean = (this.frame & BoxSizes.RIGHT_TO_LEFT) !== 0;
-        const atEnd: boolean = side === "inline-end" || (side === "right" && !reversed) || (side === "left" && reversed);
+        const atEnd: boolean = END_FLOATS.has(side) || (side === "right" && !reversed) || (side === "left" && reversed);
         if (this.floats !== undefined) {
             for (const earlier of [this.floats.starts, this.floats.ends]) {
                 for (let index: number = 0; index < earlier.length; index += FLOAT_FIELDS) {
@@ -847,7 +885,7 @@ export class BlockLayout {
                     return true;
                 }
             } else {
-                placed = this.parallel((): readonly [BoxFragment, number] => this.atomic(box, inlineSize, blockBasis, this.end - block - before));
+                placed = this.parallel((): readonly [BoxFragment, number] => this.atomic(laid, inlineSize, blockBasis, this.end - block - before));
                 fragment = placed[0];
                 height = before + fragment.blockSize + (fragment.marginAfter === undefined ? 0 : fragment.marginAfter[0] + fragment.marginAfter[1]);
             }
@@ -863,11 +901,248 @@ export class BlockLayout {
         const floats: Floats = this.floats ?? { starts: [], ends: [], used: true, letters: [], contours: [] };
         this.floats = floats;
         floats.used = true;
-        (atEnd === this.sign > 0 ? floats.ends : floats.starts).push(inline, block, placed[1], height);
+        const sideList: Array<number> = atEnd === this.sign > 0 ? floats.ends : floats.starts;
+        const index: number = sideList.length;
+        sideList.push(inline, block, placed[1], height);
+        this.shapeFloat(laid, floats, sideList === floats.starts, index, inline, block, placed[1], height, inlineSize);
         fragment.inline += offset;
         fragment.block = block - origin + before;
         out.push(fragment);
         return true;
+    }
+
+    private shapeFloat(box: ElementBox, floats: Floats, inStarts: boolean, index: number, low: number, block: number, width: number, height: number, basis: number): void {
+        // CSS Shapes 1 §2: shape-outside makes the float area that inline content wraps around, "clipped to the float's margin box"; "float
+        // positioning and stacking are not affected", so the margin box stays among the floats for them, and content wraps on one side only.
+        const value: CssValue | undefined = box.style.values["shape-outside"];
+        if (value === undefined || (value.kind === "ident" && value.lower === "none")) {
+            return;
+        }
+        const edges: Array<number> | undefined = this.inline.marginShape(value, box.style, this.sizes.of(box.style, basis), this.frame, width, height);
+        if (edges === undefined) {
+            return;
+        }
+        // The outline goes to the block formatting context as distances from the float's outer edge, the one away from the content.
+        const outline: Array<number> = [];
+        for (let point: number = 0; point < edges.length; point += 2) {
+            const fromLow: number = this.sign > 0 ? edges[point] : width - edges[point];
+            outline.push(inStarts ? fromLow : width - fromLow, block + edges[point + 1]);
+        }
+        // §6.3: the percentages of shape-margin refer to "the inline size of the containing block".
+        const margin: CssValue | undefined = box.style.values["shape-margin"];
+        floats.contours.push({ inStarts, index, low, width, top: block, bottom: block + height, margin: margin === undefined ? 0 : this.sizes.pixels(margin, basis), edges: outline,
+            shaped: true });
+    }
+
+    frameOf(style: ComputedStyle): number {
+        return this.sizes.frame(style);
+    }
+
+    isSnap(box: ElementBox): boolean {
+        const value: CssValue | undefined = box.style.values["float"];
+        const name: string = value === undefined ? "" : (value.kind === "function" ? value.name : this.keyword(value));
+        return name === "snap-block" || name === "snap-inline";
+    }
+
+    snapOrigin(box: ElementBox): ElementBox {
+        return this.snapOrigins.get(box) ?? box;
+    }
+
+    snapState(): Map<ElementBox, number> {
+        return new Map<ElementBox, number>(this.snapped);
+    }
+
+    restoreSnaps(saved: ReadonlyMap<ElementBox, number>): void {
+        this.snapped.clear();
+        for (const [box, side] of saved) {
+            this.snapped.set(box, side);
+        }
+    }
+
+    snap(box: ElementBox, side: number): void {
+        this.snapped.set(box, side);
+    }
+
+    snapPlaces(fragment: BoxFragment, column: boolean, found: Array<SnapPlace>, inline: number, block: number): Array<SnapPlace> {
+        // The boxes with a snap value that are still in the flow, and where they stand in the coordinates the fragment is placed in; the
+        // boxes in the columns of a multi-column container inside are that container's, and a flow of another writing mode is not entered.
+        const frame: number = this.sizes.frame(fragment.box.style);
+        const startInline: number = inline + fragment.inline + this.side(BoxSizes.INLINE_START, fragment.border) + this.side(BoxSizes.INLINE_START, fragment.padding);
+        const startBlock: number = block + fragment.block + this.side(BoxSizes.BLOCK_START, fragment.border) + this.side(BoxSizes.BLOCK_START, fragment.padding);
+        for (const child of fragment.children ?? []) {
+            for (const piece of child.kind === "line" ? child.pieces : [child]) {
+                if (piece.kind !== "box") {
+                    continue;
+                }
+                const lineInline: number = child.kind === "line" ? startInline + (child.inline ?? 0) : startInline;
+                const lineBlock: number = child.kind === "line" ? startBlock + child.block : startBlock;
+                const box: ElementBox = piece.box;
+                if (box.placement === "in-flow" && this.isSnap(box) && !this.snapped.has(box) && piece.resumed !== true
+                    && this.keyword(box.style.values["float-reference"]) === (column ? "column" : "page")) {
+                    found.push({ box, inlineStart: lineInline + piece.inline, inlineEnd: lineInline + piece.inline + piece.inlineSize, blockStart: lineBlock + piece.block,
+                        blockEnd: lineBlock + piece.block + piece.blockSize });
+                }
+                if ((!column || this.columnsOf(box, piece.inlineSize) === undefined) && !this.sizes.isOrthogonal(frame, this.sizes.frame(box.style))) {
+                    this.snapPlaces(piece, column, found, lineInline, lineBlock);
+                }
+            }
+        }
+        return found;
+    }
+
+    snapSide(place: SnapPlace, inlineSize: number, blockSize: number, frame: number): number | undefined {
+        // CSS Page Floats 3 §3.2: snap-block() floats the element "to the start or the end of the block if it naturally appears within a
+        // certain distance from either one", one length for both and two for the start and the end; the keyword says where, the nearest
+        // with near, where "If near is in effect and the element is within the specified distance both from the start and the end, end
+        // wins"; snap-block is snap-block(2em, near), and snap-inline does the same along the line, with left and right.
+        const values: Readonly<Record<string, CssValue>> = place.box.style.values;
+        const value: CssValue | undefined = values["float"];
+        const along: boolean = (value?.kind === "function" ? value.name : this.keyword(value)) === "snap-inline";
+        const args: ReadonlyArray<CssValue> = value !== undefined && value.kind === "function" ? value.args : [];
+        const lengths: Array<number> = [];
+        let keyword: string = "near";
+        for (const item of args.flatMap((arg: CssValue) => arg.kind === "list" ? arg.items : [arg])) {
+            if (item.kind === "ident") {
+                keyword = item.lower;
+            } else {
+                lengths.push(this.sizes.pixels(item, 0));
+            }
+        }
+        const size: CssValue | undefined = values["font-size"];
+        const startReach: number = lengths[0] ?? 2 * (size === undefined ? 16 : this.sizes.pixels(size, 0));
+        const endReach: number = lengths[1] ?? startReach;
+        const toStart: number = along ? place.inlineStart : place.blockStart;
+        const toEnd: number = along ? inlineSize - place.inlineEnd : blockSize - place.blockEnd;
+        const nearStart: boolean = toStart <= startReach + TOLERANCE;
+        const nearEnd: boolean = toEnd <= endReach + TOLERANCE;
+        if (!nearStart && !nearEnd) {
+            return undefined;
+        }
+        const start: number = along ? BoxSizes.INLINE_START : BoxSizes.BLOCK_START;
+        const end: number = along ? BoxSizes.INLINE_END : BoxSizes.BLOCK_END;
+        // CSS Writing Modes 4 §7.5: left and right are the line-left and line-right sides.
+        const lineLeft: number = (frame & BoxSizes.RIGHT_TO_LEFT) !== 0 ? BoxSizes.INLINE_END : BoxSizes.INLINE_START;
+        switch (keyword) {
+            case "start":
+                return start;
+            case "end":
+                return end;
+            case "left":
+                return lineLeft;
+            case "right":
+                return lineLeft === BoxSizes.INLINE_START ? BoxSizes.INLINE_END : BoxSizes.INLINE_START;
+            default:
+                return nearEnd ? end : start;
+        }
+    }
+
+    private snapMarker(box: ElementBox): ElementBox {
+        // The place of a snapped box in the flow is a float anchor, which the page or the column reads as that of a page float.
+        let marker: ElementBox | undefined = this.snapMarkers.get(box);
+        if (marker === undefined) {
+            marker = { ...box, placement: "page-float" };
+            this.snapMarkers.set(box, marker);
+            this.snapOrigins.set(marker, box);
+        }
+        return marker;
+    }
+
+    private snapsIn(content: ElementBox): ReadonlyArray<ElementBox> {
+        let boxes: ReadonlyArray<ElementBox> | undefined = this.snapBoxes.get(content);
+        if (boxes === undefined) {
+            const found: Array<ElementBox> = [];
+            const walk: (box: ElementBox) => void = (box: ElementBox): void => {
+                for (const child of box.children) {
+                    if (child.kind === "box") {
+                        if (this.isSnap(child)) {
+                            found.push(child);
+                        }
+                        walk(child);
+                    }
+                }
+            };
+            walk(content);
+            boxes = found;
+            this.snapBoxes.set(content, boxes);
+        }
+        return boxes;
+    }
+
+    isInlineFloat(box: ElementBox): boolean {
+        return box.placement === "float" || (box.placement === "page-float" && !this.floatsApart(box));
+    }
+
+    floatsApart(box: ElementBox): boolean {
+        // CSS Page Floats 3 §3.1: the float reference is the column or the page the float anchor is in, and "If the float anchor is not
+        // inside a column, the float reference is the line box of the float anchor", and likewise outside a page.
+        if (box.placement !== "page-float") {
+            return false;
+        }
+        return this.keyword(box.style.values["float-reference"]) === "column" ? this.columnDepth > 0 : this.pageFlow;
+    }
+
+    private snapApart(box: ElementBox): boolean {
+        // CSS Page Floats 3 §3.1: with an inline or a region reference, or outside a column or a page, the float reference is the line box,
+        // where a snap value has no effect (Page Floats 3, Editor's Draft, §3.2: "Has no effect if the element is an inline float").
+        const reference: string = this.keyword(box.style.values["float-reference"]);
+        return reference === "column" ? this.columnDepth > 0 : reference === "page" && this.pageFlow;
+    }
+
+    private floatBox(box: ElementBox): ElementBox {
+        // A page float whose float reference is its line box is laid out and painted as the other floats are.
+        if (box.placement !== "page-float") {
+            return box;
+        }
+        let copy: ElementBox | undefined = this.floatCopies.get(box);
+        if (copy === undefined) {
+            copy = { ...box, placement: "float" };
+            this.floatCopies.set(box, copy);
+        }
+        return copy;
+    }
+
+    pageFloat(box: ElementBox, inlineSize: number, blockSize: number, frame: number): StackedFloat {
+        // CSS Page Floats 3 §3.1: "The float containing block formatting context is a new block formatting context with the same dimensions
+        // and placement as the float reference"; §3.2: for a block-start or block-end float "The initial value of the max-width or max-height
+        // property that refers to the inline size of the float is '100%'".
+        const values: Readonly<Record<string, CssValue>> = box.style.values;
+        const side: number | undefined = this.floatStack.side(values["float"], frame) ?? this.snapped.get(this.snapOrigin(box));
+        if (side === undefined) {
+            const floated: CssValue | undefined = values["float"];
+            throw new Error("The layout of float: " + (floated !== undefined && floated.kind === "function" ? floated.name + "()" : this.keyword(floated)) + " is not implemented");
+        }
+        let copy: ElementBox | undefined = this.pageCopies.get(box);
+        if (copy === undefined) {
+            const limited: boolean = (side === BoxSizes.BLOCK_START || side === BoxSizes.BLOCK_END) && this.keyword(values["max-inline-size"]) === "none";
+            const style: ComputedStyle = limited ? { ...box.style, values: Object.assign(Object.create(values) as Record<string, CssValue>, { "max-inline-size": FULL_SIZE }) }
+                : box.style;
+            copy = { ...box, style, placement: "float" };
+            this.pageCopies.set(box, copy);
+        }
+        const laid: ElementBox = copy;
+        const outerFrame: number = this.frame;
+        const outerSign: number = this.sign;
+        this.frame = frame;
+        this.sign = 1;
+        try {
+            const placed: readonly [BoxFragment, number] = this.apart((): readonly [BoxFragment, number] => this.atomic(laid, inlineSize, blockSize));
+            const fragment: BoxFragment = placed[0];
+            this.positioned(fragment, true);
+            const before: number = fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1];
+            const after: number = fragment.marginAfter === undefined ? 0 : fragment.marginAfter[0] + fragment.marginAfter[1];
+            const stacked: StackedFloat = {
+                box, fragment, side, inlineSize: placed[1], blockSize: before + fragment.blockSize + after, start: fragment.inline, before,
+                closes: this.floatStack.closes(values["clear"], frame)
+            };
+            const offset: CssValue | undefined = values["float-offset"];
+            if (offset !== undefined) {
+                stacked.offset = offset;
+            }
+            return stacked;
+        } finally {
+            this.frame = outerFrame;
+            this.sign = outerSign;
+        }
     }
 
     excludeLetter(inlineStart: number, offset: number, block: number, width: number, height: number, firstLine: number, edges?: ReadonlyArray<number>,
@@ -889,8 +1164,17 @@ export class BlockLayout {
         }
     }
 
-    imageAlpha(href: string): ImageAlpha | undefined {
-        return this.images.alpha(href);
+    shapeAlpha(value: CssValue, style: ComputedStyle, width: number, height: number): ImageAlpha | undefined {
+        // CSS Shapes 1 §6.1: the shape of an <image> is the part of it whose alpha is above the threshold, a gradient or a cross-fade as
+        // much as a file; the pages give the painter that computes it, and a layout without one reads the files alone.
+        if (this.shapeImages !== undefined) {
+            return this.shapeImages(value, style, width, height);
+        }
+        return value.kind === "url" ? this.images.alpha(value.href) : undefined;
+    }
+
+    private isShaped(floats: Floats, inStarts: boolean, index: number): boolean {
+        return floats.contours.some((contour: Contour) => contour.shaped === true && contour.inStarts === inStarts && contour.index === index);
     }
 
     private isLetter(side: ReadonlyArray<number>, index: number): boolean {
@@ -931,19 +1215,15 @@ export class BlockLayout {
     private clearEdge(box: ElementBox): number {
         // CSS 2 §9.5.2: the top border edge of a box with clear goes below the bottom outer edge of the floats on the sides
         // that it names.
-        const clear: string = this.keyword(box.style.values["clear"]);
         const floats: Floats | undefined = this.floats;
         if (floats === undefined) {
             return Number.NEGATIVE_INFINITY;
         }
-        // CSS Writing Modes 4 §7.5: the sides are the line-left and line-right of the containing block.
-        const reversed: boolean = (this.frame & BoxSizes.RIGHT_TO_LEFT) !== 0;
-        const ownStart: boolean = clear === "inline-start" || (clear === "left" && !reversed) || (clear === "right" && reversed);
-        const ownEnd: boolean = clear === "inline-end" || (clear === "right" && !reversed) || (clear === "left" && reversed);
+        const [ownStart, ownEnd]: readonly [boolean, boolean] = this.clearedSides(this.keyword(box.style.values["clear"]));
         const atStart: boolean = this.sign > 0 ? ownStart : ownEnd;
         const atEnd: boolean = this.sign > 0 ? ownEnd : ownStart;
         let edge: number = Number.NEGATIVE_INFINITY;
-        for (const side of clear === "none" ? [] : [atEnd ? undefined : floats.starts, atStart ? undefined : floats.ends]) {
+        for (const side of [atStart ? floats.starts : undefined, atEnd ? floats.ends : undefined]) {
             for (let index: number = 0; side !== undefined && index < side.length; index += FLOAT_FIELDS) {
                 edge = this.isLetter(side, index) ? edge : Math.max(edge, side[index + 1] + side[index + 3]);
             }
@@ -955,6 +1235,29 @@ export class BlockLayout {
             edge = Math.max(edge, letter[3]);
         }
         return edge;
+    }
+
+    private clearedSides(clear: string): readonly [boolean, boolean] {
+        switch (clear) {
+            case "both":
+                return BOTH_SIDES;
+            case "inline-start":
+            case "block-start":
+            case "top":
+                // CSS Page Floats 3 §4: on a block-level box or an inline float, block-start behaves "like inline-start" and top
+                // "like block-start or inline-start"; block-end and bottom likewise behave like inline-end.
+                return START_SIDE;
+            case "inline-end":
+            case "block-end":
+            case "bottom":
+                return END_SIDE;
+            case "left":
+            case "right":
+                // CSS Writing Modes 4 §7.5: left and right are the line-left and line-right of the containing block.
+                return (clear === "left") !== ((this.frame & BoxSizes.RIGHT_TO_LEFT) !== 0) ? START_SIDE : END_SIDE;
+            default:
+                return NO_SIDES;
+        }
     }
 
     atomic(box: ElementBox, inlineSize: number, blockBasis?: number, space?: number, incoming?: BreakToken, letterBlock?: number): readonly [BoxFragment, number] {
@@ -1483,6 +1786,12 @@ export class BlockLayout {
                 break;
             }
             const node: BoxNode = nodes[index];
+            if (this.isBlockLevel(node) && this.snapped.has(node) && this.snapApart(node) && (incoming === undefined || incoming.child !== index)) {
+                // CSS Page Floats 3 §3.2: a box that snaps to an edge floats there, and leaves its float anchor where it stood in the flow.
+                children.push(this.emptyPlace(this.snapMarker(node), offset + (empty && adjoinsStart ? 0 : pending[0] + pending[1])));
+                index++;
+                continue;
+            }
             if (this.isBlockLevel(node)) {
                 const resuming: BreakToken | undefined = incoming !== undefined && incoming.child === index ? incoming.inner : undefined;
                 const filled: boolean = fragmenting !== undefined && fragmenting.filled;
@@ -1568,7 +1877,7 @@ export class BlockLayout {
             if (outside.kind === "box" && this.isPlacedAlone(nodes, index)) {
                 // CSS Fragmentation 4 §4.1: "a float and an immediately-adjacent in-flow or floated box" meet at a class A
                 // break point, so the out-of-flow boxes that make no line box are placed one at a time.
-                const floated: boolean = outside.placement === "float";
+                const floated: boolean = this.isInlineFloat(outside);
                 const previous: ElementBox | undefined = fragmenting !== undefined && floated && (incoming === undefined || index > incoming.child)
                     ? this.previousSibling(nodes, index) : undefined;
                 if (fragmenting !== undefined && previous !== undefined) {
@@ -1597,7 +1906,7 @@ export class BlockLayout {
                     const placeholder: BoxFragment = this.placeholder(outside);
                     placeholder.block = top;
                     children.push(placeholder);
-                } else if (outside.placement === "running" || outside.placement === "footnote") {
+                } else if (outside.placement === "running" || outside.placement === "footnote" || this.floatsApart(outside)) {
                     children.push(this.emptyPlace(outside, top));
                 }
                 if (fragmenting !== undefined && floated && children.length > placed) {
@@ -1940,8 +2249,12 @@ export class BlockLayout {
                 result.baseline = fragment.baseline === undefined ? result.baseline : fragment.block + fragment.baseline;
             } else {
                 const set: ColumnSet = this.columnSet(part.box, columns, blockSize, left, fragmenting, inner);
+                for (const float of set.floats) {
+                    float.block += offset;
+                    result.children.push(float);
+                }
                 for (const [position, fragment] of set.fragments.entries()) {
-                    fragment.block = offset;
+                    fragment.block += offset;
                     result.children.push(fragment);
                     if (position > 0) {
                         // §4: a rule is drawn "in the middle of each column gap" between two columns that both have content.
@@ -1949,8 +2262,8 @@ export class BlockLayout {
                     }
                 }
                 const first: BoxFragment | undefined = set.fragments[0];
-                result.firstBaseline = result.firstBaseline ?? (first?.firstBaseline === undefined ? undefined : offset + first.firstBaseline);
-                result.baseline = first?.baseline === undefined ? result.baseline : offset + first.baseline;
+                result.firstBaseline = result.firstBaseline ?? (first?.firstBaseline === undefined ? undefined : first.block + first.firstBaseline);
+                result.baseline = first?.baseline === undefined ? result.baseline : first.block + first.baseline;
                 offset += set.extent;
                 token = set.token;
             }
@@ -1968,24 +2281,11 @@ export class BlockLayout {
         // (balance, found by trying), or what the fragmentainer around has left (column-fill: auto).
         const kinds: ReadonlyArray<string> = [...(this.fragmenting?.kinds ?? []), "column"];
         const lay: (height: number, endless: boolean) => ColumnSet = (height: number, endless: boolean): ColumnSet => {
-            const fragments: Array<BoxFragment> = [];
-            let current: BreakToken | undefined = incoming;
-            for (let index: number = 0; endless || index < columns.count; index++) {
-                const begin: BreakToken | undefined = current;
-                const fragment: BoxFragment = this.fragmented(kinds, height, columns.width, begin, (): BoxFragment => this.block(content, columns.width, true, 0, 0, height, undefined, 0, height, begin, false));
-                fragment.inline = index * (columns.width + columns.gap);
-                fragment.block = 0;
-                fragments.push(fragment);
-                current = fragment.token;
-                if (current === undefined || (current.forced !== undefined && current.forced !== "column")) {
-                    break;
-                }
-            }
-            const set: ColumnSet = { fragments, extent: fragments.reduce((largest: number, fragment: BoxFragment) => Math.max(largest, fragment.blockSize), 0) };
-            if (current !== undefined) {
-                set.token = current;
-            }
-            return set;
+            // A column float whose float-defer puts it in an earlier column than its anchor is found as the columns are laid out, so they are
+            // laid out again with it placed first.
+            const earlier: Map<ElementBox, number> = new Map<ElementBox, number>();
+            const set: ColumnSet = this.columnRun(content, columns, height, endless, kinds, earlier, incoming);
+            return earlier.size === 0 ? set : this.columnRun(content, columns, height, endless, kinds, earlier, incoming, true);
         };
         let height: number;
         if (definite !== undefined) {
@@ -2009,6 +2309,162 @@ export class BlockLayout {
             }
         }
         return lay(Math.max(MINIMUM_FRAGMENTAINER, height), !fragmenting);
+    }
+
+    private columnRun(content: ElementBox, columns: Columns, height: number, endless: boolean, kinds: ReadonlyArray<string>, earlier: Map<ElementBox, number>,
+        incoming: BreakToken | undefined, settled: boolean = false): ColumnSet {
+        // CSS Page Floats 3 §8: the page floats of the columns are placed one at a time, in document order, in the column of their anchor or
+        // the one float-defer gives, and in the next one when they do not fit; one whose anchor the float would push out of the column goes
+        // to the next column, as its anchor would.
+        const frame: number = this.sizes.frame(content.style);
+        const fragments: Array<BoxFragment> = [];
+        const floats: Array<BoxFragment> = [];
+        let waiting: Array<readonly [ElementBox, number]> = [...(incoming?.floats ?? [])];
+        const done: Set<ElementBox> = new Set<ElementBox>(waiting.map((entry: readonly [ElementBox, number]) => entry[0]));
+        let current: BreakToken | undefined = incoming;
+        this.columnDepth++;
+        // Each layout of the columns finds again which boxes snap, since where they naturally appear depends on the column height.
+        for (const box of this.snapsIn(content)) {
+            if (this.keyword(box.style.values["float-reference"]) === "column") {
+                this.snapped.delete(box);
+            }
+        }
+        try {
+            for (let index: number = 0; endless || index < columns.count; index++) {
+                const begin: BreakToken | undefined = current;
+                const last: number = Math.max(index, columns.count - 1);
+                const due: Array<readonly [ElementBox, number]> = [...waiting];
+                for (const [box, column] of settled ? [...earlier] : []) {
+                    if (column === index && !done.has(box)) {
+                        due.push([box, column]);
+                        done.add(box);
+                    }
+                }
+                let placed: Array<StackedFloat> = [];
+                waiting = [];
+                for (const [box, column] of due) {
+                    const candidate: StackedFloat | undefined = column > index ? undefined : this.pageFloat(box, columns.width, height, frame);
+                    // §10: content is displayed even when no container has room for it, so a float goes into an empty column whatever its size.
+                    if (candidate !== undefined && (placed.length === 0 || this.floatStack.arrange([...placed, candidate], columns.width, height).fits)) {
+                        placed.push(candidate);
+                    } else {
+                        waiting.push([box, Math.max(column, index + 1)]);
+                    }
+                }
+                let fragment: BoxFragment = this.columnPiece(content, columns, height, kinds, begin, placed);
+                const own: Array<ElementBox> = [];
+                const looked: Set<ElementBox> = new Set<ElementBox>();
+                for (;;) {
+                    const place: SnapPlace | undefined = this.snapPlaces(fragment, true, [], 0, 0).find((entry: SnapPlace) => !looked.has(entry.box));
+                    if (place !== undefined) {
+                        looked.add(place.box);
+                        const snapped: number | undefined = this.snapSide(place, columns.width, height, frame);
+                        if (snapped !== undefined) {
+                            this.snapped.set(place.box, snapped);
+                            fragment = this.columnPiece(content, columns, height, kinds, begin, placed);
+                        }
+                        continue;
+                    }
+                    const anchor: ElementBox | undefined = this.anchorsIn(fragment, true, []).find((box: ElementBox) => !done.has(box));
+                    if (anchor === undefined) {
+                        break;
+                    }
+                    done.add(anchor);
+                    const target: number = this.floatStack.target(anchor.style.values["float-defer"], index + 1, last + 1) - 1;
+                    if (target > index) {
+                        waiting.push([anchor, target]);
+                        continue;
+                    }
+                    if (target < index && !settled) {
+                        earlier.set(anchor, target);
+                    }
+                    const candidate: StackedFloat = this.pageFloat(anchor, columns.width, height, frame);
+                    const trial: Array<StackedFloat> = [...placed, candidate];
+                    if (placed.length > 0 && !this.floatStack.arrange(trial, columns.width, height).fits) {
+                        waiting.push([anchor, index + 1]);
+                        continue;
+                    }
+                    const again: BoxFragment = this.columnPiece(content, columns, height, kinds, begin, trial);
+                    const held: Array<ElementBox> = this.anchorsIn(again, true, []);
+                    if ([...own, anchor].every((box: ElementBox) => held.includes(box))) {
+                        placed = trial;
+                        fragment = again;
+                        own.push(anchor);
+                    } else {
+                        waiting.push([anchor, index + 1]);
+                    }
+                }
+                const columnStart: number = index * (columns.width + columns.gap);
+                fragment.inline += columnStart;
+                fragments.push(fragment);
+                for (const float of placed) {
+                    float.fragment.inline += columnStart;
+                    floats.push(float.fragment);
+                }
+                current = fragment.token;
+                if (current !== undefined && current.forced !== undefined && current.forced !== "column") {
+                    break;
+                }
+                if (current === undefined) {
+                    if (waiting.length === 0) {
+                        break;
+                    }
+                    // §8: "If the fragmentation context allows for the addition of another fragmentation container", the floats left when the
+                    // content ends get it: the next column, or the next fragmentainer, which the content goes on to with nothing left of it.
+                    current = this.token(content, content.children.length, content.inline?.length ?? 0, undefined, undefined, undefined);
+                }
+            }
+        } finally {
+            this.columnDepth--;
+        }
+        let extent: number = 0;
+        for (const fragment of fragments) {
+            extent = Math.max(extent, fragment.block + fragment.blockSize);
+        }
+        for (const float of floats) {
+            extent = Math.max(extent, float.block + float.blockSize + (float.marginAfter === undefined ? 0 : float.marginAfter[0] + float.marginAfter[1]));
+        }
+        const set: ColumnSet = { fragments, floats, extent };
+        if (current !== undefined) {
+            if (waiting.length > 0) {
+                current.floats = waiting.map((entry: readonly [ElementBox, number]): readonly [ElementBox, number] => [entry[0], Math.max(0, entry[1] - columns.count)]);
+            }
+            set.token = current;
+        }
+        return set;
+    }
+
+    private columnPiece(content: ElementBox, columns: Columns, height: number, kinds: ReadonlyArray<string>, begin: BreakToken | undefined,
+        placed: ReadonlyArray<StackedFloat>): BoxFragment {
+        // CSS Page Floats 3 §3.2: the content of a column flows on the block-end side of a block-start float, on the line-end side of an
+        // inline-start one, and so on.
+        const area: FloatArea = this.floatStack.arrange(placed, columns.width, height);
+        const extent: number = Math.max(MINIMUM_FRAGMENTAINER, area.blockSize);
+        const fragment: BoxFragment = this.fragmented(kinds, extent, area.inlineSize, begin,
+            (): BoxFragment => this.block(content, area.inlineSize, true, 0, 0, extent, undefined, 0, extent, begin, false));
+        fragment.inline = area.inlineStart;
+        fragment.block = area.blockStart;
+        return fragment;
+    }
+
+    anchorsIn(fragment: BoxFragment, column: boolean, found: Array<ElementBox>): Array<ElementBox> {
+        // The page floats whose anchors the fragment holds, column floats or page floats, in the order of their places; the anchors in the
+        // columns of a multi-column container inside are the columns of that container.
+        for (const child of fragment.children ?? []) {
+            for (const piece of child.kind === "line" ? child.pieces : [child]) {
+                if (piece.kind !== "box") {
+                    continue;
+                }
+                if (piece.box.placement === "page-float") {
+                    if ((this.keyword(piece.box.style.values["float-reference"]) === "column") === column && !found.includes(piece.box)) {
+                        found.push(piece.box);
+                    }
+                } else if (!column || this.columnsOf(piece.box, piece.inlineSize) === undefined) {
+                    this.anchorsIn(piece, column, found);
+                }
+            }
+        }
+        return found;
     }
 
     parallel<T>(run: () => T, token?: BreakToken): T {
@@ -2378,7 +2834,7 @@ export class BlockLayout {
             if (node.kind !== "box") {
                 return undefined;
             }
-            if (node.placement === "float") {
+            if (this.isInlineFloat(node)) {
                 return node;
             }
             if (node.placement === "in-flow") {
@@ -2527,7 +2983,8 @@ export class BlockLayout {
 
     emptyPlace(box: ElementBox, block: number): BoxFragment {
         // GCPM 3 §1.2.1 and §2.2: running and footnote elements are out of the flow, and element() and the footnote area take
-        // them from the page where they would have been, so they leave an empty fragment there.
+        // them from the page where they would have been, so they leave an empty fragment there; CSS Page Floats 3 §2: so does the
+        // float anchor of a page float.
         return { kind: "box", box, inline: 0, block, inlineSize: 0, blockSize: 0 };
     }
 

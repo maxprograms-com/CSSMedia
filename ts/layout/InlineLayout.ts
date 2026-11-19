@@ -23,6 +23,7 @@ import { ScriptTags } from "../fonts/layout/ScriptTags.js";
 import type { Matrix } from "../geometry/PathGeometry.js";
 import type { ImageAlpha } from "../images/ImageFormats.js";
 import type { ElementBox, InitialLetter, InlineItem, InlineSequence, InlineText, RubyColumn, RubyExtras, RubySegment, TextRun } from "../pdf/BoxTree.js";
+import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import type { DisplayType } from "../pdf/DisplayTypes.js";
 import { EmphasisMarks } from "../pdf/EmphasisMarks.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
@@ -723,13 +724,13 @@ export class InlineLayout {
                 }
                 open.pop();
                 shared = Math.min(shared, open.length);
-            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && item.node.placement === "float") {
+            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && this.host.isInlineFloat(item.node)) {
                 measured.floats = measured.floats ?? [];
                 measured.floats.push(index);
             } else if (item.kind === "out-of-flow" && item.node.kind === "box" && (item.node.placement === "absolute" || item.node.placement === "fixed")) {
                 measured.absolutes = measured.absolutes ?? [];
                 measured.absolutes.push(index);
-            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && (item.node.placement === "running" || item.node.placement === "footnote")) {
+            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && this.isPlace(item.node)) {
                 measured.places = measured.places ?? [];
                 measured.places.push(index);
             } else if (item.kind === "object" && item.node.kind === "deferred") {
@@ -818,9 +819,11 @@ export class InlineLayout {
         const letter: LetterMeasure = { initial, ink, origin, content, margin: margin === undefined ? 0 : this.sizes.pixels(margin, inlineSize) };
         const wrap: CssValue = initial.wrap;
         const outside: CssValue | undefined = values["shape-outside"];
-        if (wrap.kind === "ident" && wrap.lower === "all" && outside !== undefined && !(outside.kind === "ident" && outside.lower === "none")) {
-            // §7.7: "If the value of shape-outside is not none, shape-outside is used instead of the glyph outline."
-            letter.edges = this.outsideEdges(outside, letter, sizes, measured.sequence.style.values);
+        // §7.7: "If the value of shape-outside is not none, shape-outside is used instead of the glyph outline."
+        const shaped: Array<number> | undefined = wrap.kind === "ident" && wrap.lower === "all" && outside !== undefined && !(outside.kind === "ident" && outside.lower === "none")
+            ? this.outsideEdges(outside, letter, sizes, measured.sequence.style) : undefined;
+        if (shaped !== undefined) {
+            letter.edges = shaped;
         } else if (wrap.kind === "ident" && (wrap.lower === "all" || wrap.lower === "first")) {
             // The outline is kept in the letter's content box: x from its line-start edge, which is on the right in a right-to-left
             // line, and y down from its baseline.
@@ -1536,7 +1539,7 @@ export class InlineLayout {
                     kind: "space", from: position, to: position, level: state.level, group: state.root.group, block: 0, width: 0, origin: 0, left: 0, expands: false,
                     piece: this.host.placeholder(item.node)
                 }, chain));
-            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && (item.node.placement === "running" || item.node.placement === "footnote")) {
+            } else if (item.kind === "out-of-flow" && item.node.kind === "box" && this.isPlace(item.node)) {
                 state.units.push(this.chained({
                     kind: "space", from: position, to: position, level: state.level, group: state.root.group, block: 0, width: 0, origin: 0, left: 0, expands: false,
                     piece: this.host.emptyPlace(item.node, 0)
@@ -1545,6 +1548,12 @@ export class InlineLayout {
                 this.textUnits(state, position, starts[index + 1], item.node.kind === "text" && item.node.leader === true, chain);
             }
         }
+    }
+
+    private isPlace(box: ElementBox): boolean {
+        // GCPM 3 §1.2.1 and §2.2, CSS Page Floats 3 §3.1: running and footnote elements, and page floats whose float reference is
+        // there, leave the line and keep only the place where they were, which the page or the column reads.
+        return box.placement === "running" || box.placement === "footnote" || this.host.floatsApart(box);
     }
 
     private chained(unit: Unit, chain?: ReadonlyArray<ElementBox>): Unit {
@@ -2618,57 +2627,65 @@ export class InlineLayout {
         this.host.excludeLetter(inlineStart, part.offset + area[0], lineBlock + area[1], width, area[3], firstLine);
     }
 
-    private outsideEdges(value: CssValue, letter: LetterMeasure, sizes: UsedSizes, container: Values): Array<number> {
-        // CSS Shapes 1 §6.1: a basic shape in its reference box, margin-box when none is given, the box alone, or the shape of an image's
-        // alpha channel above shape-image-threshold (§6.2). The shape is drawn in the physical axes of the margin box and kept, as the
-        // glyph outline is, along the line from the content box's line-start edge and down from the letter's baseline.
+    private outsideEdges(value: CssValue, letter: LetterMeasure, sizes: UsedSizes, container: ComputedStyle): Array<number> | undefined {
+        // The shape is kept, as the glyph outline is, along the line from the content box's line-start edge and down from the letter's baseline.
         const initial: InitialLetter = letter.initial;
-        const values: Values = initial.box.style.values;
         const range: readonly [number, number] = this.letterRange(letter, sizes);
         const before: number = this.sizes.edges(sizes, BoxSizes.INLINE_START) + (this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0);
         const over: number = range[0] - this.sizes.edges(sizes, BoxSizes.BLOCK_START) - (this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0);
         const area: ObjectArea = [-before, over, before + letter.content + this.sizes.edges(sizes, BoxSizes.INLINE_END) + (this.sizes.margin(sizes, BoxSizes.INLINE_END) ?? 0),
             range[1] + this.sizes.edges(sizes, BoxSizes.BLOCK_END) + (this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0) - over];
-        const items: ReadonlyArray<CssValue> = value.kind === "list" ? value.items : [value];
-        const mode: string = this.keyword("horizontal-tb", container["writing-mode"]);
-        const vertical: boolean = mode !== "horizontal-tb";
-        const rtl: boolean = this.isRtl(container);
-        const width: number = vertical ? area[3] : area[2];
-        const height: number = vertical ? area[2] : area[3];
-        const boxName: string = this.keywords(value)?.find((word: string) => word.endsWith("-box")) ?? "margin-box";
-        // The insets of the reference box from the margin box, logical side by side, then put on the physical sides.
-        const inset: (side: number) => number = (side: number): number => (boxName === "margin-box" ? 0 : this.sizes.margin(sizes, side) ?? 0)
-            + (boxName === "padding-box" || boxName === "content-box" ? sizes.border?.[side] ?? 0 : 0) + (boxName === "content-box" ? sizes.padding?.[side] ?? 0 : 0);
-        const lineStart: number = inset(BoxSizes.INLINE_START);
-        const lineEnd: number = inset(BoxSizes.INLINE_END);
-        const blockStart: number = inset(BoxSizes.BLOCK_START);
-        const blockEnd: number = inset(BoxSizes.BLOCK_END);
-        const left: number = vertical ? (mode === "vertical-rl" ? blockEnd : blockStart) : (rtl ? lineEnd : lineStart);
-        const right: number = vertical ? (mode === "vertical-rl" ? blockStart : blockEnd) : (rtl ? lineStart : lineEnd);
-        const top: number = vertical ? (rtl ? lineEnd : lineStart) : blockStart;
-        const bottom: number = vertical ? (rtl ? lineStart : lineEnd) : blockEnd;
-        const reference: readonly [number, number, number, number] = [left, top, Math.max(0, width - left - right), Math.max(0, height - top - bottom)];
-        const physical: Array<number> = this.shapeEdges(items, values, reference);
-        const edges: Array<number> = [];
-        for (let index: number = 0; index < physical.length; index += 2) {
-            const x: number = physical[index];
-            const y: number = physical[index + 1];
-            const along: number = vertical ? (rtl ? height - y : y) : (rtl ? width - x : x);
-            const across: number = vertical ? (mode === "vertical-rl" ? width - x : x) : y;
-            edges.push(area[0] + along, area[1] + across);
+        const edges: Array<number> | undefined = this.marginShape(value, initial.box.style, sizes, this.sizes.frame(container), area[2], area[3]);
+        for (let index: number = 0; edges !== undefined && index < edges.length; index += 2) {
+            edges[index] += area[0];
+            edges[index + 1] += area[1];
         }
         return edges;
     }
 
-    private shapeEdges(items: ReadonlyArray<CssValue>, values: Values, reference: readonly [number, number, number, number]): Array<number> {
+    marginShape(value: CssValue, style: ComputedStyle, sizes: UsedSizes, frame: number, inlineSize: number, blockSize: number): Array<number> | undefined {
+        // CSS Shapes 1 §6.1: a basic shape in its reference box, margin-box when none is given, the box alone, or the shape of an image's
+        // alpha channel above shape-image-threshold (§6.2), drawn in the physical axes of the margin box; the points come back along the
+        // line from the margin box's line-start edge and down from its block-start edge, in the frame of the formatting context.
+        const items: ReadonlyArray<CssValue> = value.kind === "list" ? value.items : [value];
+        const own: number = this.sizes.frame(style);
+        const vertical: boolean = (frame & BoxSizes.VERTICAL) !== 0;
+        const width: number = vertical ? blockSize : inlineSize;
+        const height: number = vertical ? inlineSize : blockSize;
+        const boxName: string = this.keywords(value)?.find((word: string) => word.endsWith("-box")) ?? "margin-box";
+        // The insets of the reference box from the margin box, on the physical sides that the box's own sides are.
+        const insets: Array<number> = [0, 0, 0, 0];
+        for (let side: number = 0; side < 4; side++) {
+            insets[this.sizes.physicalSide(own, side)] = (boxName === "margin-box" ? 0 : this.sizes.margin(sizes, side) ?? 0)
+                + (boxName === "padding-box" || boxName === "content-box" ? sizes.border?.[side] ?? 0 : 0) + (boxName === "content-box" ? sizes.padding?.[side] ?? 0 : 0);
+        }
+        const reference: readonly [number, number, number, number] = [insets[3], insets[0], Math.max(0, width - insets[3] - insets[1]), Math.max(0, height - insets[0] - insets[2])];
+        const physical: Array<number> | undefined = this.shapeEdges(items, style, reference);
+        if (physical === undefined) {
+            return undefined;
+        }
+        const lineReversed: boolean = (frame & BoxSizes.INLINE_REVERSED) !== 0;
+        const blockReversed: boolean = (frame & BoxSizes.BLOCK_REVERSED) !== 0;
+        const edges: Array<number> = [];
+        for (let index: number = 0; index < physical.length; index += 2) {
+            const x: number = physical[index];
+            const y: number = physical[index + 1];
+            edges.push(vertical ? (lineReversed ? height - y : y) : (lineReversed ? width - x : x), vertical ? (blockReversed ? width - x : x) : y);
+        }
+        return edges;
+    }
+
+    private shapeEdges(items: ReadonlyArray<CssValue>, style: ComputedStyle, reference: readonly [number, number, number, number]): Array<number> | undefined {
+        const values: Values = style.values;
         const shape: CssValue | undefined = items.find((item: CssValue) => item.kind === "function" && BASIC_SHAPES.has(item.name.toLowerCase()));
-        const image: CssValue | undefined = items.find((item: CssValue) => item.kind === "url");
-        if (image !== undefined && image.kind === "url") {
-            // §6.2: the pixels whose alpha is greater than the threshold, the image stretched over the reference box; one without alpha is opaque.
-            const alpha: ImageAlpha | undefined = this.host.imageAlpha(image.href);
+        const image: CssValue | undefined = items.find((item: CssValue) => item.kind === "url" || (item.kind === "function" && !BASIC_SHAPES.has(item.name.toLowerCase())));
+        if (image !== undefined) {
+            // §6.2: the pixels whose alpha is greater than the threshold, the image stretched over the reference box; one without alpha is
+            // opaque. §6.1: an image that cannot be read gives no shape, and the float area stays the margin box.
+            const alpha: ImageAlpha | undefined = this.host.shapeAlpha(image, style, reference[2], reference[3]);
             const given: CssValue | undefined = values["shape-image-threshold"];
             const threshold: number = given === undefined ? 0 : (given.kind === "percentage" ? given.value / 100 : (given.kind === "number" ? given.value : 0));
-            return alpha === undefined ? [] : this.alphaEdges(alpha, threshold, reference);
+            return alpha === undefined ? undefined : this.alphaEdges(alpha, threshold, reference);
         }
         const path: readonly [SvgPath, boolean] | undefined = shape === undefined
             ? [this.shapes.rectangle(reference[0], reference[1], reference[2], reference[3], 0, 0), false]

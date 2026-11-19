@@ -237,7 +237,7 @@ export class FirstLetterBoxes {
             if (index > 0) {
                 boxes[index - 1].children.push(box);
             }
-            if (box.placement === "float") {
+            if (box.placement === "float" || box.placement === "page-float") {
                 // A floated first letter is out of the flow of its line and has its own inline formatting context.
                 const own: InlineSequence = { style: box.style, items };
                 box.inline = [own];

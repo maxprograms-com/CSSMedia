@@ -25,7 +25,7 @@ import type { ComputedStyle } from "./ComputedStyle.js";
 import type { CounterSet } from "./CounterScopes.js";
 import type { DisplayType } from "./DisplayTypes.js";
 
-export type Placement = "in-flow" | "float" | "absolute" | "fixed" | "running" | "footnote" | "marker";
+export type Placement = "in-flow" | "float" | "page-float" | "absolute" | "fixed" | "running" | "footnote" | "marker";
 
 type RubyWhiteSpace = "inter-base" | "inter-annotation" | "inter-segment";
 

@@ -10,7 +10,7 @@
                 <tgroup cols="5">
                     <thead conkeyref="ref-headers/head-properties"/>
                     <tbody>
-                        <row conkeyref="ref-display/row-float"/>
+                        <row conkeyref="ref-floats/row-float"/>
                         <row conkeyref="ref-content/row-footnote-display"/>
                         <row conkeyref="ref-content/row-footnote-policy"/>
                         <row conkeyref="ref-content/row-footnote-counter"/>

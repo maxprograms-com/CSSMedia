@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="floats">
+    <title>Float figures and wrap text around them</title>
+    <shortdesc>A float leaves the flow of the text and goes to an edge: the start or the end of its lines, the top or the bottom of the page, or of a column. The text goes on in the room the float leaves, around its shape if you give it one. The <xref href="../references/floats-chapter-reference.dita#floats-chapter-reference">floats reference</xref> lists the properties used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>figure</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="float-beside-lines">
+                <cmd>Float a box beside its lines</cmd>
+                <info>
+                    <p>Set <codeph>float</codeph> on an element. Its box goes to one side of the lines, and the text wraps on the other side for the height of the box. <codeph>left</codeph> and <codeph>right</codeph> are the two sides of the line. <codeph>inline-start</codeph> and <codeph>inline-end</codeph> are where the lines start and end, which follows the direction of the text: <codeph>inline-start</codeph> is the right in Hebrew or Arabic. <codeph>block-start</codeph> and <codeph>top</codeph> behave like <codeph>inline-start</codeph> here, and <codeph>block-end</codeph> and <codeph>bottom</codeph> like <codeph>inline-end</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    display: block;
+    float: inline-start;
+    width: 120pt;
+    margin-inline-end: 8pt;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="clear-floats">
+                <cmd>Start a box below the floats</cmd>
+                <info>
+                    <p>Set <codeph>clear</codeph> on a block to start it below the earlier floats on the sides you name. <codeph>both</codeph> clears both sides. A value that names the start side, such as <codeph>left</codeph> in a text that runs from left to right, also starts the block below an initial letter.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">section > title {
+    display: block;
+    clear: both;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <fig id="floats-inline-figure">
+                        <title>Floats beside their lines</title>
+                        <image href="../images/floats-inline.svg" placement="break" scale="100">
+                            <alt>A box with a float at the top left and a taller float at the top right. Lines of text run between them, then under the left float beside the right one. Under a dashed line marked clear: both, a paragraph takes the whole width below both floats.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="float-to-page">
+                <cmd>Float a figure to the top or the bottom of the page</cmd>
+                <info>
+                    <p>Set <codeph>float-reference: page</codeph> and float the element to an edge of the page area: <codeph>top</codeph>, <codeph>bottom</codeph>, <codeph>left</codeph> or <codeph>right</codeph>, or the flow-relative <codeph>block-start</codeph>, <codeph>block-end</codeph>, <codeph>inline-start</codeph> and <codeph>inline-end</codeph>. The figure goes to that edge of the page where it is mentioned, and the text of the page goes on in the rest of the page area. Two figures at the same edge stack one after the other. A figure at the top or the bottom is as wide as its content, up to the width of the page area, and stands at the start of the line.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    display: block;
+    float-reference: page;
+    float: top;
+    margin-block-end: 10pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A figure that does not fit on its page goes to the next page. So does a figure whose own mention it would push to the next page. A figure that is larger than a whole page area still goes on a page, at its edge.</p>
+                    <p><codeph>float-offset</codeph> moves the figure away from the edge, and from the figure before it at that edge. A percentage is of the room left beside the figure: <codeph>float-offset: 50%</codeph> on a <codeph>float: left</codeph> figure centers it across the page.</p>
+                    <p><codeph>clear</codeph> on a page float closes its page to the later figures that go to the edges it names, so <codeph>clear: top</codeph> on a figure at the top keeps the next figure for the top of the next page. The footnote area stays at the bottom of the page, under the figures at the bottom.</p>
+                    <fig id="floats-page-figure">
+                        <title>Page floats</title>
+                        <image href="../images/floats-page.svg" placement="break" scale="100">
+                            <alt>A page with two figures stacked at the top of the page area, one figure at its bottom and one along its left side. The lines of text fill the rest of the page area.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="float-to-column">
+                <cmd>Float a figure to the top or the bottom of a column</cmd>
+                <info>
+                    <p>Inside a multi-column element, <codeph>float-reference: column</codeph> floats the figure to an edge of the column where it is mentioned, as a page float does in a page. A figure that does not fit goes to the next column. Outside any column, the figure floats beside its lines.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article { column-count: 2; }
+article figure {
+    display: block;
+    float-reference: column;
+    float: bottom;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="defer-floats">
+                <cmd>Send a figure to a later page or column</cmd>
+                <info>
+                    <p><codeph>float-defer</codeph> moves a page or column float on by a number of pages or columns. A negative number counts back from the last page or column, and <codeph>last</codeph> is the last one. CSSMedia lays the document out again until the page each figure goes to stays the same.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure.wide {
+    float-reference: page;
+    float: top;
+    float-defer: 1;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="snap-floats">
+                <cmd>Move a figure to an edge only when it is close to it</cmd>
+                <info>
+                    <p><codeph>snap-block()</codeph> floats a page or column figure to the top or the bottom only when it stands within the distance you give of that edge. A figure further away stays where it is in the text. Give one distance for both edges, or two for the top and the bottom, and then <codeph>start</codeph>, <codeph>end</codeph> or <codeph>near</codeph> to say where it goes; with <codeph>near</codeph>, a figure close to both edges goes to the bottom. <codeph>snap-block</codeph> alone is <codeph>snap-block(2em, near)</codeph>. <codeph>snap-inline()</codeph> does the same with the start and the end of the line, with <codeph>left</codeph>, <codeph>right</codeph> or <codeph>near</codeph>. With <codeph>float-reference: inline</codeph>, the figure stays in the text.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    display: block;
+    float-reference: column;
+    float: snap-block(2.5em);
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="wrap-around-shapes">
+                <cmd>Wrap the text around a shape</cmd>
+                <info>
+                    <p>A float beside its lines takes its whole margin box. <codeph>shape-outside</codeph> gives it another outline for the lines: a basic shape such as <codeph>circle()</codeph> or <codeph>polygon()</codeph>, drawn in the margin box or in the box you name, a box alone such as <codeph>content-box</codeph>, or an image such as a <codeph>url()</codeph> or a gradient, whose pixels with an alpha above <codeph>shape-image-threshold</codeph> make the shape. Each line starts where the shape ends at its height. <codeph>shape-margin</codeph> keeps the lines that far from the shape. The shape is cut to the margin box, and the float itself is still placed by its margin box. The lines wrap on one side of the float only.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure.corner {
+    float: left;
+    width: 120pt;
+    height: 120pt;
+    shape-outside: polygon(0 0, 100% 0, 0 100%);
+    shape-margin: 6pt;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <fig id="floats-shapes-figure">
+                        <title>Text around a shape</title>
+                        <image href="../images/floats-shapes.svg" placement="break" scale="100">
+                            <alt>A square float whose upper left half is a shaded triangle. The lines of text beside it start further to the left at each line, along the diagonal of the triangle, until they take the whole width under the float.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="floats-in-vertical-text">
+                <cmd>Use floats in vertical text</cmd>
+                <info>
+                    <p>In vertical lines, <codeph>left</codeph> and <codeph>right</codeph> of a float beside its lines are the top and the bottom, as for <codeph>text-align</codeph>. A page or column float goes to the physical edge it names: in <codeph>vertical-rl</codeph>, <codeph>top</codeph> is where the lines start, <codeph>right</codeph> is where the first line is, and the text goes on in the rest. <xref href="write-vertically.dita"/> explains writing modes.</p>
+                </info>
+            </step>
+        </steps>
+        <result>
+            <p>Your figures stand at the edges of their lines, columns or pages, and the text runs around them.</p>
+        </result>
+    </taskbody>
+</task>

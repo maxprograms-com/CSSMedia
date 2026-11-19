@@ -190,6 +190,7 @@ export class BoxBuilder {
     private tocLabels?: Map<SourceElement, Array<TextSequence>>;
     rootStyle?: ComputedStyle;
     footnotes: boolean = false;
+    deferredFloats: boolean = false;
     readonly pageFootnotes: boolean;
     readonly footnoteNumbers: Map<SourceElement, readonly [number, number]> = new Map<SourceElement, readonly [number, number]>();
     footnoteStart: readonly [number, number] = [0, -1];
@@ -788,10 +789,12 @@ export class BoxBuilder {
         // CSS 2 §5.12.2: the first letter "is similar to an inline-level element if its 'float' property is 'none', otherwise
         // it is similar to a floated element".
         const float: CssValue | undefined = style.values["float"];
-        const floated: boolean = name === BoxBuilder.FIRST_LETTER && float !== undefined && float.kind === "ident" && float.lower !== "none" && float.lower !== "footnote";
+        const floated: boolean = name === BoxBuilder.FIRST_LETTER && float !== undefined && (float.kind === "ident" || float.kind === "function")
+            && !(float.kind === "ident" && (float.lower === "none" || float.lower === "footnote"));
+        const placement: Placement = floated ? this.floatPlacement(style) : "in-flow";
         return {
-            kind: "box", element: context.element, pseudoElement: name, style, display: floated ? this.displays.parse(style.values["display"]) : INLINE,
-            placement: floated ? "float" : "in-flow", replaced: false, hasStartEdge: true, hasEndEdge: true, usedPage: origin.usedPage, startPage: origin.usedPage,
+            kind: "box", element: context.element, pseudoElement: name, style, display: placement !== "in-flow" ? this.displays.parse(style.values["display"]) : INLINE,
+            placement, replaced: false, hasStartEdge: true, hasEndEdge: true, usedPage: origin.usedPage, startPage: origin.usedPage,
             endPage: origin.usedPage, children: []
         };
     }
@@ -1578,7 +1581,29 @@ export class BoxBuilder {
         if (float === undefined || (float.kind === "ident" && float.lower === "none") || this.isItem(parent)) {
             return "in-flow";
         }
-        return float.kind === "ident" && float.lower === "footnote" ? "footnote" : "float";
+        return float.kind === "ident" && float.lower === "footnote" ? "footnote" : this.floatPlacement(style);
+    }
+
+    private floatPlacement(style: ComputedStyle): Placement {
+        // CSS Page Floats 3 §3.1: a column or page float reference makes a page float, placed by the fragmentation container; a region
+        // reference outside any region chain, which no box here is in, is "the line box of the float anchor", an inline float.
+        const reference: CssValue | undefined = style.values["float-reference"];
+        const name: string = reference !== undefined && reference.kind === "ident" ? reference.lower : "inline";
+        // §3.2: a snap value floats the element only when it "naturally appears within a certain distance" of an edge, which the layout
+        // finds where the element stands in the flow; "the second figure is affected, but not the first".
+        const float: CssValue | undefined = style.values["float"];
+        const keyword: string = float === undefined ? "" : (float.kind === "function" ? float.name : (float.kind === "ident" ? float.lower : ""));
+        if (keyword === "snap-block" || keyword === "snap-inline") {
+            return "in-flow";
+        }
+        if (name !== "page" && name !== "column") {
+            return "float";
+        }
+        const defer: CssValue | undefined = style.values["float-defer"];
+        if (defer !== undefined && !(defer.kind === "ident" && defer.lower === "none") && !(defer.kind === "number" && defer.value === 0)) {
+            this.deferredFloats = true;
+        }
+        return "page-float";
     }
 
     private isItem(parent?: Context): boolean {

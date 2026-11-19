@@ -19,8 +19,9 @@
  *******************************************************************************/
 
 import type { CssValue } from "../css/values/CssValue.js";
-import type { BlockLayout, Candidate } from "../layout/BlockLayout.js";
+import type { BlockLayout, Candidate, SnapPlace } from "../layout/BlockLayout.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
+import type { FloatArea, StackedFloat } from "../layout/FloatStack.js";
 import type { BoxFragment, BreakToken, LineFragment, Margins } from "../layout/Fragment.js";
 import { PagePainter } from "../paint/PagePainter.js";
 import { SourceElement } from "../parse/SourceElement.js";
@@ -46,6 +47,7 @@ export interface PageLayout {
     canvas: PageCanvas;
     content?: BoxFragment;
     footnotes?: BoxFragment;
+    floats?: Array<BoxFragment>;
     margins?: Array<BoxFragment>;
     forms?: MarginForms;
 }
@@ -65,6 +67,7 @@ interface Placed {
 interface Laid {
     content?: BoxFragment;
     footnotes?: BoxFragment;
+    floats?: Array<BoxFragment>;
     carry?: Carry;
 }
 
@@ -125,6 +128,10 @@ export class PageDriver {
     private nextCarry?: Carry;
     private order?: Map<ElementBox, number>;
     private numbered: readonly [number, number, number] = [0, 0, -1];
+    private waiting: Array<readonly [ElementBox, number]> = [];
+    private readonly floated: Set<ElementBox> = new Set<ElementBox>();
+    private readonly decided: Set<ElementBox> = new Set<ElementBox>();
+    private whole: readonly [number, number] = [0, 0];
 
     constructor(setup: PageSetup, document: PdfDocument, ends: ReadonlyMap<number, Candidate>) {
         this.setup = setup;
@@ -154,6 +161,11 @@ export class PageDriver {
         let last: string = root.startPage;
         delete this.carry;
         this.numbered = [this.setup.builder.footnoteStart[0], this.setup.builder.footnoteStart[0], this.setup.builder.footnoteStart[1]];
+        this.waiting = [];
+        this.floated.clear();
+        this.decided.clear();
+        this.setup.floats.start();
+        this.setup.layout.restoreSnaps(new Map<ElementBox, number>());
         do {
             // CSS Paged Media 3 §8.1: "The first printed page's type is the start page value of the root", and content after a
             // break "resumes on a page box of the named type"; footnotes that go on after the content keep the last type.
@@ -187,8 +199,9 @@ export class PageDriver {
             if (state.painting && comparing && (references.moved || this.movedLabels.size > 0)) {
                 state.painting = false;
             }
-        } while (token !== undefined || this.carry !== undefined);
+        } while (token !== undefined || this.carry !== undefined || this.waiting.length > 0);
         this.built.length = 0;
+        const settled: boolean = this.setup.floats.settle(position - 1);
         if (painting && !comparing) {
             references.reportUnsettled();
             for (const key of this.movedLabels) {
@@ -198,7 +211,7 @@ export class PageDriver {
             }
         }
         references.finishLayout();
-        if (painting && !state.painting) {
+        if (painting && (!state.painting || !settled)) {
             this.later.length = 0;
             return false;
         }
@@ -231,6 +244,9 @@ export class PageDriver {
         }
         if (page.footnotes !== undefined) {
             this.assignments(page.footnotes, state);
+        }
+        for (const float of page.floats ?? []) {
+            this.assignments(float, state);
         }
         if (this.setup.builder.pageFootnotes) {
             this.renumber(page, values);
@@ -280,7 +296,7 @@ export class PageDriver {
                 }
             }
         }
-        const boxes: Array<ElementBox> = page.content === undefined ? [] : this.calls(page.content, page.footnotes);
+        const boxes: Array<ElementBox> = page.content === undefined ? [] : this.calls(page.content, page.footnotes, page.floats);
         for (const box of boxes) {
             const known: readonly [number, number] | undefined = box.element === undefined ? undefined : this.setup.builder.footnoteNumbers.get(box.element);
             if (known === undefined || box.element === undefined) {
@@ -321,8 +337,9 @@ export class PageDriver {
             }
             return;
         }
-        if (box.placement === "footnote") {
-            // GCPM 3 §2.2: the footnote element is in the footnote area, where its body is assigned; this is only its place.
+        if (box.placement === "footnote" || box.placement === "page-float") {
+            // GCPM 3 §2.2: the footnote element is in the footnote area, where its body is assigned; this is only its place. CSS
+            // Page Floats 3 §2: the same holds for the float anchor of a page float, whose box is where the float is placed.
             return;
         }
         if (fragment.resumed !== true) {
@@ -338,7 +355,7 @@ export class PageDriver {
         for (const child of fragment.children ?? []) {
             if (child.kind === "box") {
                 this.assignments(child, state);
-                state.seen = state.seen || (child.box.placement !== "running" && child.box.placement !== "footnote");
+                state.seen = state.seen || (child.box.placement !== "running" && child.box.placement !== "footnote" && child.box.placement !== "page-float");
                 continue;
             }
             this.lineAssignments(child, state);
@@ -404,6 +421,19 @@ export class PageDriver {
         let groups: Array<ElementBox> = this.continuing(token);
         let canvas: PageCanvas = this.canvas(name, side, position, false, groups);
         let end: Candidate | undefined = this.ends.get(position);
+        // A page laid out again decides its page floats again, from where the pages before it left them.
+        const waiting: ReadonlyArray<readonly [ElementBox, number]> = [...this.waiting];
+        const floated: ReadonlyArray<ElementBox> = [...this.floated];
+        const decided: ReadonlyArray<ElementBox> = [...this.decided];
+        const snaps: ReadonlyMap<ElementBox, number> = this.setup.layout.snapState();
+        const restore: () => void = (): void => {
+            this.waiting = [...waiting];
+            this.setup.layout.restoreSnaps(snaps);
+            this.floated.clear();
+            this.decided.clear();
+            floated.forEach((box: ElementBox) => this.floated.add(box));
+            decided.forEach((box: ElementBox) => this.decided.add(box));
+        };
         let laid: Laid = this.laid(root, canvas, ended, token, end);
         const tried: Array<Rectangle> = [canvas.pageArea];
         const filled: Set<string> = new Set<string>();
@@ -432,7 +462,7 @@ export class PageDriver {
                 }
             }
             const filling: readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined = content === undefined ? undefined
-                : this.fillStrings(content, state);
+                : this.fillStrings(content, state, laid.floats ?? []);
             if (filling !== undefined) {
                 // Texts whose values move the content that assigns them, back and forth, end the page at the earlier break.
                 const layout: BlockLayout = this.setup.layout;
@@ -454,6 +484,7 @@ export class PageDriver {
                 break;
             }
             previous = this.setup.layout.pageBreak;
+            restore();
             laid = this.laid(root, canvas, ended, token, end);
         }
         this.count(groups);
@@ -469,6 +500,9 @@ export class PageDriver {
         if (laid.footnotes !== undefined) {
             page.footnotes = laid.footnotes;
         }
+        if (laid.floats !== undefined && laid.floats.length > 0) {
+            page.floats = laid.floats;
+        }
         return page;
     }
 
@@ -476,54 +510,185 @@ export class PageDriver {
         const area: Rectangle = canvas.pageArea;
         const inline: number = this.horizontal ? area.width : area.height;
         const extent: number = this.horizontal ? area.height : area.width;
-        // CSS Fragmentation 4 §3.1: recto is the second page of a spread, so a spread break follows it.
-        this.setup.layout.endsSpread = canvas.context.side === this.setup.recto;
-        if (!this.setup.builder.footnotes) {
-            return { content: this.content(root, inline, extent, NO_CALLS, token, end) };
-        }
+        const position: number = canvas.context.position;
         const layout: BlockLayout = this.setup.layout;
+        const frame: number = layout.frameOf(root.style);
+        this.whole = [inline, extent];
+        // CSS Fragmentation 4 §3.1: recto is the second page of a spread, so a spread break follows it.
+        layout.endsSpread = canvas.context.side === this.setup.recto;
+        // CSS Page Floats 3 §8: the page floats are placed one at a time in document order, those that wait for this page first; each
+        // takes its float reference, the page area, from the content, and goes to the next page if it does not fit, or if its own
+        // anchor or that of a float before it would leave the page.
+        let placed: Array<StackedFloat> = this.dueFloats(position, inline, extent, frame);
+        let laid: Laid = this.inArea(root, canvas, ended, placed, token, end);
+        const own: Array<ElementBox> = [];
+        const looked: Set<ElementBox> = new Set<ElementBox>();
+        for (;;) {
+            // §3.2: a box with a snap value floats only if it naturally appears near enough to an edge of the page area, which the
+            // layout with the floats placed so far shows.
+            const free: FloatArea = layout.floatStack.arrange(placed, inline, extent);
+            const place: SnapPlace | undefined = laid.content === undefined ? undefined
+                : layout.snapPlaces(laid.content, false, [], free.inlineStart, free.blockStart).find((entry: SnapPlace) => !looked.has(entry.box));
+            if (place !== undefined) {
+                looked.add(place.box);
+                const side: number | undefined = layout.snapSide(place, inline, extent, frame);
+                if (side !== undefined) {
+                    layout.snap(place.box, side);
+                    laid = this.inArea(root, canvas, ended, placed, token, end);
+                }
+                continue;
+            }
+            const anchor: ElementBox | undefined = this.floatAnchors(laid, placed).find((box: ElementBox) => !this.decided.has(box));
+            if (anchor === undefined) {
+                break;
+            }
+            this.decided.add(anchor);
+            const target: number = this.target(anchor, position);
+            if (this.floated.has(anchor)) {
+                continue;
+            }
+            this.floated.add(anchor);
+            if (target > position) {
+                this.waiting.push([anchor, target]);
+                continue;
+            }
+            const candidate: StackedFloat = layout.pageFloat(anchor, inline, extent, frame);
+            const trial: Array<StackedFloat> = [...placed, candidate];
+            if (placed.length > 0 && !layout.floatStack.arrange(trial, inline, extent).fits) {
+                this.waiting.push([anchor, position + 1]);
+                continue;
+            }
+            const again: Laid = this.inArea(root, canvas, ended, trial, token, end);
+            const held: Array<ElementBox> = this.floatAnchors(again, trial);
+            if ([...own, anchor].every((box: ElementBox) => held.includes(box))) {
+                placed = trial;
+                laid = again;
+                own.push(anchor);
+            } else {
+                this.waiting.push([anchor, position + 1]);
+            }
+        }
+        // GCPM 3 §2.4.1: the footnote area touches the bottom of the page area, so the block-end page floats stand above it.
+        const notes: number = laid.footnotes === undefined ? 0 : extent - laid.footnotes.block + this.sum(laid.footnotes.marginBefore);
+        const free: FloatArea = layout.floatStack.arrange(placed, inline, extent - notes);
+        if (laid.content !== undefined) {
+            laid.content.inline += free.inlineStart;
+            laid.content.block += free.blockStart;
+        }
+        laid.floats = placed.map((float: StackedFloat) => float.fragment);
+        return laid;
+    }
+
+    private dueFloats(position: number, inline: number, extent: number, frame: number): Array<StackedFloat> {
+        // CSS Page Floats 3 §5.1 and §8: the floats that wait for this page, deferred or without room before, and those that the layout
+        // before put on this page although their anchors come later.
+        const due: Array<ElementBox> = [];
+        for (const box of this.setup.floats.planned(position)) {
+            if (!this.floated.has(box)) {
+                this.floated.add(box);
+                due.push(box);
+            }
+        }
+        const later: Array<readonly [ElementBox, number]> = [];
+        for (const entry of this.waiting) {
+            if (entry[1] <= position) {
+                due.push(entry[0]);
+            } else {
+                later.push(entry);
+            }
+        }
+        this.waiting = later;
+        const layout: BlockLayout = this.setup.layout;
+        const placed: Array<StackedFloat> = [];
+        for (const box of this.inOrder(due)) {
+            const candidate: StackedFloat = layout.pageFloat(box, inline, extent, frame);
+            // §10: all content is displayed, so a float that no page has room for goes on a page where it is the first.
+            if (placed.length === 0 || layout.floatStack.arrange([...placed, candidate], inline, extent).fits) {
+                placed.push(candidate);
+            } else {
+                this.waiting.push([box, position + 1]);
+            }
+        }
+        return placed;
+    }
+
+    private target(box: ElementBox, position: number): number {
+        // CSS Page Floats 3 §5.1: the initial float reference is the page of the anchor, or the one float-defer counts to from it or
+        // from the last page, which the layout before gives.
+        const defer: CssValue | undefined = box.style.values["float-defer"];
+        const target: number = this.setup.layout.floatStack.target(defer, position, this.setup.floats.last());
+        if (defer !== undefined && !(defer.kind === "ident" && defer.lower === "none") && !(defer.kind === "number" && defer.value === 0)) {
+            this.setup.floats.record(box, target);
+        }
+        return target;
+    }
+
+    private floatAnchors(laid: Laid, placed: ReadonlyArray<StackedFloat>): Array<ElementBox> {
+        const layout: BlockLayout = this.setup.layout;
+        const found: Array<ElementBox> = [];
+        for (const fragment of [laid.content, laid.footnotes, ...placed.map((float: StackedFloat) => float.fragment)]) {
+            if (fragment !== undefined) {
+                layout.anchorsIn(fragment, false, found);
+            }
+        }
+        return this.inOrder(found);
+    }
+
+    private inArea(root: ElementBox, canvas: PageCanvas, ended: boolean, floats: ReadonlyArray<StackedFloat>, token?: BreakToken, end?: Candidate): Laid {
+        // The content goes in the part of the page area that the page floats leave, and the footnote area spans the page area below it.
+        const area: Rectangle = canvas.pageArea;
+        const inline: number = this.horizontal ? area.width : area.height;
+        const extent: number = this.horizontal ? area.height : area.width;
+        const layout: BlockLayout = this.setup.layout;
+        const free: FloatArea = layout.floatStack.arrange(floats, inline, extent);
+        const across: number = free.inlineSize;
+        const room: number = free.blockSize;
+        const others: ReadonlyArray<BoxFragment> = floats.map((float: StackedFloat) => float.fragment);
+        if (!this.setup.builder.footnotes) {
+            return ended ? {} : { content: this.content(root, across, room, NO_CALLS, token, end) };
+        }
         const style: ComputedStyle = this.setup.canvases.footnoteStyle(canvas, this.setup.root, this.setup.viewport);
         // GCPM 3 §2.4.2: max-height limits the area "unless the page contains only footnotes"; the room the page gives the
         // area is the limit, so the area itself is laid out without it.
-        const limit: number = Math.min(extent, layout.footnoteLimit(style, inline, extent));
+        const limit: number = Math.min(room, layout.footnoteLimit(style, inline, extent));
         const unlimited: ComputedStyle = { ...style, values: Object.assign(Object.create(style.values) as Record<string, CssValue>, { "max-block-size": NONE }) };
         const carry: Carry | undefined = this.carry;
         if (ended) {
-            return this.result(undefined, carry === undefined ? undefined : this.place(unlimited, carry, [], inline, extent, extent), extent);
+            return this.result(undefined, carry === undefined ? undefined : this.place(unlimited, carry, [], inline, extent, room), extent);
         }
         let placed: Placed | undefined;
         let reserve: number = 0;
         if (carry !== undefined) {
             // XSL 1.1 §6.12.3: the rest of a footnote body goes on the next pages "before any other content is placed".
             placed = this.place(unlimited, carry, [], inline, extent, limit);
-            if (placed.carry !== undefined && limit >= extent) {
+            if (placed.carry !== undefined && limit >= room) {
                 return this.result(undefined, placed, extent);
             }
             reserve = placed.extent;
         }
         const pushed: Set<ElementBox> = new Set<ElementBox>();
-        let content: BoxFragment = this.content(root, inline, extent - reserve, pushed, token, end);
+        let content: BoxFragment = this.content(root, across, room - reserve, pushed, token, end);
         // §2.4.2: "it is undesirable for a page to consist only of footnotes", which max-height prevents by keeping room for
         // the content; on the page where the content ends no content needs it, so the area takes the room the content leaves.
-        const cap: number = content.token === undefined ? extent : limit;
+        const cap: number = content.token === undefined ? room : limit;
         if (placed?.carry !== undefined && cap > limit) {
-            placed = this.place(unlimited, carry, [], inline, extent, extent - this.used(content));
+            placed = this.place(unlimited, carry, [], inline, extent, room - this.used(content));
         }
         if (placed?.carry !== undefined) {
             // Footnotes keep their order, so those called on a page that still continues earlier ones start on a later page.
-            return this.result(content, this.deferring(placed, this.calls(content, placed.fragment), style, inline), extent);
+            return this.result(content, this.deferring(placed, this.calls(content, placed.fragment, others), style, inline), extent);
         }
         const accepted: Array<ElementBox> = [];
         for (;;) {
-            const anchors: Array<ElementBox> = this.calls(content, placed?.fragment);
+            const anchors: Array<ElementBox> = this.calls(content, placed?.fragment, others);
             if (anchors.length <= accepted.length) {
                 break;
             }
             const next: ElementBox = anchors[accepted.length];
-            const room: number = Math.min(cap, extent - this.used(content));
+            const left: number = Math.min(cap, room - this.used(content));
             // GCPM 3 §2.2: the body goes in the footnote area of the page of its call, in the room the content leaves or in
             // the room it leaves once laid out again above a larger area.
-            const trial: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, room);
+            const trial: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, left);
             if (trial.carry === undefined && trial.fits) {
                 accepted.push(next);
                 placed = trial;
@@ -531,8 +696,8 @@ export class PageDriver {
             }
             const whole: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, cap);
             if (whole.carry === undefined && whole.fits) {
-                const above: BoxFragment = this.content(root, inline, extent - whole.extent, pushed, token, end);
-                if (this.calls(above, whole.fragment)[accepted.length] === next) {
+                const above: BoxFragment = this.content(root, across, room - whole.extent, pushed, token, end);
+                if (this.calls(above, whole.fragment, others)[accepted.length] === next) {
                     accepted.push(next);
                     placed = whole;
                     reserve = whole.extent;
@@ -544,12 +709,12 @@ export class PageDriver {
             const policy: CssValue | undefined = next.style.values["footnote-policy"];
             if (policy !== undefined && policy.kind === "ident" && policy.lower !== "auto" && !pushed.has(next)) {
                 pushed.add(next);
-                content = this.content(root, inline, extent - reserve, pushed, token, end);
+                content = this.content(root, across, room - reserve, pushed, token, end);
                 continue;
             }
             // With auto, XSL 1.1 §6.12.3: a body starts on the page of its call or a later one, and goes on in the next pages.
             const rest: ReadonlyArray<ElementBox> = anchors.slice(accepted.length);
-            const split: Placed = this.place(unlimited, carry, [...accepted, ...rest], inline, extent, room);
+            const split: Placed = this.place(unlimited, carry, [...accepted, ...rest], inline, extent, left);
             if (split.fits) {
                 placed = split;
             } else if (placed === undefined) {
@@ -562,7 +727,7 @@ export class PageDriver {
         }
         if (placed !== undefined && Math.abs(placed.extent - reserve) > TOLERANCE) {
             // The boxes that break at the end of the content reach the area, which the room left gives exactly.
-            const fitted: BoxFragment = this.content(root, inline, extent - placed.extent, pushed, token, end);
+            const fitted: BoxFragment = this.content(root, across, room - placed.extent, pushed, token, end);
             const before: ReadonlyArray<ElementBox> = this.anchors(content);
             const after: ReadonlyArray<ElementBox> = this.anchors(fitted);
             if (before.length === after.length && before.every((box: ElementBox, index: number) => box === after[index])) {
@@ -727,26 +892,35 @@ export class PageDriver {
         return node.kind === "box" && node.placement === "in-flow" && node.display.outer === "block";
     }
 
-    private calls(content: BoxFragment, area?: BoxFragment): Array<ElementBox> {
-        // GCPM 3 §2.2: any element with float: footnote is a footnote, so the calls in the footnote bodies on the page add
-        // theirs after the calls of the content.
+    private calls(content: BoxFragment, area?: BoxFragment, floats?: ReadonlyArray<BoxFragment>): Array<ElementBox> {
+        // GCPM 3 §2.2: any element with float: footnote is a footnote, so the calls in the footnote bodies and in the page floats on
+        // the page add theirs after the calls of the content.
         const found: Array<ElementBox> = this.anchors(content);
         if (area !== undefined) {
             this.anchors(area, found);
         }
+        for (const float of floats ?? []) {
+            this.anchors(float, found);
+        }
         // §2.2: "Footnote elements from a given page are placed in the footnote area of that page in document order."
+        return this.inOrder(found);
+    }
+
+    private inOrder(boxes: Array<ElementBox>): Array<ElementBox> {
         if (this.order === undefined) {
             this.order = new Map<ElementBox, number>();
             this.number(this.setup.boxes, this.order);
         }
         const order: Map<ElementBox, number> = this.order;
-        return found.sort((first: ElementBox, second: ElementBox) => (order.get(first) ?? 0) - (order.get(second) ?? 0));
+        const layout: BlockLayout = this.setup.layout;
+        const at: (box: ElementBox) => number = (box: ElementBox): number => order.get(box) ?? order.get(layout.snapOrigin(box)) ?? 0;
+        return boxes.sort((first: ElementBox, second: ElementBox) => at(first) - at(second));
     }
 
     private number(box: ElementBox, order: Map<ElementBox, number>): void {
         for (const child of box.children) {
             if (child.kind === "box") {
-                if (child.placement === "footnote") {
+                if (child.placement === "footnote" || child.placement === "page-float" || this.setup.layout.isSnap(child)) {
                     order.set(child, order.size);
                 }
                 this.number(child, order);
@@ -810,13 +984,16 @@ export class PageDriver {
         return margins === undefined ? 0 : margins[0] + margins[1];
     }
 
-    private fillStrings(content: BoxFragment, state: Pass): readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined {
+    private fillStrings(content: BoxFragment, state: Pass, floats: ReadonlyArray<BoxFragment>): readonly [string, Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>] | undefined {
         const named: Map<readonly [string, string], [TextSequence, string]> = this.setup.builder.namedTexts;
         if (named.size === 0) {
             return undefined;
         }
         const found: Map<readonly [string, string], InlineSequence> = new Map<readonly [string, string], InlineSequence>();
         this.namedTexts(content, found);
+        for (const float of floats) {
+            this.namedTexts(float, found);
+        }
         if (found.size === 0) {
             return undefined;
         }
@@ -828,6 +1005,9 @@ export class PageDriver {
             ...state, strings, running: new NamedValues<ElementBox>(), assigned: new WeakSet<ReadonlyArray<NamedString>>(), seen: false, trial: true, labels: []
         };
         this.assignments(content, trial);
+        for (const float of floats) {
+            this.assignments(float, trial);
+        }
         const values: Array<string> = [];
         const changed: Map<InlineSequence, Array<readonly [[TextSequence, string], string]>> = new Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>();
         for (const [call, sequence] of found) {
@@ -903,7 +1083,7 @@ export class PageDriver {
         // A sequence whose only text is still empty has no lines to place its texts by, so they take the page that holds
         // the whole box.
         const box: ElementBox = fragment.box;
-        if (box.placement === "running" || box.placement === "footnote") {
+        if (box.placement === "running" || box.placement === "footnote" || box.placement === "page-float") {
             return;
         }
         for (const sequence of box.inline ?? []) {
@@ -962,7 +1142,7 @@ export class PageDriver {
     private content(root: ElementBox, inline: number, extent: number, pushed: ReadonlySet<ElementBox>, token?: BreakToken, end?: Candidate): BoxFragment {
         const layout: BlockLayout = this.setup.layout;
         layout.pushCalls(pushed);
-        const fragment: BoxFragment = layout.page(root, inline, extent, token, end);
+        const fragment: BoxFragment = layout.page(root, inline, extent, token, end, this.whole);
         layout.pushCalls(NO_CALLS);
         return fragment;
     }

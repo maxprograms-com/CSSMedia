@@ -89,6 +89,10 @@
         <topicref href="references/columns-chapter-reference.dita"/>
     </chapter>
 
+    <chapter href="tasks/floats.dita">
+        <topicref href="references/floats-chapter-reference.dita"/>
+    </chapter>
+
     <chapter>
         <topicmeta>
             <navtitle>Flexbox and grid</navtitle>

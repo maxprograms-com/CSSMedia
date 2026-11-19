@@ -172,8 +172,9 @@ export class PagePainter {
         }
         this.borders.paint(canvas.borderBox, pageBorders, PHYSICAL_NAMES.map((side: string) => this.keyword(canvas.style.values["border-" + side + "-style"])),
             PHYSICAL_NAMES.map((side: string) => canvas.style.values["border-" + side + "-color"]), canvas.style, pdf);
-        // GCPM 3 §2.4.1: the footnote area is placed in the page area, in the same coordinates as the content.
-        for (const fragment of [page.content, page.footnotes]) {
+        // GCPM 3 §2.4.1: the footnote area is placed in the page area, in the same coordinates as the content; CSS Page Floats 3 §3.1:
+        // the page floats too, which take their parts of the page area.
+        for (const fragment of [page.content, page.footnotes, ...(page.floats ?? [])]) {
             if (fragment === undefined) {
                 continue;
             }
@@ -808,7 +809,7 @@ export class PagePainter {
     private box(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage, root: boolean): void {
         const box: ElementBox = fragment.box;
         const style: ComputedStyle = box.style;
-        if (box.placement === "running" || box.placement === "footnote") {
+        if (box.placement === "running" || box.placement === "footnote" || box.placement === "page-float") {
             return;
         }
         this.supported(fragment);

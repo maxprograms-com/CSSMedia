@@ -127,6 +127,8 @@ const PROSE_GRAMMARS: ReadonlyMap<string, readonly [string, string]> = new Map<s
     ["css-text-decor-4 text-shadow", ["none | <shadow>#", "none | [<color>? && [<length>{2} [<length [0,∞]> <length [0,∞]>?]?] && inset?]#"]]
 ]);
 
+const KEPT_VALUES: ReadonlyArray<readonly [string, string, string]> = [["css-page-floats-3", "clear", "both"]];
+
 const PROSE_TYPES: ReadonlyArray<readonly [string, string, string]> = [
     ["css-shapes-1", "<basic-shape>", "<basic-shape-rect> | <circle()> | <ellipse()> | <polygon()> | <path()> | <shape()>"],
     ["css-images-4", "<radial-size>", "<radial-extent>{1,2} | <length-percentage [0,\u221E]>{1,2}"]
@@ -773,6 +775,13 @@ class CssDefinitionsGenerator {
         // A specification names the physical properties when it adds values, as CSS Anchor Positioning 1 does for top and
         // width; the properties of the same logical property group that share their definition take the same values.
         const extensions: Array<string> = [];
+        for (const [shortname, property, value] of KEPT_VALUES) {
+            // CSS Page Floats 3 §4 writes the grammar of clear again without both, which CSS 2.1 §9.5.2 defines and CSS Logical 1
+            // §2.2, published later, extends without removing it.
+            if (shortname === chosen.source.shortname && property === name) {
+                extensions.push(value);
+            }
+        }
         const own: ReadonlyArray<string> | undefined = this.extensions.get(name);
         if (own !== undefined) {
             extensions.push(...own);

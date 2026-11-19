@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="floats-chapter-reference">
+    <title>Floats reference</title>
+    <shortdesc>This reference lists the properties that float boxes and shape the text around them.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-floats/floats-properties"/>
+        <section conkeyref="ref-floats/shapes-properties"/>
+    </refbody>
+</reference>

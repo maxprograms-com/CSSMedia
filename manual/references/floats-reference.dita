@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="floats-reference">
+    <title>Floats</title>
+    <shortdesc>This reference lists the properties that CSSMedia uses to float boxes to the side of their lines, to the edges of a page or of a column, and to wrap text around their shapes.</shortdesc>
+    <refbody>
+        <section id="floats-properties">
+            <title>Float properties</title>
+            <table id="floats-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-float">
+                            <entry><codeph>float</codeph></entry>
+                            <entry>Takes a box out of the normal flow. With <codeph>float-reference: inline</codeph> the box goes to the start or the end of its lines and the text wraps beside it: <codeph>block-start</codeph> and <codeph>top</codeph> go to the start, <codeph>block-end</codeph> and <codeph>bottom</codeph> to the end, and <codeph>left</codeph> and <codeph>right</codeph> are the two sides of the line. With a page or a column as reference, the box goes to that edge of the page area or of the column, and the text goes on in the rest. <codeph>snap-block()</codeph> and <codeph>snap-inline()</codeph> float the box only when it stands within the given distance of an edge; otherwise it stays where it is. <codeph>footnote</codeph> makes the element a footnote.</entry>
+                            <entry><codeph>none</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, <codeph>top</codeph>, <codeph>bottom</codeph>, <codeph>block-start</codeph>, <codeph>block-end</codeph>, <codeph>inline-start</codeph>, <codeph>inline-end</codeph>, <codeph>snap-block</codeph>, <codeph>snap-block(</codeph>one or two lengths, and <codeph>start</codeph>, <codeph>end</codeph> or <codeph>near</codeph><codeph>)</codeph>, <codeph>snap-inline</codeph>, <codeph>snap-inline(</codeph>one or two lengths, and <codeph>left</codeph>, <codeph>right</codeph> or <codeph>near</codeph><codeph>)</codeph>, or <codeph>footnote</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-page-floats-3/#propdef-float" scope="external" format="html">CSS Page Floats 3 §3.2</xref>; <xref href="https://www.w3.org/TR/css-gcpm-3/#creating-footnotes" scope="external" format="html">CSS GCPM 3 §2.2</xref></entry>
+                        </row>
+                        <row id="row-float-reference">
+                            <entry><codeph>float-reference</codeph></entry>
+                            <entry>What the box floats in. <codeph>inline</codeph> is its line. <codeph>page</codeph> is the page area, and <codeph>column</codeph> the column of a multi-column element; outside a column, a column float floats in its line. <codeph>region</codeph> floats in the line as well.</entry>
+                            <entry><codeph>inline</codeph>, <codeph>column</codeph>, <codeph>region</codeph> or <codeph>page</codeph></entry>
+                            <entry><codeph>inline</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-page-floats-3/#propdef-float-reference" scope="external" format="html">CSS Page Floats 3 §3.1</xref></entry>
+                        </row>
+                        <row id="row-clear">
+                            <entry><codeph>clear</codeph></entry>
+                            <entry>Moves a block-level box or a float below the earlier floats on the sides that the value names. <codeph>both</codeph> names both sides. <codeph>left</codeph> and <codeph>right</codeph> are the left and right of the lines, which are the top and bottom in vertical text. <codeph>inline-start</codeph>, <codeph>block-start</codeph> and <codeph>top</codeph> name the side where the lines start; <codeph>inline-end</codeph>, <codeph>block-end</codeph> and <codeph>bottom</codeph> name the side where they end. A value that names the start side also moves the box below an initial letter. On a page or a column float, the value closes that page or column to the later floats that go to the edge it names.</entry>
+                            <entry><codeph>none</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, <codeph>both</codeph>, <codeph>inline-start</codeph>, <codeph>inline-end</codeph>, <codeph>block-start</codeph>, <codeph>block-end</codeph>, <codeph>top</codeph> or <codeph>bottom</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/CSS2/visuren.html#propdef-clear" scope="external" format="html">CSS 2 §9.5.2</xref>; <xref href="https://www.w3.org/TR/css-logical-1/#float-clear" scope="external" format="html">CSS Logical 1 §2.2</xref>; <xref href="https://www.w3.org/TR/css-page-floats-3/#propdef-clear" scope="external" format="html">CSS Page Floats 3 §4</xref></entry>
+                        </row>
+                        <row id="row-float-defer">
+                            <entry><codeph>float-defer</codeph></entry>
+                            <entry>Moves a page or column float to a later page or column. A positive number counts pages or columns on from the one of the box, up to the last one. A negative number counts back from the last one, and <codeph>last</codeph> is the last one.</entry>
+                            <entry><codeph>none</codeph>, an integer, or <codeph>last</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-page-floats-3/#propdef-float-defer" scope="external" format="html">CSS Page Floats 3 §5.1</xref></entry>
+                        </row>
+                        <row id="row-float-offset">
+                            <entry><codeph>float-offset</codeph></entry>
+                            <entry>Moves a page or column float away from the edge it floats to, and from the float before it on that edge. A percentage is of the size of the page area or column less the size of the float, so <codeph>50%</codeph> centers it.</entry>
+                            <entry>A length or a percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-page-floats-3/#propdef-float-offset" scope="external" format="html">CSS Page Floats 3 §7</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="shapes-properties">
+            <title>Shape properties</title>
+            <table id="shapes-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-shape-outside">
+                            <entry><codeph>shape-outside</codeph></entry>
+                            <entry>The outline that the lines beside a float or an initial letter wrap around, cut to its margin box. A basic shape is drawn in a box of the float, the margin box when no box is named. An image gives the pixels whose alpha is above <codeph>shape-image-threshold</codeph>, stretched over the box. The float is placed by its margin box all the same.</entry>
+                            <entry><codeph>none</codeph>, a basic shape (<codeph>inset()</codeph>, <codeph>rect()</codeph>, <codeph>xywh()</codeph>, <codeph>circle()</codeph>, <codeph>ellipse()</codeph>, <codeph>polygon()</codeph>, <codeph>path()</codeph>, <codeph>shape()</codeph>) and a box (<codeph>margin-box</codeph>, <codeph>border-box</codeph>, <codeph>padding-box</codeph>, <codeph>content-box</codeph>), either alone, or an image: <codeph>url()</codeph>, a gradient, <codeph>image()</codeph>, <codeph>image-set()</codeph> or <codeph>cross-fade()</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-shapes-1/#propdef-shape-outside" scope="external" format="html">CSS Shapes 1 §6.1</xref></entry>
+                        </row>
+                        <row id="row-shape-margin">
+                            <entry><codeph>shape-margin</codeph></entry>
+                            <entry>Keeps the lines that far from the shape, still inside the margin box. A percentage is of the length of the lines of the containing block.</entry>
+                            <entry>A length or a percentage, not negative</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-shapes-1/#propdef-shape-margin" scope="external" format="html">CSS Shapes 1 §6.3</xref></entry>
+                        </row>
+                        <row id="row-shape-image-threshold">
+                            <entry><codeph>shape-image-threshold</codeph></entry>
+                            <entry>The alpha above which a pixel of a <codeph>shape-outside</codeph> image is part of the shape.</entry>
+                            <entry>A number from 0 to 1 or a percentage</entry>
+                            <entry><codeph>0</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-shapes-1/#propdef-shape-image-threshold" scope="external" format="html">CSS Shapes 1 §6.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+    </refbody>
+</reference>

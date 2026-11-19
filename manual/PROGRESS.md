@@ -1142,11 +1142,11 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Page Floats 3 (css-page-floats-3)
 
-- [ ] clear
-- [~] float
-- [ ] float-defer
-- [ ] float-offset
-- [ ] float-reference
+- [x] clear
+- [x] float
+- [x] float-defer
+- [x] float-offset
+- [x] float-reference
 
 ### CSS Exclusions (css3-exclusions)
 
@@ -1155,9 +1155,9 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Shapes 1 (css-shapes-1)
 
-- [ ] shape-image-threshold
-- [ ] shape-margin
-- [ ] shape-outside
+- [x] shape-image-threshold
+- [x] shape-margin
+- [x] shape-outside
 
 ### CSS Regions 1 (css-regions-1)
 

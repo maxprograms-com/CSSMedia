@@ -28,7 +28,7 @@ import { FontCatalog } from "./fonts/FontCatalog.js";
 import { BmpImage } from "./images/BmpImage.js";
 import { GifImage } from "./images/GifImage.js";
 import { HeifImage } from "./images/HeifImage.js";
-import type { ImageFormat } from "./images/ImageFormats.js";
+import type { ImageAlpha, ImageFormat } from "./images/ImageFormats.js";
 import { ImageFormats } from "./images/ImageFormats.js";
 import { Jp2Image } from "./images/Jp2Image.js";
 import { JpegImage } from "./images/JpegImage.js";
@@ -37,10 +37,13 @@ import { TiffImage } from "./images/TiffImage.js";
 import { WebpImage } from "./images/WebpImage.js";
 import type { Candidate } from "./layout/BlockLayout.js";
 import { BlockLayout } from "./layout/BlockLayout.js";
+import { BoxSizes } from "./layout/BoxSizes.js";
 import { PageDriver } from "./pages/PageDriver.js";
+import { PageFloatPlan } from "./pages/PageFloatPlan.js";
 import type { PaletteRule } from "./paint/ColorGlyphPainter.js";
 import { ColorGlyphPainter } from "./paint/ColorGlyphPainter.js";
 import { ColorOutput } from "./paint/ColorOutput.js";
+import { ImagePainter } from "./paint/ImagePainter.js";
 import { SourceElement } from "./parse/SourceElement.js";
 import { XmlTreeBuilder } from "./parse/XmlTreeBuilder.js";
 import { BoxBuilder } from "./pdf/BoxBuilder.js";
@@ -87,6 +90,7 @@ export interface PageSetup {
     letters: FirstLetterBoxes;
     palettes: ReadonlyArray<PaletteRule>;
     reports: Array<ReadonlyArray<string>>;
+    floats: PageFloatPlan;
 }
 
 export type DocumentFonts = readonly [FontMetrics, InlineTextBuilder];
@@ -171,21 +175,23 @@ export class PdfGenerator {
         images.register(MathImage.accepts, (): ImageFormat => new MathImage(document, images, input, (): PageSetup => setup as PageSetup), [MathImage.NAMESPACE]);
         images.setNamespaces(input.prefixes, input.root.getAttributeValue("xmlns"));
         try {
-            setup = this.pageSetup(input, references, images, colors);
+            setup = this.pageSetup(input, references, images, colors, document);
             // CSS Writing Modes 4 §8.2: the page progression is right to left when the first page is a left page.
             document.setProgression(setup.recto === "left");
             this.settleTexts(setup);
-            // CSS Content 3 §2.6: the page of a target is known only from a layout, so the layout that shows it comes after.
+            // CSS Content 3 §2.6: the page of a target is known only from a layout, so the layout that shows it comes after; CSS Page
+            // Floats 3 §5.1: so is the last page, which float-defer counts from.
             const ends: Map<number, Candidate> = new Map<number, Candidate>();
             let previous: PageDriver | undefined;
-            if (references.showsPages || input.pageFootnotes) {
+            if (references.showsPages || input.pageFootnotes || setup.builder.deferredFloats) {
                 previous = new PageDriver(setup, document, ends);
                 previous.run(false, false);
                 setup.builder.labelStrings = previous.labelStrings;
                 this.settleTexts(setup);
             }
             let driver: PageDriver = new PageDriver(setup, document, ends);
-            const shown: Set<string> = new Set<string>([JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()]])]);
+            const shown: Set<string> = new Set<string>([JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()],
+                setup.floats.key()])]);
             let comparing: boolean = true;
             while (!driver.run(true, comparing)) {
                 document.restart();
@@ -193,7 +199,7 @@ export class PdfGenerator {
                 images.restart();
                 setup.builder.labelStrings = driver.labelStrings;
                 this.settleTexts(setup);
-                const key: string = JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()]]);
+                const key: string = JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()], setup.floats.key()]);
                 if (shown.has(key) && previous !== undefined) {
                     // With no page that can end earlier, the pages are single pieces that allow no other layout.
                     comparing = this.endEarlier(setup.layout, ends, previous, driver);
@@ -423,7 +429,7 @@ export class PdfGenerator {
         return true;
     }
 
-    private pageSetup(input: Input, references: CrossReferences, images: ImageFormats, colors: ColorOutput): PageSetup {
+    private pageSetup(input: Input, references: CrossReferences, images: ImageFormats, colors: ColorOutput, document: PdfDocument): PageSetup {
         const assumed: Size = input.assumed;
         const text: InlineTextBuilder = input.text;
         const whiteSpace: WhiteSpaceProcessor = new WhiteSpaceProcessor();
@@ -433,6 +439,9 @@ export class PdfGenerator {
         let letters: FirstLetterBoxes | undefined;
         const layout: BlockLayout = new BlockLayout(input.metrics, text, images, (box: ElementBox, inlineSize: number, blockSize?: number): boolean =>
             this.containerContents(boxBuilder, whiteSpace, letters as FirstLetterBoxes, text, box, inlineSize, blockSize));
+        // CSS Shapes 1 §6.1: shape-outside takes the alpha of any <image>, which the painter of images computes for gradients and cross-fades too.
+        const shapes: ImagePainter = new ImagePainter(images, new BoxSizes((): number | undefined => undefined), document, colors);
+        layout.shapeImages = (value: CssValue, style: ComputedStyle, width: number, height: number): ImageAlpha | undefined => shapes.alpha(value, style, width, height);
         let boxes: ElementBox | undefined = boxBuilder.build(input.root);
         if (boxes === undefined) {
             throw new Error("The root element generates no box (display: none)");
@@ -477,7 +486,8 @@ export class PdfGenerator {
             whiteSpace,
             letters,
             palettes: input.fontPalettes.map((rule: DescriptorRule) => ColorGlyphPainter.fromRule(rule, input.computer, rootStyle, viewport)),
-            reports: []
+            reports: [],
+            floats: new PageFloatPlan()
         };
     }
 
