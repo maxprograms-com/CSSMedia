@@ -116,7 +116,7 @@
                         </row>
                         <row>
                             <entry><codeph>vertical-align</codeph></entry>
-                            <entry>On a cell, sets where its content goes when the row is taller than the content.</entry>
+                            <entry>On a cell whose <codeph>align-content</codeph> is <codeph>normal</codeph>, sets where its content goes when the row is taller than the content.</entry>
                             <entry><codeph>baseline</codeph>, <codeph>top</codeph>, <codeph>middle</codeph> or <codeph>bottom</codeph></entry>
                             <entry><codeph>baseline</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-inline-3/#propdef-vertical-align" scope="external" format="html">CSS Inline 3</xref></entry>

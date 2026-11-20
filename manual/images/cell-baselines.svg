@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="460" height="170" viewBox="0 0 460 170" font-family="Helvetica, Arial, sans-serif" font-size="11">
+    <g fill="#222222" text-anchor="middle" font-weight="bold">
+        <text x="115" y="16">baseline</text>
+        <text x="345" y="16">last baseline</text>
+    </g>
+    <g stroke="#1d4f7a" fill="#f1f6fb">
+        <rect x="10" y="28" width="70" height="90"/>
+        <rect x="80" y="28" width="70" height="90"/>
+        <rect x="150" y="28" width="70" height="90"/>
+        <rect x="240" y="28" width="70" height="90"/>
+        <rect x="310" y="28" width="70" height="90"/>
+        <rect x="380" y="28" width="70" height="90"/>
+    </g>
+    <g stroke="#c0392b" stroke-dasharray="3 2">
+        <line x1="10" y1="54" x2="150" y2="54"/>
+        <line x1="240" y1="106" x2="380" y2="106"/>
+    </g>
+    <g fill="#222222">
+        <text x="16" y="54" font-size="9">Small</text>
+        <text x="16" y="65" font-size="9">type in</text>
+        <text x="16" y="76" font-size="9">this cell</text>
+        <text x="86" y="54" font-size="20">Big</text>
+        <text x="156" y="44" font-size="9">A cell that</text>
+        <text x="156" y="55" font-size="9">starts at the</text>
+        <text x="156" y="66" font-size="9">top, with a</text>
+        <text x="156" y="77" font-size="9">long text</text>
+        <text x="156" y="88" font-size="9">that makes</text>
+        <text x="156" y="99" font-size="9">the row tall.</text>
+        <text x="246" y="84" font-size="9">Small</text>
+        <text x="246" y="95" font-size="9">type in</text>
+        <text x="246" y="106" font-size="9">this cell</text>
+        <text x="316" y="106" font-size="20">Big</text>
+        <text x="386" y="44" font-size="9">A cell that</text>
+        <text x="386" y="55" font-size="9">starts at the</text>
+        <text x="386" y="66" font-size="9">top, with a</text>
+        <text x="386" y="77" font-size="9">long text</text>
+        <text x="386" y="88" font-size="9">that makes</text>
+        <text x="386" y="99" font-size="9">the row tall.</text>
+    </g>
+    <text x="230" y="142" font-size="10" fill="#222222" text-anchor="middle">The first two cells of each row use the value in the title, and the third cell uses start.</text>
+    <text x="230" y="156" font-size="10" fill="#222222" text-anchor="middle">The dashed line is the baseline that the first two cells share.</text>
+</svg>

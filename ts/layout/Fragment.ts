@@ -50,6 +50,7 @@ export interface BreakToken {
     forced?: string;
     appeal?: number;
     floats?: Array<readonly [ElementBox, number]>;
+    lead?: number;
 }
 
 export interface BoxFragment {

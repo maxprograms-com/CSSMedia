@@ -334,13 +334,13 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Align 3 (css-align-3)
 
-- [ ] align-content
+- [x] align-content
 - [ ] align-items
 - [ ] align-self
-- [ ] justify-content
+- [x] justify-content
 - [ ] justify-items
 - [ ] justify-self
-- [ ] place-content
+- [x] place-content
 - [ ] place-items
 - [ ] place-self
 

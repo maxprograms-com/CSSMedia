@@ -273,7 +273,7 @@ export class ShorthandExpander {
             ["border-inline-color", { kind: "pair", terms: ["border-top-color"], targets: ["border-inline-start-color", "border-inline-end-color"] }],
             ["overflow", { kind: "pair", terms: ["overflow-block"], targets: ["overflow-x", "overflow-y"] }],
             ["gap", { kind: "pair", terms: ["row-gap", "column-gap"], targets: ["row-gap", "column-gap"] }],
-            ["place-content", { kind: "pair", terms: ["align-content", "justify-content"], targets: ["align-content", "justify-content"] }],
+            ["place-content", { kind: "special", targets: ["align-content", "justify-content"] }],
             ["place-items", { kind: "pair", terms: ["align-items", "justify-items"], targets: ["align-items", "justify-items"] }],
             ["place-self", { kind: "pair", terms: ["align-self", "justify-self"], targets: ["align-self", "justify-self"] }],
             ["size", { kind: "pair", terms: ["width", "height"], targets: ["width", "height"] }],
@@ -413,6 +413,8 @@ export class ShorthandExpander {
                 return this.expandTextAlign(top);
             case "vertical-align":
                 return this.expandVerticalAlign(matched, top, indexOf);
+            case "place-content":
+                return this.expandPlaceContent(matched, top, indexOf);
             case "text-spacing":
                 return this.expandTextSpacing(matched, top, indexOf);
             case "text-box":
@@ -979,6 +981,19 @@ export class ShorthandExpander {
         const source: CssNode | undefined = top.find((node: CssNode) => node.type === "Identifier" && ["first", "last"].includes(node.name.toLowerCase()));
         const baselineSource: Longhand = source === undefined ? this.keyword("baseline-source", "auto") : this.keyword("baseline-source", (source as { name: string }).name.toLowerCase());
         return [baselineSource, ...longhands];
+    }
+
+    private expandPlaceContent(matched: MatchNode, top: ReadonlyArray<CssNode>, indexOf: Map<CssNode, number>): Array<Longhand> | undefined {
+        // CSS Box Alignment 3 §5.2: an omitted justify-content "is copied from the first value, unless that value is a <baseline-position>
+        // in which case it is defaulted to start", which justify-content does not accept.
+        const targets: Two = ["align-content", "justify-content"];
+        const items: Array<Array<number>> = this.items(matched, indexOf, top, targets);
+        const only: ReadonlyArray<number> | undefined = items.length === 1 ? items[0] : undefined;
+        if (only !== undefined && only.some((index: number) => top[index].type === "Identifier" && (top[index] as { name: string }).name.toLowerCase() === "baseline")) {
+            const align: Longhand | undefined = this.longhandOf(targets[0], only, top);
+            return align === undefined ? undefined : [align, this.keyword(targets[1], "start")];
+        }
+        return this.expandPair(items, top, targets);
     }
 
     private expandTextSpacing(matched: MatchNode, top: ReadonlyArray<CssNode>, indexOf: Map<CssNode, number>): Array<Longhand> | undefined {

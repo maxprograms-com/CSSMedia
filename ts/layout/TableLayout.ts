@@ -25,6 +25,7 @@ import type { DisplayType } from "../pdf/DisplayTypes.js";
 import type { BlockLayout } from "./BlockLayout.js";
 import type { UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
+import { ContentAlignment } from "./ContentAlignment.js";
 import type { BoxFragment, BreakToken, CollapsedBorders, EdgeSource, LineFragment, Sides } from "./Fragment.js";
 
 interface Slot {
@@ -67,6 +68,7 @@ export class TableLayout {
     private readonly host: BlockLayout;
     private readonly sizes: BoxSizes;
     private readonly grids: WeakMap<ElementBox, Grid> = new WeakMap<ElementBox, Grid>();
+    private readonly alignment: ContentAlignment = new ContentAlignment();
     private gridWidth?: number;
     private measured?: readonly [ElementBox, readonly [Float64Array, Float64Array], number | undefined];
     private constraints?: readonly [ElementBox, Uint8Array, Uint8Array];
@@ -225,14 +227,12 @@ export class TableLayout {
         const children: Array<BoxFragment | LineFragment> = [];
         const rows: Array<BoxFragment> = [];
         const indexes: Array<number> = [];
-        let firstBaseline: number | undefined;
         let block: number = spacing[1];
         const place: (fragment: BoxFragment, index: number) => void = (fragment: BoxFragment, index: number): void => {
             fragment.inline = spacing[0];
             fragment.block = block;
             rows.push(fragment);
             indexes.push(index);
-            firstBaseline = firstBaseline ?? (fragment.firstBaseline === undefined ? undefined : block + fragment.firstBaseline);
             block += fragment.blockSize + spacing[1];
         };
         const avoiding: boolean = fragmenting && this.host.enterBreaks(box);
@@ -350,6 +350,12 @@ export class TableLayout {
             extent = Math.max(extent, room - startEdge - endEdge);
             token.consumed = (incoming?.consumed ?? 0) + extent;
         }
+        // CSS Align 3 §9.1: "The first/last baseline set of a table box is the first/last baseline set of its first/last row", taken before
+        // the rows go into their groups.
+        const head: BoxFragment | undefined = rows[0];
+        const tail: BoxFragment | undefined = rows[rows.length - 1];
+        const firstBaseline: number | undefined = resumed || head?.firstBaseline === undefined ? undefined : startEdge + head.block + head.firstBaseline;
+        const lastBaseline: number | undefined = token !== undefined || tail?.baseline === undefined ? undefined : startEdge + tail.block + tail.baseline;
         // §5.3: a column box that breaks extends to the end of the fragmentainer, as the table box does.
         this.columns(grid, offsets, widths, spacing, token === undefined ? block - 2 * spacing[1] : extent - spacing[1], children);
         this.grouped(grid, rows, children);
@@ -366,9 +372,11 @@ export class TableLayout {
         if (token !== undefined) {
             fragment.token = token;
         }
-        if (firstBaseline !== undefined && !resumed) {
-            fragment.firstBaseline = startEdge + firstBaseline;
-            fragment.baseline = fragment.firstBaseline;
+        if (firstBaseline !== undefined) {
+            fragment.firstBaseline = firstBaseline;
+        }
+        if (lastBaseline !== undefined) {
+            fragment.baseline = lastBaseline;
         }
         return fragment;
     }
@@ -538,11 +546,15 @@ export class TableLayout {
         const slots: ReadonlyArray<Slot> = grid.cells[index];
         const tableFrame: number = this.sizes.frame(grid.table.style);
         const cells: Array<BoxFragment> = [];
+        const alignments: Array<string> = [];
         const baselines: Array<number> = [];
         const tokens: Array<BreakToken> = [];
         let broken: boolean = false;
         let above: number = 0;
         let below: number = 0;
+        let lastAbove: number = 0;
+        let lastBelow: number = 0;
+        let lastGroup: boolean = false;
         let height: number = incoming === undefined ? this.sizes.of(row.style).blockSize ?? 0 : 0;
         let appeal: number = Number.POSITIVE_INFINITY;
         for (const [position, slot] of slots.entries()) {
@@ -568,20 +580,24 @@ export class TableLayout {
             // A cell in an orthogonal flow is sized in its own axes, where the height of the row is its inline size.
             const askedHeight: number | undefined = this.sizes.isOrthogonal(tableFrame, this.sizes.frame(cell.style)) ? asked.inlineSize : asked.blockSize;
             height = Math.max(height, fragment.blockSize, askedHeight === undefined || incoming !== undefined ? 0 : askedHeight + blockEdges);
-            const aligned: string = this.cellAlignment(cell.style);
-            const end: number = this.sizes.side(tableFrame, this.sizes.frame(cell.style), BoxSizes.BLOCK_END);
-            const baseline: number = aligned !== "baseline" ? Number.NaN
-                : fragment.firstBaseline ?? fragment.blockSize - (this.side(end, fragment.border) + this.side(end, fragment.padding));
-            if (!Number.isNaN(baseline)) {
+            const aligned: string = this.cellAlignment(cell, tableFrame);
+            const synthesized: number = this.underEdge(grid, fragment);
+            const baseline: number = aligned === "baseline" ? fragment.firstBaseline ?? synthesized : (aligned === "last" ? fragment.baseline ?? synthesized : Number.NaN);
+            if (aligned === "baseline") {
                 above = Math.max(above, baseline);
                 below = Math.max(below, fragment.blockSize - baseline);
+            } else if (aligned === "last") {
+                lastAbove = Math.max(lastAbove, baseline);
+                lastBelow = Math.max(lastBelow, fragment.blockSize - baseline);
+                lastGroup = true;
             }
+            alignments.push(aligned);
             baselines.push(baseline);
             cells.push(fragment);
         }
         // CSS Tables 3 §6.1: a row that breaks gives "all the remaining height in the fragmentainer to the cells", and each
         // continues "where it was stopped in its previous fragment", so no fragment of it aligns its cells.
-        height = broken && space !== undefined ? space : Math.max(height, above + below);
+        height = broken && space !== undefined ? space : Math.max(height, above + below, lastAbove + lastBelow);
         // CSS Tables 3 §6.1: "top borders must not be repainted in continuation fragments", and CSS Fragmentation 4 §5.4: with slice
         // "no border and no padding are inserted at a break". The break is the row's, so a cell whose content ended before it is
         // broken there too, and goes on as an empty fragment.
@@ -589,13 +605,33 @@ export class TableLayout {
             this.sliceCell(fragment, slots[position].cell, tableFrame, incoming !== undefined, broken);
         }
         for (const [position, fragment] of cells.entries()) {
-            const aligned: string = this.cellAlignment(slots[position].cell.style);
+            const aligned: string = alignments[position];
             const baseline: number = baselines[position];
             const free: number = height - fragment.blockSize;
+            // CSS Align 3 §9.3: a baseline-sharing group is placed by its fallback alignment, start for the first baselines and end for the
+            // last ones, the cells of the group padded so that their baselines meet.
+            let distance: number = 0;
+            if (aligned === "baseline") {
+                distance = above - baseline;
+            } else if (aligned === "last") {
+                distance = height - lastBelow - baseline;
+            } else if (aligned === "bottom") {
+                distance = free;
+            } else if (aligned === "middle") {
+                distance = free / 2;
+            }
             if (!broken && incoming === undefined) {
-                this.lower(grid, fragment, !Number.isNaN(baseline) ? above - baseline : (aligned === "bottom" ? free : (aligned === "middle" ? free / 2 : 0)));
+                this.lower(grid, fragment, distance);
             }
             fragment.blockSize = height;
+        }
+        // CSS Align 3 §9.1: without cells in first or last baseline alignment, the baseline set of the row "is synthesized from the lowest
+        // and highest content edges of the cells", the alphabetic baseline from the line-under side of them.
+        const flipped: boolean = this.underAtStart(grid);
+        let under: number | undefined;
+        for (const fragment of cells) {
+            const edge: number = this.underEdge(grid, fragment);
+            under = under === undefined ? edge : (flipped ? Math.min(under, edge) : Math.max(under, edge));
         }
         const fragment: BoxFragment = { kind: "box", box: row, inline: 0, block: 0, inlineSize, blockSize: height };
         if (cells.length > 0) {
@@ -607,11 +643,36 @@ export class TableLayout {
         if (incoming !== undefined) {
             fragment.resumed = true;
         }
-        if (above > 0) {
-            fragment.firstBaseline = above;
-            fragment.baseline = above;
+        // "If any cells in the row participate in first baseline/last baseline alignment", the set comes from their shared baseline.
+        const firstGroup: boolean = alignments.includes("baseline");
+        const first: number | undefined = firstGroup ? above : under;
+        const last: number | undefined = lastGroup && !broken && incoming === undefined ? height - lastBelow : under;
+        if (first !== undefined) {
+            fragment.firstBaseline = first;
+        }
+        if (last !== undefined) {
+            fragment.baseline = last;
         }
         return fragment;
+    }
+
+    private underAtStart(grid: Grid): boolean {
+        // CSS Writing Modes 4 §6.3: "in vertical-lr writing modes, the line-relative “top” corresponds to the block-end side", so its
+        // line-under side is the block-start one.
+        return this.keyword(grid.table.style, "writing-mode") === "vertical-lr";
+    }
+
+    private underEdge(grid: Grid, fragment: BoxFragment): number {
+        // CSS Align 3 §9.1: "table cells synthesize from their content edges", the alphabetic baseline "from the line-under line"; the
+        // place is counted from the cell's block-start edge in the table's block axis.
+        const tableFrame: number = this.sizes.frame(grid.table.style);
+        const own: number = this.sizes.frame(fragment.box.style);
+        if (this.underAtStart(grid)) {
+            const start: number = this.sizes.side(tableFrame, own, BoxSizes.BLOCK_START);
+            return this.side(start, fragment.border) + this.side(start, fragment.padding);
+        }
+        const end: number = this.sizes.side(tableFrame, own, BoxSizes.BLOCK_END);
+        return fragment.blockSize - (this.side(end, fragment.border) + this.side(end, fragment.padding));
     }
 
     private weights(measure: Float64Array, constrained: Uint8Array, originating: Uint8Array, from: number, to: number): Float64Array {
@@ -650,12 +711,26 @@ export class TableLayout {
         if (row.children === undefined) {
             return;
         }
+        const tableFrame: number = this.sizes.frame(grid.table.style);
+        let firstGroup: boolean = false;
+        let lastGroup: boolean = false;
         for (const cell of row.children) {
             if (cell.kind === "box") {
-                const aligned: string = this.cellAlignment(cell.box.style);
-                this.lower(grid, cell, aligned === "bottom" ? extra : (aligned === "middle" ? extra / 2 : 0));
+                // CSS Align 3 §9.3: the group of last baselines stays at the end of the row, as a cell aligned to the bottom does.
+                const aligned: string = this.cellAlignment(cell.box, tableFrame);
+                this.lower(grid, cell, aligned === "bottom" || aligned === "last" ? extra : (aligned === "middle" ? extra / 2 : 0));
                 cell.blockSize += extra;
+                firstGroup = firstGroup || aligned === "baseline";
+                lastGroup = lastGroup || aligned === "last";
             }
+        }
+        // §9.1: a baseline that a group gives stays with its group, and one synthesized from the content edges moves with the edge.
+        const flipped: boolean = this.underAtStart(grid);
+        if (row.firstBaseline !== undefined && !firstGroup && !flipped) {
+            row.firstBaseline += extra;
+        }
+        if (row.baseline !== undefined && (lastGroup || !flipped)) {
+            row.baseline += extra;
         }
     }
 
@@ -686,8 +761,14 @@ export class TableLayout {
         }
     }
 
-    private cellAlignment(style: ComputedStyle): string {
-        // CSS Inline 3 §4.2: on table cells top and bottom come from baseline-shift, and middle from alignment-baseline.
+    private cellAlignment(cell: ElementBox, tableFrame: number): string {
+        // CSS Align 3 §5.1.1: align-content other than normal aligns the content of the cell; with normal, CSS Inline 3 §4.2: top and
+        // bottom come from baseline-shift, middle from alignment-baseline, and every other value is baseline.
+        const style: ComputedStyle = cell.style;
+        const content: string | undefined = this.alignment.cellAlignment(style.values["align-content"], !this.sizes.isOrthogonal(tableFrame, this.sizes.frame(style)));
+        if (content !== undefined) {
+            return content;
+        }
         const shift: string = this.keyword(style, "baseline-shift");
         if (shift === "top" || shift === "bottom") {
             return shift;

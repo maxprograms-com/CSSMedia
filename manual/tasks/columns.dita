@@ -28,6 +28,7 @@
                 </stepxmp>
                 <info>
                     <p>Set <codeph>column-width</codeph> instead to give the least width of a column. The element gets as many columns of that width as fit, and the columns are widened to fill the element. When you give both, <codeph>column-count</codeph> is the most columns that you get. The shorthand <codeph>columns</codeph> sets both: <codeph>columns: 3</codeph> and <codeph>columns: 12em</codeph> are valid.</p>
+                    <p>A multi-column element is a new formatting context. A float before it does not reach into its columns: the element stands beside the float, narrower, and its columns share the width that is left.</p>
                 </info>
             </step>
             <step id="set-the-gap-and-the-rule">
@@ -47,6 +48,37 @@
                     <p>A rule is drawn only between two columns that have content.</p>
                 </info>
             </step>
+            <step id="place-the-columns">
+                <cmd>Place the columns in the width of the element</cmd>
+                <info>
+                    <p>With <codeph>column-width</codeph>, the columns are widened to fill the element. Set <codeph>justify-content</codeph> to keep them at the width you give and to choose where the space that is left goes:</p>
+                    <ul>
+                        <li><codeph>normal</codeph>, the initial value, and <codeph>stretch</codeph> widen the columns.</li>
+                        <li><codeph>start</codeph>, <codeph>center</codeph> and <codeph>end</codeph> keep the columns together at the start, in the middle or at the end of the element. <codeph>left</codeph> and <codeph>right</codeph> put them on that side of the lines.</li>
+                        <li><codeph>space-between</codeph> puts the first column at the start and the last one at the end, and shares the space between the columns.</li>
+                        <li><codeph>space-around</codeph> gives each column the same space on both sides, so the two ends get half as much as each gap.</li>
+                        <li><codeph>space-evenly</codeph> makes the space at each end and between the columns the same.</li>
+                    </ul>
+                    <fig id="columns-justify-figure">
+                        <title>The values of justify-content on columns</title>
+                        <image href="../images/columns-justify.svg" placement="break" scale="100">
+                            <alt>Seven elements with three columns each. With normal the columns fill the element. With start, center and end the columns keep their width and stand together at the start, in the middle or at the end. With space-between the first and the last column touch the ends and the gaps are wider. With space-around the ends get half the space of each gap, and with space-evenly they get the same space.</alt>
+                        </image>
+                    </fig>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    column-width: 12em;
+    column-gap: 1em;
+    justify-content: center;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The space put between the columns widens the gaps, and a rule stays in the middle of its gap. With <codeph>column-count</codeph> alone, the columns always fill the element.</p>
+                    <p><codeph>align-content</codeph> places the columns in the height of an element that is taller than they are, as it places the content of any box. The columns of an element with a <codeph>height</codeph> are as tall as the element, so <codeph>align-content</codeph> moves them when the element ends with an element that spans the columns, or when it has a <codeph>min-height</codeph> and no <codeph>height</codeph>. <xref href="box-sizes.dita#box-sizes/align-the-content">Box sizes</xref> lists its values.</p>
+                </info>
+            </step>
             <step id="balance-the-columns">
                 <cmd>Balance the columns or fill them one by one</cmd>
                 <info>
@@ -60,11 +92,30 @@
 }
 </pre>
                 </stepxmp>
+                <info>
+                    <p>The columns of an element with a <codeph>height</codeph> are as tall as the element, and so are the rules between them. When the content is short, balanced columns share it evenly at the top of the element. When it is too long for the height, the columns are filled one by one.</p>
+                </info>
+            </step>
+            <step id="break-the-columns">
+                <cmd>Start a new column</cmd>
+                <info>
+                    <p>Set <codeph>break-before: column</codeph> on a block inside the multi-column element to start it at the top of the next column, or <codeph>break-after: column</codeph> to start the next block there. Inside columns, <codeph>always</codeph> is a column break too:</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article h {
+    display: block;
+    break-before: column;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Balanced columns stay as short as they can around a column break. A column break before the first block of the element changes nothing: it stays in the columns, and the element stays where it is. A page break before that block goes to the element, which then starts on a new page.</p>
+                </info>
             </step>
             <step id="span-the-columns">
                 <cmd>Let a heading go across the columns</cmd>
                 <info>
-                    <p>A block element inside the multi-column element can have <codeph>column-span: all</codeph>. It is as wide as the element, and the content before it and the content after it are laid out in columns of their own:</p>
+                    <p>A block element inside the multi-column element can have <codeph>column-span: all</codeph>. It is as wide as the element, and the content before it and the content after it are laid out in columns of their own. The columns before it are as even as they can be, whatever <codeph>column-fill</codeph> says:</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">article h {
@@ -77,14 +128,14 @@
             <step id="columns-and-pages">
                 <cmd>Use columns across pages</cmd>
                 <info>
-                    <p>When the content is longer than the page, the columns go on to the next page. Each page has its own columns, and the text reads in order through all of them.</p>
+                    <p>When the content is longer than the page, the columns go on to the next page. Each page has its own columns, and the text reads in order through all of them. On every page but the last, the columns go down to the bottom of the page. On the last page they are balanced, unless you set <codeph>column-fill: auto</codeph>.</p>
                 </info>
             </step>
             <!-- TODO: column-span with a number, column-fill: balance-all and the lists, break and inset values of the column rule properties are read and change nothing; document them when they are drawn -->
             <step id="columns-in-vertical-text">
                 <cmd>Use columns in vertical text</cmd>
                 <info>
-                    <p>The columns follow the writing mode. In vertical lines, the columns are one above the other, and the lines of each column are as long as a column is tall. A vertical element inside horizontal text takes the height you give it; without one, CSSMedia sizes it and sets a long text in columns by itself. <xref href="write-vertically.dita"/> explains writing modes and boxes of another writing mode.</p>
+                    <p>The columns follow the writing mode. In vertical lines, the columns are one above the other, and the lines of each column are as long as a column is tall. A vertical element inside horizontal text takes the height you give it; without one, CSSMedia sizes it and sets a long text in columns by itself, balanced unless you set <codeph>column-fill: auto</codeph>. <xref href="write-vertically.dita"/> explains writing modes and boxes of another writing mode.</p>
                 </info>
             </step>
         </steps>

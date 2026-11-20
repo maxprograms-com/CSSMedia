@@ -46,16 +46,23 @@
                             <entry><codeph>medium none currentcolor</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-rule" scope="external" format="html">CSS Multi-column 2 §5.5</xref></entry>
                         </row>
+                        <row id="row-justify-content">
+                            <entry><codeph>justify-content</codeph></entry>
+                            <entry>On an element with a <codeph>column-width</codeph>, places the columns along the lines. <codeph>normal</codeph> and <codeph>stretch</codeph> widen the columns to fill the element. Any other value keeps them at their <codeph>column-width</codeph> and puts the space that is left before, between or after them; the space between them widens the gaps. <codeph>left</codeph> and <codeph>right</codeph> are the left and the right sides of the lines.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>start</codeph>, <codeph>center</codeph>, <codeph>end</codeph>, <codeph>flex-start</codeph>, <codeph>flex-end</codeph>, <codeph>left</codeph>, <codeph>right</codeph>, <codeph>space-between</codeph>, <codeph>space-around</codeph>, <codeph>space-evenly</codeph> or <codeph>stretch</codeph>, with <codeph>safe</codeph> or <codeph>unsafe</codeph> before a position</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-justify-content" scope="external" format="html">CSS Box Alignment 3 §5.1</xref></entry>
+                        </row>
                         <row id="row-column-fill">
                             <entry><codeph>column-fill</codeph></entry>
-                            <entry>How the content is shared between the columns. <codeph>balance</codeph> makes the columns as even as it can. <codeph>auto</codeph> fills a column up to the height of the element, or to the end of the page, before it starts the next one.</entry>
+                            <entry>How the content is shared between the columns. <codeph>balance</codeph> makes the columns as even as it can, at the top of an element with a height when the content fits in it, and on the last page when the columns run over pages. <codeph>auto</codeph> fills a column up to the height of the element, or to the end of the page, before it starts the next one.</entry>
                             <entry><codeph>balance</codeph> or <codeph>auto</codeph></entry>
                             <entry><codeph>balance</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-fill" scope="external" format="html">CSS Multi-column 2 §8.1</xref></entry>
                         </row>
                         <row id="row-column-span">
                             <entry><codeph>column-span</codeph></entry>
-                            <entry>On a block inside the multi-column element, <codeph>all</codeph> makes it as wide as the element, across all the columns. The content before it and the content after it are laid out in columns of their own.</entry>
+                            <entry>On a block inside the multi-column element, <codeph>all</codeph> makes it as wide as the element, across all the columns. The content before it and the content after it are laid out in columns of their own, and the columns before it are balanced whatever <codeph>column-fill</codeph> says.</entry>
                             <entry><codeph>none</codeph> or <codeph>all</codeph></entry>
                             <entry><codeph>none</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-multicol-2/#propdef-column-span" scope="external" format="html">CSS Multi-column 2 §7.1</xref></entry>

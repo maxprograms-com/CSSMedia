@@ -86,6 +86,39 @@
                     <p>This illustration fills the line, but is never wider than 40em.</p>
                 </info>
             </step>
+            <step id="align-the-content">
+                <cmd>Place the content in a box that is taller than its content</cmd>
+                <info>
+                    <p>When you give a box a height and its content is shorter, the content is at the top of the box. The <codeph>align-content</codeph> property moves the content as a whole:</p>
+                    <ul>
+                        <li><codeph>normal</codeph> is the initial value. It puts the content at the top, as <codeph>start</codeph> does.</li>
+                        <li><codeph>center</codeph> puts the content in the middle, with the same space above and below it.</li>
+                        <li><codeph>end</codeph> puts the content at the bottom.</li>
+                        <li><codeph>space-between</codeph> and <codeph>stretch</codeph> put the content at the top, and <codeph>space-around</codeph> and <codeph>space-evenly</codeph> put it in the middle, because a box has a single block of content to place.</li>
+                        <li><codeph>baseline</codeph> puts the content at the top and <codeph>last baseline</codeph> at the bottom. In a table cell they align the lines of the cells instead, as <xref href="build-tables.dita#build-tables/align-the-cells">Turn elements into a table</xref> explains.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">notice {
+    height: 120pt;
+    align-content: center;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The top and the bottom are the start and the end of the direction in which the lines follow each other. In <codeph>vertical-rl</codeph> text, the start is the right side of the box and the end is its left side.</p>
+                    <p>Content that is taller than the box stays at the top and runs out of the bottom, so that its start is never lost. Write <codeph>unsafe</codeph> before the value, as in <codeph>unsafe end</codeph>, to align the content as you ask anyway: with <codeph>unsafe end</codeph> it runs out of the top. In a box whose <codeph>overflow</codeph> is <codeph>hidden</codeph>, <codeph>scroll</codeph> or <codeph>auto</codeph>, the content is aligned as you ask unless you write <codeph>safe</codeph> before the value, so with <codeph>end</codeph> the end of the content is what shows.</p>
+                    <fig id="content-alignment-figure">
+                        <title>The values of align-content in a box with a fixed height</title>
+                        <image href="../images/content-alignment.svg" placement="break" scale="100">
+                            <alt>Five boxes of the same height. With normal and start the content is at the top, with center in the middle and with end at the bottom. A content taller than its box stays at the top with end and runs out of the bottom; with unsafe end it runs out of the top and ends at the bottom of the box.</alt>
+                        </image>
+                    </fig>
+                    <p>With <codeph>min-height</codeph> instead of <codeph>height</codeph>, the content is aligned when it is shorter than the minimum height.</p>
+                    <p>A value other than <codeph>normal</codeph> makes the box a new formatting context: the top margin of its first child stays inside it, and its floats stay inside it.</p>
+                    <p>A box that breaks across pages is aligned as it would be in one piece. The space before the content goes on from page to page, and the content stands where it would stand in the unbroken box. When that space reaches the end of a page, the content starts on a later page, and content that cannot be split and does not fit after the space goes to the top of the next page.</p>
+                </info>
+            </step>
             <step id="size-pairs">
                 <cmd>Set both sizes at once</cmd>
                 <info>

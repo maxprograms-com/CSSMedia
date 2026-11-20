@@ -28,6 +28,7 @@ import type { FontMetrics } from "../pdf/FontMetrics.js";
 import type { InlineTextBuilder } from "../pdf/InlineTextBuilder.js";
 import type { NaturalSizes, Transform, UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
+import { ContentAlignment } from "./ContentAlignment.js";
 import type { FloatArea, StackedFloat } from "./FloatStack.js";
 import { FloatStack } from "./FloatStack.js";
 import type { BoxFragment, BreakToken, LineFragment, Margins, ObjectArea, PlainLine, Sides } from "./Fragment.js";
@@ -84,6 +85,8 @@ interface Columns {
     count: number;
     width: number;
     gap: number;
+    lead: number;
+    spread: number;
     fill: string;
 }
 
@@ -97,11 +100,15 @@ interface ColumnSet {
     floats: Array<BoxFragment>;
     token?: BreakToken;
     extent: number;
+    height: number;
 }
 
 interface ColumnResult {
     children: Array<BoxFragment>;
     extent: number;
+    natural: number;
+    columns: number;
+    subject: number;
     rules: Array<readonly [number, number, number]>;
     token?: BreakToken;
     firstBaseline: number | undefined;
@@ -179,6 +186,7 @@ const APPEAL_AVOID: number = 1;
 const APPEAL_ORPHANS: number = 2;
 const APPEAL_PERFECT: number = 3;
 const PAGE_BREAKS: ReadonlySet<string> = new Set<string>(["page", "left", "right", "recto", "verso"]);
+const COLUMN_BREAKS: ReadonlySet<string> = new Set<string>(["column", "always", "avoid-column"]);
 const MINIMUM_FRAGMENTAINER: number = 1;
 const PAGE_CONTEXT: ReadonlyArray<string> = ["page"];
 const NO_CALLS: ReadonlySet<ElementBox> = new Set<ElementBox>();
@@ -199,6 +207,8 @@ export class BlockLayout {
     private readonly images: ImageFormats;
     readonly tables: TableLayout = new TableLayout(this, this.sizes);
     private readonly displays: DisplayTypes = new DisplayTypes();
+    private readonly alignment: ContentAlignment = new ContentAlignment();
+    private readonly shifts: WeakMap<BoxFragment, number> = new WeakMap<BoxFragment, number>();
     private readonly contents?: ContainerContents;
     private floats?: Floats;
     private forcedColumns?: ForcedColumns;
@@ -226,6 +236,7 @@ export class BlockLayout {
     private readonly floatCopies: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
     private readonly pageCopies: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
     private pageFlow: boolean = false;
+    private skipTables: boolean = false;
     private columnDepth: number = 0;
     private readonly snapped: Map<ElementBox, number> = new Map<ElementBox, number>();
     private readonly snapMarkers: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
@@ -261,7 +272,9 @@ export class BlockLayout {
             sizes.border = [0, 1, 2, 3].map((side: number) => border[this.sizes.side(frame, tableFrame, side)]) as [number, number, number, number];
         }
         const outerFrame: number = this.frame;
+        const outerSkip: boolean = this.skipTables;
         this.frame = tableFrame;
+        this.skipTables = false;
         try {
             if (orthogonal) {
                 // CSS Writing Modes 4 §7.3: a cell in an orthogonal flow is sized in its own writing mode, the column width being its block
@@ -274,6 +287,7 @@ export class BlockLayout {
             return fragment;
         } finally {
             this.frame = outerFrame;
+            this.skipTables = outerSkip;
         }
     }
 
@@ -299,14 +313,7 @@ export class BlockLayout {
         // CSS 2 §8.3.1: "Margins of the root element's box do not collapse."
         fragment.block = fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1];
         this.positioned(fragment, true);
-        const path: Array<readonly [ElementBox, number]> = [];
-        let line: readonly [number, number] | undefined;
-        for (let level: BreakToken | undefined = fragment.token; level !== undefined; level = level.inner) {
-            path.push([level.box, level.child]);
-            const text: InlineText | undefined = level.line === undefined ? undefined : level.box.inline?.[level.sequence]?.text;
-            line = text === undefined || level.line === undefined ? undefined : this.spot(text, level.line);
-        }
-        const taken: Candidate | undefined = path.length === 0 ? undefined : (line === undefined ? { appeal: APPEAL_PERFECT, path } : { appeal: APPEAL_PERFECT, path, line });
+        const taken: Candidate | undefined = this.tokenCandidate([], fragment.token, APPEAL_PERFECT);
         const state: Fragmentation = this.pageState as Fragmentation;
         const earlier: Candidate | undefined = taken !== undefined && state.best !== undefined && this.sameCandidate(state.best, taken) ? state.prior : state.best;
         if (taken === undefined) {
@@ -1287,15 +1294,41 @@ export class BlockLayout {
             const content: readonly [number, number] = this.contentSizes(box, sizes.blockSize);
             size = this.sizes.adjusted(sizes, BoxSizes.PREFERRED_INLINE, Math.min(Math.max(content[0], stretch), content[1]));
         }
+        // CSS Align 3 §9.1: "When finding the first/last baseline set of an inline-block, any baselines contributed by table boxes must be
+        // skipped", in the blocks inside it too.
+        const outerSkip: boolean = this.skipTables;
+        this.skipTables = box.display.outer === "inline" && box.display.inner === "flow-root" && !box.replaced && !this.tables.isWrapper(box);
         const fragment: BoxFragment = this.flow(box, sizes, this.clamped(size, sizes.minInlineSize, sizes.maxInlineSize), start, true, 0, 0, undefined, space, incoming);
-        if (!this.hasVisibleOverflow(box) || (this.containment(box) & DisplayTypes.LAYOUT_CONTAINMENT) !== 0) {
-            // CSS 2 §10.8.1: with an overflow other than visible "the baseline is the bottom margin edge"; CSS Containment 2
-            // §3.2: for vertical-align "the containment box is treated as having no baseline".
+        this.skipTables = outerSkip;
+        if (this.tables.isWrapper(box)) {
+            this.rootBaselines(fragment);
+        }
+        if ((this.containment(box) & DisplayTypes.LAYOUT_CONTAINMENT) !== 0) {
+            // CSS Containment 2 §3.2: for vertical-align "the containment box is treated as having no baseline". The baselines of a scroll
+            // container are those of CSS Align 3 §9.1, which flow() gives it.
             delete fragment.firstBaseline;
             delete fragment.baseline;
         }
         this.reoriented(fragment, parentFrame, frame);
         return [fragment, start + fragment.inlineSize + end];
+    }
+
+    private rootBaselines(wrapper: BoxFragment): void {
+        // CSS Tables 3 §2.2.1: "The table-root box (not the table-wrapper box) is used when doing baseline vertical alignment for an
+        // inline-table", whatever captions come before it.
+        const root: BoxFragment | LineFragment | undefined = wrapper.children?.find((child: BoxFragment | LineFragment) => child.kind === "box" && this.tables.isGrid(child.box));
+        delete wrapper.firstBaseline;
+        delete wrapper.baseline;
+        if (root === undefined || root.kind !== "box") {
+            return;
+        }
+        const start: number = this.side(BoxSizes.BLOCK_START, wrapper.border) + this.side(BoxSizes.BLOCK_START, wrapper.padding);
+        if (root.firstBaseline !== undefined) {
+            wrapper.firstBaseline = start + root.block + root.firstBaseline;
+        }
+        if (root.baseline !== undefined) {
+            wrapper.baseline = start + root.block + root.baseline;
+        }
     }
 
     private crossed(box: ElementBox, given: UsedSizes, frame: number, available: number | undefined, blockBasis: number | undefined, probe: boolean): BoxFragment {
@@ -1365,13 +1398,16 @@ export class BlockLayout {
                 return single;
             }
         }
-        const columns: Columns = { count: count ?? 1, width: columnWidth, gap, fill: "auto" };
+        const columns: Columns = { count: count ?? 1, width: columnWidth, gap, lead: 0, spread: 0, fill: "auto" };
         this.forcedColumns = { box, columns, length };
         try {
             // The used column-count "follows from filling the resulting multi-column layout with the box's content".
             const filled: BoxFragment = this.probe(box, sizes, columnWidth, 0, true, 0, 0);
             const used: number = count ?? Math.max(1, (filled.children ?? []).filter((child: BoxFragment | LineFragment) => child.kind === "box").length);
             columns.count = used;
+            // Filling in order only counts the columns; the box is a multi-column container, so CSS Multicol 1 §7.1 column-fill
+            // decides how its content is spread over them.
+            columns.fill = this.keyword(values["column-fill"]) === "auto" ? "auto" : "balance";
             return lay(used * columnWidth + (used - 1) * gap);
         } finally {
             delete this.forcedColumns;
@@ -1708,6 +1744,17 @@ export class BlockLayout {
         const clone: boolean = this.keyword(box.style.values["box-decoration-break"]) === "clone";
         // A token of another box only resumes the children, as in the footnote area of a new page, which starts there itself.
         const resumed: boolean = incoming !== undefined && incoming.box === box;
+        // CSS Align 3 §5.1.1: a box that breaks has its content aligned as it is when unbroken, and the gap before the content goes on
+        // across the breaks as progress (CSS Fragmentation 4 §5.3), so the offset comes from a layout without breaks and is kept in the token.
+        const aligning: boolean = this.alignsContent(box);
+        let aligned: number = 0;
+        if (aligning && fragmenting !== undefined && resumed) {
+            aligned = incoming?.lead ?? 0;
+        } else if (aligning && fragmenting !== undefined && this.hasFreeSpace(box, sizes)) {
+            aligned = this.shifts.get(this.probe(box, given, inlineSize, inlineOffset, independent, originInline, originBlock, trim)) ?? 0;
+        }
+        // §5.3: the progress of the earlier fragments is what they filled, never less than nothing; only a gap before the content goes on.
+        const lead: number = !resumed ? aligned : (aligned > 0 ? Math.max(0, aligned - Math.max(0, incoming?.consumed ?? 0)) : 0);
         // CSS 2 §8.3.1: margins adjoin when no line box, clearance, padding or border separates them and the box is no block
         // formatting context root; adjoining margins are kept as their largest positive and their most negative member.
         const startEdge: number = resumed && !clone ? 0 : this.sizes.edges(sizes, BoxSizes.BLOCK_START);
@@ -1721,7 +1768,7 @@ export class BlockLayout {
         let after: Margins = this.margin(this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0);
         let pending: Margins = NO_MARGIN;
         let keepsMargin: boolean = false;
-        let offset: number = 0;
+        let offset: number = lead;
         let empty: boolean = true;
         let firstBaseline: number | undefined;
         let baseline: number | undefined;
@@ -1765,6 +1812,7 @@ export class BlockLayout {
         const forced: ForcedColumns | undefined = this.forcedColumns !== undefined && this.forcedColumns.box === box ? this.forcedColumns : undefined;
         const columns: Columns | undefined = nodes === undefined ? undefined : (forced?.columns ?? this.columnsOf(box, inlineSize));
         let rules: Array<readonly [number, number, number]> | undefined;
+        let subject: number | undefined;
         if (resumed) {
             startTrim = undefined;
         }
@@ -1772,9 +1820,12 @@ export class BlockLayout {
             this.resumeFloats(incoming.parallel, children, sizes.blockSize);
         }
         if (columns !== undefined) {
-            const flowed: ColumnResult = this.columnFlow(box, columns, forced?.length ?? sizes.blockSize, inlineSize, room, fragmenting !== undefined, incoming);
+            const flowed: ColumnResult = this.columnFlow(box, columns, forced?.length ?? sizes.blockSize, inlineSize, room, fragmenting !== undefined, lead, incoming);
             children.push(...flowed.children);
-            offset = flowed.extent;
+            // CSS Writing Modes 4 §7.3.2: "The used block size of the box is either the used column length (if multiple columns were used)
+            // or the max-content block size of the content (if only one column was used)."
+            offset = forced !== undefined && flowed.columns < 2 ? flowed.natural : flowed.extent;
+            subject = flowed.subject;
             empty = flowed.children.length === 0;
             firstBaseline = flowed.firstBaseline;
             baseline = flowed.baseline;
@@ -1794,7 +1845,7 @@ export class BlockLayout {
             }
             if (this.isBlockLevel(node)) {
                 const resuming: BreakToken | undefined = incoming !== undefined && incoming.child === index ? incoming.inner : undefined;
-                const filled: boolean = fragmenting !== undefined && fragmenting.filled;
+                let filled: boolean = fragmenting !== undefined && fragmenting.filled;
                 let local: Candidate | undefined;
                 if (fragmenting !== undefined) {
                     fragmenting.path[fragmenting.path.length - 1][1] = index;
@@ -1808,6 +1859,14 @@ export class BlockLayout {
                             break;
                         }
                         local = filled ? this.record(fragmenting, point[0], undefined) : undefined;
+                    }
+                    if (empty && lead > TOLERANCE && room > TOLERANCE && resuming === undefined) {
+                        if (this.reachesEarly(fragmenting, undefined)) {
+                            token = this.token(box, index, sequence, undefined, undefined, undefined);
+                            break;
+                        }
+                        local = this.alignmentBreak(fragmenting);
+                        filled = true;
                     }
                 }
                 index++;
@@ -1853,8 +1912,10 @@ export class BlockLayout {
                 }
                 child.block = offset;
                 offset += child.collapsesThrough === true ? 0 : child.blockSize;
-                firstBaseline = firstBaseline ?? (child.firstBaseline === undefined ? undefined : child.block + child.firstBaseline);
-                baseline = child.baseline === undefined ? baseline : child.block + child.baseline;
+                if (!this.skipTables || !(this.tables.isWrapper(node) || this.tables.isGrid(node))) {
+                    firstBaseline = firstBaseline ?? (child.firstBaseline === undefined ? undefined : child.block + child.firstBaseline);
+                    baseline = child.baseline === undefined ? baseline : child.block + child.baseline;
+                }
                 pending = child.marginAfter ?? NO_MARGIN;
                 keepsMargin = child.collapsesThrough === true;
                 if (keepsMargin) {
@@ -1916,11 +1977,19 @@ export class BlockLayout {
                 continue;
             }
             const start: number = index;
+            const resume: number | undefined = incoming !== undefined && incoming.child === start ? incoming.line : undefined;
+            if (fragmenting !== undefined && empty && lead > TOLERANCE && room > TOLERANCE && resume === undefined) {
+                fragmenting.path[fragmenting.path.length - 1][1] = start;
+                if (this.reachesEarly(fragmenting, undefined)) {
+                    token = this.token(box, start, sequence, undefined, undefined, undefined);
+                    break;
+                }
+                this.alignmentBreak(fragmenting);
+            }
             while (index < nodes.length && !this.isBlockLevel(nodes[index])) {
                 index++;
             }
             const run: InlineSequence | undefined = box.inline?.[sequence++];
-            const resume: number | undefined = incoming !== undefined && incoming.child === start ? incoming.line : undefined;
             const marks: Array<Snapshot> | undefined = fragmenting === undefined ? undefined : [];
             const early: Candidate | undefined = fragmenting?.early;
             let cut: readonly [number, number] | undefined;
@@ -2017,9 +2086,10 @@ export class BlockLayout {
         // the box nor with its end; CSS Fragmentation 4 §5.2 decides what a break does to the ones outside it.
         const auto: boolean = sizes.blockSize === undefined;
         const inside: boolean = !(empty && adjoinsStart) && !(adjoinsEnd && auto && !keepsMargin);
-        if (fragmenting !== undefined && token === undefined && !fragmenting.restart && sizes.blockSize !== undefined && sizes.blockSize > room + TOLERANCE) {
-            // CSS Fragmentation 4 §4.1 class C: the box is taller than what is left, so it breaks after its content, which
-            // the rest of its block size follows in the next fragmentainer.
+        if (fragmenting !== undefined && token === undefined && !fragmenting.restart && sizes.blockSize !== undefined && sizes.blockSize > room + TOLERANCE
+            && room > TOLERANCE) {
+            // CSS Fragmentation 4 §4.1 class C: the box is taller than what is left, so it breaks after its content, which the rest of its block
+            // size follows in the next fragmentainer; §4.4: a box whose content edge is past the end of the fragmentainer goes after a break.
             fragmenting.path[fragmenting.path.length - 1][1] = nodes === undefined ? 0 : nodes.length;
             const early: boolean = this.reachesEarly(fragmenting, undefined);
             const local: Candidate | undefined = early ? undefined : this.record(fragmenting, fragmenting.avoid > 0 ? APPEAL_AVOID : APPEAL_PERFECT, undefined);
@@ -2039,6 +2109,9 @@ export class BlockLayout {
             // §5.3: "its content box extends to fill any remaining fragmentainer extent", and §5.2: the margins adjoining an
             // unforced break are truncated; with slice the block-end border and padding come on the last fragment only.
             token.consumed = (incoming?.consumed ?? 0) + room;
+            if (aligned !== 0) {
+                token.lead = aligned;
+            }
             offset = room;
             pending = NO_MARGIN;
             after = NO_MARGIN;
@@ -2079,6 +2152,18 @@ export class BlockLayout {
         }
         const blockSize: number = token !== undefined ? Math.max(0, room)
             : containedBlock ?? this.clamped(sizes.blockSize ?? this.sizes.adjusted(sizes, BoxSizes.PREFERRED_BLOCK, content), sizes.minBlockSize, sizes.maxBlockSize);
+        // CSS Align 3 §5.1.1 and §5.1.2: the content as a unit, or the lines of columns and the spanners, are aligned in the content box;
+        // in a fragmentation context the content was laid out after the gap that the alignment leaves.
+        const shift: number = aligning && fragmenting === undefined && token === undefined
+            ? this.alignment.blockShift(box.style.values["align-content"], this.hasVisibleOverflow(box), blockSize - (subject ?? content)) : 0;
+        if (shift !== 0) {
+            for (const child of children) {
+                child.block += shift;
+            }
+            rules = rules?.map((rule: readonly [number, number, number]): readonly [number, number, number] => [rule[0], rule[1] + shift, rule[2]]);
+            firstBaseline = firstBaseline === undefined ? undefined : firstBaseline + shift;
+            baseline = baseline === undefined ? undefined : baseline + shift;
+        }
         const fragment: BoxFragment = {
             kind: "box", box, inline: inlineOffset, block: 0, inlineSize: inlineSize + this.inlineEdges(sizes), blockSize: startEdge + blockSize + endEdge
         };
@@ -2113,6 +2198,24 @@ export class BlockLayout {
         }
         if (baseline !== undefined) {
             fragment.baseline = startEdge + baseline;
+        }
+        if (!box.replaced && !this.hasVisibleOverflow(box) && this.displays.isBlockContainer(box.display)) {
+            // CSS Align 3 §9.1: "if the position of a scroll container's first/last baseline is outside its border edge, that baseline's
+            // position is clamped to the border edge".
+            if (fragment.firstBaseline !== undefined) {
+                fragment.firstBaseline = Math.min(Math.max(fragment.firstBaseline, 0), fragment.blockSize);
+            }
+            const source: string = this.keyword(box.style.values["baseline-source"]);
+            if (source !== "first" && source !== "last") {
+                // "for legacy reasons if its baseline-source is auto" a scroll container "always has a last baseline set, whose baselines all
+                // correspond to its block-end margin edge".
+                fragment.baseline = fragment.blockSize + (this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0);
+            } else if (fragment.baseline !== undefined) {
+                fragment.baseline = Math.min(Math.max(fragment.baseline, 0), fragment.blockSize);
+            }
+        }
+        if (shift !== 0) {
+            this.shifts.set(fragment, shift);
         }
         const area: ObjectArea | undefined = box.replaced && sizes.natural !== undefined ? this.objectArea(box, sizes.natural, inlineSize, blockSize) : undefined;
         if (area !== undefined) {
@@ -2176,7 +2279,16 @@ export class BlockLayout {
         const spacing: number = this.columnGap(values, inlineSize);
         const fits: number = least === undefined ? 1 : Math.max(1, Math.floor((inlineSize + spacing) / (least + spacing)));
         const used: number = wanted === undefined ? fits : (least === undefined ? wanted : Math.min(wanted, fits));
-        return { count: used, width: Math.max(0, (inlineSize - (used - 1) * spacing) / used), gap: spacing, fill: this.keyword(values["column-fill"]) === "auto" ? "auto" : "balance" };
+        const stretched: number = Math.max(0, (inlineSize - (used - 1) * spacing) / used);
+        // CSS Align 3 §5.1.2: justify-content can keep the column-width instead of stretching the columns, and CSS Multicol 1 §3.1 still
+        // makes them narrower "if the available space is smaller than the specified column width".
+        const justify: CssValue | undefined = values["justify-content"];
+        const columnWidth: number = least !== undefined && this.alignment.keepsColumnWidth(justify) ? Math.min(least, stretched) : stretched;
+        const placement: readonly [number, number] = this.alignment.columnPlacement(justify, (this.sizes.frame(box.style) & BoxSizes.RIGHT_TO_LEFT) !== 0, used,
+            inlineSize - used * columnWidth - (used - 1) * spacing);
+        return {
+            count: used, width: columnWidth, gap: spacing, lead: placement[0], spread: placement[1], fill: this.keyword(values["column-fill"]) === "auto" ? "auto" : "balance"
+        };
     }
 
     private columnParts(box: ElementBox): Array<ColumnPart> {
@@ -2229,13 +2341,52 @@ export class BlockLayout {
         return content;
     }
 
-    private columnFlow(box: ElementBox, columns: Columns, blockSize: number | undefined, inlineSize: number, room: number, fragmenting: boolean, incoming?: BreakToken): ColumnResult {
+    private columnFlow(box: ElementBox, columns: Columns, blockSize: number | undefined, inlineSize: number, room: number, fragmenting: boolean, lead: number,
+        incoming?: BreakToken): ColumnResult {
         const parts: Array<ColumnPart> = this.columnParts(box);
-        const result: ColumnResult = { children: [], extent: 0, rules: [], firstBaseline: undefined, baseline: undefined };
-        let offset: number = 0;
-        for (let index: number = incoming?.child ?? 0; index < parts.length; index++) {
+        const result: ColumnResult = { children: [], extent: lead, natural: lead, columns: 0, subject: 0, rules: [], firstBaseline: undefined, baseline: undefined };
+        const first: number = incoming?.child ?? 0;
+        const state: Fragmentation | undefined = fragmenting ? this.fragmenting : undefined;
+        if (state !== undefined && lead > TOLERANCE && room > TOLERANCE && first < parts.length) {
+            // The gap before the lines of columns is a class C break point, taken as the break point between two children is when the
+            // content after it does not fit: here, when the gap reaches the end of the fragmentainer.
+            state.path[state.path.length - 1][1] = first;
+            if (this.reachesEarly(state, undefined)) {
+                result.token = this.token(box, first, 0, undefined, undefined, undefined);
+                return result;
+            }
+            const local: Candidate = this.alignmentBreak(state);
+            if (lead >= room - TOLERANCE && (state.best === local || !this.restartAt(state))) {
+                result.token = this.token(box, first, 0, undefined, undefined, undefined);
+                return result;
+            }
+            if (state.restart) {
+                return result;
+            }
+        }
+        let offset: number = lead;
+        let subject: number = 0;
+        let natural: number = lead;
+        for (let index: number = first; index < parts.length; index++) {
             const part: ColumnPart = parts[index];
             const inner: BreakToken | undefined = incoming !== undefined && incoming.child === index ? incoming.inner : undefined;
+            if (state !== undefined && inner === undefined && room - offset <= TOLERANCE && (index > first || state.filled)) {
+                // CSS Fragmentation 4 §4.4: an unforced break keeps content from overflowing the fragmentainer, so a line of columns or a spanner
+                // that starts at its end follows a break: the class A break point before it, or the best one before the multi-column container.
+                state.path[state.path.length - 1][1] = index;
+                if (index > first && this.reachesEarly(state, undefined)) {
+                    result.token = this.token(box, index, 0, undefined, undefined, undefined);
+                    break;
+                }
+                const local: Candidate | undefined = index > first ? this.record(state, state.avoid > 0 ? APPEAL_AVOID : APPEAL_PERFECT, undefined) : undefined;
+                if (local !== undefined && state.best === local) {
+                    result.token = this.token(box, index, 0, undefined, undefined, undefined);
+                    break;
+                }
+                if (this.restartAt(state)) {
+                    break;
+                }
+            }
             const left: number = Math.max(MINIMUM_FRAGMENTAINER, room - offset);
             let token: BreakToken | undefined;
             if (part.spanner) {
@@ -2243,12 +2394,20 @@ export class BlockLayout {
                 const fragment: BoxFragment = this.block(part.box, inlineSize, true, 0, offset, undefined, undefined, 0, fragmenting ? left : undefined, inner, false);
                 fragment.block = offset + (fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1]);
                 result.children.push(fragment);
-                offset = fragment.block + fragment.blockSize + (fragment.token !== undefined || fragment.marginAfter === undefined ? 0 : fragment.marginAfter[0] + fragment.marginAfter[1]);
+                const end: number = fragment.block + fragment.blockSize + (fragment.token !== undefined || fragment.marginAfter === undefined ? 0
+                    : fragment.marginAfter[0] + fragment.marginAfter[1]);
+                subject += end - offset;
+                natural += end - offset;
+                offset = end;
                 token = fragment.token;
                 result.firstBaseline = result.firstBaseline ?? (fragment.firstBaseline === undefined ? undefined : fragment.block + fragment.firstBaseline);
                 result.baseline = fragment.baseline === undefined ? result.baseline : fragment.block + fragment.baseline;
             } else {
-                const set: ColumnSet = this.columnSet(part.box, columns, blockSize, left, fragmenting, inner);
+                // CSS Multicol 1 §2: "the columns before the spanning element are balanced and shortened to fit their content", whatever
+                // column-fill says (§7.1), and the columns after the last spanner take what is left of a definite block size.
+                const balanced: boolean = parts[index + 1]?.spanner === true;
+                const definite: number | undefined = balanced || blockSize === undefined ? undefined : Math.max(0, blockSize - subject);
+                const set: ColumnSet = this.columnSet(part.box, columns, definite, left, fragmenting, balanced, inner);
                 for (const float of set.floats) {
                     float.block += offset;
                     result.children.push(float);
@@ -2257,15 +2416,43 @@ export class BlockLayout {
                     fragment.block += offset;
                     result.children.push(fragment);
                     if (position > 0) {
-                        // §4: a rule is drawn "in the middle of each column gap" between two columns that both have content.
-                        result.rules.push([position * (columns.width + columns.gap) - columns.gap / 2, offset, set.extent]);
+                        // §4: a rule is drawn "in the middle of each column gap" between two columns that both have content, as long as the column
+                        // height; CSS Align 3 §5.1.2 adds the space that justify-content puts between the columns to the gaps.
+                        result.rules.push([columns.lead + position * (columns.width + columns.gap + columns.spread) - (columns.gap + columns.spread) / 2, offset,
+                            set.height]);
                     }
                 }
-                const first: BoxFragment | undefined = set.fragments[0];
-                result.firstBaseline = result.firstBaseline ?? (first?.firstBaseline === undefined ? undefined : first.block + first.firstBaseline);
-                result.baseline = first?.baseline === undefined ? result.baseline : first.block + first.baseline;
-                offset += set.extent;
+                // CSS Align 3 §9.1: the first baseline set is that of the column with the highest baseline, nearest the block start, and the
+                // last one that of the column with the lowest baseline, nearest the block end.
+                let highest: number | undefined;
+                let lowest: number | undefined;
+                for (const fragment of set.fragments) {
+                    if (fragment.firstBaseline !== undefined) {
+                        highest = Math.min(highest ?? Number.POSITIVE_INFINITY, fragment.block + fragment.firstBaseline);
+                    }
+                    if (fragment.baseline !== undefined) {
+                        lowest = Math.max(lowest ?? Number.NEGATIVE_INFINITY, fragment.block + fragment.baseline);
+                    }
+                }
+                result.firstBaseline = result.firstBaseline ?? highest;
+                result.baseline = lowest ?? result.baseline;
+                // CSS Multicol 1 §2: a line of columns "acts as a block-level box" as tall as its columns, which a constrained height gives.
+                offset += set.height;
+                subject += set.height;
+                natural += set.extent;
+                result.columns = Math.max(result.columns, set.fragments.length);
                 token = set.token;
+                if (state !== undefined && token !== undefined && !this.forcedIn(token)) {
+                    // CSS Fragmentation 4 §4.4 rules 1 and 4: an unforced break inside the line is a break point, avoided when an ancestor avoids
+                    // breaks inside, and taken only if no break point before it keeps more of the rules; it is named as the page names its break.
+                    state.path[state.path.length - 1][1] = index;
+                    const prefix: Array<readonly [ElementBox, number]> = state.path.map((step: [ElementBox, number]): readonly [ElementBox, number] => [step[0], step[1]]);
+                    const inside: Candidate = this.tokenCandidate(prefix, token, Math.min(this.breakAppeal(token), state.avoid > 0 ? APPEAL_AVOID : APPEAL_PERFECT)) as Candidate;
+                    const early: boolean = state.early !== undefined && this.sameCandidate(inside, state.early);
+                    if (!early && this.keep(state, inside) !== state.best && this.restartAt(state)) {
+                        break;
+                    }
+                }
             }
             if (token !== undefined) {
                 result.token = this.token(box, index, 0, undefined, token, undefined);
@@ -2273,10 +2460,13 @@ export class BlockLayout {
             }
         }
         result.extent = offset;
+        result.natural = natural;
+        result.subject = subject;
         return result;
     }
 
-    private columnSet(content: ElementBox, columns: Columns, definite: number | undefined, limit: number, fragmenting: boolean, incoming?: BreakToken): ColumnSet {
+    private columnSet(content: ElementBox, columns: Columns, definite: number | undefined, limit: number, fragmenting: boolean, balanced: boolean,
+        incoming?: BreakToken): ColumnSet {
         // CSS Multicol 1 §7: the columns have the definite height, or with an automatic one the least in which the content fits them
         // (balance, found by trying), or what the fragmentainer around has left (column-fill: auto).
         const kinds: ReadonlyArray<string> = [...(this.fragmenting?.kinds ?? []), "column"];
@@ -2287,16 +2477,25 @@ export class BlockLayout {
             const set: ColumnSet = this.columnRun(content, columns, height, endless, kinds, earlier, incoming);
             return earlier.size === 0 ? set : this.columnRun(content, columns, height, endless, kinds, earlier, incoming, true);
         };
+        // §2: a line of columns that the block size constrains is as tall as the room it gets, whatever its content fills, as "the height of
+        // each column will be equivalent to the used height of the multi-column container's content box" with one line.
+        const constrained: number | undefined = definite === undefined ? undefined : Math.min(definite, limit);
+        const room: number = constrained ?? limit;
         let height: number;
-        if (definite !== undefined) {
-            height = Math.min(definite, limit);
+        if (columns.fill === "auto" && !balanced && (fragmenting || constrained !== undefined)) {
+            height = room;
+        } else if (constrained !== undefined && lay(Math.max(MINIMUM_FRAGMENTAINER, constrained), false).token !== undefined) {
+            // §7.1: balance has no effect "when there are overflow columns", and "In fragmented contexts, only the last fragment is balanced".
+            height = constrained;
         } else {
-            const total: number = lay(Math.min(limit, COLUMN_EXTENT), false).extent;
-            if (columns.fill === "auto") {
-                height = fragmenting ? limit : total;
+            // The balanced height follows from the content, and the room left decides only when that height does not fit; so the search runs
+            // over what the columns hold in that room, and the room limits the result.
+            const total: number = lay(Math.min(room * columns.count, COLUMN_EXTENT), false).extent;
+            if (columns.fill === "auto" && !balanced) {
+                height = total;
             } else {
                 let low: number = total / columns.count;
-                let high: number = Math.min(total, limit);
+                let high: number = total;
                 for (let step: number = 0; step < BALANCING_STEPS && high - low > 0.25; step++) {
                     const middle: number = (low + high) / 2;
                     if (lay(middle, false).token === undefined) {
@@ -2305,10 +2504,14 @@ export class BlockLayout {
                         low = middle;
                     }
                 }
-                height = high;
+                height = Math.min(high, room);
             }
         }
-        return lay(Math.max(MINIMUM_FRAGMENTAINER, height), !fragmenting);
+        const set: ColumnSet = lay(Math.max(MINIMUM_FRAGMENTAINER, height), !fragmenting);
+        if (constrained !== undefined) {
+            set.height = constrained;
+        }
+        return set;
     }
 
     private columnRun(content: ElementBox, columns: Columns, height: number, endless: boolean, kinds: ReadonlyArray<string>, earlier: Map<ElementBox, number>,
@@ -2394,7 +2597,7 @@ export class BlockLayout {
                         waiting.push([anchor, index + 1]);
                     }
                 }
-                const columnStart: number = index * (columns.width + columns.gap);
+                const columnStart: number = columns.lead + index * (columns.width + columns.gap + columns.spread);
                 fragment.inline += columnStart;
                 fragments.push(fragment);
                 for (const float of placed) {
@@ -2419,12 +2622,12 @@ export class BlockLayout {
         }
         let extent: number = 0;
         for (const fragment of fragments) {
-            extent = Math.max(extent, fragment.block + fragment.blockSize);
+            extent = Math.max(extent, fragment.block + this.contentEnd(fragment));
         }
         for (const float of floats) {
             extent = Math.max(extent, float.block + float.blockSize + (float.marginAfter === undefined ? 0 : float.marginAfter[0] + float.marginAfter[1]));
         }
-        const set: ColumnSet = { fragments, floats, extent };
+        const set: ColumnSet = { fragments, floats, extent, height: extent };
         if (current !== undefined) {
             if (waiting.length > 0) {
                 current.floats = waiting.map((entry: readonly [ElementBox, number]): readonly [ElementBox, number] => [entry[0], Math.max(0, entry[1] - columns.count)]);
@@ -2432,6 +2635,19 @@ export class BlockLayout {
             set.token = current;
         }
         return set;
+    }
+
+    private contentEnd(fragment: BoxFragment): number {
+        // CSS Fragmentation 4 §5.3: a box that breaks "extends to fill any remaining fragmentainer extent", and CSS Multicol 1 §2 shortens
+        // balanced columns "to fit their content", so a column that breaks ends where its content does.
+        if (fragment.token === undefined) {
+            return fragment.blockSize;
+        }
+        let end: number = 0;
+        for (const child of fragment.children ?? []) {
+            end = Math.max(end, child.block + child.blockSize);
+        }
+        return this.side(BoxSizes.BLOCK_START, fragment.border) + this.side(BoxSizes.BLOCK_START, fragment.padding) + end;
     }
 
     private columnPiece(content: ElementBox, columns: Columns, height: number, kinds: ReadonlyArray<string>, begin: BreakToken | undefined,
@@ -2565,13 +2781,31 @@ export class BlockLayout {
     }
 
     private record(fragmenting: Fragmentation, appeal: number, line: readonly [number, number] | undefined): Candidate {
-        // CSS Fragmentation 4 §4.5: among the break points that the rules allow equally, the latest one leaves the fewest
-        // breaks and the fullest fragmentainers.
         const candidate: Candidate = { appeal, path: fragmenting.path.map((step: [ElementBox, number]): readonly [ElementBox, number] => [step[0], step[1]]) };
         if (line !== undefined) {
             candidate.line = line;
         }
-        if (fragmenting.best === undefined || appeal >= fragmenting.best.appeal) {
+        return this.keep(fragmenting, candidate);
+    }
+
+    private tokenCandidate(path: Array<readonly [ElementBox, number]>, token: BreakToken | undefined, appeal: number): Candidate | undefined {
+        // The break that a token stands for, as a break point: the child of each box where it falls, and its place in the text of the last one.
+        let line: readonly [number, number] | undefined;
+        for (let level: BreakToken | undefined = token; level !== undefined; level = level.inner) {
+            path.push([level.box, level.child]);
+            const text: InlineText | undefined = level.line === undefined ? undefined : level.box.inline?.[level.sequence]?.text;
+            line = text === undefined || level.line === undefined ? undefined : this.spot(text, level.line);
+        }
+        if (path.length === 0) {
+            return undefined;
+        }
+        return line === undefined ? { appeal, path } : { appeal, path, line };
+    }
+
+    private keep(fragmenting: Fragmentation, candidate: Candidate): Candidate {
+        // CSS Fragmentation 4 §4.5: among the break points that the rules allow equally, the latest one leaves the fewest
+        // breaks and the fullest fragmentainers.
+        if (fragmenting.best === undefined || candidate.appeal >= fragmenting.best.appeal) {
             if (fragmenting.best !== undefined) {
                 fragmenting.prior = fragmenting.best;
             }
@@ -2686,15 +2920,19 @@ export class BlockLayout {
         if (this.flowAppeal === APPEAL_OVERFLOW) {
             return APPEAL_OVERFLOW;
         }
-        if (token === undefined) {
+        if (token === undefined || this.forcedIn(token)) {
             return APPEAL_PERFECT;
         }
+        return this.flowAppeal;
+    }
+
+    private forcedIn(token: BreakToken): boolean {
         for (let level: BreakToken | undefined = token; level !== undefined; level = level.inner) {
             if (level.forced !== undefined) {
-                return APPEAL_PERFECT;
+                return true;
             }
         }
-        return this.flowAppeal;
+        return false;
     }
 
     contentOverflows(): void {
@@ -2771,26 +3009,35 @@ export class BlockLayout {
         // a break-after value on a last one, in the order the boxes start or end in the flow.
         const values: Array<string> = [];
         let current: ElementBox | undefined = box;
+        let columns: boolean = false;
         while (current !== undefined) {
+            // "This propagation stops before it breaks through the nearest matching fragmentation context": a column break stays in the
+            // multi-column container it is in, and always is a break of that container's columns (§3.1); a page break goes on.
             const keyword: string = this.keyword(current.style.values[property]);
-            if (keyword !== "none" && keyword !== "auto") {
+            if (keyword !== "none" && keyword !== "auto" && !(columns && COLUMN_BREAKS.has(keyword))) {
                 values.push(keyword);
             }
+            columns = columns || this.isMulticol(current);
             current = this.propagates(current) ? this.edgeChild(current, first) : undefined;
         }
         return first ? values : values.reverse();
     }
 
     private propagates(box: ElementBox): boolean {
-        // "This propagation stops before it breaks through the nearest matching fragmentation context", which a multi-column
-        // container is; flex and grid layout have their own rules, and a table row holds parallel flows.
+        // Flex and grid layout have their own rules, and a table row holds parallel flows.
         if (this.tables.isGrid(box) || this.tables.isRowGroup(box)) {
             return true;
         }
-        const count: string = this.keyword(box.style.values["column-count"]);
-        const width: string = this.keyword(box.style.values["column-width"]);
-        return !box.replaced && this.displays.isBlockContainer(box.display) && box.display.internal === undefined && (count === "none" || count === "auto")
-            && (width === "none" || width === "auto");
+        return !box.replaced && this.displays.isBlockContainer(box.display) && box.display.internal === undefined;
+    }
+
+    private isMulticol(box: ElementBox): boolean {
+        // CSS Multicol 1 §2: "An element whose column-width or column-count property is not auto establishes a multi-column container",
+        // and column-width and column-count apply to "block containers except table wrapper boxes" (§3.1, §3.2).
+        const count: CssValue | undefined = box.style.values["column-count"];
+        const width: CssValue | undefined = box.style.values["column-width"];
+        return !box.replaced && box.display.internal === undefined && this.displays.isBlockContainer(box.display) && !this.tables.isWrapper(box)
+            && ((count !== undefined && count.kind !== "ident") || (width !== undefined && width.kind !== "ident"));
     }
 
     private edgeChild(box: ElementBox, first: boolean): ElementBox | undefined {
@@ -3791,10 +4038,31 @@ export class BlockLayout {
     }
 
     private isIndependent(box: ElementBox): boolean {
-        // CSS Display 3 §2.2, CSS Overflow 3 §3, CSS Containment 2 §3.2 and §3.4 and CSS Conditional 5 §5.1: flow-root, the other
-        // inner display types, a replaced box, overflow other than visible or clip, layout or paint containment and size queries.
+        // CSS Display 3 §2.2, CSS Overflow 3 §3, CSS Containment 2 §3.2 and §3.4, CSS Conditional 5 §5.1, CSS Align 3 §5.1.1 and CSS Multicol 1
+        // §2: flow-root, other inner display types, replaced boxes, overflow, containment, size queries, align-content and columns.
         return box.replaced || box.display.inner !== "flow" || box.display.internal !== undefined || !this.hasVisibleOverflow(box)
-            || (this.containment(box) & OWN_CONTEXT) !== 0;
+            || (this.containment(box) & OWN_CONTEXT) !== 0 || this.alignsContent(box) || this.isMulticol(box);
+    }
+
+    private alignsContent(box: ElementBox): boolean {
+        // CSS Align 3 §5.1.1: "All values other than normal force the block container to establish an independent formatting context";
+        // a table cell aligns its content in its row, where the table lays it out.
+        return !box.replaced && box.display.internal !== "table-cell" && this.displays.isBlockContainer(box.display)
+            && !this.alignment.isNormal(box.style.values["align-content"]);
+    }
+
+    private hasFreeSpace(box: ElementBox, sizes: UsedSizes): boolean {
+        // Without a definite, minimum or maximum block size, or size containment, the content box is as tall as the content.
+        return sizes.blockSize !== undefined || sizes.minBlockSize !== undefined || sizes.maxBlockSize !== undefined
+            || (this.containment(box) & DisplayTypes.SIZE_CONTAINMENT) !== 0;
+    }
+
+    private alignmentBreak(fragmenting: Fragmentation): Candidate {
+        // CSS Fragmentation 4 §4.1 class C: the gap that the alignment leaves before the content is a break point (§4.4 rule 4: unless an
+        // ancestor avoids breaks inside), usable when the gap starts inside the fragmentainer, which the gap then fills as content does.
+        const local: Candidate = this.record(fragmenting, fragmenting.avoid > 0 ? APPEAL_AVOID : APPEAL_PERFECT, undefined);
+        fragmenting.filled = true;
+        return local;
     }
 
     private containment(box: ElementBox): number {

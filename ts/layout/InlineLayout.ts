@@ -37,6 +37,7 @@ import { SvgGeometry } from "../svg/SvgGeometry.js";
 import type { BlockLayout, Snapshot } from "./BlockLayout.js";
 import type { UsedSizes } from "./BoxSizes.js";
 import { BoxSizes } from "./BoxSizes.js";
+import { ContentAlignment } from "./ContentAlignment.js";
 import type { BoxFragment, LineFragment, Margins, ObjectArea, TextPiece } from "./Fragment.js";
 import type { Ink } from "./LetterGeometry.js";
 import { LetterGeometry } from "./LetterGeometry.js";
@@ -229,6 +230,7 @@ export class InlineLayout {
     private readonly initials: InitialLetters;
     private readonly geometry: LetterGeometry = new LetterGeometry();
     private readonly shapes: SvgGeometry = new SvgGeometry();
+    private readonly contentAlignment: ContentAlignment = new ContentAlignment();
 
     constructor(metrics: FontMetrics, sizes: BoxSizes, text: InlineTextBuilder, host: BlockLayout) {
         this.initials = new InitialLetters(metrics);
@@ -1842,7 +1844,7 @@ export class InlineLayout {
         // CSS Inline 3 §4.2.1: auto "Specifies last-baseline alignment for inline-block, first-baseline alignment for
         // everything else."
         const source: string = this.keyword("auto", values["baseline-source"]);
-        const lastLine: boolean = source === "last" || (source === "auto" && item.node.display.inner === "flow-root");
+        const lastLine: boolean = source === "last" || (source === "auto" && item.node.display.inner === "flow-root" && !this.host.tables.isWrapper(item.node));
         const baseline: number | undefined = lastLine ? fragment.baseline : fragment.firstBaseline;
         const own: number | undefined = baseline === undefined || !flipped ? baseline : fragment.blockSize - baseline;
         const type: string = this.alignmentType(values, record);
@@ -2581,13 +2583,9 @@ export class InlineLayout {
         const underPoint: number = -this.initials.letterUnder(initial, values);
         if (sizes.blockSize !== undefined) {
             // §7.5.6: "If the block size is definite, align-content is honored for aligning its contents in the block axis (using its
-            // block-axis bearings", the letter's ascent and descent at its used size; normal acts as start in a block container.
+            // block-axis bearings", the letter's ascent and descent at its used size; CSS Align 3 §4.4.1.3: an inline box aligns unsafe.
             const free: number = sizes.blockSize - (this.metrics.ascent(values) + this.metrics.descent(values)) * initial.scale;
-            // CSS Align 3 §5.3: a distribution falls back to its alignment, center for space-around and space-evenly, start otherwise.
-            const words: ReadonlyArray<string> = this.keywords(values["align-content"]) ?? [];
-            const factor: number = words.some((word: string) => word === "center" || word === "space-around" || word === "space-evenly") ? 0.5
-                : (words.some((word: string) => word === "end" || word === "flex-end") ? 1 : 0);
-            const top: number = -this.metrics.ascent(values) * initial.scale - free * factor;
+            const top: number = -this.metrics.ascent(values) * initial.scale - this.contentAlignment.blockShift(values["align-content"], false, free);
             return [top, top + sizes.blockSize];
         }
         if (initial.letterOver === InitialLetters.BORDER_BOX) {

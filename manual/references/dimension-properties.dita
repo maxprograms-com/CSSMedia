@@ -220,5 +220,30 @@
                 </tgroup>
             </table>
         </section>
+        <section id="content-alignment">
+            <title>Content alignment</title>
+            <!-- TODO: align-content and justify-content on flex and grid containers, when flex and grid layout are written -->
+            <table id="content-alignment__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"/>
+                    <tbody>
+                        <row id="row-align-content">
+                            <entry><codeph>align-content</codeph></entry>
+                            <entry>Places the content of a box that is taller than its content: the content of a block, the columns of a multi-column element, or the content of a table cell, where any value but <codeph>normal</codeph> is used instead of <codeph>vertical-align</codeph>. A value other than <codeph>normal</codeph> makes the box a new formatting context. Content taller than the box stays at the start unless <codeph>unsafe</codeph> is given, except in a box whose <codeph>overflow</codeph> is not <codeph>visible</codeph> or <codeph>clip</codeph>, where it is aligned as asked unless <codeph>safe</codeph> is given.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>start</codeph>, <codeph>center</codeph>, <codeph>end</codeph>, <codeph>flex-start</codeph>, <codeph>flex-end</codeph>, <codeph>space-between</codeph>, <codeph>space-around</codeph>, <codeph>space-evenly</codeph>, <codeph>stretch</codeph>, <codeph>baseline</codeph>, <codeph>first baseline</codeph> or <codeph>last baseline</codeph>, with <codeph>safe</codeph> or <codeph>unsafe</codeph> before a position</entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-align-content" scope="external" format="html">CSS Box Alignment 3 §5.1</xref></entry>
+                        </row>
+                        <row id="row-place-content">
+                            <entry><codeph>place-content</codeph></entry>
+                            <entry>Sets <codeph>align-content</codeph> and <codeph>justify-content</codeph>. With one value, both take it, except that a baseline value gives <codeph>justify-content</codeph> the value <codeph>start</codeph>.</entry>
+                            <entry>A value of <codeph>align-content</codeph>, then a value of <codeph>justify-content</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-place-content" scope="external" format="html">CSS Box Alignment 3 §5.2</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
     </refbody>
 </reference>

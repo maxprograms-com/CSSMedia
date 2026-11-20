@@ -110,6 +110,9 @@ para > ornament { content: url("images/ornament.svg"); initial-letter: 3; }
 }
 </pre>
                 </stepxmp>
+                <info>
+                    <p>A letter that is taller than the height you give runs out of its box where the alignment puts it: with <codeph>end</codeph>, it runs out of the top. Write <codeph>safe</codeph> before the value, as in <codeph>safe end</codeph>, to keep the top of the letter at the top of the box.</p>
+                </info>
             </step>
         </steps>
         <result>
