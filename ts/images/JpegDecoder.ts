@@ -40,6 +40,8 @@ interface FrameComponent {
     height: number;
     blocksAcross: number;
     blocksDown: number;
+    trueAcross: number;
+    trueDown: number;
     allocatedRows: number;
     coefficients?: Int32Array;
     planeWidth: number;
@@ -157,6 +159,7 @@ export class JpegDecoder {
     private readonly acConditioning: Array<number> = [5, 5, 5, 5];
     private readonly components: Array<FrameComponent> = [];
     private readonly quantization: Array<Uint16Array | undefined> = [];
+    private readonly wideQuantization: Set<number> = new Set<number>();
     private readonly dcTables: Array<HuffmanTable | undefined> = [];
     private readonly acTables: Array<HuffmanTable | undefined> = [];
     private readonly rows: Float64Array = new Float64Array(64);
@@ -216,6 +219,7 @@ export class JpegDecoder {
         }
         this.components.length = 0;
         this.quantization.length = 0;
+        this.wideQuantization.clear();
         this.dcTables.length = 0;
         this.acTables.length = 0;
     }
@@ -397,14 +401,23 @@ export class JpegDecoder {
             this.horizontalMax = Math.max(this.horizontalMax, horizontal);
             this.verticalMax = Math.max(this.verticalMax, vertical);
             defined.push({ id, horizontal, vertical, quantization: table, width: 0, height: 0, blocksAcross: 0, blocksDown: 0,
-                allocatedRows: 0, planeWidth: 0, dcLow: -1, bands: [], pointTransform: 0 });
+                trueAcross: 0, trueDown: 0, allocatedRows: 0, planeWidth: 0, dcLow: -1, bands: [], pointTransform: 0 });
         }
         for (const component of defined) {
+            if (!this.lossless && precision <= 8 && this.wideQuantization.has(component.quantization)) {
+                // ITU-T T.81 §B.2.4.1: "An 8-bit DCT process shall not use a 16-bit precision quantization table."
+                throw new Error("holds a 16-bit quantization table in an 8-bit process");
+            }
             // ITU-T T.81 §A.1.1: xi = ceil(X * Hi / Hmax) and yi = ceil(Y * Vi / Vmax); §A.1.3: a lossless data unit is one sample.
             component.width = Math.ceil(samples * component.horizontal / this.horizontalMax);
             component.height = Math.ceil(lines * component.vertical / this.verticalMax);
-            component.blocksAcross = this.lossless ? component.width : Math.ceil(component.width / 8);
-            component.blocksDown = this.lossless ? component.height : Math.ceil(component.height / 8);
+            // ITU-T T.81 §A.2.2: a scan of one component covers its own data units; §A.2.3: an interleaved scan covers whole MCUs,
+            // so the store of a component is padded to the MCUs.
+            const unit: number = this.lossless ? 1 : 8;
+            component.trueAcross = Math.ceil(component.width / unit);
+            component.trueDown = Math.ceil(component.height / unit);
+            component.blocksAcross = Math.ceil(samples / (unit * this.horizontalMax)) * component.horizontal;
+            component.blocksDown = Math.ceil(lines / (unit * this.verticalMax)) * component.vertical;
             this.components.push(component);
         }
         this.width = samples;
@@ -449,11 +462,15 @@ export class JpegDecoder {
         this.height = lines;
         for (const component of this.components) {
             component.height = Math.ceil(lines * component.vertical / this.verticalMax);
-            const rows: number = this.lossless ? component.height : Math.ceil(component.height / 8);
+            const unit: number = this.lossless ? 1 : 8;
+            const rows: number = Math.ceil(component.height / unit);
             if (rows > component.allocatedRows) {
                 throw new Error("has a DNL segment with more lines than its first scan decoded");
             }
-            component.blocksDown = rows;
+            component.trueDown = rows;
+            const padded: number = Math.ceil(lines / (unit * this.verticalMax)) * component.vertical;
+            this.ensureRows(component, padded);
+            component.blocksDown = padded;
         }
     }
 
@@ -481,9 +498,15 @@ export class JpegDecoder {
             if (destination > 3) {
                 throw new Error("has the quantization table destination " + destination);
             }
-            if (precision === 1 && this.precision <= 8) {
+            if (precision === 1 && this.frameParsed && this.precision <= 8) {
                 // ITU-T T.81 §B.2.4.1: "An 8-bit DCT-based process shall not use a 16-bit precision quantization table."
                 throw new Error("holds a 16-bit quantization table in an 8-bit process");
+            }
+            // A table may precede its frame header, so the frame header checks the tables that it uses.
+            if (precision === 1) {
+                this.wideQuantization.add(destination);
+            } else {
+                this.wideQuantization.delete(destination);
             }
             if (precision > 1) {
                 throw new Error("holds a quantization table of the precision " + precision);
@@ -822,7 +845,7 @@ if (this.expansionHorizontal || this.expansionVertical) {
             // ITU-T T.81 §A.1.1 and §A.2.3: an MCU spans Hmax data units; a lossless data unit is one sample, a DCT data unit 8.
             across = Math.ceil(this.width / (unit * this.horizontalMax));
         } else {
-            across = scanComponents[0].component.blocksAcross;
+            across = scanComponents[0].component.trueAcross;
         }
         if (this.scansDone === 1) {
             this.firstInterleaved = interleaved;
@@ -863,7 +886,7 @@ if (this.expansionHorizontal || this.expansionVertical) {
         if (interleaved) {
             down = Math.ceil(this.height / (unit * this.verticalMax));
         } else {
-            down = scanComponents[0].component.blocksDown;
+            down = scanComponents[0].component.trueDown;
         }
         if (this.scansDone === 1) {
             this.firstRows = down;
