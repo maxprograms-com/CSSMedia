@@ -23,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import type { ContainerQuery, DeclaredValue } from "../css/Stylesheet.js";
 import { CssUnits } from "../css/values/CssUnits.js";
 import type { CssValue } from "../css/values/CssValue.js";
+import type { PathData } from "../geometry/PathGeometry.js";
 import { RemoteResource } from "../net/RemoteResource.js";
 import type { SourceElement } from "../parse/SourceElement.js";
 import { BaseUrls } from "../pdf/BaseUrls.js";
@@ -56,6 +57,11 @@ export interface ElementSource {
     generated?: ReadonlyMap<SourceElement, GeneratedBoxes>;
 }
 
+export interface UnboxedPlace {
+    style: ComputedStyle;
+    containers: () => Iterable<QueryContainer>;
+}
+
 export interface ImageSize {
     width?: number;
     height?: number;
@@ -85,6 +91,7 @@ export interface ImageDrawing {
     scale: number;
     rendering: string;
     multiple: readonly [number, number];
+    page?: readonly [number, number, number, number];
 }
 
 export interface ImageRequest extends ImageDrawing {
@@ -94,7 +101,7 @@ export interface ImageRequest extends ImageDrawing {
 
 export interface ImageFormat {
     size(read: ImageReader, href: string, available?: number): ImageSize | undefined;
-    key(drawing: ImageDrawing): string;
+    key(drawing: ImageDrawing, href: string): string;
     draw(request: ImageRequest): ImageResource | undefined;
     samples(href: string, data: Buffer): readonly [ImageSamples, ColorSpaceResource] | undefined;
     alpha(href: string, data: Buffer): ImageAlpha | undefined;
@@ -106,6 +113,10 @@ export interface ImageFormat {
     unclipped?(): boolean;
     glyph?(href: string, data: Buffer, id: string, size: number, scale: number, host: ComputedStyle, pdf: PdfPage, ctm: readonly [number, number, number, number, number, number],
         growth: number): readonly [number, number, number, number] | undefined;
+    clip?(href: string, pdf: PdfPage, place: readonly [number, number, number, number], area: readonly [number, number, number, number],
+        boxes: (kind: string) => readonly [number, number, number, number] | undefined, rtl: boolean, scale: number): ImageResource | null | undefined;
+    clipOutlines?(href: string, place: readonly [number, number, number, number], boxes: (kind: string) => readonly [number, number, number, number] | undefined,
+        rtl: boolean): Array<Array<readonly [PathData, boolean]>> | null | undefined;
 }
 
 const NO_MULTIPLE: readonly [number, number] = [1, 1];
@@ -132,6 +143,7 @@ export class ImageFormats {
     private readonly sources: Map<string, ElementSource> = new Map<string, ElementSource>();
     private readonly hrefs: WeakMap<SourceElement, string> = new WeakMap<SourceElement, string>();
     private readonly places: WeakMap<SourceElement, readonly [() => Iterable<QueryContainer>, Size]> = new WeakMap<SourceElement, readonly [() => Iterable<QueryContainer>, Size]>();
+    private readonly unboxed: WeakMap<SourceElement, UnboxedPlace> = new WeakMap<SourceElement, UnboxedPlace>();
     private readonly found: Map<string, Registration | null> = new Map<string, Registration | null>();
     private readonly sizes: Map<string, ImageSize | null> = new Map<string, ImageSize | null>();
     private readonly fittedSizes: Map<string, Map<number, ImageSize | null>> = new Map<string, Map<number, ImageSize | null>>();
@@ -190,6 +202,35 @@ export class ImageFormats {
         return this.elementRegistration(element) !== undefined;
     }
 
+    elementFormat(element: SourceElement): ImageFormat | undefined {
+        const registration: Registration | undefined = this.elementRegistration(element);
+        return registration === undefined ? undefined : this.instance(registration);
+    }
+
+    clip(href: string, pdf: PdfPage, place: readonly [number, number, number, number], area: readonly [number, number, number, number],
+        boxes: (kind: string) => readonly [number, number, number, number] | undefined, rtl: boolean, scale: number): ImageResource | null | undefined {
+        // CSS Masking 1 §5.1: the clipping path that a URL names, which a format whose elements can be in the document finds there or in a file
+        // of its own; undefined when it names none, which clips nothing, and null when it clips everything away.
+        for (const registration of new Set<Registration>(this.elementFormats.values())) {
+            const result: ImageResource | null | undefined = this.instance(registration).clip?.(href, pdf, place, area, boxes, rtl, scale);
+            if (result !== undefined) {
+                return result;
+            }
+        }
+        return undefined;
+    }
+
+    clipOutlines(href: string, place: readonly [number, number, number, number], boxes: (kind: string) => readonly [number, number, number, number] | undefined,
+        rtl: boolean): Array<Array<readonly [PathData, boolean]>> | null | undefined {
+        for (const registration of new Set<Registration>(this.elementFormats.values())) {
+            const result: Array<Array<readonly [PathData, boolean]>> | null | undefined = this.instance(registration).clipOutlines?.(href, place, boxes, rtl);
+            if (result !== undefined) {
+                return result;
+            }
+        }
+        return undefined;
+    }
+
     elementStyle(element: SourceElement, parent: ComputedStyle | undefined, root: ComputedStyle | undefined, viewport: Size, containers: () => Iterable<QueryContainer>): ComputedStyle | undefined {
         const registration: Registration | undefined = this.elementRegistration(element);
         if (registration === undefined) {
@@ -201,6 +242,15 @@ export class ImageFormats {
 
     elementPlace(element: SourceElement): readonly [() => Iterable<QueryContainer>, Size] | undefined {
         return this.places.get(element);
+    }
+
+    keepUnboxed(element: SourceElement, place: UnboxedPlace): void {
+        // The style of an element whose descendants make no boxes, and their query containers, for a format that styles one of them later.
+        this.unboxed.set(element, place);
+    }
+
+    unboxedPlace(element: SourceElement): UnboxedPlace | undefined {
+        return this.unboxed.get(element);
     }
 
     viewportUsed(): boolean {
@@ -360,7 +410,7 @@ export class ImageFormats {
         if (format === undefined) {
             return undefined;
         }
-        const key: string = href + "#" + format.key(drawing);
+        const key: string = href + "#" + format.key(drawing, href);
         const known: ImageResource | null | undefined = this.resources.get(key);
         if (known !== undefined) {
             return known ?? undefined;

@@ -154,6 +154,7 @@ export interface CalcAnchor {
     name: string;
     anchor?: string;
     keyword?: string;
+    percent?: number;
     fallback?: CalcNode;
     owner?: number;
 }

@@ -59,10 +59,11 @@ export class DeclarationReader {
     }
 
     read(declaration: CssTreeDeclaration, baseUrl: string, namespaces: ReadonlyMap<string, string>): Array<Declaration> | undefined {
-        // CSS Anchor Positioning 1 §5: anchor-size() "is only allowed in the accepted @position-try properties (and is
-        // otherwise invalid)", which are the inset, margin, sizing and self-alignment properties, position-anchor and position-area.
+        // CSS Anchor Positioning 1 §5: anchor-size() "is only allowed in the accepted @position-try properties", the inset, margin, sizing and
+        // self-alignment properties, position-anchor and position-area; §3.2: anchor() "is only allowed in the inset properties".
         const declarations: Array<Declaration> | undefined = this.readDeclaration(declaration, baseUrl, namespaces);
-        return declarations?.some((read: Declaration) => !this.acceptsAnchors(read.property) && this.holdsAnchor(read.value)) === true ? undefined : declarations;
+        return declarations?.some((read: Declaration) => (!this.acceptsAnchors(read.property) && this.holdsAnchor(read.value))
+            || (this.table.definition(read.property)?.logicalPropertyGroup !== "inset" && this.holdsAnchor(read.value, "anchor"))) === true ? undefined : declarations;
     }
 
     private acceptsAnchors(property: string): boolean {
@@ -70,11 +71,11 @@ export class DeclarationReader {
         return POSITION_TRY_PROPERTIES.has(property) || (group !== undefined && POSITION_TRY_GROUPS.has(group));
     }
 
-    private holdsAnchor(value: DeclaredValue): boolean {
+    private holdsAnchor(value: DeclaredValue, name?: string): boolean {
         if (value.kind === "toggle") {
-            return value.values.some((item: ParsedValue | KeywordValue) => item.kind === "value" && this.values.anchored(item.value));
+            return value.values.some((item: ParsedValue | KeywordValue) => item.kind === "value" && this.values.anchored(item.value, name));
         }
-        return value.kind === "value" && this.values.anchored(value.value);
+        return value.kind === "value" && this.values.anchored(value.value, name);
     }
 
     private readDeclaration(declaration: CssTreeDeclaration, baseUrl: string, namespaces: ReadonlyMap<string, string>): Array<Declaration> | undefined {

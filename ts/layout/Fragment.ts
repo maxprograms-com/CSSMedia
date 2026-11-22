@@ -19,6 +19,7 @@
  *******************************************************************************/
 
 import type { ElementBox, InlineSequence, RubyColumn, TextRun } from "../pdf/BoxTree.js";
+import type { UsedSizes } from "./BoxSizes.js";
 
 export type Sides = readonly [number, number, number, number];
 
@@ -51,6 +52,37 @@ export interface BreakToken {
     appeal?: number;
     floats?: Array<readonly [ElementBox, number]>;
     lead?: number;
+    ended?: boolean;
+    positioned?: Array<PositionedCarry>;
+}
+
+export interface PositionedCarry {
+    box: ElementBox;
+    token?: BreakToken;
+    whole?: BoxFragment;
+    offset: number;
+    inline: number;
+    inlineSize: number;
+    extent: number;
+    sizes: UsedSizes;
+    size: number;
+    margin?: Sides;
+    hidden?: boolean;
+    anchoredTo?: AnchorLink;
+}
+
+export interface WholeBox {
+    area: ObjectArea;
+    margin: Sides;
+    border: Sides;
+    padding: Sides;
+    cross: number;
+    joinedInline: boolean;
+}
+
+export interface AnchorLink {
+    anchor: ElementBox;
+    container: ElementBox;
 }
 
 export interface BoxFragment {
@@ -60,6 +92,7 @@ export interface BoxFragment {
     block: number;
     inlineSize: number;
     blockSize: number;
+    margin?: Sides;
     border?: Sides;
     collapsed?: CollapsedBorders;
     padding?: Sides;
@@ -72,7 +105,10 @@ export interface BoxFragment {
     object?: ObjectArea;
     natural?: readonly [number, number];
     resumed?: boolean;
+    hidden?: boolean;
+    anchoredTo?: AnchorLink;
     token?: BreakToken;
+    whole?: WholeBox;
     children?: Array<BoxFragment | LineFragment>;
     rules?: Array<readonly [number, number, number]>;
 }

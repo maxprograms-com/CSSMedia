@@ -291,7 +291,8 @@ export class SvgPainter {
             return;
         }
         const style: ComputedStyle = styles.style(node, parent);
-        if (this.keyword(style.values["display"]) === "none") {
+        // CSS Display 4 §5: with force-hidden the boxes of "the element and its descendants are invisible (regardless of their visibility value)".
+        if (this.keyword(style.values["display"]) === "none" || this.keyword(style.values["visibility"]) === "force-hidden") {
             return;
         }
         switch (name) {
@@ -637,7 +638,7 @@ export class SvgPainter {
     private ownPlane(node: SvgNode, style: ComputedStyle, matrix: Matrix4, draw: () => void, planes: Array<Plane | undefined>): void {
         // The plane takes its place in painting order before those of its descendants, which going through its content finds
         // when it extends the context; it is painted later, in depth order, from its content again.
-        const source: Box | undefined = this.bbox(node, style, "ink");
+        const source: Box | undefined = this.ownBox(node, style, "ink");
         if (source === undefined) {
             return;
         }
@@ -832,7 +833,7 @@ export class SvgPainter {
         // CSS Transforms 1 §6.1: transform-box view-box is the viewport of the element's user space, fill-box and content-box
         // its object bounding box, and stroke-box and border-box its stroke bounding box.
         const box: string = this.keyword(style.values["transform-box"]) ?? "view-box";
-        return box === "view-box" ? [0, 0, this.width, this.height] : this.bbox(node, style, box === "stroke-box" || box === "border-box" ? "stroke" : "fill") ?? [0, 0, 0, 0];
+        return box === "view-box" ? [0, 0, this.width, this.height] : this.ownBox(node, style, box === "stroke-box" || box === "border-box" ? "stroke" : "fill") ?? [0, 0, 0, 0];
     }
 
     private perspective(node: SvgNode): Matrix4 {
@@ -946,7 +947,7 @@ export class SvgPainter {
 
     hidden(style: ComputedStyle): boolean {
         const visibility: string | undefined = this.keyword(style.values["visibility"]);
-        return visibility === "hidden" || visibility === "collapse";
+        return visibility === "hidden" || visibility === "collapse" || visibility === "force-hidden";
     }
 
     paintOrder(style: ComputedStyle): Array<string> {
@@ -1919,23 +1920,185 @@ export class SvgPainter {
         }
     }
 
-    private clipMask(value: CssValue | undefined, node: SvgNode, style: ComputedStyle): ImageResource | null | undefined {
-        // CSS Masking 1 §5.1 and §6.1: a reference to anything but a clipPath clips nothing; the region is a mask of the
-        // clipPath's children painted white, intersected with the clipPath's own clip-path.
+    clipFor(styles: SvgStyles, element: XMLElement, pdf: PdfPage, place: Box, area: Box, boxes: (kind: string) => Box | undefined, rtl: boolean,
+        scale: number): ImageResource | null | undefined {
+        // CSS Transforms 1 §2: for a box of the CSS box model the user space has its origin at the top left of the reference box of transform-box,
+        // a unit is a CSS pixel and percentages refer to that box; the mask comes back in that space, and the area is given in it.
+        const saved: readonly [number, Array<readonly [PageRectangle, string, boolean]>, number, number, Matrix, Matrix] =
+            [this.scale, this.links, this.formHeight, this.quiet, this.ctm, this.origin];
+        this.scale = scale;
+        this.links = [];
+        this.formHeight = 0;
+        this.quiet = 1;
+        this.ctm = SvgGeometry.IDENTITY;
+        this.origin = SvgGeometry.IDENTITY;
+        let result: ImageResource | null | undefined;
+        try {
+            styles.setViewport(place[2], place[3]);
+            this.withProfiles(styles, () => this.inDocument(styles, place[2], place[3], undefined, undefined, () => this.drawIn(pdf, SvgGeometry.IDENTITY, area, () => {
+                result = this.clipPathMask(element, styles, boxes, rtl);
+            }, SvgGeometry.IDENTITY)));
+        } finally {
+            [this.scale, this.links, this.formHeight, this.quiet, this.ctm, this.origin] = saved;
+        }
+        return result;
+    }
+
+    clipOutlines(styles: SvgStyles, element: XMLElement, place: Box, boxes: (kind: string) => Box | undefined, rtl: boolean):
+        Array<Array<readonly [SvgPath, boolean]>> | null | undefined {
+        // CSS Masking 1 §6.1: the clipping region in the user space of the clipped box, a union of parts that are each the intersection of
+        // outlines, as the region of each clip-path that cuts a part narrows it; null when everything is clipped away.
+        let result: Array<Array<readonly [SvgPath, boolean]>> | null | undefined;
+        styles.setViewport(place[2], place[3]);
+        this.inDocument(styles, place[2], place[3], undefined, undefined, () => {
+            result = this.pathRegion(element, styles, boxes, rtl);
+        });
+        return result;
+    }
+
+    private regionFrom(value: CssValue | undefined, boxes: (kind: string) => Box | undefined, rtl: boolean): Array<Array<readonly [SvgPath, boolean]>> | null | undefined {
+        // CSS Masking 1 §5.1: a reference to anything but a clipPath clips nothing, and a basic shape without area clips everything.
         if (value === undefined || this.keyword(value) === "none") {
             return undefined;
         }
         if (value.kind !== "url") {
-            return this.shapeMask(value, node, style);
+            const outline: readonly [SvgPath, boolean] | undefined = this.shapeOutline(value, boxes, rtl);
+            return outline === undefined ? null : [[outline]];
         }
         const target: readonly [XMLElement, SvgStyles] | undefined = this.lookup(value.href);
-        if (target === undefined || !target[1].isSvg(target[0], "clipPath") || this.active.has(target[0])) {
+        return target === undefined || !target[1].isSvg(target[0], "clipPath") ? undefined : this.pathRegion(target[0], target[1], boxes, rtl);
+    }
+
+    private intersected(first: ReadonlyArray<Array<readonly [SvgPath, boolean]>>, second: ReadonlyArray<Array<readonly [SvgPath, boolean]>>):
+        Array<Array<readonly [SvgPath, boolean]>> {
+        return first.flatMap((part: Array<readonly [SvgPath, boolean]>) => second.map((other: Array<readonly [SvgPath, boolean]>) => [...part, ...other]));
+    }
+
+    private pathRegion(element: XMLElement, styles: SvgStyles, boxes: (kind: string) => Box | undefined, rtl: boolean): Array<Array<readonly [SvgPath, boolean]>> | null | undefined {
+        // §6.1: the union of the silhouettes of the children, a shape with its clip-rule and a text with the cells of its glyphs, each cut by its
+        // own clip-path, then cut by the clipPath's clip-path; a force-hidden clipPath has no visible child (CSS Display 4 §5).
+        if (this.active.has(element)) {
             return undefined;
         }
-        const [clipNode, clipStyle]: readonly [SvgNode, ComputedStyle] = target[1].placed(target[0]);
+        const [clipNode, clipStyle]: readonly [SvgNode, ComputedStyle] = styles.placed(element);
         let units: Matrix = SvgGeometry.IDENTITY;
-        if (target[1].attribute(target[0], "clipPathUnits") === "objectBoundingBox") {
-            const box: Box | undefined = this.bbox(node, style);
+        if (styles.attribute(element, "clipPathUnits") === "objectBoundingBox") {
+            const box: Box | undefined = boxes("fill");
+            if (box === undefined || box[2] === 0 || box[3] === 0) {
+                return null;
+            }
+            units = [box[2], 0, 0, box[3], box[0], box[1]];
+        }
+        let result: Array<Array<readonly [SvgPath, boolean]>> | null | undefined;
+        this.guarded(element, () => {
+            const own: Array<Array<readonly [SvgPath, boolean]>> | null | undefined = this.regionFrom(clipStyle.values["clip-path"], boxes, rtl);
+            if (own === null) {
+                result = null;
+                return;
+            }
+            const parts: Array<Array<readonly [SvgPath, boolean]>> = [];
+            if (!this.veiledBy(clipNode, styles)) {
+                this.inDocument(styles, this.width, this.height, undefined, undefined, () =>
+                    this.childRegions(clipNode, clipStyle, this.geometry.lift(this.geometry.concat(units, this.transform(clipNode, clipStyle))), parts));
+            }
+            result = own === undefined ? parts : this.intersected(parts, own);
+        });
+        return result;
+    }
+
+    private childRegions(clipNode: SvgNode, clipStyle: ComputedStyle, outer: Matrix4, parts: Array<Array<readonly [SvgPath, boolean]>>): void {
+        // The children as clipShapes() paints them, each part in the user space of the clipped box.
+        for (const child of clipNode.element.getChildren()) {
+            const node: SvgNode = { element: child, parent: clipNode };
+            if (!this.styles.isSvg(child) || !this.passes(child)) {
+                continue;
+            }
+            const childStyle: ComputedStyle = this.styles.style(node, clipStyle);
+            if (this.keyword(childStyle.values["display"]) === "none" || this.hidden(childStyle)) {
+                continue;
+            }
+            let shape: SvgNode = node;
+            let shapeStyle: ComputedStyle = childStyle;
+            let shapeStyles: SvgStyles = this.styles;
+            let matrix: Matrix4 = this.geometry.multiply4(outer, this.spatial(node, childStyle));
+            if (this.styles.localName(child) === "use") {
+                const target: readonly [XMLElement, SvgStyles] | undefined = this.target(child);
+                if (target === undefined || !target[1].isSvg(target[0])) {
+                    continue;
+                }
+                matrix = this.geometry.multiply4(matrix, this.geometry.lift(this.geometry.translation(this.styles.pixels(childStyle.values["x"], this.width),
+                    this.styles.pixels(childStyle.values["y"], this.height))));
+                shapeStyles = target[1];
+                shape = { element: target[0] };
+                shapeStyle = shapeStyles.style(shape, childStyle);
+            }
+            const name: string = shapeStyles.localName(shape.element);
+            if ((!SHAPES.has(name) && name !== "text") || this.hidden(shapeStyle)) {
+                continue;
+            }
+            const use: Array<Array<readonly [SvgPath, boolean]>> | null | undefined = shape === node ? undefined : this.regionFrom(childStyle.values["clip-path"],
+                (kind: string): Box | undefined => this.ownBox(node, childStyle, kind), this.keyword(childStyle.values["direction"]) === "rtl");
+            if (use === null) {
+                continue;
+            }
+            const around: Matrix4 = matrix;
+            this.inDocument(shapeStyles, this.width, this.height, undefined, undefined, () => {
+                // ISO 32000-2 §9.3.6: text that clips adds its glyph outlines with the nonzero rule, as clipShapes() draws it.
+                const placed: Matrix4 = shape === node ? matrix : this.geometry.multiply4(matrix, this.spatial(shape, shapeStyle));
+                const outlines: ReadonlyArray<readonly [SvgPath, boolean]> = name === "text" ? this.text.silhouette(shape, shapeStyle).map((path: SvgPath): readonly [SvgPath, boolean] =>
+                    [path, false]) : this.shapeSilhouette(shape, shapeStyle);
+                if (outlines.length === 0) {
+                    return;
+                }
+                const nested: Array<Array<readonly [SvgPath, boolean]>> | null | undefined = this.regionFrom(shapeStyle.values["clip-path"],
+                    (kind: string): Box | undefined => this.bbox(shape, shapeStyle, kind), this.keyword(shapeStyle.values["direction"]) === "rtl");
+                if (nested === null) {
+                    return;
+                }
+                const own: Array<Array<readonly [SvgPath, boolean]>> = outlines.map((outline: readonly [SvgPath, boolean]) => [outline]);
+                const local: Array<Array<readonly [SvgPath, boolean]>> = nested === undefined ? own : this.intersected(own, nested);
+                const projected: (region: ReadonlyArray<Array<readonly [SvgPath, boolean]>>, by: Matrix4) => Array<Array<readonly [SvgPath, boolean]>> =
+                    (region: ReadonlyArray<Array<readonly [SvgPath, boolean]>>, by: Matrix4): Array<Array<readonly [SvgPath, boolean]>> =>
+                        region.map((part: Array<readonly [SvgPath, boolean]>) => part.map((outline: readonly [SvgPath, boolean]): readonly [SvgPath, boolean] =>
+                            [this.geometry.projectPath(outline[0], by, this.tolerance()), outline[1]]));
+                // The clip-path of a use child is in the use's own user space, which its transform and its translation give (SVG 2 §5.5.2).
+                const shown: Array<Array<readonly [SvgPath, boolean]>> = projected(local, placed);
+                parts.push(...(use === undefined ? shown : this.intersected(shown, projected(use, around))));
+            });
+        }
+    }
+
+    private shapeSilhouette(node: SvgNode, style: ComputedStyle): ReadonlyArray<readonly [SvgPath, boolean]> {
+        const path: SvgPath | undefined = this.path(node, style);
+        return path === undefined ? [] : [[path, this.keyword(style.values["clip-rule"]) === "evenodd"]];
+    }
+
+    private clipMask(value: CssValue | undefined, node: SvgNode, style: ComputedStyle): ImageResource | null | undefined {
+        return this.clipFrom(value, (kind: string): Box | undefined => this.ownBox(node, style, kind), this.keyword(style.values["direction"]) === "rtl");
+    }
+
+    private clipFrom(value: CssValue | undefined, boxes: (kind: string) => Box | undefined, rtl: boolean): ImageResource | null | undefined {
+        // CSS Masking 1 §5.1: a reference to anything but a clipPath clips nothing.
+        if (value === undefined || this.keyword(value) === "none") {
+            return undefined;
+        }
+        if (value.kind !== "url") {
+            return this.shapeMask(value, boxes, rtl);
+        }
+        const target: readonly [XMLElement, SvgStyles] | undefined = this.lookup(value.href);
+        return target === undefined || !target[1].isSvg(target[0], "clipPath") ? undefined : this.clipPathMask(target[0], target[1], boxes, rtl);
+    }
+
+    private clipPathMask(element: XMLElement, styles: SvgStyles, boxes: (kind: string) => Box | undefined, rtl: boolean): ImageResource | null | undefined {
+        // CSS Masking 1 §6.1: the region is a mask of the clipPath's children painted white, in the units of clipPathUnits, intersected with
+        // the clipPath's own clip-path; the object bounding box is that of the element the clipping path applies to.
+        if (this.active.has(element)) {
+            return undefined;
+        }
+        const [clipNode, clipStyle]: readonly [SvgNode, ComputedStyle] = styles.placed(element);
+        let units: Matrix = SvgGeometry.IDENTITY;
+        if (styles.attribute(element, "clipPathUnits") === "objectBoundingBox") {
+            const box: Box | undefined = boxes("fill");
             if (box === undefined || box[2] === 0 || box[3] === 0) {
                 return null;
             }
@@ -1946,14 +2109,14 @@ export class SvgPainter {
             return null;
         }
         let result: ImageResource | null | undefined;
-        this.guarded(target[0], () => {
-            const nested: ImageResource | null | undefined = this.clipMask(clipStyle.values["clip-path"], node, style);
+        this.guarded(element, () => {
+            const nested: ImageResource | null | undefined = this.clipFrom(clipStyle.values["clip-path"], boxes, rtl);
             if (nested === null) {
                 result = null;
                 return;
             }
             const form: PdfPage = this.document.startForm(area[2], area[3], false);
-            this.drawIn(form, SvgGeometry.IDENTITY, area, () => this.inDocument(target[1], this.width, this.height, undefined, undefined, () => {
+            this.drawIn(form, SvgGeometry.IDENTITY, area, () => this.inDocument(styles, this.width, this.height, undefined, undefined, () => {
                 if (nested !== undefined) {
                     this.pdf.content.graphicsState(this.pdf.useMask(nested.object, true));
                 }
@@ -1964,21 +2127,25 @@ export class SvgPainter {
         return result;
     }
 
-    private shapeMask(value: CssValue, node: SvgNode, style: ComputedStyle): ImageResource | null {
+    private shapeOutline(value: CssValue, boxes: (kind: string) => Box | undefined, rtl: boolean): readonly [SvgPath, boolean] | undefined {
         // CSS Masking 1 §5.1: a basic shape in its reference box, border-box when none is given, or the edges of the box
         // alone; for an SVG element, content-box and padding-box are its fill-box, and border-box and margin-box its stroke-box.
         const items: ReadonlyArray<CssValue> = value.kind === "list" ? value.items : [value];
         const shape: CssValue | undefined = items.find((item: CssValue) => item.kind === "function");
         const name: string = this.keyword(items.find((item: CssValue) => item.kind === "ident")) ?? "border-box";
         const reference: Box | undefined = name === "view-box" ? [0, 0, this.width, this.height]
-            : this.bbox(node, style, name === "stroke-box" || name === "border-box" || name === "margin-box" ? "stroke" : "fill");
-        const area: Box | undefined = this.localArea();
-        if (reference === undefined || area === undefined) {
-            return null;
+            : boxes(name === "stroke-box" || name === "border-box" || name === "margin-box" ? "stroke" : "fill");
+        if (reference === undefined) {
+            return undefined;
         }
-        const outline: readonly [SvgPath, boolean] | undefined = shape === undefined ? [this.geometry.rectangle(reference[0], reference[1], reference[2], reference[3], 0, 0), false]
-            : this.geometry.basicShape(shape, reference, this.keyword(style.values["direction"]) === "rtl");
-        if (outline === undefined) {
+        return shape === undefined ? [this.geometry.rectangle(reference[0], reference[1], reference[2], reference[3], 0, 0), false]
+            : this.geometry.basicShape(shape, reference, rtl);
+    }
+
+    private shapeMask(value: CssValue, boxes: (kind: string) => Box | undefined, rtl: boolean): ImageResource | null {
+        const area: Box | undefined = this.localArea();
+        const outline: readonly [SvgPath, boolean] | undefined = this.shapeOutline(value, boxes, rtl);
+        if (outline === undefined || area === undefined) {
             return null;
         }
         const form: PdfPage = this.document.startForm(area[2], area[3], false);
@@ -1993,7 +2160,11 @@ export class SvgPainter {
     }
 
     private clipShapes(node: SvgNode, style: ComputedStyle): void {
-        // CSS Masking 1 §6.1: shapes, text, and uses of shapes and text, each with its clip-rule, transform and clip-path.
+        // CSS Masking 1 §6.1: shapes, text, and uses of shapes and text, each with its clip-rule, transform and clip-path; a child made invisible
+        // adds nothing, and a force-hidden clipPath or ancestor of it makes all of them invisible (CSS Display 4 §5).
+        if (this.veiledBy(node, this.styles)) {
+            return;
+        }
         for (const element of node.element.getChildren()) {
             const child: SvgNode = { element, parent: node };
             if (!this.styles.isSvg(element) || !this.passes(element)) {
@@ -2018,42 +2189,64 @@ export class SvgPainter {
                 shapeStyle = styles.style(shape, childStyle);
             }
             const name: string = styles.localName(shape.element);
-            if (!SHAPES.has(name) && name !== "text") {
+            if ((!SHAPES.has(name) && name !== "text") || this.hidden(shapeStyle)) {
                 continue;
             }
             const clipped: SvgNode = shape;
             const clippedStyle: ComputedStyle = shapeStyle;
             const outer: Matrix4 = this.geometry.multiply4(this.spatial(child, childStyle), this.geometry.lift(after));
+            const paint: () => void = () => {
+                this.pdf.content.fillSpace(this.pdf.useColorSpace(PdfColorSpaces.GRAY));
+                this.pdf.content.fillColor([1]);
+                if (name === "text") {
+                    this.text.paint(clipped, clippedStyle, true);
+                    return;
+                }
+                const path: SvgPath | undefined = this.path(clipped, clippedStyle);
+                if (path !== undefined && this.outline(path)) {
+                    this.pdf.content.fill(this.keyword(clippedStyle.values["clip-rule"]) === "evenodd");
+                }
+            };
             this.pdf.content.save();
-            this.within(outer, () => this.inDocument(styles, this.width, this.height, undefined, undefined, () => {
-                const inner: Matrix4 = clipped === child ? SvgGeometry.IDENTITY4 : this.spatial(clipped, clippedStyle);
-                this.within(inner, () => {
-                    const nested: ImageResource | null | undefined = this.clipMask(clippedStyle.values["clip-path"], clipped, clippedStyle);
-                    if (nested === null) {
-                        return;
-                    }
-                    const paint: () => void = () => {
-                        this.pdf.content.fillSpace(this.pdf.useColorSpace(PdfColorSpaces.GRAY));
-                        this.pdf.content.fillColor([1]);
-                        if (name === "text") {
-                            this.text.paint(clipped, clippedStyle, true);
-                            return;
+            this.within(outer, () => {
+                // §6.1: the child is clipped by its own clip-path; a use child is the element of SVG 2 §5.5, and the element it renders keeps its own.
+                const own: ImageResource | null | undefined = clipped === child ? undefined : this.clipMask(childStyle.values["clip-path"], child, childStyle);
+                if (own === null) {
+                    return;
+                }
+                this.clippedBy(own, () => this.inDocument(styles, this.width, this.height, undefined, undefined, () => {
+                    const inner: Matrix4 = clipped === child ? SvgGeometry.IDENTITY4 : this.spatial(clipped, clippedStyle);
+                    this.within(inner, () => {
+                        const nested: ImageResource | null | undefined = this.clipMask(clippedStyle.values["clip-path"], clipped, clippedStyle);
+                        if (nested !== null) {
+                            this.clippedBy(nested, paint);
                         }
-                        const path: SvgPath | undefined = this.path(clipped, clippedStyle);
-                        if (path !== undefined && this.outline(path)) {
-                            this.pdf.content.fill(this.keyword(clippedStyle.values["clip-rule"]) === "evenodd");
-                        }
-                    };
-                    const group: ImageResource | undefined = nested === undefined ? undefined : this.group(paint);
-                    if (nested === undefined) {
-                        paint();
-                    } else if (group !== undefined) {
-                        this.pdf.content.graphicsState(this.pdf.useMask(nested.object, true));
-                        this.pdf.content.paintXObject(this.pdf.useImage(group));
-                    }
-                });
-            }));
+                    });
+                }));
+            });
             this.pdf.content.restore();
+        }
+    }
+
+    private veiledBy(node: SvgNode, styles: SvgStyles): boolean {
+        // CSS Display 4 §5: force-hidden makes the element and its descendants invisible "regardless of their visibility value".
+        for (let current: SvgNode | undefined = node; current !== undefined; current = current.element === styles.root ? undefined : current.parent) {
+            if (this.keyword(styles.style(current).values["visibility"]) === "force-hidden") {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private clippedBy(mask: ImageResource | undefined, draw: () => void): void {
+        if (mask === undefined) {
+            draw();
+            return;
+        }
+        const group: ImageResource | undefined = this.group(draw);
+        if (group !== undefined) {
+            this.pdf.content.graphicsState(this.pdf.useMask(mask.object, true));
+            this.pdf.content.paintXObject(this.pdf.useImage(group));
         }
     }
 
@@ -2127,7 +2320,7 @@ export class SvgPainter {
         if (name === "view-box") {
             return [0, 0, this.width, this.height];
         }
-        const box: Box | undefined = this.bbox(node, style, name === "stroke-box" || name === "border-box" || name === "margin-box" ? "stroke" : "fill");
+        const box: Box | undefined = this.ownBox(node, style, name === "stroke-box" || name === "border-box" || name === "margin-box" ? "stroke" : "fill");
         return box === undefined || box[2] <= 0 || box[3] <= 0 ? undefined : box;
     }
 
@@ -2205,7 +2398,7 @@ export class SvgPainter {
         const [maskNode, maskStyle]: readonly [SvgNode, ComputedStyle] = styles.placed(element);
         const units: boolean = styles.attribute(element, "maskUnits") !== "userSpaceOnUse";
         const contentUnits: boolean = styles.attribute(element, "maskContentUnits") === "objectBoundingBox";
-        const box: Box | undefined = units || contentUnits ? this.bbox(node, style) : undefined;
+        const box: Box | undefined = units || contentUnits ? this.ownBox(node, style) : undefined;
         if ((units || contentUnits) && (box === undefined || box[2] === 0 || box[3] === 0)) {
             return null;
         }
@@ -2281,6 +2474,16 @@ export class SvgPainter {
             return inner === undefined ? undefined : this.geometry.transformBox(translation, inner);
         }
         return this.childrenBox(node, style, kind);
+    }
+
+    private ownBox(node: SvgNode, style: ComputedStyle, kind: string = "fill"): Box | undefined {
+        // SVG 2 §5.5.2: the translation by x and y ends the transform of a use element, so its own user space, where its clipping paths, masks
+        // and transform-origin are taken, lies inside it, and its box there is the one its parent sees less that translation.
+        const box: Box | undefined = this.bbox(node, style, kind);
+        if (box === undefined || this.styles.localName(node.element) !== "use") {
+            return box;
+        }
+        return [box[0] - this.styles.pixels(style.values["x"], this.width), box[1] - this.styles.pixels(style.values["y"], this.height), box[2], box[3]];
     }
 
     private viewportBox(node: SvgNode, style: ComputedStyle, viewport: Box, reference: readonly [number | undefined, number | undefined] | undefined, kind: string): Box | undefined {

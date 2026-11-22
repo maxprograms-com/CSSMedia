@@ -42,6 +42,11 @@ const FLOW_ROOT_INTERNAL: ReadonlySet<string> = new Set<string>(["table-cell", "
 const FLOW_RUBY_INTERNAL: ReadonlySet<string> = new Set<string>(["ruby-base", "ruby-text"]);
 const BREAKING_INTERNAL: ReadonlySet<string> = new Set<string>(["table-row", "table-row-group", "table-header-group", "table-footer-group", "table-caption"]);
 const TRANSFORMING: ReadonlyArray<string> = ["transform", "translate", "rotate", "scale", "perspective", "filter", "backdrop-filter"];
+const CONTAINING_CHANGES: ReadonlySet<string> = new Set<string>([...TRANSFORMING, "transform-style"]);
+const FILTERING: ReadonlySet<string> = new Set<string>(["filter", "backdrop-filter"]);
+const STACKING_CHANGES: ReadonlySet<string> = new Set<string>([...TRANSFORMING, "transform-style", "opacity", "mix-blend-mode", "isolation", "clip-path", "mask", "mask-image",
+    "mask-border", "mask-border-source", "position"]);
+const LAYOUT_CONTAIN: Readonly<Record<string, CssValue>> = { "contain": { kind: "ident", name: "layout", lower: "layout" } };
 
 export class DisplayTypes {
 
@@ -225,17 +230,67 @@ export class DisplayTypes {
         return replaced || internal !== undefined || display.outer === "block" || display.inner !== "flow";
     }
 
-    isTransforming(values: Readonly<Record<string, CssValue>>): boolean {
+    isTransforming(values: Readonly<Record<string, CssValue>>, root: boolean = false): boolean {
         // CSS Transforms 1 §3, 2 §5, §7, §12 and Filter Effects 1 §5, 2 §2: a computed transform, translate, rotate, scale or perspective
         // other than none, or preserve-3d, makes a stacking context and the containing block of descendants, as do filter and backdrop-filter.
         for (const property of TRANSFORMING) {
             const value: CssValue | undefined = values[property];
+            // Filter Effects 1 §5: a filter makes the containing block "unless the element it applies to is a document root element".
+            if (root && FILTERING.has(property)) {
+                continue;
+            }
             if (value !== undefined && !(value.kind === "ident" && value.lower === "none")) {
                 return true;
             }
         }
         const style: CssValue | undefined = values["transform-style"];
         return style !== undefined && style.kind === "ident" && style.lower === "preserve-3d";
+    }
+
+    isFiltering(values: Readonly<Record<string, CssValue>>): boolean {
+        // Filter Effects 1 §5: filter applies to "All elements", and a value other than none makes the containing block of absolute and fixed
+        // positioned descendants; backdrop-filter does the same (Filter Effects 2 §2).
+        for (const property of FILTERING) {
+            const value: CssValue | undefined = values[property];
+            if (value !== undefined && !(value.kind === "ident" && value.lower === "none")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    willChange(values: Readonly<Record<string, CssValue>>): ReadonlyArray<string> {
+        // CSS Will Change 1 §2: the properties named, where "Specifying a custom property must have no effect".
+        const value: CssValue | undefined = values["will-change"];
+        if (value === undefined) {
+            return [];
+        }
+        const items: ReadonlyArray<CssValue> = value.kind === "list" ? value.items : [value];
+        return items.filter((item: CssValue): item is IdentValue => item.kind === "ident" && !item.name.startsWith("--")).map((item: IdentValue) => item.lower);
+    }
+
+    changesContaining(values: Readonly<Record<string, CssValue>>, display: DisplayType, replaced: boolean, fixed: boolean, root: boolean = false): boolean {
+        // CSS Will Change 1 §2: a property named that "would cause the element to generate a containing block" for absolutely positioned or for
+        // fixed positioned elements with some value makes it do so: the transforms on a transformable box, containment where it applies, position.
+        for (const name of this.willChange(values)) {
+            if ((CONTAINING_CHANGES.has(name) && (FILTERING.has(name) ? !root : this.isTransformable(display, replaced))) || (name === "position" && !fixed)
+                || (name === "contain" && (this.containment(LAYOUT_CONTAIN, display, replaced) & DisplayTypes.LAYOUT_CONTAINMENT) !== 0)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    changesStacking(values: Readonly<Record<string, CssValue>>, display: DisplayType, replaced: boolean, positioned: boolean): boolean {
+        // CSS Will Change 1 §2: a property named that "would create a stacking context on the element" with some value creates one: the
+        // transforms, opacity, blend modes, isolation, clip-path and masks (CSS Masking 1), containment, position and, when positioned, z-index.
+        for (const name of this.willChange(values)) {
+            if ((STACKING_CHANGES.has(name) && (!CONTAINING_CHANGES.has(name) || this.isTransformable(display, replaced))) || (name === "z-index" && positioned)
+                || (name === "contain" && (this.containment(LAYOUT_CONTAIN, display, replaced) & DisplayTypes.LAYOUT_CONTAINMENT) !== 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private containmentOf(keyword: string): number {

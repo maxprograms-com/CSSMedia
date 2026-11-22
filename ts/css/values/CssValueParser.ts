@@ -122,7 +122,7 @@ export class CssValueParser {
             const root: CalcNode | undefined = this.calcParser.parse(node, channels);
             return root === undefined ? undefined : { kind: "calc", root };
         }
-        if (name === "anchor-size") {
+        if (name === "anchor-size" || name === "anchor") {
             const anchor: CalcNode | undefined = this.calcParser.parseAnchor(node);
             return anchor === undefined ? undefined : { kind: "calc", root: anchor };
         }
@@ -146,28 +146,28 @@ export class CssValueParser {
         return { kind: "function", name, args };
     }
 
-    anchored(value: CssValue): boolean {
-        // CSS Anchor Positioning 1 §5: anchor-size() "is only allowed in the accepted @position-try properties (and is
-        // otherwise invalid)", so the reader checks where a value that holds one is declared.
+    anchored(value: CssValue, name?: string): boolean {
+        // CSS Anchor Positioning 1 §3.2 and §5: anchor() is "only allowed in the inset properties" and anchor-size() "in the accepted
+        // @position-try properties (and is otherwise invalid)", so the reader checks where a value that holds one is declared.
         switch (value.kind) {
             case "calc":
-                return this.calcAnchored(value.root);
+                return this.calcAnchored(value.root, name);
             case "function":
-                return value.args.some((argument: CssValue) => this.anchored(argument));
+                return value.args.some((argument: CssValue) => this.anchored(argument, name));
             case "list":
-                return value.items.some((item: CssValue) => this.anchored(item));
+                return value.items.some((item: CssValue) => this.anchored(item, name));
             case "block":
-                return value.content !== undefined && this.anchored(value.content);
+                return value.content !== undefined && this.anchored(value.content, name);
             default:
                 return false;
         }
     }
 
-    private calcAnchored(node: CalcNode): boolean {
+    private calcAnchored(node: CalcNode, name?: string): boolean {
         if (node.kind === "anchor") {
-            return true;
+            return name === undefined || node.name === name || (node.fallback !== undefined && this.calcAnchored(node.fallback, name));
         }
-        return node.kind !== "leaf" && node.kind !== "channel" && node.children.some((child: CalcNode) => this.calcAnchored(child));
+        return node.kind !== "leaf" && node.kind !== "channel" && node.children.some((child: CalcNode) => this.calcAnchored(child, name));
     }
 
     private parseCalcSize(nodes: ReadonlyArray<CssNode>): CssValue | undefined {

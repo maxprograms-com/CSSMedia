@@ -69,6 +69,7 @@ export interface ElementBox {
     linkUri?: string;
     linkDestination?: string;
     queryContainer?: boolean;
+    wrapped?: boolean;
     hasStartEdge: boolean;
     hasEndEdge: boolean;
     usedPage: string;

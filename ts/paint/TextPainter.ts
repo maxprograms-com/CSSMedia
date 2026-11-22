@@ -29,7 +29,7 @@ import { PathGeometry } from "../geometry/PathGeometry.js";
 import type { ShadowMask } from "../geometry/ShadowRaster.js";
 import { ShadowRaster } from "../geometry/ShadowRaster.js";
 import type { BoxSizes, Transform } from "../layout/BoxSizes.js";
-import type { LineFragment, TextPiece } from "../layout/Fragment.js";
+import type { BoxFragment, LineFragment, TextPiece } from "../layout/Fragment.js";
 import { PieceSpans } from "../layout/PieceSpans.js";
 import type { Combination, GlyphRun, Hyphen, InlineSequence, InlineText, TextRun } from "../pdf/BoxTree.js";
 import type { ComputedStyle } from "../pdf/ComputedStyle.js";
@@ -105,7 +105,7 @@ interface Span {
 
 const UNITS: number = 1000;
 const TOLERANCE: number = 0.001;
-const HIDDEN: ReadonlySet<string> = new Set<string>(["hidden", "collapse"]);
+const HIDDEN: ReadonlySet<string> = new Set<string>(["hidden", "collapse", "force-hidden"]);
 const DASH: number = 3;
 const DECORATION: string = "text-decoration-";
 const MATCH_TEXT: string = "match-text";
@@ -152,6 +152,7 @@ export class TextPainter {
     private readonly colorGlyphs: ColorGlyphPainter;
     private readonly chains: WeakMap<InlineSequence, Array<ReadonlyArray<ComputedStyle> | undefined>> = new WeakMap<InlineSequence, Array<ReadonlyArray<ComputedStyle> | undefined>>();
     private readonly shiftParents: WeakMap<InlineSequence, Array<ComputedStyle | undefined>> = new WeakMap<InlineSequence, Array<ComputedStyle | undefined>>();
+    private readonly veils: WeakMap<InlineSequence, Array<boolean>> = new WeakMap<InlineSequence, Array<boolean>>();
 
     constructor(document: PdfDocument, colors: ColorOutput, sizes: BoxSizes, metrics: FontMetrics, viewport: Size, palettes: ReadonlyArray<PaletteRule>, images: ImageFormats) {
         this.document = document;
@@ -214,9 +215,10 @@ export class TextPainter {
         // §4: "Each layer shadows the element's text and all its text decorations (composited together)" and "the first shadow is on
         // top", so the layers are painted from the last to the first.
         const text: InlineText = line.sequence.text as InlineText;
-        const style: ComputedStyle = line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style;
+        const item: number = this.itemAt(line.sequence, text, text.clusters[piece.from]);
+        const style: ComputedStyle = line.sequence.items[item].node.style;
         const layers: Array<Shadow> = this.shadowsOf(style).filter((shadow: Shadow) => shadow.inset === inner);
-        if (layers.length === 0 || this.hidden(style)) {
+        if (layers.length === 0 || this.itemHidden(line.sequence, item)) {
             return;
         }
         const placement: Placement = this.pieceGlyphs(line, piece, transform);
@@ -486,7 +488,8 @@ export class TextPainter {
         pdf.content.restore();
     }
 
-    decorate(line: LineFragment, pieces: ReadonlyArray<TextPiece>, shown: ReadonlyArray<TextPiece>, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage, through: boolean): void {
+    decorate(line: LineFragment, pieces: ReadonlyArray<TextPiece>, shown: ReadonlyArray<TextPiece>, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage | undefined,
+        through: boolean): void {
         // CSS Text Decoration 4 §2.9: each decorating box has "a single thickness and position on each line", so all the text
         // of the line counts for the position, while only the runs given as shown are decorated now.
         const text: InlineText = line.sequence.text as InlineText;
@@ -497,7 +500,7 @@ export class TextPainter {
         for (const piece of pieces) {
             const index: number = this.itemAt(line.sequence, text, text.clusters[piece.from]);
             const applying: ReadonlyArray<ComputedStyle> = [...decorators, ...(this.chain(line.sequence)[index] ?? [])];
-            if (applying.length === 0 || this.hidden(line.sequence.items[index].node.style)) {
+            if (applying.length === 0 || this.itemHidden(line.sequence, index)) {
                 continue;
             }
             const inline: number = (line.inline ?? 0) + piece.inline;
@@ -521,9 +524,11 @@ export class TextPainter {
         if (owners.size === 0) {
             return;
         }
-        pdf.content.save();
-        if (turn !== 0) {
-            this.concatenate(turn > 0 ? CLOCKWISE : COUNTERCLOCKWISE, pdf);
+        // The shapes collected for a shadow or for the ink stay in the frame of the glyphs, which their collector turns.
+        const drawing: PdfPage | undefined = this.collected === undefined ? pdf : undefined;
+        drawing?.content.save();
+        if (turn !== 0 && drawing !== undefined) {
+            this.concatenate(turn > 0 ? CLOCKWISE : COUNTERCLOCKWISE, drawing);
         }
         for (const [owner, spans] of owners) {
             const kinds: ReadonlyArray<string> = this.keywords(owner.values["text-decoration-line"]);
@@ -555,7 +560,7 @@ export class TextPainter {
                 }
             }
         }
-        pdf.content.restore();
+        drawing?.content.restore();
     }
 
     private turn(values: Values): number {
@@ -638,7 +643,7 @@ export class TextPainter {
         return !unshifted || alignment !== "baseline" || source !== "auto";
     }
 
-    private line(owner: ComputedStyle, left: number, right: number, top: number, thickness: number, outward: number, pdf: PdfPage): void {
+    private line(owner: ComputedStyle, left: number, right: number, top: number, thickness: number, outward: number, pdf: PdfPage | undefined): void {
         // The wavy line is a band along a curve, filled by stroking the curve.
         const kind: string = this.keywords(owner.values["text-decoration-style"])[0] ?? "solid";
         if (!this.isNone(this.paintValue(owner, DECORATION, "fill-image"))) {
@@ -657,6 +662,9 @@ export class TextPainter {
         if (this.collected !== undefined) {
             // The shape of a decoration, for the shadow of the text, which is drawn from its geometry.
             this.collected.push(kind === "wavy" ? this.geometry.outline(path, thickness, FLATNESS) : path);
+            return;
+        }
+        if (pdf === undefined) {
             return;
         }
         pdf.content.save();
@@ -791,11 +799,41 @@ export class TextPainter {
         return visibility !== undefined && visibility.kind === "ident" && HIDDEN.has(visibility.lower);
     }
 
+    private itemHidden(sequence: InlineSequence, index: number): boolean {
+        return this.hidden(sequence.items[index].node.style) || this.veiled(sequence)[index] === true;
+    }
+
+    private veiled(sequence: InlineSequence): Array<boolean> {
+        // CSS Display 4 §5: with force-hidden "Any boxes generated by the element and its descendants are invisible (regardless of their
+        // visibility value)", so the text inside an inline element that has it is not drawn.
+        let veils: Array<boolean> | undefined = this.veils.get(sequence);
+        if (veils !== undefined) {
+            return veils;
+        }
+        veils = [];
+        let depth: number = 0;
+        const open: Array<boolean> = [];
+        for (const [index, item] of sequence.items.entries()) {
+            if (item.kind === "open") {
+                const forced: boolean = this.keywords(item.node.style.values["visibility"])[0] === "force-hidden";
+                open.push(forced);
+                depth += forced ? 1 : 0;
+            } else if (item.kind === "close") {
+                depth -= open.pop() === true ? 1 : 0;
+            } else if (item.kind === "text") {
+                veils[index] = depth > 0;
+            }
+        }
+        this.veils.set(sequence, veils);
+        return veils;
+    }
+
     paint(line: LineFragment, piece: TextPiece, transform: Transform, pdf: PdfPage): void {
         const text: InlineText = line.sequence.text as InlineText;
-        const style: ComputedStyle = line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style;
+        const index: number = this.itemAt(line.sequence, text, text.clusters[piece.from]);
+        const style: ComputedStyle = line.sequence.items[index].node.style;
         const values: Readonly<Record<string, CssValue>> = style.values;
-        if (this.hidden(style)) {
+        if (this.itemHidden(line.sequence, index)) {
             return;
         }
         this.supported(values);
@@ -904,7 +942,7 @@ export class TextPainter {
     shapes(line: LineFragment, piece: TextPiece, transform: Transform, decorators: ReadonlyArray<ComputedStyle>, pdf: PdfPage): void {
         // CSS Backgrounds 4 §2.8: the geometry of the text and its decorations, whatever their color, for background-clip: text.
         const text: InlineText = line.sequence.text as InlineText;
-        if (this.hidden(line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style)) {
+        if (this.itemHidden(line.sequence, this.itemAt(line.sequence, text, text.clusters[piece.from]))) {
             return;
         }
         const placement: Placement = this.pieceGlyphs(line, piece, transform);
@@ -1108,15 +1146,86 @@ export class TextPainter {
     }
 
     textInk(line: LineFragment, piece: TextPiece, transform: Transform): Box | undefined {
-        // The widest stroke counts at twice its width, which is what an outside stroke-align draws.
+        // Sideways glyphs are placed in the frame of the text, which the matrix of their placement turns to the page.
         const text: InlineText = line.sequence.text as InlineText;
         const style: ComputedStyle = line.sequence.items[this.itemAt(line.sequence, text, text.clusters[piece.from])].node.style;
-        let reach: number = 0;
-        for (const value of this.items(this.paintValue(style, "", "stroke-width"))) {
-            const width: number = this.sizes.pixels(value, this.scaledViewport());
-            reach = width > 0 ? Math.max(reach, this.reach(this.strokeOf(style, "", 0, 2 * width, false))) : reach;
+        const placement: Placement = this.pieceGlyphs(line, piece, transform);
+        return this.mapped(this.ink(placement.glyphs, this.strokeReach(style, "")), placement.matrix);
+    }
+
+    lineInk(line: LineFragment, transform: Transform, decorators: ReadonlyArray<ComputedStyle>): Box | undefined {
+        // CSS Overflow 3 §2.2: the ink of text is what painting it reaches: the glyphs with their strokes, the decorations with theirs, the
+        // emphasis marks, and the outer shadows (CSS Text Decoration 4 §4), whose blur reaches three deviations of half the blur radius.
+        const texts: Array<TextPiece> = line.pieces.filter((piece: TextPiece | BoxFragment): piece is TextPiece => piece.kind === "text");
+        const text: InlineText = line.sequence.text as InlineText;
+        const turn: number = this.turn(line.sequence.style.values);
+        let box: Box | undefined;
+        for (const piece of texts) {
+            const index: number = this.itemAt(line.sequence, text, text.clusters[piece.from]);
+            const style: ComputedStyle = line.sequence.items[index].node.style;
+            if (this.itemHidden(line.sequence, index)) {
+                continue;
+            }
+            const placement: Placement = this.pieceGlyphs(line, piece, transform);
+            let own: Box | undefined = this.mapped(this.ink(placement.glyphs, this.strokeReach(style, "")), placement.matrix);
+            // §3.1: a mark is half the size of the text, centered on its spot.
+            const half: number = piece.run.size / 4;
+            for (const spot of placement.marks ?? []) {
+                own = this.union(own, [spot[0] - half, spot[1] - half, 2 * half, 2 * half]);
+            }
+            this.collected = [];
+            this.decorate(line, texts, [piece], transform, decorators, undefined, false);
+            this.decorate(line, texts, [piece], transform, decorators, undefined, true);
+            const decorations: Array<PathData> = this.collected.map((path: PathData): PathData => this.mapPath(path, (point: readonly [number, number]) => turn === 0 ? point
+                : this.global(turn, point)));
+            delete this.collected;
+            const lines: Box | undefined = this.pathsInk(decorations);
+            if (lines !== undefined) {
+                let reach: number = 0;
+                for (const owner of [...decorators, ...(this.chain(line.sequence)[index] ?? [])]) {
+                    reach = Math.max(reach, this.strokeReach(owner, DECORATION));
+                }
+                own = this.union(own, [lines[0] - reach, lines[1] - reach, lines[2] + 2 * reach, lines[3] + 2 * reach]);
+            }
+            box = this.union(box, own);
+            for (const shadow of own === undefined ? [] : this.shadowsOf(style)) {
+                const reach: number = 3 * shadow.blur / 2 + shadow.spread;
+                if (!shadow.inset && own !== undefined) {
+                    box = this.union(box, [own[0] + shadow.x - reach, own[1] + shadow.y - reach, own[2] + 2 * reach, own[3] + 2 * reach]);
+                }
+            }
         }
-        return this.ink(this.pieceGlyphs(line, piece, transform).glyphs, reach);
+        return box;
+    }
+
+    private strokeReach(style: ComputedStyle, prefix: string): number {
+        // The widest stroke counts at twice its width, which is what an outside stroke-align draws.
+        let reach: number = 0;
+        for (const value of this.items(this.paintValue(style, prefix, "stroke-width"))) {
+            const width: number = this.sizes.pixels(value, this.scaledViewport());
+            reach = width > 0 ? Math.max(reach, this.reach(this.strokeOf(style, prefix, 0, 2 * width, false))) : reach;
+        }
+        return reach;
+    }
+
+    private mapped(box: Box | undefined, matrix: Transform | undefined): Box | undefined {
+        if (box === undefined || matrix === undefined) {
+            return box;
+        }
+        let result: Box | undefined;
+        for (const [x, y] of [[box[0], box[1]], [box[0] + box[2], box[1]], [box[0], box[1] + box[3]], [box[0] + box[2], box[1] + box[3]]]) {
+            result = this.union(result, [matrix[0] * x + matrix[2] * y + matrix[4], matrix[1] * x + matrix[3] * y + matrix[5], 0, 0]);
+        }
+        return result;
+    }
+
+    private union(first: Box | undefined, second: Box | undefined): Box | undefined {
+        if (first === undefined || second === undefined) {
+            return first ?? second;
+        }
+        const left: number = Math.min(first[0], second[0]);
+        const top: number = Math.min(first[1], second[1]);
+        return [left, top, Math.max(first[0] + first[2], second[0] + second[2]) - left, Math.max(first[1] + first[3], second[1] + second[3]) - top];
     }
 
     glyphsInk(glyphs: ReadonlyArray<SingleGlyph>, transform: Transform): Box | undefined {
@@ -1142,6 +1251,16 @@ export class TextPainter {
         pdf.content.save();
         const filled: boolean = this.colors.fill(style.values["color"], style, pdf);
         this.show(placed, pdf, filled ? FILL : INVISIBLE, false);
+        pdf.content.restore();
+    }
+
+    singleShapes(glyphs: ReadonlyArray<SingleGlyph>, transform: Transform, pdf: PdfPage): void {
+        // CSS Backgrounds 4 §2.8: glyphs placed one by one are text of the element too, so their geometry is part of background-clip: text.
+        if (glyphs.length === 0) {
+            return;
+        }
+        pdf.content.save();
+        this.show(this.singleGlyphs(glyphs, transform), pdf, FILL, true);
         pdf.content.restore();
     }
 

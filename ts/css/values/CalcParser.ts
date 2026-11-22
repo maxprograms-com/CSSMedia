@@ -54,6 +54,10 @@ const ANCHOR_SIZE: string = "anchor-size";
 
 const ANCHOR_SIZES: ReadonlySet<string> = new Set<string>(["width", "height", "block", "inline", "self-block", "self-inline"]);
 
+const ANCHOR: string = "anchor";
+
+const ANCHOR_SIDES: ReadonlySet<string> = new Set<string>(["inside", "outside", "top", "left", "right", "bottom", "start", "end", "self-start", "self-end", "center"]);
+
 export class CalcParser {
 
     private readonly asciiCase: AsciiCase = new AsciiCase();
@@ -84,9 +88,53 @@ export class CalcParser {
     }
 
     parseAnchor(node: FunctionNode): CalcNode | undefined {
-        // CSS Anchor Positioning 1 §5: "The anchor-size() function resolves to a <length>", as a whole value or in a calculation.
-        const anchor: CalcNode | undefined = this.parseAnchorSize(node);
+        // CSS Anchor Positioning 1 §3.2 and §5: anchor() and anchor-size() resolve to a <length>, as a whole value or in a calculation.
+        const anchor: CalcNode | undefined = this.parseAnchorFunction(node);
         return anchor === undefined ? undefined : this.simplifier.simplify(anchor, this.simplifier.specifiedContext());
+    }
+
+    private parseAnchorFunction(node: FunctionNode): CalcNode | undefined {
+        return this.asciiCase.foldLower(this.escaping.unescape(node.name)) === ANCHOR ? this.parseAnchorSide(node) : this.parseAnchorSize(node);
+    }
+
+    private parseAnchorSide(node: FunctionNode): CalcNode | undefined {
+        // §3.2: anchor( <anchor-name>? && <anchor-side>, <length-percentage>? ), where the side is a keyword or a <percentage>.
+        const nodes: Array<CssNode> = node.children.toArray();
+        const comma: number = nodes.findIndex((item: CssNode) => item.type === "Operator" && item.value.trim() === ",");
+        const specifier: ReadonlyArray<CssNode> = comma === -1 ? nodes : nodes.slice(0, comma);
+        const fallback: ReadonlyArray<CssNode> = comma === -1 ? [] : nodes.slice(comma + 1);
+        if (specifier.length === 0 || (comma !== -1 && fallback.length === 0)) {
+            return undefined;
+        }
+        const anchor: CalcAnchor = { kind: "anchor", name: ANCHOR };
+        let sided: boolean = false;
+        for (const item of specifier) {
+            const text: string = item.type === "Identifier" ? this.escaping.unescape(item.name) : "";
+            const keyword: string = this.asciiCase.foldLower(text);
+            if (text.startsWith("--") && anchor.anchor === undefined) {
+                anchor.anchor = text;
+            } else if (ANCHOR_SIDES.has(keyword) && !sided) {
+                anchor.keyword = keyword;
+                sided = true;
+            } else if (item.type === "Percentage" && !sided) {
+                anchor.percent = this.numberOf(item.value);
+                sided = true;
+            } else {
+                return undefined;
+            }
+        }
+        if (!sided) {
+            return undefined;
+        }
+        if (fallback.length > 0) {
+            const tree: CalcNode | undefined = this.parseCalculation(fallback);
+            const type: NumericType | undefined = tree === undefined ? undefined : this.types.typeOf(tree, "length");
+            if (tree === undefined || type === undefined || this.types.categoryOf(type) !== "length") {
+                return undefined;
+            }
+            anchor.fallback = tree;
+        }
+        return anchor;
     }
 
     private parseAnchorSize(node: FunctionNode): CalcNode | undefined {
@@ -338,8 +386,8 @@ export class CalcParser {
                 return this.parseCalculation(node.children.toArray(), channels);
             case "Function": {
                 const name: string = this.asciiCase.foldLower(this.escaping.unescape(node.name));
-                if (name === ANCHOR_SIZE) {
-                    return this.parseAnchorSize(node);
+                if (name === ANCHOR_SIZE || name === ANCHOR) {
+                    return this.parseAnchorFunction(node);
                 }
                 return this.isMathFunction(name) ? this.parseFunction(node, channels) : undefined;
             }

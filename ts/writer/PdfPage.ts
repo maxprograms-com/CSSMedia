@@ -30,6 +30,7 @@ export interface ImageResource {
     width: number;
     height: number;
     links?: ReadonlyArray<readonly [PageRectangle, string, boolean]>;
+    destinations?: ReadonlyArray<readonly [string, number, number]>;
 }
 
 export interface PageRectangle {

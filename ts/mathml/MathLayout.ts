@@ -29,7 +29,7 @@ import type { FontInstance, Typeface } from "../fonts/Typeface.js";
 import type { BlockLayout } from "../layout/BlockLayout.js";
 import type { UsedSizes } from "../layout/BoxSizes.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
-import type { BoxFragment, LineFragment, Margins } from "../layout/Fragment.js";
+import type { BoxFragment, LineFragment, Margins, Sides } from "../layout/Fragment.js";
 import type { BoxNode, ElementBox, InlineText } from "../pdf/BoxTree.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
 import { LineBreaker } from "../pdf/LineBreaker.js";
@@ -205,6 +205,23 @@ export class MathLayout {
         this.sizes = sizes;
         this.metrics = metrics;
         this.elements = elements;
+        host.innerLayout = (box: ElementBox, sizes: UsedSizes, inlineSize?: number): BoxFragment | undefined => this.isMath(box) ? this.positioned(box, sizes, inlineSize)
+            : undefined;
+    }
+
+    private positioned(box: ElementBox, sizes: UsedSizes, inlineSize?: number): BoxFragment {
+        // §3.1.2: CSS Position 3 places a positioned child, and §3.1.1 gives every MathML element but math the display block math, which
+        // blockification keeps, so its content is laid out as math, in the content box that its sizes or else its math content give.
+        this.assign(box, undefined, []);
+        const content: MathContent = this.content(box);
+        if (TOKENS.has((this.data(box) as MathElement).name) && content.italic !== undefined) {
+            // A token placed by itself has no row to add its italic correction after it (§3.3.1.2), so its box takes the slant of its text.
+            content.width += content.italic;
+            delete content.italic;
+        }
+        const fragment: BoxFragment = this.wrap(box, content, sizes, inlineSize, 0);
+        this.host.contain(fragment);
+        return fragment;
     }
 
     private mathTable(instance: FontInstance): MathTable {
@@ -237,11 +254,14 @@ export class MathLayout {
         const lines: MathContent | undefined = this.broken(box, content, available ?? Number.POSITIVE_INFINITY);
         const block: boolean = box.display.outer === "block";
         if (lines !== undefined) {
+            lines.children.push(...this.brokenOutOfFlow(box, []));
             content = lines;
         } else if (block) {
             content.centered = true;
         }
-        return this.wrap(box, content, sizes, block || lines !== undefined ? Math.max(available ?? 0, content.width) : undefined, 0);
+        const fragment: BoxFragment = this.wrap(box, content, sizes, block || lines !== undefined ? Math.max(available ?? 0, content.width) : undefined, 0);
+        this.host.initialContainer(fragment);
+        return fragment;
     }
 
     private wrap(box: ElementBox, content: MathContent, sizes: UsedSizes, inlineSize: number | undefined, inlineOffset: number): BoxFragment {
@@ -279,6 +299,7 @@ export class MathLayout {
         if (sizes.padding !== undefined) {
             fragment.padding = sizes.padding;
         }
+        fragment.margin = this.usedMargins(sizes);
         if (content.children.length > 0) {
             fragment.children = content.children;
         }
@@ -297,6 +318,12 @@ export class MathLayout {
             this.graphics.set(fragment, graphics);
         }
         return fragment;
+    }
+
+    private usedMargins(sizes: UsedSizes): Sides {
+        // The margins that math layout places a box with, an auto margin being zero there, on the sides of the box's own writing mode.
+        return [this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0, this.sizes.margin(sizes, BoxSizes.INLINE_END) ?? 0, this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0,
+            this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0];
     }
 
     private broken(box: ElementBox, whole: MathContent, inlineSize: number): MathContent | undefined {
@@ -426,13 +453,37 @@ export class MathLayout {
         // §3.1.7.1: the breaks are within mrow, inferred ones included, so the children of the rows are the items of the lines.
         const items: Array<ElementBox> = [];
         for (const child of boxes) {
-            if (this.isMath(child) && child.element !== undefined && (this.data(child)?.name === "mrow" || this.data(child)?.name === "mstyle") && this.core(child) === undefined) {
+            if (this.flattens(child)) {
                 items.push(...this.breakItems(this.inFlow(child)));
             } else {
                 items.push(child);
             }
         }
         return items;
+    }
+
+    private flattens(box: ElementBox): boolean {
+        // §3.1.7.1 lets the renderer choose its breaks inside rows; a positioned row stays one box, so that it keeps its offset and stays the
+        // containing block of the positioned boxes inside it (CSS Position 3 §2.1).
+        const position: string = this.keyword(box, "position");
+        return this.isMath(box) && box.element !== undefined && (this.data(box)?.name === "mrow" || this.data(box)?.name === "mstyle") && this.core(box) === undefined
+            && (position === "" || position === "static");
+    }
+
+    private brokenOutOfFlow(box: ElementBox, found: Array<BoxFragment>): Array<BoxFragment> {
+        // The positioned children of the formula and of the rows that the lines take apart keep the formula as containing block, with their
+        // static position at the start of the lines.
+        for (const node of box.children) {
+            if (node.kind !== "box") {
+                continue;
+            }
+            if (node.placement !== "in-flow") {
+                found.push(this.outOfFlow(node));
+            } else if (this.flattens(node)) {
+                this.brokenOutOfFlow(node, found);
+            }
+        }
+        return found;
     }
 
     private breakMode(item: ElementBox): string | undefined {
@@ -635,6 +686,7 @@ export class MathLayout {
         if (sizes.padding !== undefined) {
             fragment.padding = sizes.padding;
         }
+        fragment.margin = this.usedMargins(sizes);
         const top: number = this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0;
         const start: number = this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0;
         const whole: number = top + height + (this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0);

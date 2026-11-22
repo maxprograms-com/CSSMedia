@@ -22,7 +22,7 @@ import type { CssValue } from "../css/values/CssValue.js";
 import type { BlockLayout, Candidate, SnapPlace } from "../layout/BlockLayout.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
 import type { FloatArea, StackedFloat } from "../layout/FloatStack.js";
-import type { BoxFragment, BreakToken, LineFragment, Margins } from "../layout/Fragment.js";
+import type { BoxFragment, BreakToken, LineFragment, Margins, Sides } from "../layout/Fragment.js";
 import { PagePainter } from "../paint/PagePainter.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import type { PageSetup } from "../PdfGenerator.js";
@@ -48,6 +48,7 @@ export interface PageLayout {
     content?: BoxFragment;
     footnotes?: BoxFragment;
     floats?: Array<BoxFragment>;
+    fixed?: BoxFragment;
     margins?: Array<BoxFragment>;
     forms?: MarginForms;
 }
@@ -117,6 +118,12 @@ export class PageDriver {
     private readonly groupPages: Map<ElementBox, number> = new Map<ElementBox, number>();
     private readonly stringItems: WeakMap<InlineSequence, ReadonlyArray<number>> = new WeakMap<InlineSequence, ReadonlyArray<number>>();
     private readonly later: Array<LaterMargins> = [];
+    private readonly held: Array<readonly [PageLayout, Omit<LaterMargins, "page" | "annotations" | "earlier"> | undefined]> = [];
+    private readonly sizes: BoxSizes = new BoxSizes((): number | undefined => undefined);
+    private readonly unfinished: Array<readonly [PageLayout, BreakToken | undefined]> = [];
+    private readonly heldStrings: Map<TextSequence, Array<string>>;
+    private readonly laidWhileHeld: WeakSet<PageLayout> = new WeakSet<PageLayout>();
+    private restring: boolean = false;
     private readonly ends: ReadonlyMap<number, Candidate>;
     readonly labelStrings: Map<SourceElement | ElementBox, NamedValues<string>> = new Map<SourceElement | ElementBox, NamedValues<string>>();
     readonly breaks: Array<Candidate | undefined> = [];
@@ -132,11 +139,14 @@ export class PageDriver {
     private readonly floated: Set<ElementBox> = new Set<ElementBox>();
     private readonly decided: Set<ElementBox> = new Set<ElementBox>();
     private whole: readonly [number, number] = [0, 0];
+    private origin: readonly [number, number] = [0, 0];
+    private first: boolean = false;
 
-    constructor(setup: PageSetup, document: PdfDocument, ends: ReadonlyMap<number, Candidate>) {
+    constructor(setup: PageSetup, document: PdfDocument, ends: ReadonlyMap<number, Candidate>, heldStrings: Map<TextSequence, Array<string>>) {
         this.setup = setup;
         this.document = document;
         this.ends = ends;
+        this.heldStrings = heldStrings;
         this.painter = new PagePainter(setup, document);
         this.margins = new MarginBoxes(setup.layout, setup.text, setup.counterStyles, setup.references,
             (box: ElementBox, strings: NamedValues<string>): void => this.fillRunning(box, strings));
@@ -153,6 +163,7 @@ export class PageDriver {
         };
         const references: CrossReferences = this.setup.references;
         references.startLayout();
+        this.setup.layout.startFixed();
         this.groupPages.clear();
         let token: BreakToken | undefined;
         let side: "left" | "right" = this.setup.firstSide;
@@ -167,22 +178,29 @@ export class PageDriver {
         this.setup.floats.start();
         this.setup.layout.restoreSnaps(new Map<ElementBox, number>());
         do {
-            // CSS Paged Media 3 §8.1: "The first printed page's type is the start page value of the root", and content after a
-            // break "resumes on a page box of the named type"; footnotes that go on after the content keep the last type.
-            const name: string = token === undefined ? (ended ? last : root.startPage) : this.setup.layout.resumedPage(token);
+            // CSS Paged Media 3 §8.1: "The first printed page's type is the start page value of the root", and content after a break "resumes on a
+            // page box of the named type"; footnotes and positioned boxes that go on after the content keep the last type.
+            const name: string = token === undefined ? (ended ? last : root.startPage) : (token.ended === true ? last : this.setup.layout.resumedPage(token));
             const wanted: "left" | "right" | undefined = token === undefined ? undefined : this.wantedSide(token);
             if (wanted !== undefined && wanted !== side) {
                 // CSS Fragmentation 4 §3.1: left, right, recto and verso force "one or two page breaks" so that the next page
                 // has that side; Paged Media 3 §4.2.3: the page between is a blank page.
-                this.finish(this.blank(side, position, token as BreakToken), token, state);
+                const empty: PageLayout = this.blank(side, position, token as BreakToken);
+                this.fixed(empty, position);
+                this.settle(empty, token, state);
                 side = this.opposite(side);
                 position++;
             }
             this.built.length = 0;
+            const held: boolean = this.unfinished.length > 0;
             const page: PageLayout = this.lay(root, name, side, position, state, ended, token);
+            if (held) {
+                this.laidWhileHeld.add(page);
+            }
             this.breaks[position] = page.content === undefined ? undefined : this.setup.layout.pageBreak;
             this.earlier[position] = page.content === undefined ? undefined : this.setup.layout.pageEarlier;
-            this.finish(page, token, state);
+            this.fixed(page, position);
+            this.settle(page, token, state);
             if (this.nextCarry === undefined) {
                 delete this.carry;
             } else {
@@ -200,8 +218,20 @@ export class PageDriver {
                 state.painting = false;
             }
         } while (token !== undefined || this.carry !== undefined || this.waiting.length > 0);
+        for (const [held, start] of this.unfinished) {
+            this.finish(held, start, state);
+        }
+        this.unfinished.length = 0;
         this.built.length = 0;
-        const settled: boolean = this.setup.floats.settle(position - 1);
+        const settled: boolean = this.setup.floats.settle(position - 1) && !this.restring;
+        if (painting && state.painting && settled) {
+            // The composite of a sliced box needs its fragments on all pages, so the pages are painted once the layout is complete.
+            this.wholeBoxes(this.held.map((entry: readonly [PageLayout, Omit<LaterMargins, "page" | "annotations" | "earlier"> | undefined]) => entry[0]));
+            for (const [page, later] of this.held) {
+                this.emit(page, later);
+            }
+        }
+        this.held.length = 0;
         if (painting && !comparing) {
             references.reportUnsettled();
             for (const key of this.movedLabels) {
@@ -236,18 +266,11 @@ export class PageDriver {
             increments.push([PAGE, 1]);
         }
         this.scopes.apply(state.counters, state.node, this.scopes.changes(0, values["counter-reset"]), increments, this.scopes.changes(0, values["counter-set"]));
+        this.checkHeldStrings(page, state);
         state.strings.nextPage();
         state.running.nextPage();
         state.seen = false;
-        if (page.content !== undefined) {
-            this.assignments(page.content, state);
-        }
-        if (page.footnotes !== undefined) {
-            this.assignments(page.footnotes, state);
-        }
-        for (const float of page.floats ?? []) {
-            this.assignments(float, state);
-        }
+        this.pageAssignments(page, state);
         if (this.setup.builder.pageFootnotes) {
             this.renumber(page, values);
         }
@@ -281,7 +304,236 @@ export class PageDriver {
             }
         }
         if (state.painting) {
-            this.emit(page, later);
+            this.held.push([page, later]);
+        }
+    }
+
+    private checkHeldStrings(page: PageLayout, state: Pass): void {
+        // A page laid out while earlier pages were held took their assignments as they stood, and positioned boxes placed on them later may add
+        // some (CSS Fragmentation 4 §5.5); a value that differs once they are final goes to the next layout, and one already tried is kept.
+        if (!this.laidWhileHeld.has(page) || page.content === undefined) {
+            return;
+        }
+        const named: Map<readonly [string, string], [TextSequence, string]> = this.setup.builder.namedTexts;
+        const found: Map<readonly [string, string], InlineSequence> = new Map<readonly [string, string], InlineSequence>();
+        this.namedTexts(page.content, found);
+        for (const float of page.floats ?? []) {
+            this.namedTexts(float, found);
+        }
+        if (found.size === 0) {
+            return;
+        }
+        const strings: NamedValues<string> = state.strings.copy();
+        strings.nextPage();
+        const trial: Pass = {
+            ...state, strings, running: new NamedValues<ElementBox>(), assigned: new WeakSet<ReadonlyArray<NamedString>>(), seen: false, trial: true, labels: []
+        };
+        this.assignments(page.content, trial);
+        for (const float of page.floats ?? []) {
+            this.assignments(float, trial);
+        }
+        for (const call of found.keys()) {
+            const entry: [TextSequence, string] | undefined = named.get(call);
+            const value: string = strings.value(call[0], call[1]) ?? "";
+            if (entry === undefined || entry[1] === value) {
+                continue;
+            }
+            const tried: Array<string> = this.heldStrings.get(entry[0]) ?? [];
+            if (tried.includes(value)) {
+                if (state.painting) {
+                    this.diagnostics.push("Page " + this.pageNumber(state) + " shows wrong string() values: the positioned boxes placed on the pages before it change them.");
+                }
+                continue;
+            }
+            tried.push(value);
+            this.heldStrings.set(entry[0], tried);
+            this.restring = true;
+        }
+    }
+
+    private pageAssignments(page: PageLayout, state: Pass): void {
+        if (page.content !== undefined) {
+            this.assignments(page.content, state);
+        }
+        if (page.footnotes !== undefined) {
+            this.assignments(page.footnotes, state);
+        }
+        for (const float of page.floats ?? []) {
+            this.assignments(float, state);
+        }
+        if (page.fixed !== undefined) {
+            this.assignments(page.fixed, state);
+        }
+    }
+
+    private wholeBoxes(pages: ReadonlyArray<PageLayout>): void {
+        // CSS Fragmentation 4 §5.4.1: with slice a broken box is drawn as a composite of its fragments, "reassembled in visual order" after layout:
+        // glued in the block flow direction across pages and columns, and along the element's inline base direction across lines.
+        const blocks: Map<ElementBox, Array<BoxFragment>> = new Map<ElementBox, Array<BoxFragment>>();
+        const inlines: Map<SourceElement | ElementBox, Array<readonly [BoxFragment, number, boolean]>> = new Map<SourceElement | ElementBox, Array<readonly [BoxFragment, number, boolean]>>();
+        const lines: { count: number } = { count: 0 };
+        for (const page of pages) {
+            for (const fragment of [page.content, page.footnotes, ...(page.floats ?? [])]) {
+                if (fragment !== undefined) {
+                    this.gather(fragment, blocks, inlines, lines);
+                }
+            }
+        }
+        for (const fragments of blocks.values()) {
+            let chain: Array<BoxFragment> = [];
+            for (const fragment of fragments) {
+                if (fragment.resumed !== true && chain.length > 0) {
+                    this.joinBlocks(chain);
+                    chain = [];
+                }
+                chain.push(fragment);
+            }
+            this.joinBlocks(chain);
+        }
+        for (const entries of inlines.values()) {
+            this.joinInlines(entries);
+        }
+    }
+
+    private gather(fragment: BoxFragment, blocks: Map<ElementBox, Array<BoxFragment>>, inlines: Map<SourceElement | ElementBox, Array<readonly [BoxFragment, number, boolean]>>,
+        lines: { count: number }): void {
+        // A fragment that continues or breaks its box belongs to a chain; an empty one, such as the holder of a fixed box on a page its box is not
+        // on, has nothing to reassemble, and a box that goes on only for the positioned boxes that overflow it has ended.
+        const box: ElementBox = fragment.box;
+        const breaks: boolean = fragment.token !== undefined && fragment.token.ended !== true;
+        // A fragment that keeps its edges where it breaks was not sliced, whatever its box-decoration-break; CSS Tables 3 §6.1: the table box closes
+        // every fragment, with or without a border.
+        const edge: (side: number) => number = (side: number): number => (fragment.border?.[side] ?? 0) + (fragment.padding?.[side] ?? 0);
+        const kept: boolean = (breaks && edge(BoxSizes.BLOCK_END) > 0) || (fragment.resumed === true && edge(BoxSizes.BLOCK_START) > 0) || this.setup.layout.tables.isGrid(box);
+        if ((fragment.resumed === true || breaks) && !kept && (fragment.inlineSize !== 0 || fragment.blockSize !== 0) && this.slices(box)) {
+            const known: Array<BoxFragment> | undefined = blocks.get(box);
+            if (known === undefined) {
+                blocks.set(box, [fragment]);
+            } else {
+                known.push(fragment);
+            }
+        }
+        const rightToLeft: boolean = (this.sizes.frame(box.style) & BoxSizes.RIGHT_TO_LEFT) !== 0;
+        for (const child of fragment.children ?? []) {
+            if (child.kind === "box") {
+                this.gather(child, blocks, inlines, lines);
+                continue;
+            }
+            lines.count++;
+            for (const piece of child.pieces) {
+                if (piece.kind !== "box") {
+                    continue;
+                }
+                // §5.4: a block that splits an inline box makes a break that "must be handled as slice", so the parts of the element are one box.
+                const part: ElementBox = piece.box;
+                if (!part.replaced && part.display.internal === undefined && part.display.outer !== "block" && part.display.inner === "flow"
+                    && (part.element !== undefined || part.pseudoElement !== undefined) && this.slices(part)) {
+                    const key: SourceElement | ElementBox = part.pseudoElement === undefined && part.element !== undefined ? part.element : part;
+                    const known: Array<readonly [BoxFragment, number, boolean]> | undefined = inlines.get(key);
+                    if (known === undefined) {
+                        inlines.set(key, [[piece, lines.count, rightToLeft]]);
+                    } else {
+                        known.push([piece, lines.count, rightToLeft]);
+                    }
+                }
+                this.gather(piece, blocks, inlines, lines);
+            }
+        }
+    }
+
+    private slices(box: ElementBox): boolean {
+        const value: CssValue | undefined = box.style.values["box-decoration-break"];
+        return !(value !== undefined && value.kind === "ident" && value.lower === "clone");
+    }
+
+    private joinBlocks(chain: ReadonlyArray<BoxFragment>): void {
+        // "Fragments are connected as if page content areas were glued together", and column boxes likewise; "each piece draws its portion of the
+        // background assuming that the whole element has the same width as this piece", and an image size derived from it takes the widest.
+        if (chain.length < 2) {
+            return;
+        }
+        let total: number = 0;
+        let cross: number = 0;
+        for (const fragment of chain) {
+            total += fragment.blockSize;
+            cross = Math.max(cross, fragment.inlineSize);
+        }
+        const margin: Sides = this.wholeSides(chain, (fragment: BoxFragment) => fragment.margin);
+        const border: Sides = this.wholeSides(chain, (fragment: BoxFragment) => fragment.border);
+        const padding: Sides = this.wholeSides(chain, (fragment: BoxFragment) => fragment.padding);
+        let before: number = 0;
+        for (const fragment of chain) {
+            fragment.whole = { area: [fragment.inline, fragment.block - before, fragment.inlineSize, total], margin, border, padding, cross, joinedInline: false };
+            before += fragment.blockSize;
+        }
+    }
+
+    private joinInlines(entries: ReadonlyArray<readonly [BoxFragment, number, boolean]>): void {
+        // "Fragments on the same line are connected in visual order. Then, fragments on subsequent lines are ordered according to the element's inline
+        // base direction"; the line coordinates run along the direction of the block that holds the lines.
+        if (entries.length < 2) {
+            return;
+        }
+        const own: boolean = (this.sizes.frame(entries[0][0].box.style) & BoxSizes.RIGHT_TO_LEFT) !== 0;
+        const ordered: Array<readonly [BoxFragment, number, boolean]> = [...entries].sort((first: readonly [BoxFragment, number, boolean], second: readonly [BoxFragment, number, boolean]) =>
+            first[1] !== second[1] ? first[1] - second[1] : (own === first[2] ? first[0].inline - second[0].inline : second[0].inline - first[0].inline));
+        const chain: Array<BoxFragment> = ordered.map((entry: readonly [BoxFragment, number, boolean]) => entry[0]);
+        let total: number = 0;
+        let cross: number = 0;
+        for (const fragment of chain) {
+            total += fragment.inlineSize;
+            cross = Math.max(cross, fragment.blockSize);
+        }
+        const margin: Sides = this.wholeSides(chain, (fragment: BoxFragment) => fragment.margin);
+        const border: Sides = this.wholeSides(chain, (fragment: BoxFragment) => fragment.border);
+        const padding: Sides = this.wholeSides(chain, (fragment: BoxFragment) => fragment.padding);
+        let before: number = 0;
+        for (const [index, fragment] of chain.entries()) {
+            const forward: boolean = own === ordered[index][2];
+            const start: number = forward ? fragment.inline - before : fragment.inline + fragment.inlineSize + before - total;
+            fragment.whole = { area: [start, fragment.block, total, fragment.blockSize], margin, border, padding, cross, joinedInline: true };
+            before += fragment.inlineSize;
+        }
+    }
+
+    private wholeSides(chain: ReadonlyArray<BoxFragment>, field: (fragment: BoxFragment) => Sides | undefined): Sides {
+        // A side of the whole box is on the fragment that the break does not cut there; the fragments cut on that side have none.
+        const sides: [number, number, number, number] = [0, 0, 0, 0];
+        for (const fragment of chain) {
+            const own: Sides | undefined = field(fragment);
+            for (let side: number = 0; own !== undefined && side < 4; side++) {
+                sides[side] = Math.abs(own[side]) > Math.abs(sides[side]) ? own[side] : sides[side];
+            }
+        }
+        return sides;
+    }
+
+    private settle(page: PageLayout, token: BreakToken | undefined, state: Pass): void {
+        // CSS Fragmentation 4 §5.5: a containing block that has not ended may still place boxes on the pages it went through, so those pages are
+        // finished, in order, once nothing more can come to them.
+        this.unfinished.push([page, token]);
+        if (this.setup.layout.holdsPages()) {
+            return;
+        }
+        for (const [held, start] of this.unfinished) {
+            this.finish(held, start, state);
+        }
+        this.unfinished.length = 0;
+    }
+
+    private fixed(page: PageLayout, position: number): void {
+        // CSS Position 3 §3.1 and CSS 2 §9.6.1: the fixed boxes are on every page, the blank ones too, with the page area as containing block.
+        const area: Rectangle = page.canvas.pageArea;
+        const fragments: Array<BoxFragment> = [];
+        for (const fragment of [page.content, page.footnotes, ...(page.floats ?? [])]) {
+            if (fragment !== undefined) {
+                fragments.push(fragment);
+            }
+        }
+        const spare: BoxFragment | undefined = this.setup.layout.fixedPage(this.setup.boxes, fragments, this.horizontal ? area.width : area.height,
+            this.horizontal ? area.height : area.width, position === 1);
+        if (spare !== undefined) {
+            page.fixed = spare;
         }
     }
 
@@ -366,7 +618,7 @@ export class PageDriver {
             }
             state.seen = state.seen || child.pieces.length > 0;
         }
-        if (fragment.token === undefined) {
+        if (fragment.token === undefined || fragment.token.ended === true) {
             this.assign(box.trailingStrings, state);
         }
     }
@@ -644,6 +896,8 @@ export class PageDriver {
         const across: number = free.inlineSize;
         const room: number = free.blockSize;
         const others: ReadonlyArray<BoxFragment> = floats.map((float: StackedFloat) => float.fragment);
+        this.origin = [free.inlineStart, free.blockStart];
+        this.first = canvas.context.position === 1;
         if (!this.setup.builder.footnotes) {
             return ended ? {} : { content: this.content(root, across, room, NO_CALLS, token, end) };
         }
@@ -661,7 +915,7 @@ export class PageDriver {
         if (carry !== undefined) {
             // XSL 1.1 §6.12.3: the rest of a footnote body goes on the next pages "before any other content is placed".
             placed = this.place(unlimited, carry, [], inline, extent, limit);
-            if (placed.carry !== undefined && limit >= room) {
+            if (this.bodiesGoOn(placed.carry) && limit >= room) {
                 return this.result(undefined, placed, extent);
             }
             reserve = placed.extent;
@@ -670,11 +924,11 @@ export class PageDriver {
         let content: BoxFragment = this.content(root, across, room - reserve, pushed, token, end);
         // §2.4.2: "it is undesirable for a page to consist only of footnotes", which max-height prevents by keeping room for
         // the content; on the page where the content ends no content needs it, so the area takes the room the content leaves.
-        const cap: number = content.token === undefined ? room : limit;
-        if (placed?.carry !== undefined && cap > limit) {
+        const cap: number = content.token === undefined || content.token.ended === true ? room : limit;
+        if (this.bodiesGoOn(placed?.carry) && cap > limit) {
             placed = this.place(unlimited, carry, [], inline, extent, room - this.used(content));
         }
-        if (placed?.carry !== undefined) {
+        if (placed !== undefined && this.bodiesGoOn(placed.carry)) {
             // Footnotes keep their order, so those called on a page that still continues earlier ones start on a later page.
             return this.result(content, this.deferring(placed, this.calls(content, placed.fragment, others), style, inline), extent);
         }
@@ -689,13 +943,13 @@ export class PageDriver {
             // GCPM 3 §2.2: the body goes in the footnote area of the page of its call, in the room the content leaves or in
             // the room it leaves once laid out again above a larger area.
             const trial: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, left);
-            if (trial.carry === undefined && trial.fits) {
+            if (!this.bodiesGoOn(trial.carry) && trial.fits) {
                 accepted.push(next);
                 placed = trial;
                 continue;
             }
             const whole: Placed = this.place(unlimited, carry, [...accepted, next], inline, extent, cap);
-            if (whole.carry === undefined && whole.fits) {
+            if (!this.bodiesGoOn(whole.carry) && whole.fits) {
                 const above: BoxFragment = this.content(root, across, room - whole.extent, pushed, token, end);
                 if (this.calls(above, whole.fragment, others)[accepted.length] === next) {
                     accepted.push(next);
@@ -762,7 +1016,7 @@ export class PageDriver {
         // The area of each page is a box of its own, which only resumes the footnote that the area of the page before broke.
         const previous: BreakToken | undefined = carry?.token;
         let incoming: BreakToken | undefined;
-        if (previous !== undefined && (previous.inner !== undefined || previous.parallel !== undefined)) {
+        if (previous !== undefined && (previous.inner !== undefined || previous.parallel !== undefined || previous.positioned !== undefined)) {
             incoming = { box: previous.box, consumed: 0, child: 0, sequence: 0 };
             if (previous.inner !== undefined) {
                 incoming.inner = previous.inner;
@@ -770,16 +1024,25 @@ export class PageDriver {
             if (previous.parallel !== undefined) {
                 incoming.parallel = previous.parallel;
             }
+            if (previous.positioned !== undefined) {
+                incoming.positioned = previous.positioned;
+            }
         }
         const fragment: BoxFragment = this.setup.layout.footnoteArea(area, inline, extent, space, incoming);
         const size: number = this.sum(fragment.marginBefore) + fragment.blockSize + this.sum(fragment.marginAfter);
         const placed: Placed = { fragment, extent: size, fits: size <= space + TOLERANCE };
         const token: BreakToken | undefined = fragment.token;
         const rest: ReadonlyArray<ElementBox> = token === undefined ? [] : nodes.slice(token.child);
-        if (token !== undefined && (rest.length > 0 || token.parallel !== undefined)) {
+        if (token !== undefined && (rest.length > 0 || token.parallel !== undefined || token.positioned !== undefined)) {
             placed.carry = { nodes: rest, token };
         }
         return placed;
+    }
+
+    private bodiesGoOn(carry: Carry | undefined): boolean {
+        // XSL 1.1 §6.12.3 puts the rest of a footnote body first on the next page; a carry that holds only positioned boxes overflowing the area
+        // (CSS Fragmentation 4 §5.5) goes on with it without taking that room.
+        return carry !== undefined && (carry.nodes.length > 0 || carry.token?.parallel !== undefined);
     }
 
     private deferring(placed: Placed, bodies: ReadonlyArray<ElementBox>, style: ComputedStyle, inline: number): Placed {
@@ -832,7 +1095,9 @@ export class PageDriver {
             const inlined: boolean = kinds[index] === "inline" || (kinds[index] === "compact" && (shares(index, index - 1) || shares(index, index + 1)));
             if (!inlined) {
                 flush();
-                nodes.push({ ...body, placement: "in-flow", startPage: "", endPage: "" });
+                const block: ElementBox = { ...body, placement: "in-flow", startPage: "", endPage: "" };
+                this.setup.layout.registerCopy(block, body);
+                nodes.push(block);
                 continue;
             }
             // CSS 2 §9.2.1.1: an inline box that holds block-level boxes is broken around them.
@@ -865,6 +1130,7 @@ export class PageDriver {
                     ...body, display: INLINE_DISPLAY, placement: "in-flow", hasStartEdge: seen === 0, hasEndEdge: seen === count - 1, startPage: "", endPage: "", children: []
                 };
                 seen++;
+                this.setup.layout.registerCopy(part, body);
                 parts.push(part);
                 items.push({ kind: "open", node: part }, ...(segment as ReadonlyArray<InlineItem>), { kind: "close", node: part });
             }
@@ -901,6 +1167,12 @@ export class PageDriver {
         }
         for (const float of floats ?? []) {
             this.anchors(float, found);
+        }
+        // CSS Position 3 §3.1: the copies of the fixed boxes are placed once the page is laid out, and their first one is on the first page.
+        for (const box of this.first ? this.setup.layout.fixedFootnotes(this.setup.boxes) : []) {
+            if (!found.includes(box)) {
+                found.push(box);
+            }
         }
         // §2.2: "Footnote elements from a given page are placed in the footnote area of that page in document order."
         return this.inOrder(found);
@@ -969,7 +1241,7 @@ export class PageDriver {
     }
 
     private reach(fragment: BoxFragment): number {
-        if (fragment.token === undefined) {
+        if (fragment.token === undefined || fragment.token.ended === true) {
             return fragment.blockSize;
         }
         const start: number = (fragment.border?.[BoxSizes.BLOCK_START] ?? 0) + (fragment.padding?.[BoxSizes.BLOCK_START] ?? 0);
@@ -1000,10 +1272,18 @@ export class PageDriver {
         // §2.7.2: first, last and first-except read assignments that can come after the text on its page, so the whole page
         // is laid out before its texts are known.
         const strings: NamedValues<string> = state.strings.copy();
-        strings.nextPage();
         const trial: Pass = {
             ...state, strings, running: new NamedValues<ElementBox>(), assigned: new WeakSet<ReadonlyArray<NamedString>>(), seen: false, trial: true, labels: []
         };
+        // "The entry value for a page is the assignment in effect at the end of the previous page", so the pages held before this one, which
+        // positioned boxes may still reach (CSS Fragmentation 4 §5.5), give theirs first.
+        for (const [held] of this.unfinished) {
+            strings.nextPage();
+            trial.seen = false;
+            this.pageAssignments(held, trial);
+        }
+        strings.nextPage();
+        trial.seen = false;
         this.assignments(content, trial);
         for (const float of floats) {
             this.assignments(float, trial);
@@ -1011,8 +1291,10 @@ export class PageDriver {
         const values: Array<string> = [];
         const changed: Map<InlineSequence, Array<readonly [[TextSequence, string], string]>> = new Map<InlineSequence, Array<readonly [[TextSequence, string], string]>>();
         for (const [call, sequence] of found) {
-            const value: string = strings.value(call[0], call[1]) ?? "";
             const entry: [TextSequence, string] | undefined = named.get(call);
+            // The value that the held pages give once they are final, which an earlier layout found.
+            const corrected: ReadonlyArray<string> | undefined = entry === undefined || this.unfinished.length === 0 ? undefined : this.heldStrings.get(entry[0]);
+            const value: string = corrected?.[corrected.length - 1] ?? strings.value(call[0], call[1]) ?? "";
             values.push(value);
             if (entry === undefined || entry[1] === value) {
                 continue;
@@ -1111,7 +1393,7 @@ export class PageDriver {
                     }
                 }
             }
-            if (!lined && fragment.resumed !== true && fragment.token === undefined) {
+            if (!lined && fragment.resumed !== true && (fragment.token === undefined || fragment.token.ended === true)) {
                 for (const index of indexes) {
                     found.set((sequence.items[index].node as TextSequence).named as readonly [string, string], sequence);
                 }
@@ -1142,7 +1424,7 @@ export class PageDriver {
     private content(root: ElementBox, inline: number, extent: number, pushed: ReadonlySet<ElementBox>, token?: BreakToken, end?: Candidate): BoxFragment {
         const layout: BlockLayout = this.setup.layout;
         layout.pushCalls(pushed);
-        const fragment: BoxFragment = layout.page(root, inline, extent, token, end, this.whole);
+        const fragment: BoxFragment = layout.page(root, inline, extent, token, end, this.whole, this.origin);
         layout.pushCalls(NO_CALLS);
         return fragment;
     }

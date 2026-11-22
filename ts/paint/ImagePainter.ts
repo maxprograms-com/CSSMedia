@@ -22,7 +22,7 @@ import { CssUnits } from "../css/values/CssUnits.js";
 import type { ColorValue, CssValue, FunctionValue } from "../css/values/CssValue.js";
 import type { Matrix } from "../geometry/PathGeometry.js";
 import { PathGeometry } from "../geometry/PathGeometry.js";
-import type { ImageAlpha, ImageFormats, ImageSize } from "../images/ImageFormats.js";
+import type { ImageAlpha, ImageDrawing, ImageFormats, ImageSize } from "../images/ImageFormats.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
 import type { Transform } from "../layout/BoxSizes.js";
 import type { BoxFragment, ObjectArea } from "../layout/Fragment.js";
@@ -44,7 +44,12 @@ export interface TileLayer {
     repeatY: string;
 }
 
-const NO_LINKS: ReadonlyArray<readonly [PageRectangle, string, boolean]> = [];
+export interface ImageMarks {
+    links: ReadonlyArray<readonly [PageRectangle, string, boolean]>;
+    destinations: ReadonlyArray<readonly [string, number, number]>;
+}
+
+const NO_MARKS: ImageMarks = { links: [], destinations: [] };
 const NO_NATURAL: Natural = [undefined, undefined, undefined];
 const SUPPORTED_TYPES: ReadonlySet<string> = new Set<string>([
     "image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/tiff", "image/jp2", "image/svg+xml", "application/mathml+xml"
@@ -203,13 +208,22 @@ export class ImagePainter {
         }
     }
 
-    tile(image: CssValue, layer: TileLayer, area: Rectangle, painting: Rectangle, base: Matrix, style: ComputedStyle, pdf: PdfPage): void {
+    tile(image: CssValue, layer: TileLayer, area: Rectangle, painting: Rectangle, base: Matrix, style: ComputedStyle, pdf: PdfPage, sizing?: Rectangle): void {
         // The image sized, positioned and repeated in the positioning area, and where it repeats, over the painting area.
         const natural: Natural | undefined = this.natural(image, style);
         if (natural === undefined) {
             return;
         }
-        const size: readonly [number, number] = this.size(layer.size, natural, area, layer.repeatX === "round", layer.repeatY === "round");
+        let size: readonly [number, number] = this.size(layer.size, natural, area, layer.repeatX === "round", layer.repeatY === "round");
+        if (sizing !== undefined) {
+            // CSS Fragmentation 4 §5.4.1: "if the used height (width) of an image is derived from the width (height) of the box, then it is calculated
+            // using the widest fragment's width and maintained as a fixed size"; the sizing area is wider only across the joined axis.
+            const widest: readonly [number, number] = this.size(layer.size, natural, sizing, layer.repeatX === "round", layer.repeatY === "round");
+            const across: boolean = sizing.width !== area.width;
+            if (across ? widest[1] !== size[1] : (sizing.height !== area.height && widest[0] !== size[0])) {
+                size = widest;
+            }
+        }
         if (!(size[0] > 0) || !(size[1] > 0)) {
             return;
         }
@@ -602,11 +616,12 @@ export class ImagePainter {
         return value !== undefined && value.kind === "url" && this.images.unclipped(value.href);
     }
 
-    paint(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage): ReadonlyArray<readonly [PageRectangle, string, boolean]> {
-        // The result is the links inside the image, as areas where the image is drawn, a destination name or a URI.
+    paint(fragment: BoxFragment, transform: Transform, frame: number, pdf: PdfPage, page?: Rectangle): ImageMarks {
+        // The result is the links and the destinations inside the image, where the image is drawn; the page box is given where
+        // a fixed background inside the image is placed by it.
         const value: CssValue | undefined = this.image(fragment);
         if (value === undefined) {
-            return NO_LINKS;
+            return NO_MARKS;
         }
         const inner: Transform = this.sizes.compose(transform, this.sizes.inside(fragment, frame));
         // The sizes of the fragment are in the axes of its container and its edges in its own, which an orthogonal flow turns.
@@ -622,11 +637,11 @@ export class ImagePainter {
             pdf.content.clip(false);
             this.paintImage(value, target, fragment.box.style, pdf);
             pdf.content.restore();
-            return NO_LINKS;
+            return NO_MARKS;
         }
         const unclipped: boolean = this.images.unclipped(value.href);
         if ((target[2] <= 0 || target[3] <= 0) && !unclipped) {
-            return NO_LINKS;
+            return NO_MARKS;
         }
         const natural: readonly [number, number, number, number] | undefined = fragment.natural === undefined ? undefined
             : this.sizes.mapped(inner, 0, 0, fragment.natural[0], fragment.natural[1]);
@@ -635,27 +650,17 @@ export class ImagePainter {
             pdf.content.rectangle(box[0], box[1], box[2], box[3]);
             pdf.content.clip(false);
         }
-        const links: ReadonlyArray<readonly [PageRectangle, string, boolean]> = this.draw(value.href, [target[0], target[1], target[2], target[3]],
-            fragment.box.style.values, false, pdf, natural === undefined ? undefined : [natural[2], natural[3]]);
+        const marks: ImageMarks = this.draw(value.href, [target[0], target[1], target[2], target[3]], fragment.box.style.values, false, pdf,
+            natural === undefined ? undefined : [natural[2], natural[3]], page);
         pdf.content.restore();
-        return links;
+        return marks;
     }
 
     draw(href: string, target: readonly [number, number, number, number], values: Readonly<Record<string, CssValue>>, decorative: boolean, pdf: PdfPage,
-        natural?: readonly [number, number]): ReadonlyArray<readonly [PageRectangle, string, boolean]> {
-        // The image fills the target, given as x, y, width and height on the page; the result is the links inside it. Exif 2.32 §4.6.4: each
-        // orientation puts the stored column s and row t of a point at X = xs s + xt t + x0 across and Y = ys s + yt t + y0 down the image.
+        natural?: readonly [number, number], page?: Rectangle): ImageMarks {
+        // The image fills the target, given as x, y, width and height on the page; the result is the links and destinations inside it. Exif 2.32
+        // §4.6.4: each orientation puts the stored column s and row t of a point at X = xs s + xt t + x0 across and Y = ys s + yt t + y0 down the image.
         const [xs, xt, x0, ys, yt, y0]: readonly [number, number, number, number, number, number] = ORIENTATIONS[this.orientation(values["image-orientation"], href, decorative) - 1];
-        // CSS Images 3 §5.2: the multiple of pixelated is taken along the axes of the stored image, which a turn swaps.
-        const rendering: CssValue | undefined = values["image-rendering"];
-        const keyword: string = rendering !== undefined && rendering.kind === "ident" ? rendering.lower : "auto";
-        const shown: readonly [number, number] = this.images.multiple(keyword, [target[2], target[3]], natural ?? [0, 0]);
-        const resource: ImageResource | undefined = this.images.image(href, {
-            width: target[2], height: target[3], scale: 1, rendering: keyword, multiple: xs === 0 ? [shown[1], shown[0]] : shown
-        });
-        if (resource === undefined) {
-            return NO_LINKS;
-        }
         const [x, y, width, height] = target;
         // A form with ink outside a box of no size cannot be scaled to it, so its matrix and this one keep the scale 1 in that axis.
         const across: number = width > 0 ? width : 1;
@@ -664,12 +669,54 @@ export class ImagePainter {
         // has y going down.
         const matrix: readonly [number, number, number, number, number, number] = [across * xs, down * ys, -across * xt, -down * yt, x + width * (x0 + xt),
             y + height * (y0 + yt)];
+        // CSS Images 3 §5.2: the multiple of pixelated is taken along the axes of the stored image, which a turn swaps.
+        const rendering: CssValue | undefined = values["image-rendering"];
+        const keyword: string = rendering !== undefined && rendering.kind === "ident" ? rendering.lower : "auto";
+        const shown: readonly [number, number] = this.images.multiple(keyword, [target[2], target[3]], natural ?? [0, 0]);
+        const drawing: ImageDrawing = { width: target[2], height: target[3], scale: 1, rendering: keyword, multiple: xs === 0 ? [shown[1], shown[0]] : shown };
+        const unit: readonly [number, number, number, number] | undefined = page === undefined ? undefined : this.unitArea(page, matrix);
+        if (unit !== undefined) {
+            drawing.page = unit;
+        }
+        const resource: ImageResource | undefined = this.images.image(href, drawing);
+        if (resource === undefined) {
+            return NO_MARKS;
+        }
         pdf.content.save();
         pdf.content.transform(matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         pdf.content.paintXObject(pdf.useImage(resource));
         pdf.content.restore();
-        return resource.links === undefined ? NO_LINKS : resource.links.map(([area, name, internal]: readonly [PageRectangle, string, boolean]):
-            readonly [PageRectangle, string, boolean] => [this.placed(area, matrix), name, internal]);
+        if (resource.links === undefined && resource.destinations === undefined) {
+            return NO_MARKS;
+        }
+        return {
+            links: (resource.links ?? []).map(([area, name, internal]: readonly [PageRectangle, string, boolean]): readonly [PageRectangle, string, boolean] =>
+                [this.placed(area, matrix), name, internal]),
+            destinations: (resource.destinations ?? []).map(([name, u, v]: readonly [string, number, number]): readonly [string, number, number] =>
+                [name, matrix[0] * u + matrix[2] * (1 - v) + matrix[4], matrix[1] * u + matrix[3] * (1 - v) + matrix[5]])
+        };
+    }
+
+    private unitArea(page: Rectangle, matrix: readonly [number, number, number, number, number, number]): readonly [number, number, number, number] | undefined {
+        // The page box in the unit square of the image, with v going down; the orientations turn by quarter turns, so the corners taken back
+        // by the inverse of the matrix bound it exactly.
+        const determinant: number = matrix[0] * matrix[3] - matrix[1] * matrix[2];
+        if (determinant === 0) {
+            return undefined;
+        }
+        const us: Array<number> = [];
+        const vs: Array<number> = [];
+        for (const px of [page.x, page.x + page.width]) {
+            for (const py of [page.y, page.y + page.height]) {
+                const dx: number = px - matrix[4];
+                const dy: number = py - matrix[5];
+                us.push((matrix[3] * dx - matrix[2] * dy) / determinant);
+                vs.push(1 - (matrix[0] * dy - matrix[1] * dx) / determinant);
+            }
+        }
+        const left: number = Math.min(...us);
+        const top: number = Math.min(...vs);
+        return [left, top, Math.max(...us) - left, Math.max(...vs) - top];
     }
 
     private placed(area: PageRectangle, matrix: readonly [number, number, number, number, number, number]): PageRectangle {

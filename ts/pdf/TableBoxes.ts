@@ -105,6 +105,7 @@ export class TableBoxes {
         grid.style = this.splitStyle(style, false);
         grid.display = { ...grid.display, outer: "block" };
         grid.placement = "in-flow";
+        grid.wrapped = true;
         delete grid.runningName;
         this.pageValues(wrapper);
         return wrapper;

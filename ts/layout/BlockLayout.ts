@@ -19,19 +19,25 @@
  *******************************************************************************/
 
 import type { CalcAnchor, CalcNode, CssValue } from "../css/values/CssValue.js";
+import type { Box, Homography } from "../geometry/PathGeometry.js";
+import type { Matrix4 } from "../svg/SvgGeometry.js";
 import type { ImageAlpha, ImageFormats, ImageSize } from "../images/ImageFormats.js";
 import type { BoxNode, ElementBox, InlineSequence, InlineText } from "../pdf/BoxTree.js";
-import type { ComputedStyle } from "../pdf/ComputedStyle.js";
+import type { ComputedStyle, PositionOption } from "../pdf/ComputedStyle.js";
+import type { SourceElement } from "../parse/SourceElement.js";
 import type { DisplayType } from "../pdf/DisplayTypes.js";
 import { DisplayTypes } from "../pdf/DisplayTypes.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
 import type { InlineTextBuilder } from "../pdf/InlineTextBuilder.js";
 import type { NaturalSizes, Transform, UsedSizes } from "./BoxSizes.js";
+import type { Alignment, Area } from "./AnchorPositioning.js";
+import { AnchorPositioning } from "./AnchorPositioning.js";
 import { BoxSizes } from "./BoxSizes.js";
+import { BoxTransforms } from "./BoxTransforms.js";
 import { ContentAlignment } from "./ContentAlignment.js";
 import type { FloatArea, StackedFloat } from "./FloatStack.js";
 import { FloatStack } from "./FloatStack.js";
-import type { BoxFragment, BreakToken, LineFragment, Margins, ObjectArea, PlainLine, Sides } from "./Fragment.js";
+import type { AnchorLink, BoxFragment, BreakToken, LineFragment, Margins, ObjectArea, PlainLine, PositionedCarry, Sides, TextPiece } from "./Fragment.js";
 import type { TextEdges } from "./InlineLayout.js";
 import { InlineLayout } from "./InlineLayout.js";
 import { LetterGeometry } from "./LetterGeometry.js";
@@ -41,6 +47,9 @@ const NO_MARGIN: Margins = [0, 0];
 const DEFAULT_WIDTH: number = 300;
 const DEFAULT_HEIGHT: number = 150;
 const VISIBLE_OVERFLOW: ReadonlyArray<string> = ["visible", "clip"];
+const SCROLLING_OVERFLOW: ReadonlySet<string> = new Set<string>(["hidden", "scroll", "auto"]);
+const PHYSICAL_EDGES: ReadonlyArray<string> = ["top", "right", "bottom", "left"];
+const EDGE_TOLERANCE: number = 0.01;
 const TOLERANCE: number = 0.001;
 const FLOAT_FIELDS: number = 4;
 const START_FLOATS: ReadonlySet<string> = new Set<string>(["inline-start", "block-start", "top"]);
@@ -144,6 +153,130 @@ interface Contour {
     shaped?: boolean;
 }
 
+interface Holder {
+    fragment?: BoxFragment;
+    transform: Transform;
+    frame: number;
+    depth: number;
+}
+
+interface AnchorFound {
+    path?: ReadonlyArray<ElementBox>;
+    bounds?: Map<ElementBox, [number, number, number, number]>;
+}
+
+interface AnchorContext {
+    owners: ReadonlyArray<number>;
+    box: ElementBox;
+    style: ComputedStyle;
+    container: BoxFragment;
+    base: Transform;
+    frame: number;
+    region: [number, number, number, number];
+    found: AnchorFound;
+    usesDefault: boolean;
+    missing: boolean;
+}
+
+interface AbsoluteSetting {
+    box: ElementBox;
+    container: BoxFragment;
+    base: Transform;
+    containing: number;
+    inlineSize: number;
+    blockSize: number;
+    statics: readonly [number, number, number, number];
+    staticFrame: number;
+    parent: ElementBox | undefined;
+    initial: boolean;
+    found: AnchorFound;
+}
+
+interface OptionArea {
+    area?: Area;
+    anchor?: readonly [number, number, number, number];
+    justify: Alignment;
+    align: Alignment;
+}
+
+interface AbsolutePlace {
+    fragment: BoxFragment;
+    inline: number;
+    block: number;
+    across: number;
+    down: number;
+    overflows: boolean;
+    corrected: boolean;
+    context: AnchorContext;
+    sizes: UsedSizes;
+    size: number;
+    monolithic: boolean;
+}
+
+interface ChainPart {
+    fragment: BoxFragment;
+    content: BoxFragment;
+    base: Transform;
+    room: number;
+}
+
+interface Waiting {
+    box: ElementBox;
+    placeholder: BoxFragment;
+    local: Transform;
+    frame: number;
+    part: number;
+    path: ReadonlyArray<ElementBox>;
+    replace: (piece?: BoxFragment) => () => void;
+}
+
+interface Chain {
+    parts: Array<ChainPart>;
+    waiting: Array<Waiting>;
+    placed: Array<() => void>;
+    initial: boolean;
+    done: boolean;
+    area?: InlineArea;
+}
+
+interface InlineArea {
+    rectangle: readonly [number, number, number, number];
+    box: ElementBox;
+}
+
+interface InlineHolder {
+    box: ElementBox;
+    pieces: Array<readonly [readonly [number, number, number, number], number, number]>;
+    chain: Chain;
+}
+
+interface InlineChain {
+    parts: Array<ChainPart>;
+    holders: Map<SourceElement, InlineHolder>;
+}
+
+interface Overflow {
+    box: ElementBox;
+    token?: BreakToken;
+    whole?: BoxFragment;
+    part?: ChainPart;
+    area: readonly [number, number, number, number];
+    offset: number;
+    sizes: UsedSizes;
+    size: number;
+    context?: AnchorContext;
+    margin?: Sides;
+    hidden?: boolean;
+    anchoredTo?: AnchorLink;
+}
+
+interface Spread {
+    pieces: Array<readonly [BoxFragment, number, number]>;
+    rest?: BreakToken;
+    beyond: boolean;
+    start: number;
+}
+
 interface Wrapping {
     area: WrappingArea;
     critical: Float64Array;
@@ -199,8 +332,9 @@ export class BlockLayout {
     pageEarlier?: Candidate;
     endsSpread: boolean = false;
     private bandOffset: number = 0;
-    private readonly sizes: BoxSizes = new BoxSizes((anchor: CalcAnchor, block: boolean): number | undefined => this.anchorLength(anchor, block));
+    private readonly sizes: BoxSizes = new BoxSizes((anchor: CalcAnchor, block: boolean, side?: number): number | undefined => this.anchorLength(anchor, block, side));
     private readonly letters: LetterGeometry = new LetterGeometry();
+    private readonly transforms: BoxTransforms = new BoxTransforms(this.sizes);
     private readonly inline: InlineLayout;
     private readonly trimmed: WeakSet<LineFragment> = new WeakSet<LineFragment>();
     private readonly columnBoxes: WeakMap<ElementBox, Array<ColumnPart>> = new WeakMap<ElementBox, Array<ColumnPart>>();
@@ -218,6 +352,7 @@ export class BlockLayout {
     private initialInline: number = 0;
     private initial: readonly [number, number] = UNLIMITED;
     private frame: number = 0;
+    private parentItems: CssValue | undefined = undefined;
     private sign: number = 1;
     private limit: number = Number.POSITIVE_INFINITY;
     private port: readonly [number, number] = UNLIMITED;
@@ -229,10 +364,15 @@ export class BlockLayout {
     private pushedFloat: boolean = false;
     private rootBox?: ElementBox;
     private anchorNames?: Map<string, Array<ReadonlyArray<ElementBox>>>;
-    private readonly anchoring: Array<readonly [number, ElementBox, BoxFragment]> = [];
+    private anchorOwners?: Map<ElementBox, ElementBox>;
+    private elementOwners?: Map<SourceElement, Map<string, ElementBox>>;
+    private readonly indexedTrees: Set<ElementBox> = new Set<ElementBox>();
+    private readonly anchoring: Array<AnchorContext> = [];
+    private readonly anchorRules: AnchorPositioning = new AnchorPositioning(this.sizes);
     private pushed: ReadonlySet<ElementBox> = NO_CALLS;
     readonly floatStack: FloatStack = new FloatStack(this.sizes);
     shapeImages?: (value: CssValue, style: ComputedStyle, width: number, height: number) => ImageAlpha | undefined;
+    innerLayout?: (box: ElementBox, sizes: UsedSizes, inlineSize?: number) => BoxFragment | undefined;
     private readonly floatCopies: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
     private readonly pageCopies: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
     private pageFlow: boolean = false;
@@ -242,6 +382,19 @@ export class BlockLayout {
     private readonly snapMarkers: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
     private readonly snapOrigins: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
     private readonly snapBoxes: WeakMap<ElementBox, ReadonlyArray<ElementBox>> = new WeakMap<ElementBox, ReadonlyArray<ElementBox>>();
+    private readonly fixedStatic: Map<ElementBox, readonly [number, number, number, number, number]> = new Map<ElementBox, readonly [number, number, number, number, number]>();
+    private readonly fixedKnown: Map<ElementBox, readonly [number, number, number, number, number]> = new Map<ElementBox, readonly [number, number, number, number, number]>();
+    private fixedRoot?: ElementBox;
+    private fixedList: ReadonlyArray<ElementBox> = [];
+    private readonly fixedPaths: Map<ElementBox, ReadonlyArray<ElementBox>> = new Map<ElementBox, ReadonlyArray<ElementBox>>();
+    private readonly boxOrder: Map<ElementBox, number> = new Map<ElementBox, number>();
+    private readonly copyOrigins: WeakMap<ElementBox, ElementBox> = new WeakMap<ElementBox, ElementBox>();
+    private readonly chains: Map<ElementBox, Chain> = new Map<ElementBox, Chain>();
+    private readonly inlineChains: Map<ElementBox, InlineChain> = new Map<ElementBox, InlineChain>();
+    private overflows: Array<Overflow> = [];
+    private placements: number = 0;
+    private readonly carriedContexts: WeakMap<PositionedCarry, AnchorContext> = new WeakMap<PositionedCarry, AnchorContext>();
+    private pageArea: readonly [number, number] = UNLIMITED;
 
     constructor(metrics: FontMetrics, text: InlineTextBuilder, images: ImageFormats, contents?: ContainerContents) {
         this.images = images;
@@ -291,30 +444,40 @@ export class BlockLayout {
         }
     }
 
-    page(box: ElementBox, inlineSize: number, blockSize: number, token?: BreakToken, end?: Candidate, whole?: readonly [number, number]): BoxFragment {
+    page(box: ElementBox, inlineSize: number, blockSize: number, token?: BreakToken, end?: Candidate, whole?: readonly [number, number],
+        origin?: readonly [number, number]): BoxFragment {
         // CSS Paged Media 3 §3: the page area of the first page is the initial containing block, the containing block of the
         // root element (CSS 2 §10.1); CSS Writing Modes 4 §8.1: it takes the writing mode of the root element. The page floats
         // take part of the page area, which stays the initial containing block.
         this.frame = this.sizes.frame(box.style);
         this.sign = 1;
         this.pageFlow = true;
+        this.pageArea = whole ?? [inlineSize, blockSize];
         if (token === undefined) {
-            const area: readonly [number, number] = whole ?? [inlineSize, blockSize];
+            const area: readonly [number, number] = this.pageArea;
             this.initialInline = area[0];
             this.rootBox = box;
+            this.chains.clear();
+            this.inlineChains.clear();
             this.initial = (this.frame & BoxSizes.VERTICAL) === 0 ? [area[0], area[1]] : [area[1], area[0]];
         }
         const initialBlock: number = (this.frame & BoxSizes.VERTICAL) === 0 ? this.initial[1] : this.initial[0];
         // CSS Fragmentation 4 §5.1: "Layout is performed per-fragmentainer, with each fragmentainer continuing progress from the
         // breakpoint on the previous"; §4: "fragmentainers are assumed to have a minimum block size of 1px".
         const space: number = Math.max(MINIMUM_FRAGMENTAINER, blockSize);
+        this.overflows = [];
         const fragment: BoxFragment = this.fragmented(PAGE_CONTEXT, space, inlineSize, token,
             (): BoxFragment => this.block(box, inlineSize, true, 0, 0, initialBlock, undefined, 0, space, token, false), end);
+        const state: Fragmentation = this.pageState as Fragmentation;
         // CSS 2 §8.3.1: "Margins of the root element's box do not collapse."
         fragment.block = fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1];
-        this.positioned(fragment, true);
         const taken: Candidate | undefined = this.tokenCandidate([], fragment.token, APPEAL_PERFECT);
-        const state: Fragmentation = this.pageState as Fragmentation;
+        this.carryIn(fragment, token, PAGE_CONTEXT, space);
+        // CSS 2 §10.1 and CSS Paged Media 3 §3.2: an absolutely positioned box that no box contains takes the page area, on its own page as
+        // CSS Position 3 §3.5.3 allows; the fixed boxes take the page area of each page, which fixedPage() gives them.
+        this.pageAbsolutes(fragment, origin ?? [0, 0]);
+        this.carryOut(fragment);
+        this.overflows = [];
         const earlier: Candidate | undefined = taken !== undefined && state.best !== undefined && this.sameCandidate(state.best, taken) ? state.prior : state.best;
         if (taken === undefined) {
             delete this.pageBreak;
@@ -358,7 +521,13 @@ export class BlockLayout {
         this.frame = this.sizes.frame(box.style);
         this.sign = 1;
         this.pageFlow = false;
-        return this.flow(box, sizes, inlineSize, 0, true, 0, 0);
+        const fragment: BoxFragment = this.flow(box, sizes, inlineSize, 0, true, 0, 0);
+        this.usedMargins(fragment, sizes, this.frame, this.frame, this.sizes.margin(sizes, BoxSizes.INLINE_START) ?? 0, this.sizes.margin(sizes, BoxSizes.INLINE_END) ?? 0);
+        // CSS Position 3 §3.1: a fixed box of a running element takes the page area, where fixedPage() places its copies.
+        if (fragment.children !== undefined && this.fixedList.length > 0) {
+            this.staticPlaces(fragment.children, undefined, this.frame);
+        }
+        return fragment;
     }
 
     marginContent(box: ElementBox): readonly [number, number] {
@@ -383,9 +552,26 @@ export class BlockLayout {
         // The space is the margin box of the area, whose block-start margin comes before the fragmentainer that it breaks in.
         const before: number = this.sizes.margin(this.sizes.of(area.style, inlineSize, blockSize), BoxSizes.BLOCK_START) ?? 0;
         const room: number = Math.max(MINIMUM_FRAGMENTAINER, space - before);
-        const fragment: BoxFragment = this.fragmented(PAGE_CONTEXT, room, inlineSize, token,
-            (): BoxFragment => this.block(area, inlineSize, true, 0, 0, blockSize, undefined, 0, room, token, false));
-        this.positioned(fragment, true);
+        const outer: Array<Overflow> = this.overflows;
+        const lay: (extent: number) => BoxFragment = (extent: number): BoxFragment => {
+            this.overflows = [];
+            const laid: BoxFragment = this.fragmented(PAGE_CONTEXT, extent, inlineSize, token,
+                (): BoxFragment => this.block(area, inlineSize, true, 0, 0, blockSize, undefined, 0, extent, token, false));
+            this.carryIn(laid, token, PAGE_CONTEXT, extent);
+            // The area of each page is a box of its own, so the boxes it contains are placed at once, and what goes past its end goes on in the next one.
+            this.placeAlone({ fragment: laid, content: laid, base: this.paddingBase(laid), room: extent }, false, false);
+            return laid;
+        };
+        const placements: number = this.placements;
+        let fragment: BoxFragment = lay(room);
+        // GCPM 3 §2.4.1: the area touches the bottom of the page area, which ends its fragmentainer there, so positioned boxes placed against the
+        // room it was given are placed again in the room it takes.
+        const taken: number = fragment.blockSize + (fragment.marginAfter === undefined ? 0 : fragment.marginAfter[0] + fragment.marginAfter[1]);
+        if (this.placements !== placements && fragment.token === undefined && taken < room - TOLERANCE) {
+            fragment = lay(Math.max(MINIMUM_FRAGMENTAINER, taken));
+        }
+        this.carryOut(fragment);
+        this.overflows = outer;
         if (state === undefined) {
             delete this.pageState;
         } else {
@@ -481,16 +667,36 @@ export class BlockLayout {
     contain(fragment: BoxFragment): void {
         // CSS Position 3 §2.1 and CSS Containment 2 §3.2: a positioned box, or one with layout or paint containment, that
         // another layout mode lays out is the containing block of the absolutely positioned boxes inside it.
-        const box: ElementBox = fragment.box;
-        const containing: boolean = (this.containment(box) & CONTAINING_BLOCK) !== 0 || this.transforms(box);
-        if (containing || (this.keyword(box.style.values["position"]) !== "none" && this.keyword(box.style.values["position"]) !== "static")) {
+        this.containerOf(fragment, false, undefined, undefined);
+    }
+
+    private containerOf(fragment: BoxFragment, fragmenting: boolean, incoming: BreakToken | undefined, space: number | undefined): void {
+        // CSS Fragmentation 4 §5.5: in a fragmentation context the boxes of a containing block "will fragment across fragmentainers in the same
+        // fragmentation flow as the containing block", so they wait for all its fragments; outside one they are placed in the box at once.
+        const containing: boolean = this.fixedContainer(fragment.box);
+        if (!containing && !this.absoluteContainer(fragment.box)) {
+            return;
+        }
+        if (fragmenting || incoming !== undefined) {
+            this.chained(fragment, containing, incoming, space ?? Number.POSITIVE_INFINITY);
+        } else {
             this.positioned(fragment, containing);
         }
     }
 
-    private transforms(box: ElementBox): boolean {
-        // CSS Transforms 1 §3: a box with a transform "establish[es] a containing block for all descendants", the fixed ones too.
-        return this.displays.isTransformable(box.display, box.replaced) && this.displays.isTransforming(box.style.values);
+    private fixedContainer(box: ElementBox): boolean {
+        // CSS Transforms 1 §3: a transform "establish[es] a containing block for all descendants", and CSS Containment 2 §3.2 and §3.4: so
+        // does layout or paint containment, "an absolute positioning containing block and a fixed positioning containing block".
+        const root: boolean = box.element !== undefined && box.pseudoElement === undefined && box.element.getParent() === undefined;
+        return (this.containment(box) & CONTAINING_BLOCK) !== 0 || (this.displays.isTransformable(box.display, box.replaced) && this.displays.isTransforming(box.style.values, root))
+            || (!root && this.displays.isFiltering(box.style.values)) || this.displays.changesContaining(box.style.values, box.display, box.replaced, true, root);
+    }
+
+    private absoluteContainer(box: ElementBox): boolean {
+        // CSS Position 3 §2.1: a positioned box is the containing block of the absolutely positioned boxes inside it, and CSS Will Change 1 §2
+        // makes position named in will-change do the same.
+        const position: string = this.keyword(box.style.values["position"]);
+        return (position !== "none" && position !== "static") || this.displays.changesContaining(box.style.values, box.display, box.replaced, false);
     }
 
     crossedContent(box: ElementBox): readonly [number, number] {
@@ -1050,6 +1256,7 @@ export class BlockLayout {
             marker = { ...box, placement: "page-float" };
             this.snapMarkers.set(box, marker);
             this.snapOrigins.set(marker, box);
+            this.copyOrigins.set(marker, box);
         }
         return marker;
     }
@@ -1104,6 +1311,7 @@ export class BlockLayout {
         if (copy === undefined) {
             copy = { ...box, placement: "float" };
             this.floatCopies.set(box, copy);
+            this.copyOrigins.set(copy, box);
         }
         return copy;
     }
@@ -1125,6 +1333,7 @@ export class BlockLayout {
                 : box.style;
             copy = { ...box, style, placement: "float" };
             this.pageCopies.set(box, copy);
+            this.copyOrigins.set(copy, this.snapOrigin(box));
         }
         const laid: ElementBox = copy;
         const outerFrame: number = this.frame;
@@ -1134,7 +1343,7 @@ export class BlockLayout {
         try {
             const placed: readonly [BoxFragment, number] = this.apart((): readonly [BoxFragment, number] => this.atomic(laid, inlineSize, blockSize));
             const fragment: BoxFragment = placed[0];
-            this.positioned(fragment, true);
+            this.positioned(fragment, false);
             const before: number = fragment.marginBefore === undefined ? 0 : fragment.marginBefore[0] + fragment.marginBefore[1];
             const after: number = fragment.marginAfter === undefined ? 0 : fragment.marginAfter[0] + fragment.marginAfter[1];
             const stacked: StackedFloat = {
@@ -1277,6 +1486,7 @@ export class BlockLayout {
             const before: number = this.sizes.margin(crossing, this.sizes.side(parentFrame, frame, BoxSizes.INLINE_START)) ?? 0;
             const after: number = this.sizes.margin(crossing, this.sizes.side(parentFrame, frame, BoxSizes.INLINE_END)) ?? 0;
             const turned: BoxFragment = this.turned(this.crossed(box, crossing, frame, blockBasis, inlineSize, false), before, crossing, parentFrame, frame);
+            this.usedMargins(turned, crossing, parentFrame, frame, before, after);
             return [turned, before + turned.inlineSize + after];
         }
         let given: UsedSizes = this.sizes.of(box.style, inlineSize, blockBasis);
@@ -1309,6 +1519,7 @@ export class BlockLayout {
             delete fragment.firstBaseline;
             delete fragment.baseline;
         }
+        this.usedMargins(fragment, sizes, parentFrame, frame, start, end);
         this.reoriented(fragment, parentFrame, frame);
         return [fragment, start + fragment.inlineSize + end];
     }
@@ -1436,11 +1647,50 @@ export class BlockLayout {
         const start: number | undefined = this.sizes.margin(given, this.sizes.side(parentFrame, frame, BoxSizes.INLINE_START));
         const end: number | undefined = this.sizes.margin(given, this.sizes.side(parentFrame, frame, BoxSizes.INLINE_END));
         const free: number = containerInline - laid.blockSize;
+        const justify: Alignment | undefined = this.blockJustify(box, parentFrame, frame);
         let offset: number = start ?? 0;
         if (start === undefined) {
             offset = Math.max(0, end === undefined ? free / 2 : free - end);
+        } else if (end !== undefined && justify !== undefined) {
+            // CSS Box Alignment 3 §6.1.1: justify-self aligns the margin box in the containing block's inline axis, the box's block axis here.
+            offset = start + this.justified(justify, free - start - end);
         }
-        return this.turned(laid, offset, given, parentFrame, frame);
+        const turned: BoxFragment = this.turned(laid, offset, given, parentFrame, frame);
+        this.usedMargins(turned, given, parentFrame, frame, offset, free - offset);
+        return turned;
+    }
+
+    private blockJustify(box: ElementBox, parentFrame: number, frame: number): Alignment | undefined {
+        // CSS Box Alignment 3 §6.1.1: justify-self does not apply to floats and "Anonymous block boxes always behave as normal"; CSS Anchor
+        // Positioning 1 §4.2: anchor-center "behaves as center" on a box that is not absolutely positioned.
+        if (box.placement !== "in-flow" || (box.element === undefined && box.pseudoElement === undefined)) {
+            return undefined;
+        }
+        const alignment: Alignment = this.anchorRules.alignment(this.selfValue(box.style.values["justify-self"], this.parentItems), true, parentFrame, frame);
+        if (alignment.kind === "normal" || alignment.kind === "stretch") {
+            return undefined;
+        }
+        return alignment.kind === "anchor-center" ? { ...alignment, kind: "center" } : alignment;
+    }
+
+    private selfValue(value: CssValue | undefined, items: CssValue | undefined): CssValue | undefined {
+        // CSS Box Alignment 3 §6.1 and §6.2: auto "behaves as the computed justify-items value of the parent box (minus any legacy keywords)",
+        // and align-self as the parent's align-items.
+        if (value !== undefined && !(value.kind === "ident" && value.lower === "auto")) {
+            return value;
+        }
+        const kept: Array<CssValue> = (items === undefined ? [] : (items.kind === "list" ? [...items.items] : [items]))
+            .filter((item: CssValue) => !(item.kind === "ident" && item.lower === "legacy"));
+        return kept.length === 0 ? undefined : (kept.length === 1 ? kept[0] : { kind: "list", separator: "space", items: kept });
+    }
+
+    private justified(alignment: Alignment, free: number): number {
+        // CSS Box Alignment 3 §4.4: safe aligns a box that overflows as start; §4.4.1.3: without the scroll-container bias of its rule 2 a UA "must
+        // behave as safe for align-content on block containers and unsafe otherwise".
+        if (alignment.overflow === "safe" && free < 0) {
+            return 0;
+        }
+        return alignment.kind === "end" ? free : (alignment.kind === "center" ? free / 2 : 0);
     }
 
     private turned(laid: BoxFragment, offset: number, given: UsedSizes, parentFrame: number, frame: number): BoxFragment {
@@ -1532,6 +1782,11 @@ export class BlockLayout {
         if (this.sizes.isOrthogonal(parentFrame, frame) || this.tables.isGrid(box)) {
             const whole: BoxFragment = this.sizes.isOrthogonal(parentFrame, frame) ? this.orthogonal(box, containerInline, parentFrame, frame, containerBlock)
                 : this.tables.layout(box, containerInline, containerBlock, space, incoming);
+            if (!this.sizes.isOrthogonal(parentFrame, frame)) {
+                // CSS Tables 3 §3.6.1: the properties that are not the wrapper's, transform and contain among them, are the table grid box's, which another
+                // layout mode lays out; the box laid out as an orthogonal flow is a block container, which flow() handles.
+                this.containerOf(whole, space !== undefined && this.fragmenting !== undefined, incoming !== undefined && incoming.box === box ? incoming : undefined, space);
+            }
             if (truncate) {
                 delete whole.marginBefore;
             }
@@ -1554,9 +1809,16 @@ export class BlockLayout {
         const before: number = this.sizes.edges(given, this.sizes.side(parentFrame, frame, BoxSizes.BLOCK_START));
         const stretch: number = Math.max(0, containerInline - (start ?? 0) - (end ?? 0) - edges);
         const sizes: UsedSizes = this.resolved(box, given, stretch, containerBlock, through);
+        // CSS Box Alignment 3 §6.1.1: with a justify-self other than normal and stretch "The automatic size of a block-level box" "is equivalent
+        // to fit-content", and the margin box is aligned in the containing block instead of the over-constrained rules of CSS 2 §10.3.3.
+        const justify: Alignment | undefined = this.blockJustify(box, parentFrame, frame);
         let size: number | undefined = sizes.inlineSize;
         if (size === undefined && this.tables.isWrapper(box)) {
             size = this.tables.wrapperSize(box, stretch);
+        }
+        if (size === undefined && justify !== undefined) {
+            const content: readonly [number, number] = this.contentSizes(box, sizes.blockSize);
+            size = this.sizes.adjusted(sizes, BoxSizes.PREFERRED_INLINE, Math.min(Math.max(content[0], stretch), content[1]));
         }
         if (size === undefined) {
             // "If 'width' is set to 'auto', any other 'auto' values become '0' and 'width' follows from the resulting equality."
@@ -1566,22 +1828,44 @@ export class BlockLayout {
                 const width: number = this.clamped(automatic, sizes.minInlineSize, sizes.maxInlineSize);
                 const automaticFragment: BoxFragment = this.flow(box, sizes, width, start ?? 0, independent, this.origin(originInline, start ?? 0, width, sizes, startSide),
                     top + before, trim, space, incoming);
+                this.usedMargins(automaticFragment, sizes, parentFrame, frame, start ?? 0, containerInline - (start ?? 0) - width - edges);
                 this.reoriented(automaticFragment, parentFrame, frame);
                 return automaticFragment;
             }
             size = stretch;
         }
         size = this.clamped(size, sizes.minInlineSize, sizes.maxInlineSize);
-        // Auto margins share the free space, or are zero when there is none; without one, the end margin gives way.
+        // Auto margins share the free space, or are zero when there is none; without one, the end margin gives way, unless justify-self aligns
+        // the box, whose auto margins "take precedence over justify-self".
         const free: number = containerInline - size - edges;
         let offset: number = start ?? 0;
         if (start === undefined) {
             offset = Math.max(0, end === undefined ? free / 2 : free - end);
+        } else if (end !== undefined && justify !== undefined) {
+            offset = start + this.justified(justify, free - start - end);
         }
         const fragment: BoxFragment = this.flow(box, sizes, size, offset, independent, this.origin(originInline, offset, size, sizes, startSide), top + before, trim,
             space, incoming);
+        this.usedMargins(fragment, sizes, parentFrame, frame, offset, free - offset);
         this.reoriented(fragment, parentFrame, frame);
         return fragment;
+    }
+
+    private usedMargins(fragment: BoxFragment, sizes: UsedSizes, parentFrame: number, frame: number, start: number, end: number): void {
+        // The used margins on the box's own sides, which painting needs for a margin box (CSS Shapes 1 §5): the inline ones that placed the box
+        // in its containing block, an auto block margin zero (CSS 2 §10.6.3), and none at a break (CSS Fragmentation 4 §5.2).
+        const margin: Array<number> = [0, 1, 2, 3].map((side: number) => this.sizes.margin(sizes, side) ?? 0);
+        margin[this.sizes.side(parentFrame, frame, BoxSizes.INLINE_START)] = start;
+        margin[this.sizes.side(parentFrame, frame, BoxSizes.INLINE_END)] = end;
+        if (fragment.resumed === true) {
+            margin[this.sizes.side(parentFrame, frame, BoxSizes.BLOCK_START)] = 0;
+        }
+        if (fragment.token !== undefined) {
+            margin[this.sizes.side(parentFrame, frame, BoxSizes.BLOCK_END)] = 0;
+        }
+        if (margin.some((value: number) => value !== 0)) {
+            fragment.margin = [margin[0], margin[1], margin[2], margin[3]];
+        }
     }
 
     private origin(originInline: number, offset: number, size: number, sizes: UsedSizes, startSide: number): number {
@@ -1716,17 +2000,24 @@ export class BlockLayout {
 
     private blockFlow(box: ElementBox, given: UsedSizes, inlineSize: number, inlineOffset: number, independent: boolean, originInline: number, originBlock: number,
         trim?: TextEdges, space?: number, incoming?: BreakToken): BoxFragment {
+        if (incoming !== undefined && incoming.box === box && incoming.ended === true) {
+            // CSS Fragmentation 4 §5.5: after its end a box goes on only as what overflows it, "an empty box with zero margins/borders/padding at the start
+            // of the fragmentainer", which holds the positioned boxes that go on there.
+            return { kind: "box", box, inline: inlineOffset, block: 0, inlineSize: 0, blockSize: 0, resumed: true };
+        }
         const fragmenting: Fragmentation | undefined = space === undefined ? undefined : this.fragmenting;
         const sizes: UsedSizes = this.remaining(this.blockSized(box, given, inlineSize, inlineOffset, independent, originInline, originBlock, trim), incoming);
         // The contents are laid out in the box's own writing mode; in a block formatting context that it shares, a box whose
         // direction is not its parent's runs its inline axis against the context's.
         const outerFrame: number = this.frame;
+        const outerItems: CssValue | undefined = this.parentItems;
         const outerSign: number = this.sign;
         const outerLimit: number = this.limit;
         const outerPort: readonly [number, number] = this.port;
         const frame: number = this.sizes.frame(box.style);
         this.sign = independent ? 1 : outerSign * (((outerFrame ^ frame) & BoxSizes.INLINE_REVERSED) !== 0 ? -1 : 1);
         this.frame = frame;
+        this.parentItems = box.style.values["justify-items"];
         this.limit = sizes.maxBlockSize === undefined ? Number.POSITIVE_INFINITY : Math.max(sizes.maxBlockSize, sizes.minBlockSize ?? 0);
         if (!this.hasVisibleOverflow(box)) {
             // CSS Writing Modes 4 §7.3.1: a scroll container's inner size, or else its inner max size, bounds an orthogonal flow.
@@ -1805,6 +2096,8 @@ export class BlockLayout {
             : this.clamped(sizes.blockSize ?? this.sizes.adjusted(sizes, BoxSizes.PREFERRED_BLOCK, emptyContent), sizes.minBlockSize, sizes.maxBlockSize);
         if (box.queryContainer === true && this.contents !== undefined && this.contents(box, inlineSize, containedBlock)) {
             delete this.anchorNames;
+            delete this.anchorOwners;
+            delete this.elementOwners;
             this.tables.forget();
         }
         const nodes: ReadonlyArray<BoxNode> | undefined = box.replaced ? undefined : box.children;
@@ -1966,6 +2259,9 @@ export class BlockLayout {
                 } else if (outside.placement === "absolute" || outside.placement === "fixed") {
                     const placeholder: BoxFragment = this.placeholder(outside);
                     placeholder.block = top;
+                    // CSS Position 3 §3.5.2: the static-position rectangle of a block-level box spans "the inline-axis sides of the box's
+                    // static-position containing block".
+                    placeholder.inlineSize = inlineSize;
                     children.push(placeholder);
                 } else if (outside.placement === "running" || outside.placement === "footnote" || this.floatsApart(outside)) {
                     children.push(this.emptyPlace(outside, top));
@@ -2242,12 +2538,8 @@ export class BlockLayout {
         if (rules !== undefined) {
             fragment.rules = rules;
         }
-        // CSS Containment 2 §3.2 and §3.4: a layout or paint containment box "establishes an absolute positioning containing
-        // block and a fixed positioning containing block".
-        const containing: boolean = (containment & CONTAINING_BLOCK) !== 0 || this.transforms(box);
-        if (containing || (this.keyword(box.style.values["position"]) !== "none" && this.keyword(box.style.values["position"]) !== "static")) {
-            this.positioned(fragment, containing);
-        }
+        this.inlineContainers(fragment, fragmenting !== undefined, resumed ? incoming : undefined, space);
+        this.containerOf(fragment, fragmenting !== undefined, resumed ? incoming : undefined, space);
         if (fragmenting !== undefined) {
             fragmenting.path.pop();
             fragmenting.avoid -= avoiding ? 1 : 0;
@@ -2256,6 +2548,7 @@ export class BlockLayout {
         this.floatTokens = outerTokens;
         this.pushedFloat = outerPushed;
         this.frame = outerFrame;
+        this.parentItems = outerItems;
         this.sign = outerSign;
         this.limit = outerLimit;
         this.port = outerPort;
@@ -2639,8 +2932,8 @@ export class BlockLayout {
 
     private contentEnd(fragment: BoxFragment): number {
         // CSS Fragmentation 4 §5.3: a box that breaks "extends to fill any remaining fragmentainer extent", and CSS Multicol 1 §2 shortens
-        // balanced columns "to fit their content", so a column that breaks ends where its content does.
-        if (fragment.token === undefined) {
+        // balanced columns "to fit their content", so a column that breaks ends where its content does, and one whose content ended where it is.
+        if (fragment.token === undefined || fragment.token.ended === true) {
             return fragment.blockSize;
         }
         let end: number = 0;
@@ -2656,10 +2949,15 @@ export class BlockLayout {
         // inline-start one, and so on.
         const area: FloatArea = this.floatStack.arrange(placed, columns.width, height);
         const extent: number = Math.max(MINIMUM_FRAGMENTAINER, area.blockSize);
+        const outer: Array<Overflow> = this.overflows;
+        this.overflows = [];
         const fragment: BoxFragment = this.fragmented(kinds, extent, area.inlineSize, begin,
             (): BoxFragment => this.block(content, area.inlineSize, true, 0, 0, extent, undefined, 0, extent, begin, false));
         fragment.inline = area.inlineStart;
         fragment.block = area.blockStart;
+        this.carryIn(fragment, begin, kinds, extent);
+        this.carryOut(fragment);
+        this.overflows = outer;
         return fragment;
     }
 
@@ -3242,6 +3540,582 @@ export class BlockLayout {
         return fragment;
     }
 
+    initialContainer(fragment: BoxFragment): void {
+        // A formula is drawn as an image laid out by itself, so its box is the initial containing block of the positioned boxes in it, the
+        // fixed ones too, as the root box of a document is.
+        this.positioned(fragment, true);
+    }
+
+    usesStaticFixed(root: ElementBox): boolean {
+        // CSS 2 §10.3.7 and §10.6.4: a box with both insets of an axis auto is placed at its static position, which a fixed box keeps on the
+        // pages that come before its element, so a layout before the painted one finds it.
+        const frame: number = this.sizes.frame(root.style);
+        const unset: (box: ElementBox, start: number, end: number) => boolean = (box: ElementBox, start: number, end: number): boolean =>
+            this.sizes.inset(box.style, start, 0, frame) === undefined && this.sizes.inset(box.style, end, 0, frame) === undefined;
+        return this.fixedBoxes(root).some((box: ElementBox) => unset(box, BoxSizes.INLINE_START, BoxSizes.INLINE_END) || unset(box, BoxSizes.BLOCK_START, BoxSizes.BLOCK_END));
+    }
+
+    startFixed(): void {
+        // Each layout finds the static positions again, and until it does those of the layout before stand.
+        for (const [box, place] of this.fixedStatic) {
+            this.fixedKnown.set(box, place);
+        }
+        this.fixedStatic.clear();
+    }
+
+    fixedPage(root: ElementBox, fragments: ReadonlyArray<BoxFragment>, inlineSize: number, blockSize: number, first: boolean): BoxFragment | undefined {
+        // CSS Position 3 §3.1: "In paged media, the initial fixed containing block is the page area of each page; fixed positioned boxes are thus
+        // replicated on every page"; CSS 2 §10.3.7: their static position is a guess, here the place their element has on its first page.
+        const frame: number = this.sizes.frame(root.style);
+        const boxes: ReadonlyArray<ElementBox> = this.fixedBoxes(root);
+        let spare: BoxFragment | undefined;
+        if (boxes.length > 0) {
+            for (const fragment of fragments) {
+                if (fragment.children !== undefined) {
+                    this.staticPlaces(fragment.children, this.sizes.inside(fragment, frame), this.sizes.frame(fragment.box.style));
+                }
+            }
+            const container: BoxFragment = { kind: "box", box: root, inline: 0, block: 0, inlineSize, blockSize, children: [...fragments] };
+            const outerFrame: number = this.frame;
+            const outerSign: number = this.sign;
+            const outerFlow: boolean = this.pageFlow;
+            this.frame = frame;
+            this.sign = 1;
+            // CSS Page Floats 3 §3.1: a fixed box is outside the pages that the document flows through, so its page floats float in a line box.
+            this.pageFlow = false;
+            try {
+                for (const box of boxes) {
+                    const place: readonly [number, number, number, number, number] = this.fixedStatic.get(box) ?? this.fixedKnown.get(box) ?? [0, 0, 0, 0, frame];
+                    const copy: BoxFragment = { kind: "box", box, inline: place[0], block: place[1], inlineSize: place[2], blockSize: place[3] };
+                    const path: ReadonlyArray<ElementBox> | undefined = this.fixedPaths.get(box);
+                    this.absolute(copy, BoxSizes.IDENTITY, inlineSize, blockSize, container, BoxSizes.IDENTITY, place[4], true, path?.[path.length - 2]);
+                    if (copy.children !== undefined) {
+                        this.staticPlaces(copy.children, this.sizes.inside(copy, frame), this.sizes.frame(box.style));
+                    }
+                    if (!first) {
+                        // CSS Content 3 §3: a link to an element goes to its first box, which is the copy on the first page.
+                        this.resume(copy);
+                    }
+                    spare = this.holdFixed(root, copy, fragments, spare);
+                }
+            } finally {
+                this.frame = outerFrame;
+                this.sign = outerSign;
+                this.pageFlow = outerFlow;
+            }
+        }
+        // The placeholders of the layouts that the pages did not keep wait for nothing.
+        for (const placeholder of this.pending ?? []) {
+            if (placeholder.box.placement === "fixed") {
+                this.pending?.delete(placeholder);
+            }
+        }
+        return spare;
+    }
+
+    private fixedBoxes(root: ElementBox): ReadonlyArray<ElementBox> {
+        // CSS Position 3 §3.1: a fixed box takes the page area unless an ancestor establishes its containing block, and a box laid out as an
+        // image has its own.
+        if (this.fixedRoot !== root) {
+            const found: Array<ElementBox> = [];
+            this.fixedPaths.clear();
+            this.boxOrder.clear();
+            if (!this.fixedContainer(root)) {
+                this.findFixed(root, found, [root]);
+            }
+            if (found.length > 0) {
+                this.numberBoxes(root);
+            }
+            this.fixedRoot = root;
+            this.fixedList = found;
+        }
+        return this.fixedList;
+    }
+
+    private numberBoxes(box: ElementBox): void {
+        // The boxes in document order, which the copies of the fixed boxes keep among the boxes they go into (CSS 2 Appendix E.2).
+        this.boxOrder.set(box, this.boxOrder.size);
+        for (const child of box.children) {
+            if (child.kind === "box") {
+                this.numberBoxes(child);
+            }
+        }
+    }
+
+    registerCopy(copy: ElementBox, original: ElementBox): void {
+        // A layout that lays out a copy of a box, as the footnote area does, keeps the box it stands for.
+        this.copyOrigins.set(copy, original);
+    }
+
+    private originOf(box: ElementBox): ElementBox {
+        return this.copyOrigins.get(box) ?? box;
+    }
+
+    fixedFootnotes(root: ElementBox): ReadonlyArray<ElementBox> {
+        // GCPM 3 §2.2: a footnote body goes to the page of its call, and a call in a fixed box is first on the first page (CSS Content 3 §3).
+        const found: Array<ElementBox> = [];
+        const walk: (box: ElementBox) => void = (box: ElementBox): void => {
+            for (const child of box.children) {
+                if (child.kind !== "box") {
+                    continue;
+                }
+                if (child.placement === "footnote" && !found.includes(child)) {
+                    found.push(child);
+                } else if (child.placement !== "fixed" && !child.replaced) {
+                    walk(child);
+                }
+            }
+        };
+        for (const box of this.fixedBoxes(root)) {
+            walk(box);
+        }
+        return found;
+    }
+
+    private pageAbsolutes(fragment: BoxFragment, origin: readonly [number, number]): void {
+        // The children of the root box are placed in the page area from the place the page floats leave the root at.
+        if (this.pending === undefined || this.pending.size === 0 || fragment.children === undefined) {
+            return;
+        }
+        const area: readonly [number, number] = this.pageArea;
+        const container: BoxFragment = { kind: "box", box: fragment.box, inline: 0, block: 0, inlineSize: area[0], blockSize: area[1], children: fragment.children };
+        const transform: Transform = this.sizes.compose([1, 0, 0, 1, origin[0], origin[1]], this.sizes.inside(fragment, this.frame));
+        // The page area of each page is a containing block of its own, so its boxes are placed at once, and what goes past its end goes on in the next page.
+        this.placeAlone({ fragment: container, content: fragment, base: transform, room: area[1] }, false, true);
+    }
+
+    private runningPlace(box: ElementBox, place: readonly [number, number], frame: number): void {
+        // CSS 2 §10.3.7 leaves the static position to a guess: a fixed box in a running element, which a page-margin box shows, takes the
+        // place where the running element would have been in the flow.
+        for (const fixed of this.fixedList) {
+            if (!this.fixedStatic.has(fixed) && this.fixedPaths.get(fixed)?.includes(box) === true) {
+                this.fixedStatic.set(fixed, [place[0], place[1], 0, 0, frame]);
+            }
+        }
+    }
+
+    private insertInOrder(children: Array<BoxFragment | LineFragment>, fragment: BoxFragment): void {
+        // CSS 2 Appendix E.2 paints positioned boxes of one level in tree order, so the fragment goes before the first child that comes later.
+        const order: number | undefined = this.boxOrder.get(fragment.box);
+        const at: number = order === undefined ? -1 : children.findIndex((child: BoxFragment | LineFragment) => (this.firstOrder(child) ?? -1) > order);
+        if (at < 0) {
+            children.push(fragment);
+        } else {
+            children.splice(at, 0, fragment);
+        }
+    }
+
+    private firstOrder(fragment: BoxFragment | LineFragment): number | undefined {
+        // The place in document order of the first box of the document that a fragment holds.
+        if (fragment.kind === "box") {
+            const own: number | undefined = this.boxOrder.get(this.originOf(fragment.box));
+            if (own !== undefined) {
+                return own;
+            }
+        }
+        for (const child of fragment.kind === "line" ? fragment.pieces : fragment.children ?? []) {
+            const order: number | undefined = child.kind === "text" ? undefined : this.firstOrder(child);
+            if (order !== undefined) {
+                return order;
+            }
+        }
+        return undefined;
+    }
+
+    private findFixed(box: ElementBox, found: Array<ElementBox>, path: Array<ElementBox>): void {
+        for (const child of box.children) {
+            if (child.kind !== "box") {
+                continue;
+            }
+            if (child.placement === "fixed") {
+                found.push(child);
+                this.fixedPaths.set(child, [...path, child]);
+            }
+            if (!child.replaced && !this.fixedContainer(child)) {
+                path.push(child);
+                this.findFixed(child, found, path);
+                path.pop();
+            }
+        }
+    }
+
+    private staticPlaces(children: Array<BoxFragment | LineFragment>, transform: Transform | undefined, frame: number): void {
+        // The placeholders of the fixed boxes give their static positions in the page area, and leave the boxes they are in, whose places the
+        // copies take; boxes outside the page area, as those of the page-margin boxes, have no transform and give none.
+        for (let index: number = children.length - 1; index >= 0; index--) {
+            const child: BoxFragment | LineFragment = children[index];
+            if (child.kind === "box") {
+                if (this.fixedPlaceholder(child, transform, frame)) {
+                    children.splice(index, 1);
+                } else if (child.box.placement === "running" && transform !== undefined) {
+                    this.runningPlace(child.box, this.sizes.apply(transform, child.inline, child.block), frame);
+                } else if (child.children !== undefined) {
+                    this.staticPlaces(child.children, transform === undefined ? undefined : this.sizes.compose(transform, this.sizes.inside(child, frame)),
+                        this.sizes.frame(child.box.style));
+                }
+                continue;
+            }
+            const line: Transform | undefined = transform === undefined ? undefined : this.sizes.compose(transform, [1, 0, 0, 1, child.inline ?? 0, child.block]);
+            for (let at: number = child.pieces.length - 1; at >= 0; at--) {
+                const piece: TextPiece | BoxFragment = child.pieces[at];
+                if (piece.kind !== "box") {
+                    continue;
+                }
+                if (this.fixedPlaceholder(piece, line, frame)) {
+                    child.pieces.splice(at, 1);
+                } else if (piece.box.placement === "running" && line !== undefined) {
+                    this.runningPlace(piece.box, this.sizes.apply(line, piece.inline, piece.block), frame);
+                } else if (piece.children !== undefined) {
+                    this.staticPlaces(piece.children, line === undefined ? undefined : this.sizes.compose(line, this.sizes.inside(piece, frame)), this.sizes.frame(piece.box.style));
+                }
+            }
+        }
+    }
+
+    private fixedPlaceholder(fragment: BoxFragment, transform: Transform | undefined, frame: number): boolean {
+        if (fragment.box.placement !== "fixed" || this.pending === undefined || !this.pending.has(fragment)) {
+            return false;
+        }
+        this.pending.delete(fragment);
+        if (transform !== undefined && !this.fixedStatic.has(fragment.box)) {
+            // CSS Position 3 §3.5.2: the static-position rectangle keeps the writing mode of the static-position containing block, which aligns it.
+            this.fixedStatic.set(fragment.box, [...this.sizes.mapped(transform, fragment.inline, fragment.block, fragment.inlineSize, fragment.blockSize), frame]);
+        }
+        return true;
+    }
+
+    private resume(fragment: BoxFragment): void {
+        fragment.resumed = true;
+        for (const child of fragment.children ?? []) {
+            for (const piece of child.kind === "line" ? child.pieces : [child]) {
+                if (piece.kind === "box") {
+                    this.resume(piece);
+                }
+            }
+        }
+    }
+
+    private holdFixed(root: ElementBox, copy: BoxFragment, fragments: ReadonlyArray<BoxFragment>, spare: BoxFragment | undefined): BoxFragment | undefined {
+        // A copy goes into its nearest ancestor on the page, and a page without its ancestors has an empty box of the root (CSS Fragmentation 4 §5.5).
+        const path: ReadonlyArray<ElementBox> = this.fixedPaths.get(copy.box) ?? [root, copy.box];
+        const frame: number = this.sizes.frame(root.style);
+        const found: Holder = this.holderIn(path, fragments, BoxSizes.IDENTITY, frame);
+        let kept: BoxFragment | undefined = spare;
+        if (found.fragment === undefined) {
+            kept = kept ?? { kind: "box", box: root, inline: 0, block: 0, inlineSize: 0, blockSize: 0, resumed: true };
+            found.fragment = kept;
+            found.transform = this.sizes.inside(kept, frame);
+            found.depth = 0;
+        }
+        this.lodge(path, copy, found);
+        return kept;
+    }
+
+    private holderIn(path: ReadonlyArray<ElementBox>, fragments: ReadonlyArray<BoxFragment>, transform: Transform, frame: number): Holder {
+        // The deepest ancestor of the last box of the path that has a fragment among these, with the map from that fragment's content to the
+        // coordinates the fragments are placed in.
+        const depths: Map<ElementBox, number> = new Map<ElementBox, number>();
+        for (let depth: number = 0; depth < path.length - 1; depth++) {
+            depths.set(path[depth], depth);
+        }
+        const found: Holder = { transform: BoxSizes.IDENTITY, frame, depth: -1 };
+        for (const fragment of fragments) {
+            this.holderOf(fragment, transform, frame, depths, found);
+        }
+        return found;
+    }
+
+    private lodge(path: ReadonlyArray<ElementBox>, piece: BoxFragment, found: Holder): () => void {
+        // The piece goes into the holder through empty boxes (CSS Fragmentation 4 §5.5) of the ancestors between that make a stacking context
+        // or a group, so that it is painted with them; its rectangle is given in the coordinates the holder's transform leads to.
+        this.ordered();
+        let held: BoxFragment = found.fragment as BoxFragment;
+        let transform: Transform = found.transform;
+        let inner: number = found.frame;
+        const added: Array<readonly [Array<BoxFragment | LineFragment>, BoxFragment]> = [];
+        for (let depth: number = found.depth + 1; depth < path.length - 1; depth++) {
+            const between: ElementBox = path[depth];
+            if (!this.stacksApart(between)) {
+                continue;
+            }
+            const children: Array<BoxFragment | LineFragment> = held.children ?? [];
+            held.children = children;
+            let empty: BoxFragment | undefined = children.find((child: BoxFragment | LineFragment): child is BoxFragment => child.kind === "box" && child.box === between
+                && child.resumed === true && child.inlineSize === 0 && child.blockSize === 0);
+            if (empty === undefined) {
+                empty = { kind: "box", box: between, inline: 0, block: 0, inlineSize: 0, blockSize: 0, resumed: true };
+                this.insertInOrder(children, empty);
+                added.push([children, empty]);
+            }
+            transform = this.sizes.compose(transform, this.sizes.inside(empty, inner));
+            inner = this.sizes.frame(between.style);
+            held = empty;
+        }
+        const rectangle: readonly [number, number, number, number] = this.sizes.mapped(this.sizes.inverse(transform), piece.inline, piece.block, piece.inlineSize, piece.blockSize);
+        piece.inline = rectangle[0];
+        piece.block = rectangle[1];
+        piece.inlineSize = rectangle[2];
+        piece.blockSize = rectangle[3];
+        const holding: Array<BoxFragment | LineFragment> = held.children ?? [];
+        held.children = holding;
+        this.insertInOrder(holding, piece);
+        added.push([holding, piece]);
+        return (): void => {
+            for (let index: number = added.length - 1; index >= 0; index--) {
+                const [list, fragment]: readonly [Array<BoxFragment | LineFragment>, BoxFragment] = added[index];
+                const at: number = list.indexOf(fragment);
+                // An empty box that holds the piece of another box stays.
+                if (at >= 0 && (fragment === piece || (fragment.children?.length ?? 0) === 0)) {
+                    list.splice(at, 1);
+                }
+            }
+        };
+    }
+
+    private ordered(): void {
+        // CSS 2 Appendix E.2: a box that goes in among others keeps its place in document order, for which the boxes are numbered once.
+        if (this.rootBox !== undefined && !this.boxOrder.has(this.rootBox)) {
+            this.numberBoxes(this.rootBox);
+        }
+    }
+
+    private locate(fragment: BoxFragment, target: BoxFragment, transform: Transform, frame: number): Transform | undefined {
+        // The map from the content of the target fragment to the coordinates the first fragment is placed in, when the target is inside it.
+        const inner: Transform = this.sizes.compose(transform, this.sizes.inside(fragment, frame));
+        if (fragment === target) {
+            return inner;
+        }
+        const own: number = this.sizes.frame(fragment.box.style);
+        for (const child of fragment.children ?? []) {
+            if (child.kind === "box") {
+                const found: Transform | undefined = this.locate(child, target, inner, own);
+                if (found !== undefined) {
+                    return found;
+                }
+                continue;
+            }
+            const line: Transform = this.sizes.compose(inner, [1, 0, 0, 1, child.inline ?? 0, child.block]);
+            for (const piece of child.pieces) {
+                const found: Transform | undefined = piece.kind === "box" ? this.locate(piece, target, line, own) : undefined;
+                if (found !== undefined) {
+                    return found;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    private holderOf(fragment: BoxFragment, transform: Transform, frame: number, depths: ReadonlyMap<ElementBox, number>, found: Holder): void {
+        const inner: Transform = this.sizes.compose(transform, this.sizes.inside(fragment, frame));
+        const own: number = this.sizes.frame(fragment.box.style);
+        const depth: number | undefined = depths.get(this.originOf(fragment.box));
+        if (depth !== undefined && depth > found.depth) {
+            found.fragment = fragment;
+            found.transform = inner;
+            found.frame = own;
+            found.depth = depth;
+        }
+        for (const child of fragment.children ?? []) {
+            if (child.kind === "box") {
+                this.holderOf(child, inner, own, depths, found);
+                continue;
+            }
+            const line: Transform = this.sizes.compose(inner, [1, 0, 0, 1, child.inline ?? 0, child.block]);
+            for (const piece of child.pieces) {
+                if (piece.kind === "box") {
+                    this.holderOf(piece, line, own, depths, found);
+                }
+            }
+        }
+    }
+
+    private stacksApart(box: ElementBox): boolean {
+        // CSS 2 §9.9.1 and CSS Position 3 §2: a positioned box with an integer z-index, and a fixed or sticky one, makes a stacking context; Compositing 1
+        // §3.1: opacity, a blend mode and isolation make a group; CSS Masking 1 §5.1, §7.1, §8.1, CSS Containment 2 §3.2, §3.4 and CSS Will Change 1 §2 add theirs.
+        const values: Readonly<Record<string, CssValue>> = box.style.values;
+        const masked: boolean = ["clip-path", "mask-image", "mask-border-source"].some((property: string) => {
+            const value: CssValue | undefined = values[property];
+            return value !== undefined && (value.kind === "list" ? value.items : [value]).some((item: CssValue) => !(item.kind === "ident" && item.lower === "none"));
+        });
+        const position: string = this.keyword(values["position"]);
+        const positioned: boolean = position !== "none" && position !== "static";
+        const z: CssValue | undefined = values["z-index"];
+        const opacity: CssValue | undefined = values["opacity"];
+        const alpha: number = opacity === undefined ? 1 : (opacity.kind === "number" ? opacity.value : (opacity.kind === "percentage" ? opacity.value / 100 : 1));
+        const blend: string = this.keyword(values["mix-blend-mode"]);
+        return (positioned && z !== undefined && z.kind === "number") || position === "fixed" || position === "sticky" || alpha < 1 || (blend !== "none" && blend !== "normal") || masked
+            || this.keyword(values["isolation"]) === "isolate" || (this.containment(box) & CONTAINING_BLOCK) !== 0
+            || this.displays.changesStacking(values, box.display, box.replaced, positioned);
+    }
+
+    private inlineContainers(fragment: BoxFragment, fragmenting: boolean, incoming: BreakToken | undefined, space: number | undefined): void {
+        // CSS Position 3 §2.1: an inline box that establishes the containing block forms it, "using the writing mode of that box", "from the start-most
+        // content edges (in both axes) of the first box fragment of the ancestor, and the end-most content edges of the end-most box fragment(s)";
+        // CSS Fragmentation 4 §5.5: across the fragments of the block that holds its lines, which are joined as for a block containing block.
+        const box: ElementBox = fragment.box;
+        const known: InlineChain | undefined = this.inlineChains.get(box);
+        const breaks: boolean = fragmenting && (fragment.token !== undefined || incoming !== undefined);
+        // A block that breaks keeps all its fragments, since an inline box can start in one before its positioned boxes come.
+        if (!breaks && known === undefined && (this.pending === undefined || this.pending.size === 0 || fragment.children === undefined)) {
+            return;
+        }
+        const at: number = known === undefined || incoming === undefined || !breaks ? -1 : known.parts.findIndex((part: ChainPart) => part.fragment.token === incoming);
+        for (const holder of known?.holders.values() ?? []) {
+            this.unplace(holder.chain);
+        }
+        this.inlineChains.delete(box);
+        let inline: InlineChain = { parts: [], holders: new Map<SourceElement, InlineHolder>() };
+        if (known !== undefined && at >= 0) {
+            // A fragmentainer laid out again replaces what its earlier layout gave.
+            inline = known;
+            inline.parts.length = at + 1;
+            for (const [element, holder] of inline.holders) {
+                holder.pieces = holder.pieces.filter((piece: readonly [readonly [number, number, number, number], number, number]) => piece[1] <= at);
+                holder.chain.waiting = holder.chain.waiting.filter((entry: Waiting) => entry.part <= at);
+                holder.chain.done = false;
+                if (holder.pieces.length === 0) {
+                    inline.holders.delete(element);
+                }
+            }
+        }
+        const frame: number = this.sizes.frame(box.style);
+        const part: number = inline.parts.length;
+        const base: Transform = this.paddingBase(fragment);
+        inline.parts.push({ fragment, content: fragment, base, room: space === undefined || !fragmenting ? Number.POSITIVE_INFINITY : space });
+        const found: Map<SourceElement, Array<readonly [BoxFragment, readonly [number, number, number, number], number]>> =
+            new Map<SourceElement, Array<readonly [BoxFragment, readonly [number, number, number, number], number]>>();
+        this.inlineFragments(fragment.children ?? [], BoxSizes.IDENTITY, frame, found, { count: 0 });
+        for (const [element, pieces] of found) {
+            let holder: InlineHolder | undefined = inline.holders.get(element);
+            if (holder === undefined) {
+                holder = { box: pieces[0][0].box, pieces: [], chain: { parts: inline.parts, waiting: [], placed: [], initial: false, done: false } };
+                inline.holders.set(element, holder);
+            }
+            for (const piece of pieces) {
+                holder.pieces.push([piece[1], part, piece[2]]);
+            }
+        }
+        // The boxes inside another inline box take their boxes first, since the containing block is the nearest one.
+        const elements: Array<SourceElement> = [...inline.holders.keys()].sort((first: SourceElement, second: SourceElement) => this.elementDepth(second) - this.elementDepth(first));
+        for (const element of elements) {
+            const holder: InlineHolder = inline.holders.get(element) as InlineHolder;
+            if (fragment.children !== undefined) {
+                this.gatherWaiting(fragment.children, base, frame, this.fixedContainer(holder.box), holder.chain, part, [this.originOf(box)], element);
+            }
+        }
+        if (fragment.token !== undefined && breaks) {
+            this.inlineChains.set(box, inline);
+            return;
+        }
+        if (inline.holders.size === 0) {
+            return;
+        }
+        // The fragments are joined in the block flow direction, each at the offset of its padding box in the joined box.
+        const offsets: Array<number> = [];
+        let total: number = 0;
+        for (const joined of inline.parts) {
+            offsets.push(total);
+            total += joined.fragment.blockSize - this.side(BoxSizes.BLOCK_START, joined.fragment.border) - this.side(BoxSizes.BLOCK_END, joined.fragment.border);
+        }
+        for (const element of elements) {
+            const holder: InlineHolder = inline.holders.get(element) as InlineHolder;
+            holder.chain.area = { rectangle: this.inlineArea(holder, inline.parts, offsets, frame), box: holder.box };
+            if (holder.chain.waiting.length > 0) {
+                this.placeChain(holder.chain);
+            }
+            holder.chain.done = true;
+        }
+        if (inline.parts.length > 1) {
+            this.inlineChains.set(box, inline);
+        }
+    }
+
+    private inlineArea(holder: InlineHolder, parts: ReadonlyArray<ChainPart>, offsets: ReadonlyArray<number>, frame: number): readonly [number, number, number, number] {
+        // The content boxes of the fragments, in the joined padding box; the first fragment is on the first line, the start-most there: "If there are
+        // multiple fragments on the same line", "take the start-most fragment as the first fragment."
+        const forward: boolean = ((this.sizes.frame(holder.box.style) ^ frame) & BoxSizes.INLINE_REVERSED) === 0;
+        const areas: Array<readonly [number, number, number, number]> = [];
+        let first: number = 0;
+        for (const [index, piece] of holder.pieces.entries()) {
+            const own: ChainPart = parts[piece[1]];
+            const area: readonly [number, number, number, number] = [piece[0][0] + own.base[4], piece[0][1] + own.base[5] + offsets[piece[1]], piece[0][2], piece[0][3]];
+            areas.push(area);
+            const lead: readonly [readonly [number, number, number, number], number, number] = holder.pieces[first];
+            const earlier: boolean = piece[1] < lead[1] || (piece[1] === lead[1] && piece[2] < lead[2]);
+            const sameLine: boolean = piece[1] === lead[1] && piece[2] === lead[2];
+            if (earlier || (sameLine && (forward ? area[0] < areas[first][0] : area[0] + area[2] > areas[first][0] + areas[first][2]))) {
+                first = index;
+            }
+        }
+        const start: readonly [number, number, number, number] = areas[first];
+        let inlineEnd: number = forward ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
+        let blockEnd: number = Number.NEGATIVE_INFINITY;
+        for (const area of areas) {
+            inlineEnd = forward ? Math.max(inlineEnd, area[0] + area[2]) : Math.min(inlineEnd, area[0]);
+            blockEnd = Math.max(blockEnd, area[1] + area[3]);
+        }
+        // An end edge before the start edge leaves the rectangle empty there.
+        const low: number = forward ? start[0] : Math.min(inlineEnd, start[0] + start[2]);
+        const high: number = forward ? Math.max(inlineEnd, start[0]) : start[0] + start[2];
+        return [low, start[1], high - low, Math.max(0, blockEnd - start[1])];
+    }
+
+    private inlineFragments(children: ReadonlyArray<BoxFragment | LineFragment>, transform: Transform, frame: number,
+        found: Map<SourceElement, Array<readonly [BoxFragment, readonly [number, number, number, number], number]>>, lines: { count: number }): void {
+        // The content boxes of the fragments of the inline boxes that are containing blocks, in the lines of the block and of the anonymous
+        // blocks that its inline content was split into (CSS 2 §9.2.1.1), with the line each is on.
+        for (const child of children) {
+            if (child.kind === "box") {
+                if (child.box.element === undefined && child.box.pseudoElement === undefined && child.children !== undefined && !this.isIndependent(child.box)) {
+                    this.inlineFragments(child.children, this.sizes.compose(transform, this.sizes.inside(child, frame)), this.sizes.frame(child.box.style), found, lines);
+                }
+                continue;
+            }
+            lines.count++;
+            const line: Transform = this.sizes.compose(transform, [1, 0, 0, 1, child.inline ?? 0, child.block]);
+            for (const piece of child.pieces) {
+                const element: SourceElement | undefined = piece.kind === "box" && piece.box.pseudoElement === undefined ? piece.box.element : undefined;
+                if (piece.kind !== "box" || element === undefined || piece.box.replaced || !this.displays.isInlineBox(piece.box.display)
+                    || (!this.absoluteContainer(piece.box) && !this.fixedContainer(piece.box))) {
+                    continue;
+                }
+                // The fragment's edges are on the sides of the box's own writing mode.
+                const own: number = this.sizes.frame(piece.box.style);
+                const edge: (side: number) => number = (side: number): number => {
+                    const ownSide: number = this.sizes.side(frame, own, side);
+                    return this.side(ownSide, piece.border) + this.side(ownSide, piece.padding);
+                };
+                const area: readonly [number, number, number, number] = this.sizes.mapped(line, piece.inline, piece.block, piece.inlineSize, piece.blockSize);
+                const content: readonly [number, number, number, number] = [area[0] + edge(BoxSizes.INLINE_START), area[1] + edge(BoxSizes.BLOCK_START),
+                    Math.max(0, area[2] - edge(BoxSizes.INLINE_START) - edge(BoxSizes.INLINE_END)), Math.max(0, area[3] - edge(BoxSizes.BLOCK_START) - edge(BoxSizes.BLOCK_END))];
+                const known: Array<readonly [BoxFragment, readonly [number, number, number, number], number]> | undefined = found.get(element);
+                if (known === undefined) {
+                    found.set(element, [[piece, content, lines.count]]);
+                } else {
+                    known.push([piece, content, lines.count]);
+                }
+            }
+        }
+    }
+
+    private descends(box: ElementBox, ancestor: SourceElement): boolean {
+        // A pseudo-element of the ancestor is inside it, and an element is when the ancestor is one of its parents.
+        for (let element: SourceElement | undefined = box.element; element !== undefined; element = element.getParent()) {
+            if (element === ancestor) {
+                return element !== box.element || box.pseudoElement !== undefined;
+            }
+        }
+        return false;
+    }
+
+    private elementDepth(element: SourceElement): number {
+        let depth: number = 0;
+        for (let parent: SourceElement | undefined = element.getParent(); parent !== undefined; parent = parent.getParent()) {
+            depth++;
+        }
+        return depth;
+    }
+
     private positioned(container: BoxFragment, all: boolean): void {
         // CSS 2 §10.1: the containing block of an absolutely positioned box is "formed by the padding edge of the ancestor"
         // that is positioned, and the initial containing block when there is none, as for a fixed one.
@@ -3250,13 +4124,14 @@ export class BlockLayout {
         }
         const inlineSize: number = container.inlineSize - this.side(BoxSizes.INLINE_START, container.border) - this.side(BoxSizes.INLINE_END, container.border);
         const blockSize: number = container.blockSize - this.side(BoxSizes.BLOCK_START, container.border) - this.side(BoxSizes.BLOCK_END, container.border);
-        this.absolutes(container.children, [1, 0, 0, 1, this.side(BoxSizes.INLINE_START, container.padding), this.side(BoxSizes.BLOCK_START, container.padding)],
-            this.sizes.frame(container.box.style), inlineSize, blockSize, all, container);
+        const base: Transform = [1, 0, 0, 1, this.side(BoxSizes.INLINE_START, container.padding), this.side(BoxSizes.BLOCK_START, container.padding)];
+        this.absolutes(container.children, base, this.sizes.frame(container.box.style), inlineSize, blockSize, all, container, base, false, container.box);
     }
 
     private absolutes(children: ReadonlyArray<BoxFragment | LineFragment>, transform: Transform, frame: number, inlineSize: number, blockSize: number, all: boolean,
-        container: BoxFragment): void {
-        // The transform takes a point of these children's container to the containing block, across the writing modes between.
+        container: BoxFragment, base: Transform, initial: boolean, parent: ElementBox): void {
+        // The transform takes a point of these children's container, the parent box, to the containing block, across the writing modes between,
+        // and the base takes a point of the containing block's own children there.
         for (const child of children) {
             for (const piece of child.kind === "line" ? child.pieces : [child]) {
                 if (piece.kind !== "box") {
@@ -3266,148 +4141,1166 @@ export class BlockLayout {
                 if (this.pending !== undefined && this.pending.has(piece)) {
                     if (all || piece.box.placement === "absolute") {
                         this.pending.delete(piece);
-                        this.absolute(piece, local, inlineSize, blockSize, container);
+                        this.absolute(piece, local, inlineSize, blockSize, container, base, frame, initial, parent);
                     }
                 } else if (piece.children !== undefined) {
                     this.absolutes(piece.children, this.sizes.compose(local, this.sizes.inside(piece, frame)), this.sizes.frame(piece.box.style), inlineSize, blockSize, all,
-                        container);
+                        container, base, initial, piece.box);
                 }
             }
         }
     }
 
-    private absolute(target: BoxFragment, local: Transform, containerInline: number, containerBlock: number, container: BoxFragment): void {
+    private absolute(target: BoxFragment, local: Transform, containerInline: number, containerBlock: number, container: BoxFragment, base: Transform, staticFrame: number,
+        initial: boolean, parent: ElementBox | undefined): AbsolutePlace {
+        // CSS Anchor Positioning 1 §6.5: a box that overflows its inset-modified containing block with its base styles takes the first position
+        // option that does not, in the order of position-try-order, and keeps its base styles when none does.
         const box: ElementBox = target.box;
-        // CSS Anchor Positioning 1 §5.1: the anchor functions in the computed values of this box resolve with the anchors
-        // laid out before it, for the box and for the descendants that inherit those values, while it is laid out.
-        const owner: number | undefined = box.style.anchorOwner;
-        if (owner !== undefined) {
-            this.anchoring.push([owner, box, container]);
-        }
-        // CSS Writing Modes 4 §7.3 and §7.4: the box is sized in its own writing mode against the containing block's size in
-        // those axes, and placed with the insets and margins of the containing block's writing mode.
-        const containing: number = this.sizes.frame(container.box.style);
-        const frame: number = this.sizes.frame(box.style);
-        const orthogonal: boolean = this.sizes.isOrthogonal(containing, frame);
-        const ownInline: number = orthogonal ? containerBlock : containerInline;
-        const ownBlock: number = orthogonal ? containerInline : containerBlock;
-        const given: UsedSizes = this.sizes.of(box.style, ownInline, ownBlock, containerInline);
-        const inset: (side: number) => number | undefined = (side: number): number | undefined => {
-            const outer: number = this.sizes.side(frame, containing, side);
-            return this.sizes.inset(box.style, outer, outer % 2 === 0 ? containerBlock : containerInline, containing);
+        const setting: AbsoluteSetting = {
+            box, container, base, containing: this.sizes.frame(container.box.style), inlineSize: containerInline, blockSize: containerBlock,
+            statics: this.sizes.mapped(local, target.inline, target.block, target.inlineSize, target.blockSize), staticFrame, parent, initial, found: {}
         };
-        const edges: number = this.inlineEdges(given);
-        const blockEdges: number = this.sizes.edges(given, BoxSizes.BLOCK_START) + this.sizes.edges(given, BoxSizes.BLOCK_END);
-        const start: number | undefined = inset(BoxSizes.INLINE_START);
-        const end: number | undefined = inset(BoxSizes.INLINE_END);
-        const before: number | undefined = inset(BoxSizes.BLOCK_START);
-        const after: number | undefined = inset(BoxSizes.BLOCK_END);
-        const margins: number = (this.sizes.margin(given, BoxSizes.INLINE_START) ?? 0) + (this.sizes.margin(given, BoxSizes.INLINE_END) ?? 0);
-        const width: number = (containing & BoxSizes.VERTICAL) === 0 ? containerInline : containerBlock;
-        const height: number = (containing & BoxSizes.VERTICAL) === 0 ? containerBlock : containerInline;
-        const placed: readonly [number, number] = this.sizes.apply(local, target.inline, target.block);
-        const staticInline: number = this.sizes.reframed(containing, frame, placed[0], placed[1], width, height)[0];
-        // CSS Sizing 3 §4.2: a box that stretches fills its containing block, which the insets make smaller here.
-        const sizes: UsedSizes = this.resolved(box, given, Math.max(0, ownInline - (start ?? 0) - (end ?? 0) - margins - edges), ownBlock - (before ?? 0) - (after ?? 0));
-        // CSS 2 §10.3.7: with an auto width and both insets given the box fills what is left, and otherwise the width is
-        // shrink-to-fit; an inset that is auto follows from the others, and from the static position when both are auto.
-        let size: number;
-        if (sizes.inlineSize !== undefined) {
-            size = sizes.inlineSize;
-        } else if (start !== undefined && end !== undefined) {
-            size = Math.max(0, ownInline - start - end - margins - edges);
-        } else {
-            const content: readonly [number, number] = this.contentSizes(box, sizes.blockSize);
-            const available: number = ownInline - (start ?? (end === undefined ? staticInline : 0)) - (end ?? 0) - margins - edges;
-            size = Math.min(Math.max(content[0], available), content[1]);
+        let chosen: AbsolutePlace = this.placeAbsolute(setting, box.style);
+        const options: ReadonlyArray<PositionOption> | undefined = box.style.positionOptions;
+        if (options !== undefined && chosen.overflows) {
+            const styles: Array<ComputedStyle> = [box.style];
+            for (const option of options) {
+                const style: ComputedStyle = option.area === undefined ? option.style : this.anchorRules.withArea(option.style, option.area);
+                styles.push(option.tactics.length === 0 ? style : this.anchorRules.tactic(style, option.tactics, setting.containing));
+            }
+            for (const style of this.tryOrder(setting, styles)) {
+                // §6.5 skips the option in use, which in a first layout is the base styles; "If cb rect was negative-size in either axis and
+                // corrected into zero-size, continue", and so if "el rect is not fully contained within cb rect".
+                if (style === box.style) {
+                    continue;
+                }
+                const place: AbsolutePlace = this.placeAbsolute(setting, style);
+                if (!place.corrected && !place.overflows) {
+                    chosen = place;
+                    break;
+                }
+            }
         }
-        size = this.clamped(sizes.inlineSize ?? this.sizes.adjusted(sizes, BoxSizes.PREFERRED_INLINE, size), sizes.minInlineSize, sizes.maxInlineSize);
-        // §10.6.4: the same for the block axis, where an auto height is the height of the content; CSS Sizing 4 §4.2: with
-        // a preferred aspect ratio the automatic block size follows from the inline size.
-        const stretched: number | undefined = sizes.blockSize === undefined && sizes.ratio === undefined && before !== undefined && after !== undefined
-            ? Math.max(0, ownBlock - before - after - (this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0) - (this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0) - blockEdges)
-            : undefined;
-        const laid: BoxFragment = this.flow(box, stretched === undefined ? sizes : { ...sizes, blockSize: this.sizes.adjusted(sizes, BoxSizes.PREFERRED_BLOCK, stretched) },
-            size, 0, true, 0, 0);
-        const across: number = orthogonal ? laid.blockSize : laid.inlineSize;
-        const down: number = orthogonal ? laid.inlineSize : laid.blockSize;
-        const margin: (side: number) => number | undefined = (side: number): number | undefined => this.sizes.margin(given, this.sizes.side(containing, frame, side));
-        const inline: number = this.offset(inset(this.sizes.side(containing, frame, BoxSizes.INLINE_START)), inset(this.sizes.side(containing, frame, BoxSizes.INLINE_END)),
-            margin(BoxSizes.INLINE_START), margin(BoxSizes.INLINE_END), across, containerInline, placed[0]);
-        const block: number = this.offset(inset(this.sizes.side(containing, frame, BoxSizes.BLOCK_START)), inset(this.sizes.side(containing, frame, BoxSizes.BLOCK_END)),
-            margin(BoxSizes.BLOCK_START), margin(BoxSizes.BLOCK_END), down, containerBlock, placed[1]);
-        const rectangle: readonly [number, number, number, number] = this.sizes.mapped(this.sizes.inverse(local), inline, block, across, down);
-        Object.assign(target, laid);
+        const rectangle: readonly [number, number, number, number] = this.sizes.mapped(this.sizes.inverse(local), chosen.inline, chosen.block, chosen.across, chosen.down);
+        delete target.margin;
+        Object.assign(target, chosen.fragment);
+        target.box = box;
         target.inline = rectangle[0];
         target.block = rectangle[1];
         target.inlineSize = rectangle[2];
         target.blockSize = rectangle[3];
-        if (owner !== undefined) {
+        this.positionVisibility(chosen, target);
+        return chosen;
+    }
+
+    holdsPages(): boolean {
+        // A containing block that has not ended may still place boxes on the pages it went through.
+        for (const chain of this.chains.values()) {
+            if (!chain.done && chain.waiting.length > 0) {
+                return true;
+            }
+        }
+        for (const inline of this.inlineChains.values()) {
+            for (const holder of inline.holders.values()) {
+                if (!holder.chain.done && holder.chain.waiting.length > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private chained(fragment: BoxFragment, all: boolean, incoming: BreakToken | undefined, room: number): void {
+        // CSS Fragmentation 4 §5.5: "Both the coordinate system and absolutely-positioned boxes belonging to a containing block will fragment across
+        // fragmentainers in the same fragmentation flow as the containing block", so its boxes wait for the whole containing block.
+        const box: ElementBox = fragment.box;
+        const known: Chain | undefined = this.chains.get(box);
+        const at: number = known === undefined || incoming === undefined ? -1 : known.parts.findIndex((part: ChainPart) => part.fragment.token === incoming);
+        if (known !== undefined) {
+            this.unplace(known);
+        }
+        this.chains.delete(box);
+        let chain: Chain;
+        if (known === undefined || at < 0) {
+            chain = { parts: [], waiting: [], placed: [], initial: false, done: false };
+        } else {
+            // A fragmentainer laid out again replaces what its earlier layout gave.
+            chain = known;
+            chain.parts.length = at + 1;
+            chain.waiting = chain.waiting.filter((entry: Waiting) => entry.part <= at);
+            chain.done = false;
+        }
+        const part: number = chain.parts.length;
+        const base: Transform = this.paddingBase(fragment);
+        chain.parts.push({ fragment, content: fragment, base, room });
+        if (fragment.children !== undefined) {
+            this.gatherWaiting(fragment.children, base, this.sizes.frame(box.style), all, chain, part, [this.originOf(box)]);
+        }
+        if (fragment.token !== undefined) {
+            this.chains.set(box, chain);
+            return;
+        }
+        if (chain.waiting.length > 0) {
+            this.placeChain(chain);
+        }
+        chain.done = true;
+        // The last fragmentainer may be laid out again, which places the boxes again over the fragments kept before it.
+        if (chain.parts.length > 1) {
+            this.chains.set(box, chain);
+        }
+    }
+
+    private placeAlone(part: ChainPart, all: boolean, initial: boolean): void {
+        // A containing block that is not continued from fragmentainer to fragmentainer places its boxes at once.
+        const chain: Chain = { parts: [part], waiting: [], placed: [], initial, done: false };
+        if (part.content.children !== undefined) {
+            this.gatherWaiting(part.content.children, part.base, this.sizes.frame(part.content.box.style), all, chain, 0, [this.originOf(part.content.box)]);
+        }
+        if (chain.waiting.length > 0) {
+            this.placeChain(chain);
+        }
+        chain.done = true;
+    }
+
+    private paddingBase(fragment: BoxFragment): Transform {
+        // CSS 2 §10.1: the containing block is "formed by the padding edge", and the children are placed from the content edge.
+        return [1, 0, 0, 1, this.side(BoxSizes.INLINE_START, fragment.padding), this.side(BoxSizes.BLOCK_START, fragment.padding)];
+    }
+
+    private gatherWaiting(children: Array<BoxFragment | LineFragment>, transform: Transform, frame: number, all: boolean, chain: Chain, part: number,
+        path: Array<ElementBox>, within?: SourceElement): void {
+        // The placeholders of the boxes that the containing block holds, with their static positions in its padding box, as absolutes() finds them,
+        // and the boxes between, for a piece that goes into another fragment of the containing block.
+        for (const child of children) {
+            const line: LineFragment | undefined = child.kind === "line" ? child : undefined;
+            for (const piece of line === undefined ? [child] : line.pieces) {
+                if (piece.kind !== "box") {
+                    continue;
+                }
+                const local: Transform = line === undefined ? transform : this.sizes.compose(transform, [1, 0, 0, 1, line.inline ?? 0, line.block]);
+                if (this.pending !== undefined && this.pending.has(piece)) {
+                    if ((all || piece.box.placement === "absolute") && (within === undefined || this.descends(piece.box, within))) {
+                        this.pending.delete(piece);
+                        const replace: (fragment?: BoxFragment) => () => void = line === undefined
+                            ? (fragment?: BoxFragment): (() => void) => this.swap(children, piece, fragment)
+                            : (fragment?: BoxFragment): (() => void) => this.swap(line.pieces, piece, fragment);
+                        chain.waiting.push({ box: piece.box, placeholder: piece, local, frame, part, path: [...path, piece.box], replace });
+                    }
+                } else if (piece.children !== undefined) {
+                    path.push(this.originOf(piece.box));
+                    this.gatherWaiting(piece.children, this.sizes.compose(local, this.sizes.inside(piece, frame)), this.sizes.frame(piece.box.style), all, chain, part, path, within);
+                    path.pop();
+                }
+            }
+        }
+    }
+
+    private swap<T>(list: Array<T | BoxFragment>, placeholder: BoxFragment, piece: BoxFragment | undefined): () => void {
+        // The piece takes the place of the placeholder among its siblings, which keeps it in tree order (CSS 2 Appendix E.2), and gives the place
+        // back when the chain is placed again.
+        const at: number = list.indexOf(placeholder);
+        if (at < 0) {
+            return (): void => undefined;
+        }
+        if (piece === undefined) {
+            list.splice(at, 1);
+        } else {
+            list[at] = piece;
+        }
+        return (): void => {
+            if (piece === undefined) {
+                list.splice(Math.min(at, list.length), 0, placeholder);
+                return;
+            }
+            const now: number = list.indexOf(piece);
+            if (now >= 0) {
+                list[now] = placeholder;
+            }
+        };
+    }
+
+    private placeChain(chain: Chain): void {
+        // The boxes are placed in the containing block as unbroken, its fragments joined in the block flow direction as the composite box of
+        // slice joins them (§5.4.1), whose padding box holds the coordinates; a positioned box in it "sees the anchor box as unfragmented".
+        const parts: ReadonlyArray<ChainPart> = chain.parts;
+        const first: BoxFragment = parts[0].fragment;
+        const last: BoxFragment = parts[parts.length - 1].fragment;
+        const box: ElementBox = first.box;
+        const offsets: Array<number> = [];
+        const extents: Array<number> = [];
+        let total: number = 0;
+        for (const part of parts) {
+            const extent: number = part.fragment.blockSize - this.side(BoxSizes.BLOCK_START, part.fragment.border) - this.side(BoxSizes.BLOCK_END, part.fragment.border);
+            offsets.push(total);
+            extents.push(extent);
+            total += extent;
+        }
+        const border: [number, number, number, number] = [this.side(BoxSizes.BLOCK_START, first.border), this.side(BoxSizes.INLINE_END, first.border),
+            this.side(BoxSizes.BLOCK_END, last.border), this.side(BoxSizes.INLINE_START, first.border)];
+        const inlineSize: number = first.inlineSize - border[1] - border[3];
+        let container: BoxFragment = first;
+        let base: Transform = parts[0].base;
+        if (parts.length > 1) {
+            // The fragments stand in the joined box under a box of no element, so that the containing block is not among the anchors it holds.
+            const shell: ElementBox = { ...box };
+            delete shell.element;
+            delete shell.pseudoElement;
+            const standIns: Array<BoxFragment | LineFragment> = parts.map((part: ChainPart, index: number): BoxFragment => {
+                const own: BoxFragment = part.fragment;
+                const standIn: BoxFragment = {
+                    kind: "box", box: shell, inline: -this.side(BoxSizes.INLINE_START, own.border), block: offsets[index] - this.side(BoxSizes.BLOCK_START, own.border),
+                    inlineSize: own.inlineSize, blockSize: own.blockSize
+                };
+                if (own.border !== undefined) {
+                    standIn.border = own.border;
+                }
+                if (own.padding !== undefined) {
+                    standIn.padding = own.padding;
+                }
+                if (own.children !== undefined) {
+                    standIn.children = own.children;
+                }
+                return standIn;
+            });
+            container = { kind: "box", box, inline: 0, block: 0, inlineSize: first.inlineSize, blockSize: total + border[0] + border[2], border, children: standIns };
+            base = BoxSizes.IDENTITY;
+        }
+        const final: number = parts.length - 1;
+        const limit: (part: number) => number = (part: number): number => part < final ? offsets[part] + extents[part]
+            : offsets[part] - this.side(BoxSizes.BLOCK_START, parts[part].fragment.border) + parts[part].room;
+        // An inline box that is the containing block has its rectangle in the joined box, in its own writing mode (CSS Position 3 §2.1).
+        let toArea: Transform = BoxSizes.IDENTITY;
+        let across: number = inlineSize;
+        let down: number = total;
+        const area: InlineArea | undefined = chain.area;
+        if (area !== undefined) {
+            const rectangle: readonly [number, number, number, number] = area.rectangle;
+            const outer: number = this.sizes.frame(box.style);
+            const vertical: boolean = (outer & BoxSizes.VERTICAL) !== 0;
+            toArea = this.sizes.compose(this.sizes.between(outer, this.sizes.frame(area.box.style), vertical ? rectangle[3] : rectangle[2], vertical ? rectangle[2] : rectangle[3]),
+                [1, 0, 0, 1, -rectangle[0], -rectangle[1]]);
+            container = { kind: "box", box: area.box, inline: rectangle[0], block: rectangle[1], inlineSize: rectangle[2], blockSize: rectangle[3], children: container.children ?? [] };
+            base = this.sizes.compose(toArea, base);
+            across = rectangle[2];
+            down = rectangle[3];
+        }
+        const mark: number = this.overflows.length;
+        this.placements++;
+        for (const entry of chain.waiting) {
+            const local: Transform = this.sizes.compose([1, 0, 0, 1, 0, offsets[entry.part]], entry.local);
+            const placeholder: BoxFragment = entry.placeholder;
+            const target: BoxFragment = { kind: "box", box: entry.box, inline: placeholder.inline, block: placeholder.block, inlineSize: placeholder.inlineSize, blockSize: placeholder.blockSize };
+            const place: AbsolutePlace = this.absolute(target, this.sizes.compose(toArea, local), across, down, container, base, entry.frame, chain.initial,
+                entry.path[entry.path.length - 2]);
+            this.cut(chain, entry, target, place, local, offsets, limit);
+        }
+        if (final > 0) {
+            this.reroute(chain, mark, offsets, limit);
+        }
+        chain.done = true;
+    }
+
+    private spread(chain: Chain, offsets: ReadonlyArray<number>, limit: (part: number) => number, index: number, start: number, token: BreakToken | undefined,
+        lay: (space: number, incoming: BreakToken | undefined) => BoxFragment): Spread {
+        // The pieces of a box from the fragment of the containing block it starts in, each laid out in what is left of its fragment, until the box ends
+        // or reaches past the fragmentainer of the last fragment.
+        const last: number = chain.parts.length - 1;
+        const spread: Spread = { pieces: [], beyond: false, start };
+        let rest: BreakToken | undefined = token;
+        const appeal: number = this.flowAppeal;
+        try {
+            for (let part: number = index; part <= last; part++) {
+                if (part === last && spread.start >= limit(last) - TOLERANCE) {
+                    spread.beyond = true;
+                    break;
+                }
+                const laid: BoxFragment = lay(Math.max(MINIMUM_FRAGMENTAINER, limit(part) - spread.start), rest);
+                spread.pieces.push([laid, part, spread.start]);
+                rest = laid.token;
+                if (rest === undefined) {
+                    break;
+                }
+                spread.start = part < last ? offsets[part + 1] : spread.start;
+            }
+        } finally {
+            this.flowAppeal = appeal;
+        }
+        if (rest !== undefined) {
+            spread.rest = rest;
+        }
+        return spread;
+    }
+
+    private cut(chain: Chain, entry: Waiting, target: BoxFragment, place: AbsolutePlace, local: Transform, offsets: ReadonlyArray<number>,
+        limit: (part: number) => number): void {
+        // §5.5: the box fragments "across fragmentainers in the same fragmentation flow as the containing block": each piece goes into the fragment of the
+        // containing block it falls in, and what reaches past the fragmentainer of the last one goes on in the next fragmentainers.
+        const parts: ReadonlyArray<ChainPart> = chain.parts;
+        const last: number = parts.length - 1;
+        const area: readonly [number, number, number, number] = this.sizes.mapped(local, target.inline, target.block, target.inlineSize, target.blockSize);
+        let index: number = 0;
+        while (index < last && offsets[index + 1] <= area[1]) {
+            index++;
+        }
+        let spread: Spread = { pieces: [], beyond: true, start: area[1] };
+        if (index < last || area[1] < limit(last) - TOLERANCE) {
+            // A box that fits whole may hold positioned boxes that do not, which fragment with it as their containing block, so it is laid out
+            // again in the fragmentation context.
+            const own: number = this.sizes.frame(target.box.style);
+            const reach: number = place.monolithic ? 0 : this.positionedReach(target.children ?? [], this.sizes.inside({ ...target, inline: 0, block: 0 }, own), own);
+            if (place.monolithic || area[1] + Math.max(area[3], reach) <= limit(index) + TOLERANCE) {
+                spread = { pieces: [[target, index, area[1]]], beyond: false, start: area[1] };
+            } else {
+                const kinds: ReadonlyArray<string> = this.fragmenting?.kinds ?? PAGE_CONTEXT;
+                this.anchoring.push(place.context);
+                try {
+                    spread = this.spread(chain, offsets, limit, index, area[1], undefined, (space: number, incoming: BreakToken | undefined): BoxFragment => {
+                        const laid: BoxFragment = this.fragmented(kinds, space, place.size, incoming,
+                            (): BoxFragment => this.flow(target.box, place.sizes, place.size, 0, true, 0, 0, undefined, space, incoming));
+                        this.marked(laid, target, incoming === undefined);
+                        return laid;
+                    });
+                } finally {
+                    this.anchoring.pop();
+                }
+            }
+        }
+        const pieces: ReadonlyArray<readonly [BoxFragment, number, number]> = spread.pieces;
+        const rest: BreakToken | undefined = spread.rest;
+        const beyond: boolean = spread.beyond;
+        const start: number = spread.start;
+        let kept: boolean = false;
+        for (const [piece, part, at] of pieces) {
+            const rectangle: readonly [number, number, number, number] = [area[0], at, area[2], piece === target ? area[3] : piece.blockSize];
+            // The piece in the fragment that holds the placeholder takes its place; the others go into the fragment they fall in.
+            if (part !== entry.part || kept) {
+                this.inPart(chain, offsets, part, entry.path, piece, rectangle);
+                continue;
+            }
+            const placed: readonly [number, number, number, number] = this.sizes.mapped(this.sizes.inverse(local), rectangle[0], rectangle[1], rectangle[2], rectangle[3]);
+            piece.inline = placed[0];
+            piece.block = placed[1];
+            piece.inlineSize = placed[2];
+            piece.blockSize = placed[3];
+            chain.placed.push(entry.replace(piece));
+            kept = true;
+        }
+        if (!kept) {
+            chain.placed.push(entry.replace());
+        }
+        if (beyond || rest !== undefined) {
+            this.overflows.push(this.overflow(target, place, parts[last], [area[0], 0, area[2], area[3]], beyond ? start - limit(last) : 0, rest,
+                beyond && place.monolithic ? target : undefined, beyond && rest === undefined));
+        }
+    }
+
+    private inPart(chain: Chain, offsets: ReadonlyArray<number>, part: number, path: ReadonlyArray<ElementBox>, piece: BoxFragment,
+        rectangle: readonly [number, number, number, number]): void {
+        // A piece goes into the fragment of the containing block it falls in, under its nearest ancestor there; the rectangle is in the joined box.
+        const holder: ChainPart = chain.parts[part];
+        const placed: readonly [number, number, number, number] = this.sizes.mapped(this.sizes.inverse(this.sizes.compose([1, 0, 0, 1, 0, offsets[part]], holder.base)),
+            rectangle[0], rectangle[1], rectangle[2], rectangle[3]);
+        piece.inline = placed[0];
+        piece.block = placed[1];
+        piece.inlineSize = placed[2];
+        piece.blockSize = placed[3];
+        const frame: number = this.sizes.frame(holder.content.box.style);
+        const found: Holder = this.holderIn(path, [holder.content], this.sizes.inverse(this.sizes.inside(holder.content, frame)), frame);
+        if (found.fragment !== undefined) {
+            chain.placed.push(this.lodge(path, piece, found));
+        }
+    }
+
+    private reroute(chain: Chain, mark: number, offsets: ReadonlyArray<number>, limit: (part: number) => number): void {
+        // §5.5: a box whose containing block ended in an earlier fragment of this one goes on in the next fragments of this one, "as if that content were
+        // overflowing an empty box with zero margins/borders/padding at the start of the fragmentainer".
+        const parts: ReadonlyArray<ChainPart> = chain.parts;
+        const last: number = parts.length - 1;
+        const kinds: ReadonlyArray<string> = this.fragmenting?.kinds ?? PAGE_CONTEXT;
+        for (const overflow of this.overflows.splice(mark)) {
+            const part: ChainPart | undefined = overflow.part;
+            let at: number = 0;
+            let located: Transform | undefined;
+            for (; part !== undefined && at < last; at++) {
+                const content: BoxFragment = parts[at].content;
+                const frame: number = this.sizes.frame(content.box.style);
+                located = this.locate(content, part.content, this.sizes.inverse(this.sizes.inside(content, frame)), frame);
+                if (located !== undefined) {
+                    break;
+                }
+            }
+            if (part === undefined || located === undefined) {
+                this.overflows.push(overflow);
+                continue;
+            }
+            const map: Transform = this.sizes.compose(this.sizes.compose([1, 0, 0, 1, 0, offsets[at]], parts[at].base), this.sizes.compose(located, this.sizes.inverse(part.base)));
+            const span: readonly [number, number, number, number] = this.sizes.mapped(map, overflow.area[0], 0, overflow.area[2], overflow.area[3]);
+            // The next fragment starts where its fragmentainer does, at its border edge, and the box as far below as it still has to go.
+            const begin: number = offsets[at + 1] - this.side(BoxSizes.BLOCK_START, parts[at + 1].fragment.border) + overflow.offset;
+            let index: number = at + 1;
+            while (index < last && offsets[index + 1] <= begin) {
+                index++;
+            }
+            const box: ElementBox = overflow.box;
+            const whole: BoxFragment | undefined = overflow.whole;
+            let spread: Spread = { pieces: [], beyond: true, start: begin };
+            if (index < last || begin < limit(last) - TOLERANCE) {
+                if (whole !== undefined) {
+                    spread = { pieces: [[whole, index, begin]], beyond: false, start: begin };
+                } else {
+                    const context: AnchorContext | undefined = overflow.context;
+                    if (context !== undefined) {
+                        this.anchoring.push(context);
+                    }
+                    try {
+                        spread = this.spread(chain, offsets, limit, index, begin, overflow.token, (space: number, incoming: BreakToken | undefined): BoxFragment => {
+                            const laid: BoxFragment = this.fragmented(kinds, space, overflow.size, incoming,
+                                (): BoxFragment => this.flow(box, overflow.sizes, overflow.size, 0, true, 0, 0, undefined, space, incoming));
+                            this.marked(laid, overflow, incoming === undefined);
+                            return laid;
+                        });
+                    } finally {
+                        if (context !== undefined) {
+                            this.anchoring.pop();
+                        }
+                    }
+                }
+            }
+            const path: ReadonlyArray<ElementBox> = this.pathTo(this.originOf(parts[0].content.box), box, []) ?? [box];
+            for (const [piece, holder, top] of spread.pieces) {
+                this.inPart(chain, offsets, holder, path, piece, [span[0], top, span[2], piece === whole ? span[3] : piece.blockSize]);
+            }
+            if (spread.beyond || spread.rest !== undefined) {
+                const going: Overflow = { box, part: parts[last], area: [span[0], 0, span[2], span[3]], offset: spread.beyond ? spread.start - limit(last) : 0,
+                    sizes: overflow.sizes, size: overflow.size };
+                if (spread.rest !== undefined) {
+                    going.token = spread.rest;
+                }
+                if (spread.beyond && whole !== undefined) {
+                    going.whole = whole;
+                }
+                if (spread.beyond && spread.rest === undefined && overflow.margin !== undefined) {
+                    going.margin = overflow.margin;
+                }
+                if (overflow.context !== undefined) {
+                    going.context = overflow.context;
+                }
+                if (overflow.hidden !== undefined) {
+                    going.hidden = overflow.hidden;
+                }
+                if (overflow.anchoredTo !== undefined) {
+                    going.anchoredTo = overflow.anchoredTo;
+                }
+                this.overflows.push(going);
+            }
+        }
+    }
+
+    private positionedReach(children: ReadonlyArray<BoxFragment | LineFragment>, transform: Transform, frame: number): number {
+        // How far down the absolutely positioned boxes inside a box reach, from the box's block-start border edge.
+        let reach: number = 0;
+        for (const child of children) {
+            const line: Transform = child.kind === "line" ? this.sizes.compose(transform, [1, 0, 0, 1, child.inline ?? 0, child.block]) : transform;
+            for (const piece of child.kind === "line" ? child.pieces : [child]) {
+                if (piece.kind !== "box") {
+                    continue;
+                }
+                if (piece.box.placement === "absolute" || piece.box.placement === "fixed") {
+                    const area: readonly [number, number, number, number] = this.sizes.mapped(line, piece.inline, piece.block, piece.inlineSize, piece.blockSize);
+                    reach = Math.max(reach, area[1] + area[3]);
+                }
+                if (piece.children !== undefined) {
+                    reach = Math.max(reach, this.positionedReach(piece.children, this.sizes.compose(line, this.sizes.inside(piece, frame)), this.sizes.frame(piece.box.style)));
+                }
+            }
+        }
+        return reach;
+    }
+
+    private marked(piece: BoxFragment, target: BoxFragment | Overflow, first: boolean): void {
+        // The pieces of a box are drawn as it is, hidden by position-visibility or tied to the anchor whose visibility it follows (CSS Anchor
+        // Positioning 1 §6.6), and only the first has the block-start margin that placed the box.
+        if (target.hidden !== undefined) {
+            piece.hidden = target.hidden;
+        }
+        if (target.anchoredTo !== undefined) {
+            piece.anchoredTo = target.anchoredTo;
+        }
+        if (first && target.margin !== undefined) {
+            piece.margin = target.margin;
+        }
+    }
+
+    private overflow(target: BoxFragment, place: AbsolutePlace, part: ChainPart | undefined, area: readonly [number, number, number, number], offset: number,
+        token: BreakToken | undefined, whole: BoxFragment | undefined, first: boolean): Overflow {
+        const overflow: Overflow = { box: target.box, area, offset, sizes: place.sizes, size: place.size, context: place.context };
+        if (part !== undefined) {
+            overflow.part = part;
+        }
+        if (token !== undefined) {
+            overflow.token = token;
+        }
+        if (whole !== undefined) {
+            overflow.whole = whole;
+        }
+        if (first && target.margin !== undefined) {
+            overflow.margin = target.margin;
+        }
+        if (target.hidden !== undefined) {
+            overflow.hidden = target.hidden;
+        }
+        if (target.anchoredTo !== undefined) {
+            overflow.anchoredTo = target.anchoredTo;
+        }
+        return overflow;
+    }
+
+    private unplace(chain: Chain): void {
+        // What was placed is taken back in the reverse order, so that each placeholder gets its own place back.
+        for (let index: number = chain.placed.length - 1; index >= 0; index--) {
+            chain.placed[index]();
+        }
+        chain.placed.length = 0;
+    }
+
+    private carryOut(root: BoxFragment): void {
+        // CSS Fragmentation 4 §5.5: a positioned box that reaches past the fragmentainer of its containing block's last fragment goes on in the next
+        // fragmentainers, where the containing block has ended; its place across the line is that of this fragmentainer.
+        if (this.overflows.length === 0) {
+            return;
+        }
+        const frame: number = this.sizes.frame(root.box.style);
+        const carries: Array<PositionedCarry> = [];
+        for (const overflow of this.overflows) {
+            const part: ChainPart | undefined = overflow.part;
+            // A containing block that is not in this fragmentainer was laid out by a layout that was not kept, or before this fragmentainer.
+            const located: Transform | undefined = part === undefined ? BoxSizes.IDENTITY : this.locate(root, part.content, BoxSizes.IDENTITY, frame);
+            if (located === undefined) {
+                continue;
+            }
+            const map: Transform = part === undefined ? located : this.sizes.compose(located, this.sizes.inverse(part.base));
+            const span: readonly [number, number, number, number] = this.sizes.mapped(map, overflow.area[0], 0, overflow.area[2], overflow.area[3]);
+            const carry: PositionedCarry = { box: overflow.box, offset: overflow.offset, inline: span[0], inlineSize: span[2], extent: span[3], sizes: overflow.sizes, size: overflow.size };
+            if (overflow.token !== undefined) {
+                carry.token = overflow.token;
+            }
+            if (overflow.whole !== undefined) {
+                carry.whole = overflow.whole;
+            }
+            if (overflow.margin !== undefined) {
+                carry.margin = overflow.margin;
+            }
+            if (overflow.hidden !== undefined) {
+                carry.hidden = overflow.hidden;
+            }
+            if (overflow.anchoredTo !== undefined) {
+                carry.anchoredTo = overflow.anchoredTo;
+            }
+            if (overflow.context !== undefined) {
+                this.carriedContexts.set(carry, overflow.context);
+            }
+            carries.push(carry);
+        }
+        if (carries.length === 0) {
+            return;
+        }
+        // A fragmentainer whose content ended goes on for them alone, as the overflow-only fragment of its box.
+        root.token = root.token ?? { box: root.box, consumed: 0, child: root.box.children.length, sequence: root.box.inline?.length ?? 0, ended: true };
+        root.token.positioned = carries;
+    }
+
+    private carryIn(root: BoxFragment, incoming: BreakToken | undefined, kinds: ReadonlyArray<string>, extent: number): void {
+        // §5.5: the rest of a box goes on "as if that content were overflowing an empty box with zero margins/borders/padding at the start of the
+        // fragmentainer", at its place across the line, and below the start by what it has still to go down.
+        const carries: ReadonlyArray<PositionedCarry> | undefined = incoming?.positioned;
+        if (carries === undefined) {
+            return;
+        }
+        const frame: number = this.sizes.frame(root.box.style);
+        const appeal: number = this.flowAppeal;
+        const state: Fragmentation | undefined = this.pageState;
+        for (const carry of carries) {
+            const context: AnchorContext | undefined = this.carriedContexts.get(carry);
+            const area: readonly [number, number, number, number] = [carry.inline, 0, carry.inlineSize, carry.extent];
+            if (carry.offset >= extent - TOLERANCE) {
+                const passing: Overflow = { box: carry.box, area, offset: carry.offset - extent, sizes: carry.sizes, size: carry.size };
+                this.carried(passing, carry, carry.token, carry.whole, context, true);
+                this.overflows.push(passing);
+                continue;
+            }
+            let piece: BoxFragment;
+            if (carry.whole !== undefined) {
+                piece = carry.whole;
+            } else {
+                const space: number = Math.max(MINIMUM_FRAGMENTAINER, extent - carry.offset);
+                const token: BreakToken | undefined = carry.token;
+                if (context !== undefined) {
+                    this.anchoring.push(context);
+                }
+                try {
+                    piece = this.fragmented(kinds, space, carry.size, token, (): BoxFragment => this.flow(carry.box, carry.sizes, carry.size, 0, true, 0, 0, undefined, space, token));
+                } finally {
+                    if (context !== undefined) {
+                        this.anchoring.pop();
+                    }
+                }
+                if (carry.hidden !== undefined) {
+                    piece.hidden = carry.hidden;
+                }
+                if (carry.anchoredTo !== undefined) {
+                    piece.anchoredTo = carry.anchoredTo;
+                }
+                if (carry.margin !== undefined) {
+                    piece.margin = carry.margin;
+                }
+            }
+            piece.inline = carry.inline;
+            piece.block = carry.offset;
+            piece.inlineSize = carry.inlineSize;
+            if (carry.whole !== undefined) {
+                piece.blockSize = carry.extent;
+            }
+            this.lodgeCarried(root, carry.box, piece, frame);
+            if (carry.whole === undefined && piece.token !== undefined) {
+                const going: Overflow = { box: carry.box, area, offset: 0, sizes: carry.sizes, size: carry.size };
+                this.carried(going, carry, piece.token, undefined, context, false);
+                this.overflows.push(going);
+            }
+        }
+        this.flowAppeal = appeal;
+        if (state === undefined) {
+            delete this.pageState;
+        } else {
+            this.pageState = state;
+        }
+    }
+
+    private carried(overflow: Overflow, carry: PositionedCarry, token: BreakToken | undefined, whole: BoxFragment | undefined, context: AnchorContext | undefined,
+        first: boolean): void {
+        if (token !== undefined) {
+            overflow.token = token;
+        }
+        if (whole !== undefined) {
+            overflow.whole = whole;
+        }
+        if (context !== undefined) {
+            overflow.context = context;
+        }
+        if (first && carry.margin !== undefined) {
+            overflow.margin = carry.margin;
+        }
+        if (carry.hidden !== undefined) {
+            overflow.hidden = carry.hidden;
+        }
+        if (carry.anchoredTo !== undefined) {
+            overflow.anchoredTo = carry.anchoredTo;
+        }
+    }
+
+    private lodgeCarried(root: BoxFragment, box: ElementBox, piece: BoxFragment, frame: number): void {
+        // The piece goes into its nearest ancestor in the fragmentainer, or into the fragmentainer's own box, below the boxes that hold that box.
+        const path: ReadonlyArray<ElementBox> = (this.rootBox === undefined ? undefined : this.pathTo(this.rootBox, box, [])) ?? [box];
+        const found: Holder = this.holderIn(path, [root], BoxSizes.IDENTITY, frame);
+        if (found.fragment === undefined) {
+            let depth: number = path.indexOf(this.originOf(root.box));
+            if (depth < 0) {
+                depth = path.findIndex((ancestor: ElementBox) => root.box.children.some((child: BoxNode) => child.kind === "box" && this.originOf(child) === ancestor)) - 1;
+            }
+            found.fragment = root;
+            found.transform = this.sizes.inside(root, frame);
+            found.frame = this.sizes.frame(root.box.style);
+            found.depth = Math.max(-1, depth);
+        }
+        this.lodge(path, piece, found);
+    }
+
+    private placeAbsolute(setting: AbsoluteSetting, style: ComputedStyle): AbsolutePlace {
+        // CSS Position 3 §4: the inset-modified containing block is found, the box is sized in it, its auto margins resolved and its margin box
+        // aligned in it; CSS Writing Modes 4 §7.3 and §7.4: the box is sized in its own writing mode and placed in the containing block's.
+        const box: ElementBox = setting.box;
+        const containing: number = setting.containing;
+        const own: number = this.sizes.frame(style);
+        const orthogonal: boolean = this.sizes.isOrthogonal(containing, own);
+        const context: AnchorContext = this.anchorContext(setting, style);
+        this.anchoring.push(context);
+        try {
+            const option: OptionArea = this.optionArea(context, own);
+            const region: readonly [number, number, number, number] = context.region;
+            const spans: readonly [number, number] = [region[1] - region[0], region[3] - region[2]];
+            const insets: Array<number | undefined> = [];
+            for (let side: number = 0; side < 4; side++) {
+                insets.push(this.sizes.inset(style, side, spans[side % 2 === 0 ? 1 : 0], containing));
+            }
+            // CSS Anchor Positioning 1 §3.1 and §4.2: with a position-area or anchor-center, auto insets and auto margins are zero.
+            const zeroed: boolean = option.area !== undefined || option.justify.kind === "anchor-center" || option.align.kind === "anchor-center";
+            const kinds: Array<Alignment> = [option.justify, option.align];
+            const modes: Array<string> = [];
+            const imcb: Array<readonly [number, number]> = [];
+            let corrected: boolean = false;
+            for (let axis: number = 0; axis < 2; axis++) {
+                const start: number | undefined = insets[axis === 0 ? BoxSizes.INLINE_START : BoxSizes.BLOCK_START];
+                const end: number | undefined = insets[axis === 0 ? BoxSizes.INLINE_END : BoxSizes.BLOCK_END];
+                const low: number = region[axis * 2];
+                const high: number = region[axis * 2 + 1];
+                const single: boolean = (start === undefined) !== (end === undefined);
+                let before: number = start ?? 0;
+                let after: number = end ?? 0;
+                let mode: string = "insets";
+                if (zeroed || (start !== undefined && end !== undefined)) {
+                    // §4.1: "if only one inset property in the relevant axis is auto", normal aligns "towards the edge with the non-auto inset", unsafely.
+                    if (option.area !== undefined && single && this.anchorRules.alignment(style.values[axis === 0 ? "justify-self" : "align-self"], axis === 0, containing, own).kind === "normal") {
+                        kinds[axis] = { kind: start === undefined ? "end" : "start", overflow: "unsafe" };
+                    }
+                } else if (single) {
+                    mode = start !== undefined ? "start" : "end";
+                } else {
+                    // CSS Position 3 §3.5.1: with both insets auto, the alignment in the static-position containing block sets them from the
+                    // static-position rectangle, center keeping the rectangle's center in the middle.
+                    mode = this.staticAlignment(setting, style, axis, own);
+                    const first: number = setting.statics[axis];
+                    const last: number = first + setting.statics[axis + 2];
+                    const middle: number = (first + last) / 2;
+                    if (mode === "static-start") {
+                        before = first - low;
+                    } else if (mode === "static-end") {
+                        after = high - last;
+                    } else if (middle - low <= high - middle) {
+                        after = high - low - 2 * Math.abs(middle - low);
+                    } else {
+                        before = high - low - 2 * Math.abs(high - middle);
+                    }
+                }
+                let from: number = low + before;
+                let to: number = high - after;
+                if (to < from) {
+                    // "the weaker inset in the affected axis is reduced (possibly becoming negative) to bring that size up to zero", the auto one
+                    // when only one is auto and the end one otherwise.
+                    corrected = true;
+                    if (single && start === undefined) {
+                        from = to;
+                    } else {
+                        to = from;
+                    }
+                }
+                modes.push(mode);
+                imcb.push([from, to]);
+            }
+            const inlineAxis: number = orthogonal ? 1 : 0;
+            const blockAxis: number = 1 - inlineAxis;
+            const given: UsedSizes = this.sizes.of(style, spans[inlineAxis], spans[blockAxis], spans[0]);
+            const margin: (axis: number, end: boolean) => number | undefined = (axis: number, end: boolean): number | undefined => {
+                const side: number = axis === 0 ? (end ? BoxSizes.INLINE_END : BoxSizes.INLINE_START) : (end ? BoxSizes.BLOCK_END : BoxSizes.BLOCK_START);
+                const value: number | undefined = this.sizes.margin(given, this.sizes.side(containing, own, side));
+                return value === undefined && zeroed ? 0 : value;
+            };
+            const room: (axis: number) => number = (axis: number): number => imcb[axis][1] - imcb[axis][0];
+            const fits: (axis: number) => boolean = (axis: number): boolean => {
+                // §4.1: the automatic size is the stretch-fit size for stretch without auto insets or margins, and for normal without auto insets
+                // on a box that is neither replaced nor a table wrapper box; otherwise it is the fit-content size.
+                const kind: string = kinds[axis].kind;
+                const fixed: boolean = modes[axis] === "insets";
+                return (kind === "stretch" && fixed && margin(axis, false) !== undefined && margin(axis, true) !== undefined)
+                    || (kind === "normal" && fixed && !box.replaced && !this.tables.isWrapper(box));
+            };
+            const inlineEdges: number = this.inlineEdges(given);
+            const blockEdges: number = this.sizes.edges(given, BoxSizes.BLOCK_START) + this.sizes.edges(given, BoxSizes.BLOCK_END);
+            const inlineStretch: number = Math.max(0, room(inlineAxis) - (margin(inlineAxis, false) ?? 0) - (margin(inlineAxis, true) ?? 0) - inlineEdges);
+            const blockStretch: number = Math.max(0, room(blockAxis) - (margin(blockAxis, false) ?? 0) - (margin(blockAxis, true) ?? 0) - blockEdges);
+            // "When both axes have an automatic size, if only one axis has an auto inset then that axis is the ratio-dependent axis", whose size
+            // follows from the stretch-fit size of the other.
+            const keywords: ReadonlyArray<string> | undefined = given.keywords;
+            const automatic: boolean = given.inlineSize === undefined && given.blockSize === undefined
+                && (keywords === undefined || (keywords[BoxSizes.PREFERRED_INLINE] === "" && keywords[BoxSizes.PREFERRED_BLOCK] === ""));
+            const basis: UsedSizes = given.ratio !== undefined && !box.replaced && automatic && modes[inlineAxis] !== "insets" && modes[blockAxis] === "insets" && fits(blockAxis)
+                ? { ...given, blockSize: this.sizes.adjusted(given, BoxSizes.PREFERRED_BLOCK, blockStretch) } : given;
+            const sizes: UsedSizes = this.resolved(box, basis, inlineStretch, room(blockAxis));
+            let size: number;
+            if (sizes.inlineSize !== undefined) {
+                size = sizes.inlineSize;
+            } else if (fits(inlineAxis)) {
+                size = inlineStretch;
+            } else {
+                // CSS Sizing 3 §3.2: fit-content is "min(max-content, max(min-content, stretch-fit))"; a box whose content another layout lays
+                // out, such as a MathML element in a formula, has the content width that layout gives.
+                const inner: BoxFragment | undefined = this.innerLayout?.(box, sizes);
+                const content: readonly [number, number] = inner === undefined ? this.contentSizes(box, sizes.blockSize)
+                    : [inner.inlineSize - inlineEdges, inner.inlineSize - inlineEdges];
+                size = Math.min(Math.max(content[0], inlineStretch), content[1]);
+            }
+            size = this.clamped(sizes.inlineSize ?? this.sizes.adjusted(sizes, BoxSizes.PREFERRED_INLINE, size), sizes.minInlineSize, sizes.maxInlineSize);
+            // CSS Sizing 4 §4.2: with a preferred aspect ratio the automatic block size follows from the inline size.
+            const stretched: number | undefined = sizes.blockSize === undefined && sizes.ratio === undefined && fits(blockAxis) ? blockStretch : undefined;
+            const final: UsedSizes = stretched === undefined ? sizes : { ...sizes, blockSize: this.sizes.adjusted(sizes, BoxSizes.PREFERRED_BLOCK, stretched) };
+            const inner: BoxFragment | undefined = this.innerLayout?.(box, final, size);
+            const laid: BoxFragment = inner ?? this.flow(box, final, size, 0, true, 0, 0);
+            const extents: readonly [number, number] = orthogonal ? [laid.blockSize, laid.inlineSize] : [laid.inlineSize, laid.blockSize];
+            const offsets: Array<number> = [];
+            const used: [number, number, number, number] = [0, 0, 0, 0];
+            let overflows: boolean = false;
+            for (let axis: number = 0; axis < 2; axis++) {
+                const from: number = imcb[axis][0];
+                const to: number = imcb[axis][1];
+                let before: number | undefined = margin(axis, false);
+                let after: number | undefined = margin(axis, true);
+                const loose: boolean = before === undefined || after === undefined;
+                if (loose && modes[axis] === "insets") {
+                    // §4.2: the remaining space is divided among the auto margins, but in the inline axis "the start margin resolves to zero and the
+                    // end margin receives the remaining space" when it is negative and both are auto.
+                    const remaining: number = to - from - extents[axis] - (before ?? 0) - (after ?? 0);
+                    if (before === undefined && after === undefined) {
+                        before = axis === 0 && remaining < 0 ? 0 : remaining / 2;
+                        after = remaining - before;
+                    } else if (before === undefined) {
+                        before = remaining;
+                    } else {
+                        after = remaining;
+                    }
+                }
+                const marginStart: number = before ?? 0;
+                const outer: number = extents[axis] + marginStart + (after ?? 0);
+                let position: number;
+                // §5: with an auto inset the margin box goes to the edge of the stronger inset, and with auto margins those place it.
+                if (modes[axis] === "start" || modes[axis] === "static-start" || (loose && modes[axis] === "insets")) {
+                    position = from;
+                } else if (modes[axis] === "end" || modes[axis] === "static-end") {
+                    position = to - outer;
+                } else if (modes[axis] === "static-center") {
+                    position = from + (to - from - outer) / 2;
+                } else {
+                    position = this.aligned(kinds[axis], from, to, outer, setting, axis, option.anchor);
+                }
+                offsets.push(position + marginStart);
+                used[this.sizes.side(containing, own, axis === 0 ? BoxSizes.INLINE_START : BoxSizes.BLOCK_START)] = marginStart;
+                used[this.sizes.side(containing, own, axis === 0 ? BoxSizes.INLINE_END : BoxSizes.BLOCK_END)] = after ?? 0;
+                overflows = overflows || position < from - EDGE_TOLERANCE || position + outer > to + EDGE_TOLERANCE;
+            }
+            if (used.some((value: number) => value !== 0)) {
+                laid.margin = used;
+            }
+            return {
+                fragment: laid, inline: offsets[0], block: offsets[1], across: extents[0], down: extents[1], overflows, corrected, context, sizes: final, size,
+                monolithic: inner !== undefined || orthogonal || box.replaced || this.isMonolithic(box)
+            };
+        } finally {
             this.anchoring.pop();
         }
     }
 
-    private offset(start: number | undefined, end: number | undefined, marginStart: number | undefined, marginEnd: number | undefined, extent: number, containing: number,
-        position: number): number {
-        // CSS 2 §10.3.7 and §10.6.4: an auto inset follows from the others or from the static position, two auto margins
-        // "get equal values", and an over-constrained box ignores its end inset.
-        if (start !== undefined && end !== undefined && marginStart === undefined) {
-            const free: number = containing - start - end - extent;
-            return start + Math.max(0, marginEnd === undefined ? free / 2 : free - marginEnd);
+    private anchorContext(setting: AbsoluteSetting, style: ComputedStyle): AnchorContext {
+        // CSS Anchor Positioning 1 §5.1: the anchor functions of the box's values, and of the descendants that inherit them, resolve while the
+        // box is laid out; a position option has values of its own.
+        const owners: Array<number> = [];
+        for (const owner of [style.anchorOwner, setting.box.style.anchorOwner]) {
+            if (owner !== undefined && !owners.includes(owner)) {
+                owners.push(owner);
+            }
         }
-        if (start !== undefined) {
-            return start + (marginStart ?? 0);
-        }
-        if (end !== undefined) {
-            return containing - end - extent - (marginEnd ?? 0);
-        }
-        return position + (marginStart ?? 0);
+        return {
+            owners, box: setting.box, style, container: setting.container, base: setting.base, frame: setting.containing,
+            region: [0, setting.inlineSize, 0, setting.blockSize], found: setting.found, usesDefault: false, missing: false
+        };
     }
 
-    private anchorLength(anchor: CalcAnchor, block: boolean): number | undefined {
+    private optionArea(context: AnchorContext, own: number): OptionArea {
+        // CSS Anchor Positioning 1 §3.1: a position-area makes its area of the grid around the default anchor box the containing block, and
+        // has no effect without that box; §4.2: anchor-center without it "behaves as center".
+        const style: ComputedStyle = context.style;
+        const area: Area | undefined = this.anchorRules.area(style.values["position-area"], context.frame, own);
+        let justify: Alignment = this.anchorRules.alignment(style.values["justify-self"], true, context.frame, own);
+        let align: Alignment = this.anchorRules.alignment(style.values["align-self"], false, context.frame, own);
+        let anchor: readonly [number, number, number, number] | undefined;
+        if (area !== undefined || justify.kind === "anchor-center" || align.kind === "anchor-center") {
+            context.usesDefault = true;
+            anchor = this.defaultRect(context);
+        }
+        if (anchor === undefined) {
+            const centered: (alignment: Alignment) => Alignment = (alignment: Alignment): Alignment => alignment.kind === "anchor-center" ? { ...alignment, kind: "center" } : alignment;
+            return { justify: centered(justify), align: centered(align) };
+        }
+        if (area !== undefined) {
+            const inline: readonly [number, number] = this.gridTracks(area.inline, anchor[0], anchor[2], context.region[1]);
+            const block: readonly [number, number] = this.gridTracks(area.block, anchor[1], anchor[3], context.region[3]);
+            context.region = [inline[0], inline[1], block[0], block[1]];
+            justify = this.areaAlignment(justify, area.inline);
+            align = this.areaAlignment(align, area.block);
+            return { area, anchor, justify, align };
+        }
+        return { anchor, justify, align };
+    }
+
+    private gridTracks(tracks: readonly [number, number], low: number, high: number, size: number): readonly [number, number] {
+        // §3.1.1: the lines are the start of the containing block or of the anchor box if that is more start-ward, the anchor's edges, and the
+        // end of the containing block or of the anchor box if that is more end-ward.
+        const lines: readonly [number, number, number, number] = [Math.min(0, low), low, high, Math.max(size, high)];
+        return [lines[tracks[0]], lines[tracks[1] + 1]];
+    }
+
+    private areaAlignment(alignment: Alignment, tracks: readonly [number, number]): Alignment {
+        // §4.1: normal is center for the center track alone, anchor-center for all three tracks, and otherwise toward the side track not selected.
+        if (alignment.kind !== "normal") {
+            return alignment;
+        }
+        if (tracks[0] === 1 && tracks[1] === 1) {
+            return { kind: "center" };
+        }
+        if (tracks[0] === 0 && tracks[1] === 2) {
+            return { kind: "anchor-center" };
+        }
+        return { kind: tracks[0] === 0 ? "end" : "start" };
+    }
+
+    private staticAlignment(setting: AbsoluteSetting, style: ComputedStyle, axis: number, own: number): string {
+        // CSS Position 3 §3.5.2: the alignment uses the writing mode of the static-position containing block, normal as start and stretch and
+        // baselines as their fallbacks, and overflow alignment is ignored; CSS Box Alignment 3 §6.1: auto takes the parent's default alignment.
+        const crossed: boolean = this.sizes.isOrthogonal(setting.staticFrame, setting.containing);
+        const inline: boolean = (axis === 0) !== crossed;
+        const value: CssValue | undefined = this.selfValue(style.values[inline ? "justify-self" : "align-self"], setting.parent?.style.values[inline ? "justify-items" : "align-items"]);
+        const kind: string = this.anchorRules.alignment(value, inline, setting.staticFrame, own).kind;
+        if (kind === "center" || kind === "anchor-center") {
+            return "static-center";
+        }
+        const forward: boolean = this.sizes.side(setting.staticFrame, setting.containing, inline ? BoxSizes.INLINE_START : BoxSizes.BLOCK_START)
+            === (axis === 0 ? BoxSizes.INLINE_START : BoxSizes.BLOCK_START);
+        return forward === (kind !== "end") ? "static-start" : "static-end";
+    }
+
+    private aligned(alignment: Alignment, from: number, to: number, outer: number, setting: AbsoluteSetting, axis: number,
+        anchor: readonly [number, number, number, number] | undefined): number {
+        // CSS Box Alignment 3 §6.1.2 and §6.2.2: normal behaves as start here, and so does stretch on a box that keeps its size; CSS Anchor
+        // Positioning 1 §4.2: anchor-center centers the margin box on the default anchor box.
+        const kind: string = alignment.kind;
+        if (kind === "normal" || kind === "stretch") {
+            return from;
+        }
+        const room: number = to - from;
+        let wanted: number;
+        if (kind === "start") {
+            wanted = from;
+        } else if (kind === "end") {
+            wanted = to - outer;
+        } else if (kind === "anchor-center" && anchor !== undefined) {
+            wanted = (anchor[axis] + anchor[axis + 2]) / 2 - outer / 2;
+        } else {
+            wanted = from + (room - outer) / 2;
+        }
+        if (alignment.overflow === "unsafe") {
+            return wanted;
+        }
+        if (alignment.overflow === "safe") {
+            return outer > room ? from : wanted;
+        }
+        // §4.4.1.2: by default the box stays within the inset-modified containing block, covers it when larger within the overflow limit rect,
+        // which also holds the original containing block, and starts that rect when larger still.
+        if (outer <= room) {
+            return Math.min(Math.max(wanted, from), to - outer);
+        }
+        const limitStart: number = Math.min(from, 0);
+        const limitEnd: number = this.scrolls(setting) ? Number.POSITIVE_INFINITY : Math.max(to, axis === 0 ? setting.inlineSize : setting.blockSize);
+        if (outer <= limitEnd - limitStart) {
+            return Math.min(Math.max(wanted, to - outer, limitStart), from, limitEnd - outer);
+        }
+        return limitStart;
+    }
+
+    private scrolls(setting: AbsoluteSetting): boolean {
+        // §4.4.1.2: the limit of a scroll container's box is "extended to infinity in any direction that does not extend into the unreachable
+        // scrollable overflow region", unless it is the fixed containing block; the page area is no scroll container.
+        if (setting.initial) {
+            return false;
+        }
+        const values: Readonly<Record<string, CssValue>> = setting.container.box.style.values;
+        return SCROLLING_OVERFLOW.has(this.keyword(values["overflow-x"])) || SCROLLING_OVERFLOW.has(this.keyword(values["overflow-y"]));
+    }
+
+    private tryOrder(setting: AbsoluteSetting, styles: ReadonlyArray<ComputedStyle>): ReadonlyArray<ComputedStyle> {
+        // CSS Anchor Positioning 1 §6.2: the options are stably sorted by the size of the inset-modified containing block they give, "treating
+        // auto inset values as zero", largest first, with logical directions of the containing block.
+        const order: string = this.keyword(setting.box.style.values["position-try-order"]);
+        if (order !== "most-width" && order !== "most-height" && order !== "most-inline-size" && order !== "most-block-size") {
+            return styles;
+        }
+        let axis: number = order === "most-block-size" ? 1 : 0;
+        if (order === "most-width" || order === "most-height") {
+            axis = (order === "most-width") === ((setting.containing & BoxSizes.VERTICAL) === 0) ? 0 : 1;
+        }
+        const measured: Array<readonly [number, number]> = styles.map((style: ComputedStyle, index: number): readonly [number, number] => [this.insetModified(setting, style, axis), index]);
+        measured.sort((first: readonly [number, number], second: readonly [number, number]) => second[0] - first[0] || first[1] - second[1]);
+        return measured.map((entry: readonly [number, number]) => styles[entry[1]]);
+    }
+
+    private insetModified(setting: AbsoluteSetting, style: ComputedStyle, axis: number): number {
+        const context: AnchorContext = this.anchorContext(setting, style);
+        this.anchoring.push(context);
+        try {
+            this.optionArea(context, this.sizes.frame(style));
+            const span: number = context.region[axis * 2 + 1] - context.region[axis * 2];
+            const start: number = this.sizes.inset(style, axis === 0 ? BoxSizes.INLINE_START : BoxSizes.BLOCK_START, span, setting.containing) ?? 0;
+            const end: number = this.sizes.inset(style, axis === 0 ? BoxSizes.INLINE_END : BoxSizes.BLOCK_END, span, setting.containing) ?? 0;
+            return Math.max(0, span - start - end);
+        } finally {
+            this.anchoring.pop();
+        }
+    }
+
+    private positionVisibility(place: AbsolutePlace, target: BoxFragment): void {
+        // CSS Anchor Positioning 1 §6.6: visibility "computes to force-hidden" when the box uses a default anchor box that is not found or
+        // when it overflows; whether the anchor is invisible or clipped by intervening boxes depends on what is painted, which the painter knows.
+        const context: AnchorContext = place.context;
+        const value: CssValue | undefined = context.box.style.values["position-visibility"];
+        const words: Array<string> = [];
+        for (const item of value === undefined ? [] : (value.kind === "list" ? value.items : [value])) {
+            if (item.kind === "ident") {
+                words.push(item.lower);
+            }
+        }
+        if (words.length === 0) {
+            words.push("anchors-visible");
+        }
+        if (words.includes("always")) {
+            return;
+        }
+        const anchor: ElementBox | undefined = this.defaultTarget(context);
+        if ((words.includes("no-overflow") && place.overflows) || (words.includes("anchors-valid") && (context.missing || (context.usesDefault && anchor === undefined)))) {
+            target.hidden = true;
+        } else if (anchor !== undefined && words.includes("anchors-visible")) {
+            target.anchoredTo = { anchor, container: context.container.box };
+        }
+    }
+
+    private anchorLength(anchor: CalcAnchor, block: boolean, side?: number): number | undefined {
         // An anchor function belongs to the box whose computed value made it, which is being laid out when it is met.
         for (let index: number = this.anchoring.length - 1; index >= 0; index--) {
-            const entry: readonly [number, ElementBox, BoxFragment] = this.anchoring[index];
-            if (entry[0] === anchor.owner) {
-                return this.anchorSize(entry[2], entry[1], anchor, block);
+            const context: AnchorContext = this.anchoring[index];
+            if (anchor.owner !== undefined && context.owners.includes(anchor.owner)) {
+                if (anchor.anchor === undefined) {
+                    context.usesDefault = true;
+                }
+                // §6.6: an anchor function without a fallback is a required anchor reference, which anchors-valid needs resolved.
+                if (anchor.fallback === undefined && this.anchorTarget(context, anchor.anchor) === undefined) {
+                    context.missing = true;
+                }
+                return anchor.name === "anchor" ? this.anchorEdge(context, anchor, side) : this.anchorSize(context, anchor, block);
             }
         }
         return undefined;
     }
 
-    private anchorSize(container: BoxFragment, box: ElementBox, anchor: CalcAnchor, block: boolean): number | undefined {
-        // CSS Anchor Positioning 1 §5.1: the function takes an anchor name and a size keyword, both optional, and gives "the
-        // <length> separating the relevant edges" "of the target anchor element's anchor box."
-        const name: string | undefined = anchor.anchor;
-        const keyword: string = anchor.keyword ?? "";
+    private anchorEdge(context: AnchorContext, anchor: CalcAnchor, side?: number): number | undefined {
+        // CSS Anchor Positioning 1 §3.2: the length "that would align the edge of the positioned boxes' inset-modified containing block
+        // corresponding to the property the function appears in with the specified edge" of the anchor box.
+        const target: ElementBox | undefined = side === undefined ? undefined : this.anchorTarget(context, anchor.anchor);
+        const rect: readonly [number, number, number, number] | undefined = target === undefined ? undefined : this.contextBounds(context).get(target);
+        if (rect === undefined || side === undefined) {
+            return undefined;
+        }
+        const block: boolean = side === BoxSizes.BLOCK_START || side === BoxSizes.BLOCK_END;
+        const startSide: number = block ? BoxSizes.BLOCK_START : BoxSizes.INLINE_START;
+        const low: number = block ? rect[1] : rect[0];
+        const high: number = block ? rect[3] : rect[2];
+        const atStart: boolean = side === startSide;
+        const keyword: string | undefined = anchor.keyword;
+        let edge: number | undefined;
+        if (anchor.percent !== undefined || keyword === "center") {
+            // "0% being equivalent to start and 100% being equivalent to end", and "center is equivalent to 50%".
+            edge = low + (high - low) * (anchor.percent ?? 50) / 100;
+        } else if (keyword === "inside" || keyword === "outside") {
+            edge = atStart === (keyword === "inside") ? low : high;
+        } else if (keyword === "start" || keyword === "end") {
+            edge = keyword === "start" ? low : high;
+        } else if (keyword === "self-start" || keyword === "self-end") {
+            const ownStart: boolean = this.anchorRules.startSide(block ? "block" : "inline", context.frame, this.sizes.frame(context.style)) === startSide;
+            edge = (keyword === "self-start") === ownStart ? low : high;
+        } else if (keyword !== undefined) {
+            // §3.2.1: a physical keyword resolves only in an inset property of its axis.
+            const physical: number = PHYSICAL_EDGES.indexOf(keyword);
+            if (physical === this.sizes.physicalSide(context.frame, startSide)) {
+                edge = low;
+            } else if (physical === this.sizes.physicalSide(context.frame, block ? BoxSizes.BLOCK_END : BoxSizes.INLINE_END)) {
+                edge = high;
+            }
+        }
+        if (edge === undefined) {
+            return undefined;
+        }
+        const region: readonly [number, number, number, number] = context.region;
+        return atStart ? edge - region[block ? 2 : 0] : region[block ? 3 : 1] - edge;
+    }
+
+    private anchorTarget(context: AnchorContext, name?: string): ElementBox | undefined {
+        // §2.3: a named anchor is the target anchor element of that name, and an omitted name selects the default anchor element.
+        return name === undefined ? this.defaultTarget(context) : this.namedAnchor(this.contextPath(context), context.box, name, this.contextBounds(context));
+    }
+
+    private defaultTarget(context: AnchorContext): ElementBox | undefined {
+        return this.defaultAnchor(this.contextPath(context), (): ReadonlyMap<ElementBox, [number, number, number, number]> => this.contextBounds(context), context.style);
+    }
+
+    private defaultRect(context: AnchorContext): readonly [number, number, number, number] | undefined {
+        const target: ElementBox | undefined = this.defaultTarget(context);
+        return target === undefined ? undefined : this.contextBounds(context).get(target);
+    }
+
+    private contextPath(context: AnchorContext): ReadonlyArray<ElementBox> {
+        // A box of the document has its ancestors from the root; one in a tree laid out apart, as the boxes of a formula, from its containing block.
+        if (context.found.path === undefined) {
+            context.found.path = (this.rootBox === undefined ? undefined : this.pathTo(this.rootBox, context.box, []))
+                ?? this.pathTo(this.originOf(context.container.box), context.box, []) ?? [];
+        }
+        return context.found.path;
+    }
+
+    private contextBounds(context: AnchorContext): Map<ElementBox, [number, number, number, number]> {
+        // §2.3: an anchor is acceptable when it "is laid out strictly before" the positioned box, which here is to have a fragment inside the
+        // containing block when the positioned box is laid out; the rectangles are in the containing block, from its padding edge.
+        const found: AnchorFound = context.found;
+        if (found.bounds !== undefined) {
+            return found.bounds;
+        }
         if (this.anchorNames === undefined) {
             this.anchorNames = new Map<string, Array<ReadonlyArray<ElementBox>>>();
-            if (this.rootBox !== undefined) {
-                this.indexAnchors(this.rootBox, []);
-            }
+            this.anchorOwners = new Map<ElementBox, ElementBox>();
+            this.elementOwners = new Map<SourceElement, Map<string, ElementBox>>();
+            this.indexedTrees.clear();
         }
-        const path: ReadonlyArray<ElementBox> = (this.rootBox === undefined ? undefined : this.pathTo(this.rootBox, box, [])) ?? [];
-        const wanted: Set<ElementBox> = new Set<ElementBox>(path);
+        const top: ElementBox | undefined = this.contextPath(context)[0];
+        if (top !== undefined && !this.indexedTrees.has(top)) {
+            this.indexedTrees.add(top);
+            this.indexAnchors(top, []);
+        }
+        const wanted: Set<ElementBox> = new Set<ElementBox>(this.contextPath(context).map((box: ElementBox) => this.anchorOwner(box)));
         for (const anchors of this.anchorNames.values()) {
             for (const anchor of anchors) {
-                wanted.add(anchor[anchor.length - 1]);
+                wanted.add(this.anchorOwner(anchor[anchor.length - 1]));
             }
         }
-        // §2.3: an anchor is acceptable when it "is laid out strictly before" the positioned box, which here is to have
-        // a fragment inside the containing block when the positioned box is laid out.
         const bounds: Map<ElementBox, [number, number, number, number]> = new Map<ElementBox, [number, number, number, number]>();
+        found.bounds = bounds;
+        const container: BoxFragment = context.container;
         if (container.children !== undefined) {
-            this.anchorBounds(container.children, BoxSizes.IDENTITY, this.sizes.frame(container.box.style), wanted, bounds);
+            // §2: the anchor box's place includes transforms, as "the axis-aligned bounding rectangle of the anchor box in the coordinate space of the
+            // absolutely positioned element's containing block"; transforms work in physical axes, so the rectangles are found there.
+            const inline: number = container.inlineSize - this.side(BoxSizes.INLINE_START, container.border) - this.side(BoxSizes.INLINE_END, container.border);
+            const block: number = container.blockSize - this.side(BoxSizes.BLOCK_START, container.border) - this.side(BoxSizes.BLOCK_END, container.border);
+            const vertical: boolean = (context.frame & BoxSizes.VERTICAL) !== 0;
+            const physical: Transform = this.sizes.between(context.frame, 0, vertical ? block : inline, vertical ? inline : block);
+            this.anchorBounds(container.children, this.sizes.compose(physical, context.base), context.frame, wanted, bounds, this.sizes.inverse(physical), undefined, undefined);
         }
-        const target: ElementBox | undefined = name === undefined ? this.defaultAnchor(path, bounds) : this.namedAnchor(path, box, name, bounds);
-        const extent: [number, number, number, number] | undefined = target === undefined ? undefined : bounds.get(target);
+        return bounds;
+    }
+
+    private anchorSize(context: AnchorContext, anchor: CalcAnchor, block: boolean): number | undefined {
+        // CSS Anchor Positioning 1 §5.1: the function takes an anchor name and a size keyword, both optional, and gives "the
+        // <length> separating the relevant edges" "of the target anchor element's anchor box."
+        const target: ElementBox | undefined = this.anchorTarget(context, anchor.anchor);
+        const extent: readonly [number, number, number, number] | undefined = target === undefined ? undefined : this.contextBounds(context).get(target);
         if (extent === undefined) {
             return undefined;
         }
+        const keyword: string = anchor.keyword ?? "";
         // §5.1: block and inline follow "the writing mode of the box's containing block", self-block and self-inline that
         // of the box, and a missing keyword is "whatever keyword matches the axis of the property".
-        const flowing: boolean = this.isHorizontal(container.box);
-        const own: boolean = this.isHorizontal(box);
+        const flowing: boolean = (context.frame & BoxSizes.VERTICAL) === 0;
+        const own: boolean = (this.sizes.frame(context.style) & BoxSizes.VERTICAL) === 0;
         let alongBlock: boolean = own === flowing ? block : !block;
         if (keyword === "width" || keyword === "height") {
             alongBlock = (keyword === "height") === flowing;
@@ -3420,15 +5313,18 @@ export class BlockLayout {
     }
 
     private indexAnchors(box: ElementBox, path: Array<ElementBox>): void {
-        // §2.1: anchor-name makes the element an anchor element "with a list of anchor names as specified"; each anchor is
-        // kept with its ancestors, in tree order.
+        // §2.1: anchor-name makes the element an anchor element "with a list of anchor names as specified" and its principal box the anchor box;
+        // each anchor is kept with its ancestors, in tree order, and every box of the element stands for that principal box.
         path.push(box);
+        const owner: ElementBox = this.claimOwner(box, path[path.length - 2]);
         const names: CssValue | undefined = box.style.values["anchor-name"];
-        if (names !== undefined && this.anchorNames !== undefined) {
+        if (names !== undefined && this.anchorNames !== undefined && this.isAnchorable(box)) {
             for (const item of names.kind === "list" ? names.items : [names]) {
                 if (item.kind === "ident" && item.name.startsWith("--")) {
                     const anchors: Array<ReadonlyArray<ElementBox>> = this.anchorNames.get(item.name) ?? [];
-                    anchors.push([...path]);
+                    if (!anchors.some((anchor: ReadonlyArray<ElementBox>) => this.anchorOwner(anchor[anchor.length - 1]) === owner)) {
+                        anchors.push([...path]);
+                    }
                     this.anchorNames.set(item.name, anchors);
                 }
             }
@@ -3439,6 +5335,45 @@ export class BlockLayout {
             }
         }
         path.pop();
+    }
+
+    private claimOwner(box: ElementBox, parent?: ElementBox): ElementBox {
+        // §2.1: the anchor box is the element's principal box, which a box wrapped in it stands for (CSS Display 3 §2: "the principal box contains
+        // its descendant boxes"); the parts of an inline box that blocks split (CSS 2 §9.2.1.1) are one element, whose first part stands for all.
+        const owners: Map<ElementBox, ElementBox> = this.anchorOwners as Map<ElementBox, ElementBox>;
+        let owner: ElementBox = box.wrapped === true && parent !== undefined ? owners.get(parent) ?? parent : box;
+        if (box.element !== undefined) {
+            const byPseudo: Map<string, ElementBox> = this.elementOwners?.get(box.element) ?? new Map<string, ElementBox>();
+            this.elementOwners?.set(box.element, byPseudo);
+            owner = byPseudo.get(box.pseudoElement ?? "") ?? owner;
+            byPseudo.set(box.pseudoElement ?? "", owner);
+        }
+        owners.set(box, owner);
+        return owner;
+    }
+
+    private anchorOwner(box: ElementBox): ElementBox {
+        // A box of the first line is a copy of its box, and stands for what that box stands for.
+        const known: ElementBox | undefined = this.anchorOwners?.get(box);
+        if (known !== undefined) {
+            return known;
+        }
+        return box.element === undefined ? box : this.elementOwners?.get(box.element)?.get(box.pseudoElement ?? "") ?? box;
+    }
+
+    private isAnchorable(box: ElementBox): boolean {
+        // §2.3: an acceptable anchor element "is either an element or a fully styleable tree-abiding pseudo-element", which CSS Pseudo-Elements 4 §4.1
+        // makes ::before and ::after.
+        return box.pseudoElement === undefined ? box.element !== undefined : box.pseudoElement === "before" || box.pseudoElement === "after";
+    }
+
+    private depthOf(path: ReadonlyArray<ElementBox>, owner: ElementBox): number {
+        for (let index: number = path.length - 1; index >= 0; index--) {
+            if (this.anchorOwner(path[index]) === owner) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private pathTo(current: ElementBox, target: ElementBox, path: Array<ElementBox>): Array<ElementBox> | undefined {
@@ -3456,23 +5391,31 @@ export class BlockLayout {
     }
 
     private anchorBounds(children: ReadonlyArray<BoxFragment | LineFragment>, transform: Transform, frame: number, wanted: ReadonlySet<ElementBox>,
-        bounds: Map<ElementBox, [number, number, number, number]>): void {
-        // A box in several fragments has the rectangle that holds them all, in the containing block's writing mode; a box
-        // that waits to be positioned has none.
+        bounds: Map<ElementBox, [number, number, number, number]>, back: Transform, lens: Homography | undefined, view: Matrix4 | undefined): void {
+        // A box in several fragments has the rectangle that holds them all, in the containing block's writing mode; a box that waits to be
+        // positioned has none, and one that CSS Transforms 1 §10 does not display has no place.
         for (const child of children) {
             for (const piece of child.kind === "line" ? child.pieces : [child]) {
                 if (piece.kind !== "box" || (this.pending !== undefined && this.pending.has(piece))) {
                     continue;
                 }
                 const local: Transform = child.kind === "line" ? this.sizes.compose(transform, [1, 0, 0, 1, child.inline ?? 0, child.block]) : transform;
-                if (wanted.has(piece.box)) {
-                    const area: readonly [number, number, number, number] = this.sizes.mapped(local, piece.inline, piece.block, piece.inlineSize, piece.blockSize);
-                    const known: [number, number, number, number] | undefined = bounds.get(piece.box);
-                    bounds.set(piece.box, known === undefined ? [area[0], area[1], area[0] + area[2], area[1] + area[3]]
-                        : [Math.min(known[0], area[0]), Math.min(known[1], area[1]), Math.max(known[2], area[0] + area[2]), Math.max(known[3], area[1] + area[3])]);
+                const own: Homography | undefined | null = this.transforms.lens(lens, this.transforms.matrixOf(piece, local, view));
+                if (own === null) {
+                    continue;
+                }
+                const owner: ElementBox = this.anchorOwner(piece.box);
+                const area: readonly [number, number, number, number] = this.sizes.mapped(local, piece.inline, piece.block, piece.inlineSize, piece.blockSize);
+                const seen: Box | undefined = wanted.has(owner) ? this.transforms.projected(own, [area[0], area[1], area[2], area[3]]) : undefined;
+                if (seen !== undefined) {
+                    const placed: readonly [number, number, number, number] = this.sizes.mapped(back, seen[0], seen[1], seen[2], seen[3]);
+                    const known: [number, number, number, number] | undefined = bounds.get(owner);
+                    bounds.set(owner, known === undefined ? [placed[0], placed[1], placed[0] + placed[2], placed[1] + placed[3]]
+                        : [Math.min(known[0], placed[0]), Math.min(known[1], placed[1]), Math.max(known[2], placed[0] + placed[2]), Math.max(known[3], placed[1] + placed[3])]);
                 }
                 if (piece.children !== undefined) {
-                    this.anchorBounds(piece.children, this.sizes.compose(local, this.sizes.inside(piece, frame)), this.sizes.frame(piece.box.style), wanted, bounds);
+                    this.anchorBounds(piece.children, this.sizes.compose(local, this.sizes.inside(piece, frame)), this.sizes.frame(piece.box.style), wanted, bounds, back, own,
+                        this.transforms.childView(piece, local, view));
                 }
             }
         }
@@ -3482,19 +5425,20 @@ export class BlockLayout {
         // CSS Anchor Positioning 1 §2.3: "If an ancestor of query el satisfies the following conditions, return the nearest
         // such element to query el. Otherwise, return the last element el in tree order that satisfies the conditions."
         const anchors: ReadonlyArray<ReadonlyArray<ElementBox>> | undefined = this.anchorNames?.get(name);
+        const self: ElementBox = this.anchorOwner(box);
         const limit: ElementBox | undefined = this.anchorScope(path, name, path.length - 2);
         let found: ElementBox | undefined;
         let depth: number = -1;
         for (const anchor of anchors ?? []) {
-            const candidate: ElementBox = anchor[anchor.length - 1];
+            const candidate: ElementBox = this.anchorOwner(anchor[anchor.length - 1]);
             // §2.2: anchor-scope keeps a name "in scope only for this element's descendants", and limits the descendants
             // "to only match these anchor names to anchor elements within this subtree."
             const scope: ElementBox | undefined = this.anchorScope(anchor, name, anchor.length - 1);
-            const visible: boolean = scope === undefined || (scope !== box && path.includes(scope));
-            if (candidate === box || !bounds.has(candidate) || !visible || (limit !== undefined && !anchor.includes(limit))) {
+            const visible: boolean = scope === undefined || (this.anchorOwner(scope) !== self && this.depthOf(path, this.anchorOwner(scope)) >= 0);
+            if (candidate === self || !bounds.has(candidate) || !visible || (limit !== undefined && this.depthOf(anchor, this.anchorOwner(limit)) < 0)) {
                 continue;
             }
-            const level: number = path.indexOf(candidate);
+            const level: number = this.depthOf(path, candidate);
             if (level > depth) {
                 depth = level;
                 found = candidate;
@@ -3520,34 +5464,38 @@ export class BlockLayout {
         return undefined;
     }
 
-    private defaultAnchor(path: ReadonlyArray<ElementBox>, bounds: ReadonlyMap<ElementBox, [number, number, number, number]>): ElementBox | undefined {
-        // CSS Anchor Positioning 1 §2.4: position-anchor gives the default anchor element; normal "behaves as none" when
-        // position-area is none and as auto otherwise, and auto uses the implicit anchor element.
+    private defaultAnchor(path: ReadonlyArray<ElementBox>, bounds: () => ReadonlyMap<ElementBox, [number, number, number, number]>, style?: ComputedStyle): ElementBox | undefined {
+        // CSS Anchor Positioning 1 §2.4: position-anchor gives the default anchor element; normal "behaves as none" when position-area is none
+        // and as auto otherwise, and auto uses the implicit anchor element; a position option can change both properties of the box.
         const box: ElementBox | undefined = path[path.length - 1];
-        const value: CssValue | undefined = box === undefined ? undefined : box.style.values["position-anchor"];
         if (box === undefined) {
             return undefined;
         }
+        const values: Readonly<Record<string, CssValue>> = (style ?? box.style).values;
+        const value: CssValue | undefined = values["position-anchor"];
         if (value !== undefined && value.kind === "ident" && value.name.startsWith("--")) {
-            return this.namedAnchor(path, box, value.name, bounds);
+            return this.namedAnchor(path, box, value.name, bounds());
         }
         let keyword: string = value !== undefined && value.kind === "ident" ? value.lower : "normal";
+        const area: CssValue | undefined = values["position-area"];
         if (keyword === "normal") {
-            keyword = this.keyword(box.style.values["position-area"]) === "none" ? "none" : "auto";
+            keyword = area === undefined || (area.kind === "ident" && area.lower === "none") ? "none" : "auto";
+        }
+        // The originating element of a pseudo-element, and the parent of an element, are the nearest element above it, past any anonymous box.
+        let parent: number = path.length - 2;
+        while (parent >= 0 && (path[parent].element === undefined || path[parent].pseudoElement !== undefined)) {
+            parent--;
         }
         let anchor: ElementBox | undefined;
-        if (keyword === "auto" && box.pseudoElement !== undefined) {
-            // §2.4.1: "The implicit anchor element of a pseudo-element is its originating element".
-            anchor = path[path.length - 2];
-        } else if (keyword === "match-parent" && path.length > 1) {
-            anchor = this.defaultAnchor(path.slice(0, -1), bounds);
+        if (keyword === "auto" && box.pseudoElement !== undefined && parent >= 0) {
+            // §2.4.1: "The implicit anchor element of a pseudo-element is its originating element"; the boxes of the elements are indexed with the bounds.
+            bounds();
+            anchor = this.anchorOwner(path[parent]);
+        } else if (keyword === "match-parent" && parent >= 0) {
+            // match-parent "Uses the same default anchor element as the parent", or as the originating element of a pseudo-element.
+            anchor = this.defaultAnchor(path.slice(0, parent + 1), bounds);
         }
-        return anchor !== undefined && bounds.has(anchor) ? anchor : undefined;
-    }
-
-    private isHorizontal(box: ElementBox): boolean {
-        const mode: CssValue | undefined = box.style.values["writing-mode"];
-        return mode === undefined || (mode.kind === "ident" && mode.lower === "horizontal-tb");
+        return anchor !== undefined && bounds().has(anchor) ? anchor : undefined;
     }
 
     private resolved(box: ElementBox, sizes: UsedSizes, inlineStretch?: number, blockBasis?: number, through: number = 0): UsedSizes {

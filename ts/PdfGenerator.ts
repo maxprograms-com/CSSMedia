@@ -179,19 +179,21 @@ export class PdfGenerator {
             // CSS Writing Modes 4 §8.2: the page progression is right to left when the first page is a left page.
             document.setProgression(setup.recto === "left");
             this.settleTexts(setup);
-            // CSS Content 3 §2.6: the page of a target is known only from a layout, so the layout that shows it comes after; CSS Page
-            // Floats 3 §5.1: so is the last page, which float-defer counts from.
+            // CSS Content 3 §2.6: the page of a target is known only from a layout, so the layout that shows it comes after; so are the last page
+            // that float-defer counts from (CSS Page Floats 3 §5.1) and the static position that a fixed box keeps on every page (CSS Position 3 §3.1).
             const ends: Map<number, Candidate> = new Map<number, Candidate>();
+            // The string() values that pages laid out while earlier pages were held show, once those pages are final (CSS Fragmentation 4 §5.5).
+            const heldStrings: Map<TextSequence, Array<string>> = new Map<TextSequence, Array<string>>();
             let previous: PageDriver | undefined;
-            if (references.showsPages || input.pageFootnotes || setup.builder.deferredFloats) {
-                previous = new PageDriver(setup, document, ends);
+            if (references.showsPages || input.pageFootnotes || setup.builder.deferredFloats || setup.layout.usesStaticFixed(setup.boxes)) {
+                previous = new PageDriver(setup, document, ends, heldStrings);
                 previous.run(false, false);
                 setup.builder.labelStrings = previous.labelStrings;
                 this.settleTexts(setup);
             }
-            let driver: PageDriver = new PageDriver(setup, document, ends);
+            let driver: PageDriver = new PageDriver(setup, document, ends, heldStrings);
             const shown: Set<string> = new Set<string>([JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()],
-                setup.floats.key()])]);
+                setup.floats.key(), [...heldStrings.values()]])]);
             let comparing: boolean = true;
             while (!driver.run(true, comparing)) {
                 document.restart();
@@ -199,7 +201,8 @@ export class PdfGenerator {
                 images.restart();
                 setup.builder.labelStrings = driver.labelStrings;
                 this.settleTexts(setup);
-                const key: string = JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()], setup.floats.key()]);
+                const key: string = JSON.stringify([[...references.shown], setup.builder.labelTexts(), [...references.footnotesShown.values()], setup.floats.key(),
+                    [...heldStrings.values()]]);
                 if (shown.has(key) && previous !== undefined) {
                     // With no page that can end earlier, the pages are single pieces that allow no other layout.
                     comparing = this.endEarlier(setup.layout, ends, previous, driver);
@@ -207,7 +210,7 @@ export class PdfGenerator {
                 }
                 shown.add(key);
                 previous = driver;
-                driver = new PageDriver(setup, document, ends);
+                driver = new PageDriver(setup, document, ends, heldStrings);
             }
             setup.reports.push(driver.diagnostics);
             references.reportLinks((id: string) => document.hasDestination(id));
@@ -284,6 +287,7 @@ export class PdfGenerator {
         const profiles: ColorProfiles = new ColorProfiles(stylesheet.colorProfiles);
         const computer: StyleComputer = new StyleComputer(table, metrics, substitution, registered, profiles);
         const cascade: Cascade = new Cascade(root, treeBuilder.getPrefixes(), documentUri, stylesheet.styleRules, new UserAgentRules(table).styleRules(), computer);
+        cascade.setPositionTries(stylesheet.positionTries);
         const canvases: PageCanvasBuilder = new PageCanvasBuilder(cascade, computer, stylesheet.pageRules, table);
         const text: InlineTextBuilder = new InlineTextBuilder(metrics, matcher, new FontFeatures(stylesheet.fontFeatureValues));
         let plain: DocumentFonts | undefined;

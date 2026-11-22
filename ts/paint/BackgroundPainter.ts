@@ -33,6 +33,7 @@ export interface BackgroundPlace {
     base: Matrix;
     page?: Rectangle;
     whole?: readonly [Rectangle, PhysicalSides, PhysicalSides];
+    sizing?: Rectangle;
     shapes?: (pdf: PdfPage, text: boolean, border: boolean) => void;
 }
 
@@ -92,9 +93,9 @@ export class BackgroundPainter {
             if (mode !== undefined) {
                 target.content.graphicsState(target.useState(1, 1, mode));
             }
-            const clip: CssValue = this.pick(values["background-clip"], layer);
-            if (this.clipTo(clip, rectangle, borders, padding, radii, target, place)) {
-                const masked: boolean = this.list(clip, " ").some((word: CssValue) => this.keyword(word) === "text" || this.keyword(word) === "border-area");
+            const layerClip: CssValue = clip === undefined ? this.pick(values["background-clip"], layer) : colorClip;
+            if (this.clipTo(layerClip, rectangle, borders, padding, radii, target, place)) {
+                const masked: boolean = this.list(layerClip, " ").some((word: CssValue) => this.keyword(word) === "text" || this.keyword(word) === "border-area");
                 if (masked) {
                     // Cairo and Quartz lose a soft mask over a tiling pattern, and keep it over a form that holds one.
                     const form: PdfPage = this.document.startForm(rectangle.width, rectangle.height, false);
@@ -128,11 +129,8 @@ export class BackgroundPainter {
         this.borders.shape(shape[0], shape[1], pdf);
         pdf.content.clip(false);
         if (text || border) {
-            if (place.shapes === undefined) {
-                throw new Error("The painting of background-clip: " + words.join(" ") + " in a formula is not implemented");
-            }
             const mask: PdfPage = this.document.startForm(rectangle.width, rectangle.height, false);
-            place.shapes(mask, text, border);
+            place.shapes?.(mask, text, border);
             this.document.applyMask(pdf, mask, [rectangle.x, rectangle.y, rectangle.width, rectangle.height], false);
         }
         return true;
@@ -145,6 +143,7 @@ export class BackgroundPainter {
         // the page box, since "a fixed background is fixed with respect to the page box".
         const attachment: string = this.keyword(this.pick(values["background-attachment"], layer));
         let area: Rectangle;
+        let sizing: Rectangle | undefined;
         if (attachment === "fixed" && place.page !== undefined) {
             area = place.page;
         } else {
@@ -153,11 +152,13 @@ export class BackgroundPainter {
             const inset: PhysicalSides = origin === "content-box" ? [wholeBorders[0] + wholePadding[0], wholeBorders[1] + wholePadding[1], wholeBorders[2] + wholePadding[2],
                 wholeBorders[3] + wholePadding[3]] : (origin === "border-box" ? NO_SIDES : wholeBorders);
             area = this.borders.inner(whole, inset, NO_RADII)[0];
+            // CSS Fragmentation 4 §5.4.1: a sliced box sizes an image whose size derives from the extent across the joined fragments by the widest one.
+            sizing = place.sizing === undefined ? undefined : this.borders.inner(place.sizing, inset, NO_RADII)[0];
         }
         this.images.tile(image, {
             size: this.pick(values["background-size"], layer), x: this.pick(values["background-position-x"], layer), y: this.pick(values["background-position-y"], layer),
             repeatX: this.keyword(this.pick(values["background-repeat-x"], layer)), repeatY: this.keyword(this.pick(values["background-repeat-y"], layer))
-        }, area, rectangle, place.base, style, pdf);
+        }, area, rectangle, place.base, style, pdf, sizing);
     }
 
     private pick(value: CssValue | undefined, layer: number): CssValue {

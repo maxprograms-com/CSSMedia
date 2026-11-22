@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
+<task id="positioning">
+    <title>Position boxes</title>
+    <shortdesc>A positioned box is moved from its place in the text, or taken out of the text and placed against another box or against the page area. A fixed box is repeated on every page. The <xref href="../references/positioning-chapter-reference.dita#positioning-chapter-reference">positioning reference</xref> lists the properties used here.</shortdesc>
+    <taskbody>
+        <context>
+            <p>The element names in the examples, such as <codeph>banner</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
+        </context>
+        <steps>
+            <step id="shift-a-box">
+                <cmd>Move a box from its place</cmd>
+                <info>
+                    <p>Set <codeph>position: relative</codeph> and an inset. The box is drawn that far from where the text puts it, and the text around it does not move. <codeph>top</codeph> moves it down and <codeph>left</codeph> moves it to the right; when you give both <codeph>top</codeph> and <codeph>bottom</codeph>, <codeph>bottom</codeph> is ignored.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">mark {
+    position: relative;
+    top: -2pt;
+}
+</pre>
+                </stepxmp>
+            </step>
+            <step id="place-against-a-box">
+                <cmd>Place a box against another box</cmd>
+                <info>
+                    <p>Set <codeph>position: absolute</codeph>. The box leaves the text, which goes on as if the box were not there, and the insets place it against its <xref href="../glossaries/ContainingBlock.dita">containing block</xref>: the padding box of its nearest ancestor that is positioned, has a transform, has <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, or names one of those properties in <codeph>will-change</codeph>. Give the ancestor <codeph>position: relative</codeph> to make it the containing block without moving it.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">note {
+    display: block;
+    position: relative;
+}
+note > tag {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>Without such an ancestor, the box is placed against the page area of the page where it falls in the text. An inset that you leave <codeph>auto</codeph> on both sides of an axis keeps the box where its element is in the text on that axis. With <codeph>left</codeph> and <codeph>right</codeph> both given and no <codeph>width</codeph>, the box fills the space between them.</p>
+                    <p>Inside a MathML formula, the formula is the containing block of a positioned element that no element of the formula contains.</p>
+                </info>
+            </step>
+            <step id="repeat-on-every-page">
+                <cmd>Repeat a box on every page</cmd>
+                <info>
+                    <p>Set <codeph>position: fixed</codeph>. The box is placed against the page area, and every page shows it, blank pages included, at the same place. Use it for a banner, a watermark or a mark that every page carries.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 18pt;
+    background: #c81e00;
+    color: white;
+}
+guide {
+    display: block;
+    padding-top: 26pt;
+    box-decoration-break: clone;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The box covers the text under it, so leave room for it: here the root element <codeph>guide</codeph> has a padding at the top of every page, which <codeph>box-decoration-break: clone</codeph> repeats.</p>
+                    <p>On an axis where you give no inset, a fixed box takes the place that its element has on the page where it falls in the text, and keeps that place on every page, the pages before that one included. A link to the element goes to the first page, and a footnote in the box is placed once, at the foot of the first page. The <codeph>overflow</codeph> of the boxes around a fixed box does not clip it.</p>
+                    <p>When an ancestor has a transform, <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, or names one of those properties in <codeph>will-change</codeph>, the fixed box is placed against that ancestor instead, and it is drawn once, with the ancestor.</p>
+                    <fig id="positioning-fixed-figure">
+                        <title>A fixed banner</title>
+                        <image href="../images/positioning-fixed.svg" placement="break" scale="100">
+                            <alt>Three pages side by side. Each has a banner across the top of its page area. The first and the third pages have lines of text under the banner; the second page is blank and still has the banner.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="stack-boxes">
+                <cmd>Choose which box is drawn on top</cmd>
+                <info>
+                    <p>Positioned boxes are drawn after the text around them, in the order of the document. <codeph>z-index</codeph> changes that: a positioned box with a higher number is drawn over one with a lower number, and a negative number draws the box under the text of its stacking context.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">stamp {
+    position: absolute;
+    z-index: -1;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A positioned box with a number in <codeph>z-index</codeph> starts a stacking context: the boxes inside it are drawn with it, whatever their own <codeph>z-index</codeph>. So do a fixed box, a box with <codeph>opacity</codeph> below 1, a blend mode, a transform, <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, and a box that names one of those properties in <codeph>will-change</codeph>. A fixed box keeps the stacking context of its ancestors on every page.</p>
+                </info>
+            </step>
+            <step id="position-in-vertical-text">
+                <cmd>Position boxes in vertical text</cmd>
+                <info>
+                    <p><codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph> and <codeph>left</codeph> always name the physical sides. The flow-relative insets name the sides of the writing mode of the containing block: in <codeph>vertical-rl</codeph>, <codeph>inset-block-start</codeph> is the right side and <codeph>inset-inline-start</codeph> the top. <xref href="write-vertically.dita"/> explains writing modes.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">guide { writing-mode: vertical-rl; }
+seal {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+}
+</pre>
+                </stepxmp>
+            </step>
+        </steps>
+        <result>
+            <p>Your boxes stand where you place them, against the boxes that contain them or against the page area of every page.</p>
+        </result>
+    </taskbody>
+</task>

@@ -23,7 +23,7 @@ import { AsciiCase } from "../css/AsciiCase.js";
 import type { CompiledSelector } from "../css/CompiledSelector.js";
 import { DeclarationReader } from "../css/DeclarationReader.js";
 import type {
-    ContainerQuery, CssWideKeyword, Declaration, DeclaredValue, MarginBoxName, MarginRule, PageNth, PageRule, PageSelector, Scope, StyleRule
+    ContainerQuery, CssWideKeyword, Declaration, DeclaredValue, MarginBoxName, MarginRule, PageNth, PageRule, PageSelector, PositionTryRule, Scope, StyleRule
 } from "../css/Stylesheet.js";
 import { PropertyTable } from "../css/PropertyTable.js";
 import type { CssValue } from "../css/values/CssValue.js";
@@ -37,7 +37,7 @@ import { SelectorMatcher } from "./SelectorMatcher.js";
 import type { StyleComputer } from "./StyleComputer.js";
 import { TableColumns } from "./TableColumns.js";
 
-type Origin = "user-agent" | "presentational-hint" | "author";
+type Origin = "user-agent" | "presentational-hint" | "author" | "position-fallback";
 
 interface Candidate {
     declaration: Declaration;
@@ -73,6 +73,8 @@ export class Cascade {
     private readonly hints?: (element: SourceElement) => ReadonlyArray<Declaration>;
     private readonly attached?: (element: SourceElement) => ReadonlyArray<Declaration>;
     private hintsBlind: boolean = false;
+    private readonly positionTries: Map<string, PositionTryRule> = new Map<string, PositionTryRule>();
+    private fallback?: ReadonlyArray<Declaration>;
 
     constructor(root: SourceElement, prefixes: ReadonlyMap<string, string>, documentUri: string, styleRules: ReadonlyArray<StyleRule>,
         userAgentRules: ReadonlyArray<StyleRule>, computer: StyleComputer, hints?: (element: SourceElement) => ReadonlyArray<Declaration>,
@@ -120,6 +122,31 @@ export class Cascade {
 
     element(element: SourceElement, containersHold: (queries: ReadonlyArray<ContainerQuery>) => boolean, pseudoElement?: string): Map<string, DeclaredValue> {
         return this.collect(element, containersHold, pseudoElement);
+    }
+
+    setPositionTries(rules: ReadonlyArray<PositionTryRule>): void {
+        // CSS Anchor Positioning 1 §6.4: rules of one name "cascade the same as @keyframe rules do", the last one of the layer that wins.
+        for (const rule of rules) {
+            const known: PositionTryRule | undefined = this.positionTries.get(rule.name);
+            if (known === undefined || rule.layer > known.layer || (rule.layer === known.layer && rule.order > known.order)) {
+                this.positionTries.set(rule.name, rule);
+            }
+        }
+    }
+
+    positionOption(element: SourceElement, containersHold: (queries: ReadonlyArray<ContainerQuery>) => boolean, name: string, pseudoElement?: string): Map<string, DeclaredValue> | undefined {
+        // §6.4: the declarations of the rule are applied "as part of the Position Fallback Origin", which "lies between the Author Origin
+        // and the Animation Origin".
+        const rule: PositionTryRule | undefined = this.positionTries.get(name);
+        if (rule === undefined) {
+            return undefined;
+        }
+        this.fallback = rule.declarations;
+        try {
+            return this.collect(element, containersHold, pseudoElement);
+        } finally {
+            delete this.fallback;
+        }
     }
 
     linkDeclarations(element: SourceElement): Map<string, DeclaredValue> {
@@ -205,11 +232,8 @@ export class Cascade {
 
     private gather(element: SourceElement, containersHold: (queries: ReadonlyArray<ContainerQuery>) => boolean, pseudoElement?: string,
         wanted?: (property: string) => boolean, leaders?: Map<string, Candidate>, candidates?: Map<string, Array<Candidate>>): void {
-        const rules: ReadonlyArray<StyleRule> | undefined = this.index.candidates(element, pseudoElement);
-        if (rules === undefined) {
-            return;
-        }
-        for (const rule of rules) {
+        // An element that no rule can match still has the declarations attached to it and those of a position option.
+        for (const rule of this.index.candidates(element, pseudoElement) ?? []) {
             if (rule.containers.length > 0 && !containersHold(rule.containers)) {
                 continue;
             }
@@ -238,6 +262,14 @@ export class Cascade {
                 this.addDeclarations(candidates, declarations, origin, false, rule.layer, specificity, proximity, rule.order);
             } else if (leaders !== undefined) {
                 this.lead(leaders, declarations, origin, false, rule.layer, specificity, proximity, rule.order);
+            }
+        }
+        if (this.fallback !== undefined) {
+            const declarations: ReadonlyArray<Declaration> = wanted === undefined ? this.fallback : this.fallback.filter((declaration: Declaration) => wanted(declaration.property));
+            if (candidates !== undefined) {
+                this.addDeclarations(candidates, declarations, "position-fallback", false, 0, NO_SPECIFICITY, UNSCOPED, 0);
+            } else if (leaders !== undefined) {
+                this.lead(leaders, declarations, "position-fallback", false, 0, NO_SPECIFICITY, UNSCOPED, 0);
             }
         }
         if (pseudoElement !== undefined || this.hints === undefined || this.attached === undefined) {
@@ -482,6 +514,9 @@ export class Cascade {
     private rank(candidate: Candidate): number {
         if (candidate.declaration.important) {
             return candidate.origin === "user-agent" ? 4 : 3;
+        }
+        if (candidate.origin === "position-fallback") {
+            return 2.5;
         }
         return candidate.origin === "author" ? 2 : (candidate.origin === "presentational-hint" ? 1 : 0);
     }

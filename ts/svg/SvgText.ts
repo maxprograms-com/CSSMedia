@@ -162,7 +162,7 @@ export class SvgText {
                 this.glyphs(from, to, CLIP, false, false);
                 continue;
             }
-            if (this.painter.hidden(ownerStyle)) {
+            if (this.invisible(this.owner[from])) {
                 continue;
             }
             this.decorate(from, to, node, style, false);
@@ -217,6 +217,19 @@ export class SvgText {
             }
         }
         return box;
+    }
+
+    private invisible(owner: SvgNode): boolean {
+        // CSS Display 4 §5: a force-hidden element of the text hides the characters of its descendants, whatever their own visibility.
+        if (this.painter.hidden(this.nodeStyles.get(owner) as ComputedStyle)) {
+            return true;
+        }
+        for (let current: SvgNode | undefined = owner.parent; current !== undefined && this.nodeStyles.has(current); current = current.parent) {
+            if (this.keyword((this.nodeStyles.get(current) as ComputedStyle).values["visibility"]) === "force-hidden") {
+                return true;
+            }
+        }
+        return false;
     }
 
     private holds(owner: SvgNode, element: XMLElement): boolean {
@@ -1280,13 +1293,39 @@ export class SvgText {
         return box;
     }
 
-    private placements(from: number, to: number, visit: (instance: FontInstance, glyph: number, size: number, matrix: Matrix, characters: string, style: ComputedStyle) => void): void {
+    silhouette(node: SvgNode, style: ComputedStyle): Array<SvgPath> {
+        // CSS Masking 1 §6.1: the silhouette of a text in a clipPath is the outlines of the glyphs it shows, scaled from font units to the font
+        // size; a font with only metrics, as the standard fonts are with their AFM files, gives the boxes of its glyphs.
+        if (this.painting) {
+            return this.fresh().silhouette(node, style);
+        }
+        if (!this.layout(node, style)) {
+            return [];
+        }
+        const paths: Array<SvgPath> = [];
+        this.placements(0, this.owner.length, (instance: FontInstance, glyph: number, size: number, matrix: Matrix): void => {
+            const scale: number = size / instance.metrics.unitsPerEm;
+            const placed: Matrix = this.geometry.concat(matrix, [scale, 0, 0, scale, 0, 0]);
+            const outline: SvgPath | undefined = this.outlines.path(instance, glyph);
+            if (outline !== undefined && outline.verbs.length > 0) {
+                paths.push(this.geometry.transformPath(outline, placed));
+                return;
+            }
+            const bounds: OutlineBounds | undefined = this.outlines.bounds(instance, glyph);
+            if (bounds !== undefined) {
+                paths.push(this.geometry.transformPath(this.geometry.rectangle(bounds.xMin, bounds.yMin, bounds.xMax - bounds.xMin, bounds.yMax - bounds.yMin, 0, 0), placed));
+            }
+        });
+        return paths;
+    }
+
+    private placements(from: number, to: number, visit:(instance: FontInstance, glyph: number, size: number, matrix: Matrix, characters: string, style: ComputedStyle) => void): void {
         // Each glyph of the characters in order, with its font, its size, the matrix from its text space to the user space
         // and the text of the document that it shows, given with its first glyph.
         const text: InlineText = this.text as InlineText;
         for (let index: number = from; index < to; index++) {
             const ownerStyle: ComputedStyle = this.nodeStyles.get(this.owner[index]) as ComputedStyle;
-            if (this.middle[index] === 1 || this.hidden[index] === 1 || this.forced[index] === 1 || this.glyphCount[index] === 0 || this.painter.hidden(ownerStyle)) {
+            if (this.middle[index] === 1 || this.hidden[index] === 1 || this.forced[index] === 1 || this.glyphCount[index] === 0 || this.invisible(this.owner[index])) {
                 continue;
             }
             const run: TextRun = this.runOf[index];
@@ -1410,7 +1449,7 @@ export class SvgText {
         const decorated: Map<SvgNode, Array<number>> = new Map<SvgNode, Array<number>>();
         for (let index: number = from; index < to; index++) {
             for (let current: SvgNode | undefined = this.owner[index]; current !== undefined && this.nodeStyles.has(current) && this.middle[index] === 0 && this.hidden[index] === 0
-                && this.forced[index] === 0;
+                && this.forced[index] === 0 && !this.invisible(this.owner[index]);
                 current = current.parent) {
                 const lines: CssValue | undefined = (this.nodeStyles.get(current) as ComputedStyle).values["text-decoration-line"];
                 if (lines !== undefined && this.keyword(lines) !== "none") {

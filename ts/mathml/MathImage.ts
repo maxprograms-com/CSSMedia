@@ -26,11 +26,14 @@ import { ImageFormats } from "../images/ImageFormats.js";
 import { BlockLayout } from "../layout/BlockLayout.js";
 import type { Transform } from "../layout/BoxSizes.js";
 import { BoxSizes } from "../layout/BoxSizes.js";
-import type { BoxFragment } from "../layout/Fragment.js";
+import type { BoxFragment, TextPiece } from "../layout/Fragment.js";
 import { BoxBuilder } from "../pdf/BoxBuilder.js";
 import { QuoteSystems } from "../pdf/QuoteSystems.js";
 import type { PaletteRule } from "../paint/ColorGlyphPainter.js";
 import { ColorGlyphPainter } from "../paint/ColorGlyphPainter.js";
+import type { ImageMarks } from "../paint/ImagePainter.js";
+import type { BoxContent } from "../paint/PagePainter.js";
+import { PagePainter } from "../paint/PagePainter.js";
 import type { SourceElement } from "../parse/SourceElement.js";
 import type { XmlRootHandler } from "../parse/XmlRootHandler.js";
 import { XmlTreeBuilder } from "../parse/XmlTreeBuilder.js";
@@ -41,7 +44,7 @@ import type { ComputedStyle } from "../pdf/ComputedStyle.js";
 import { DisplayTypes } from "../pdf/DisplayTypes.js";
 import type { ElementUnits } from "../pdf/ElementUnits.js";
 import type { FontMetrics } from "../pdf/FontMetrics.js";
-import type { Size } from "../pdf/PageCanvas.js";
+import type { Rectangle, Size } from "../pdf/PageCanvas.js";
 import type { QueryContainer, StyleInput } from "../pdf/StyleComputer.js";
 import { StyleComputer } from "../pdf/StyleComputer.js";
 import { UserAgentRules } from "../pdf/UserAgentRules.js";
@@ -68,6 +71,7 @@ interface Formula {
     factor: number;
     clipped: boolean;
     boxWidth: number;
+    fixed: boolean;
 }
 
 type Language = readonly [MathMarkup, Cascade, StyleComputer];
@@ -75,6 +79,8 @@ type Language = readonly [MathMarkup, Cascade, StyleComputer];
 const MATH_INNER: string = "math";
 const MATH_ROOT: string = "math";
 const PHYSICAL: number = 0;
+const NO_BYTES: Buffer = Buffer.alloc(0);
+const NO_READ: ImageReader = (): Buffer => NO_BYTES;
 
 export class MathImage implements ImageFormat {
 
@@ -90,7 +96,7 @@ export class MathImage implements ImageFormat {
     private own?: Language;
     private last?: Formula;
     private noSheet?: Stylesheet;
-    private readonly painters: Map<FontMetrics, MathPainter> = new Map<FontMetrics, MathPainter>();
+    private readonly painters: Map<FontMetrics, readonly [PagePainter, MathPainter]> = new Map<FontMetrics, readonly [PagePainter, MathPainter]>();
 
     constructor(document: PdfDocument, images: ImageFormats, input: Input, setup: () => PageSetup) {
         this.document = document;
@@ -202,8 +208,16 @@ export class MathImage implements ImageFormat {
         return size;
     }
 
-    key(drawing: ImageDrawing): string {
-        return drawing.width + "x" + drawing.height;
+    key(drawing: ImageDrawing, href: string): string {
+        // CSS Backgrounds 3 §2.5: a fixed background in a formula of the document is placed by the page box, so each place of the page box is a
+        // drawing of its own; a formula file is a document whose viewport is the image itself.
+        const size: string = drawing.width + "x" + drawing.height;
+        const page: readonly [number, number, number, number] | undefined = drawing.page;
+        if (page === undefined || this.images.source(href) === undefined) {
+            return size;
+        }
+        const formula: Formula | undefined = this.formula(href, drawing.width, NO_READ);
+        return formula?.fixed === true ? size + "@" + page.join(",") : size;
     }
 
     draw(request: ImageRequest): ImageResource | undefined {
@@ -216,17 +230,22 @@ export class MathImage implements ImageFormat {
         }
         const fragment: BoxFragment = formula.fragment;
         const setup: PageSetup = this.setup();
-        let painter: MathPainter | undefined = this.painters.get(formula.metrics);
-        if (painter === undefined) {
-            painter = new MathPainter(this.document, setup.colors, formula.metrics, setup.viewport, this.images, formula.palettes);
+        // MathML Core §2.2.2: the boxes of the formula are painted as all boxes are, with the formula's fonts, and math layout gives what it
+        // draws for each of them.
+        let painters: readonly [PagePainter, MathPainter] | undefined = this.painters.get(formula.metrics);
+        if (painters === undefined) {
+            painters = [new PagePainter({ ...setup, metrics: formula.metrics, palettes: formula.palettes }, this.document),
+                new MathPainter(this.document, setup.colors, formula.metrics, setup.viewport, this.images, formula.palettes)];
             if (formula.kept) {
-                this.painters.set(formula.metrics, painter);
+                this.painters.set(formula.metrics, painters);
             }
         }
+        const [painter, math]: readonly [PagePainter, MathPainter] = painters;
+        const content: BoxContent = math.content(formula.layout.graphics);
         const frame: number = this.sizes.frame(fragment.box.style);
         const transform: Transform = this.sizes.between(frame, PHYSICAL, fragment.inlineSize, fragment.blockSize);
         // The form's box is what is painted and not the size of the formula, and it is in the form's own space, where y goes up.
-        const painted: Area | undefined = painter.extent(fragment, formula.layout.graphics, transform);
+        const painted: Area | undefined = painter.extent(fragment, transform, content);
         // A file is drawn at its natural size, and the form's matrix scales everything in it, glyphs included; so is a formula that
         // overflow="scale" shrinks, and a clipped one is as wide as the width that clips it.
         const natural: boolean = formula.factor < 1 || (inFile && !formula.clipped);
@@ -236,8 +255,6 @@ export class MathImage implements ImageFormat {
             return undefined;
         }
         const ink: Area = painted ?? [0, 0, width, height];
-        const form: PdfPage = this.document.startForm(width, height, true);
-        const links: ReadonlyArray<readonly [PageRectangle, string, boolean]> = painter.paint(fragment, formula.layout.graphics, transform, form);
         // A renderer rounds the edges of a clip to its pixels, which can lose a row of ink lying on an edge, so the box ends past it.
         const left: number = Math.floor(Math.min(0, ink[0])) - MathPainter.EDGE;
         const top: number = Math.floor(Math.min(0, ink[1])) - MathPainter.EDGE;
@@ -245,13 +262,23 @@ export class MathImage implements ImageFormat {
         const bottom: number = Math.ceil(Math.max(height, ink[1] + ink[3])) + MathPainter.EDGE;
         const across: number = width > 0 ? width : 1;
         const down: number = height > 0 ? height : 1;
+        // The unit square of the image has v going down as on the form, where t = (height - y) / down; a formula file is a document whose
+        // viewport is its image.
+        const given: readonly [number, number, number, number] | undefined = request.page;
+        const page: Rectangle | undefined = inFile ? { x: 0, y: 0, width, height } : (given === undefined ? undefined
+            : { x: given[0] * across, y: height - (1 - given[1]) * down, width: given[2] * across, height: given[3] * down });
+        const form: PdfPage = this.document.startForm(width, height, true);
+        const marks: ImageMarks = painter.formula(fragment, transform, form, content, [left, top, right - left, bottom - top], page);
         const resource: ImageResource = this.document.finishForm(form, [left, height - bottom, right - left, bottom - top], [1 / across, 0, 0, 1 / down, 0, 0]);
         resource.width = width;
         resource.height = height;
-        if (links.length > 0) {
-            // The link areas of the image are in its unit square, with v going down as on the form and t = (height - y) / down.
-            resource.links = links.map(([area, name, internal]: readonly [PageRectangle, string, boolean]): readonly [PageRectangle, string, boolean] =>
+        if (marks.links.length > 0) {
+            resource.links = marks.links.map(([area, name, internal]: readonly [PageRectangle, string, boolean]): readonly [PageRectangle, string, boolean] =>
                 [{ x: area.x / across, y: 1 - (height - area.y) / down, width: area.width / across, height: area.height / down }, name, internal]);
+        }
+        if (marks.destinations.length > 0) {
+            resource.destinations = marks.destinations.map(([name, x, y]: readonly [string, number, number]): readonly [string, number, number] =>
+                [name, x / across, 1 - (height - y) / down]);
         }
         return resource;
     }
@@ -339,7 +366,33 @@ export class MathImage implements ImageFormat {
         const clipped: boolean = wide && (math?.overflow === "truncate" || math?.overflow === "scroll");
         const factor: number = scaled ? (limit as number) / fragment.inlineSize : 1;
         const boxWidth: number = scaled || clipped ? limit as number : fragment.inlineSize;
-        this.last = { key, fragment, layout, metrics, palettes, kept, factor, clipped, boxWidth };
+        const fixed: boolean = this.fixedInside(fragment);
+        this.last = { key, fragment, layout, metrics, palettes, kept, factor, clipped, boxWidth, fixed };
         return this.last;
+    }
+
+    private fixedInside(fragment: BoxFragment): boolean {
+        // CSS Backgrounds 3 §2.5: whether a box inside the formula has a background image with background-attachment fixed.
+        for (const child of fragment.children ?? []) {
+            const boxes: ReadonlyArray<BoxFragment> = child.kind === "box" ? [child] : child.pieces.filter((piece: TextPiece | BoxFragment): piece is BoxFragment => piece.kind === "box");
+            for (const box of boxes) {
+                if (this.fixedLayer(box.box.style) || this.fixedInside(box)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private fixedLayer(style: ComputedStyle): boolean {
+        // §2.1 and §3: the attachments of a list shorter than the layers repeat.
+        const list: (value: CssValue | undefined) => ReadonlyArray<CssValue> = (value: CssValue | undefined): ReadonlyArray<CssValue> =>
+            value === undefined ? [] : (value.kind === "list" && value.separator === "comma" ? value.items : [value]);
+        const images: ReadonlyArray<CssValue> = list(style.values["background-image"]);
+        const attachments: ReadonlyArray<CssValue> = list(style.values["background-attachment"]);
+        return attachments.length > 0 && images.some((image: CssValue, layer: number) => {
+            const attachment: CssValue = attachments[layer % attachments.length];
+            return !(image.kind === "ident" && image.lower === "none") && attachment.kind === "ident" && attachment.lower === "fixed";
+        });
     }
 }

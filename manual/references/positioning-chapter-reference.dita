@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
+<reference id="positioning-chapter-reference">
+    <title>Positioning reference</title>
+    <shortdesc>This reference lists the properties that position boxes and stack them.</shortdesc>
+    <refbody>
+        <section conkeyref="ref-display/positioning-properties"/>
+    </refbody>
+</reference>

@@ -919,6 +919,10 @@ export class StyleComputer {
         if (display !== undefined && display.kind === "value" && this.displays.isRubyBox(this.displays.parse(display.value))) {
             properties.add("unicode-bidi");
         }
+        // CSS Box Alignment 3 §7.1: the initial legacy of justify-items "computes to the inherited value" when that holds the legacy keyword.
+        if (this.holdsLegacy(input.parent?.values["justify-items"])) {
+            properties.add("justify-items");
+        }
         if (input.descriptors !== undefined) {
             for (const descriptor of input.descriptors.names) {
                 properties.add(descriptor);
@@ -1200,6 +1204,8 @@ export class StyleComputer {
             case "text-align-all":
             case "text-align-last":
                 return this.computeTextAlign(property, value, resolution.input);
+            case "justify-items":
+                return this.computeJustifyItems(value, resolution.input);
             case ZOOM:
                 // CSS Viewport 1 (Editor's Draft) §4: "as specified, but with <percentage> converted to the equivalent <number>".
                 return value.kind === "percentage" ? { kind: "number", value: value.value / 100, integer: false } : this.computeGeneric(value, units, false);
@@ -1226,8 +1232,8 @@ export class StyleComputer {
     }
 
     private anchorComputed(root: CalcNode, resolution: Resolution): CalcNode | undefined {
-        // CSS Anchor Positioning 1 §5.1.1: anchor-size() resolves only on an absolutely positioned box, where its length comes
-        // from layout; elsewhere it is its fallback, or the declaration is invalid at computed-value time.
+        // CSS Anchor Positioning 1 §3.2.1 and §5.1.1: anchor() and anchor-size() resolve only on an absolutely positioned box, where their
+        // lengths come from layout; elsewhere they are their fallbacks, or the declaration is invalid at computed-value time.
         const position: CssValue | undefined = this.standard("position", resolution);
         if (position !== undefined && position.kind === "ident" && (position.lower === "absolute" || position.lower === "fixed")) {
             if (resolution.owner === undefined) {
@@ -1272,6 +1278,20 @@ export class StyleComputer {
         const rightToLeft: boolean = direction !== undefined && direction.kind === "ident" && direction.lower === "rtl";
         const side: string = (inherited.lower === "start") !== rightToLeft ? "left" : "right";
         return { kind: "ident", name: side, lower: side };
+    }
+
+    private computeJustifyItems(value: CssValue, input: StyleInput): CssValue {
+        // CSS Box Alignment 3 §7.1: legacy alone computes to the inherited value "if the inherited value of justify-items includes the legacy
+        // keyword", "otherwise it computes to normal"; the root inherits the initial value, which is legacy.
+        if (value.kind !== "ident" || value.lower !== "legacy") {
+            return value;
+        }
+        const inherited: CssValue | undefined = input.parent === undefined ? value : input.parent.values["justify-items"];
+        return inherited !== undefined && this.holdsLegacy(inherited) ? inherited : { kind: "ident", name: "normal", lower: "normal" };
+    }
+
+    private holdsLegacy(value?: CssValue): boolean {
+        return value !== undefined && (value.kind === "list" ? value.items : [value]).some((item: CssValue) => item.kind === "ident" && item.lower === "legacy");
     }
 
     private lineWidth(value: CssValue, units: ElementUnits): CssValue | undefined {

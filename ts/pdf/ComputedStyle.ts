@@ -27,4 +27,11 @@ export interface ComputedStyle {
     custom: Readonly<Record<string, CustomValue>>;
     anchorOwner?: number;
     zoom?: number;
+    positionOptions?: ReadonlyArray<PositionOption>;
+}
+
+export interface PositionOption {
+    style: ComputedStyle;
+    tactics: ReadonlyArray<string>;
+    area?: CssValue;
 }

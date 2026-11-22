@@ -1290,7 +1290,7 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 
 ### CSS Will Change 1 (css-will-change-1)
 
-- [-] will-change
+- [x] will-change
 
 ### CSS Basic User Interface 4 (css-ui-4)
 

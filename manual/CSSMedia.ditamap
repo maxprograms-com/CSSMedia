@@ -93,6 +93,10 @@
         <topicref href="references/floats-chapter-reference.dita"/>
     </chapter>
 
+    <chapter href="tasks/positioning.dita">
+        <topicref href="references/positioning-chapter-reference.dita"/>
+    </chapter>
+
     <chapter>
         <topicmeta>
             <navtitle>Flexbox and grid</navtitle>

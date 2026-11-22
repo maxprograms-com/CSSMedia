@@ -21,11 +21,11 @@
 import { TextNode } from "typesxml";
 import { PropertyTable } from "../css/PropertyTable.js";
 import type { ContainerQuery, Declaration, DeclaredValue, TocRule } from "../css/Stylesheet.js";
-import type { CssValue, FunctionValue } from "../css/values/CssValue.js";
+import type { CssValue, FunctionValue, IdentValue } from "../css/values/CssValue.js";
 import { SourceElement } from "../parse/SourceElement.js";
 import type { BoxNode, ElementBox, NamedString, Placement, TextSequence } from "./BoxTree.js";
 import type { Cascade } from "./Cascade.js";
-import type { ComputedStyle } from "./ComputedStyle.js";
+import type { ComputedStyle, PositionOption } from "./ComputedStyle.js";
 import { ContentValues } from "./ContentValues.js";
 import type { Counter, CounterChange, CounterSet } from "./CounterScopes.js";
 import type { CrossReferences } from "./CrossReferences.js";
@@ -126,6 +126,7 @@ interface TocPlaceholder {
 }
 
 const DEFAULT_LABEL: ReadonlyArray<CssValue> = [{ kind: "function", name: "content", args: [] }];
+const TRY_TACTICS: ReadonlySet<string> = new Set<string>(["flip-block", "flip-inline", "flip-start", "flip-x", "flip-y"]);
 const PERCENT: RegExp = /%/g;
 const DOTTED: CssValue = { kind: "ident", name: "dotted", lower: "dotted" };
 const PAGE_COUNTER: CssValue = { kind: "ident", name: "page", lower: "page" };
@@ -233,9 +234,38 @@ export class BoxBuilder {
         if (own !== undefined) {
             return own;
         }
-        const cascaded: Map<string, DeclaredValue> = this.cascade.element(element, (queries: ReadonlyArray<ContainerQuery>) =>
-            this.computer.containersHold(queries, candidates, this.viewport), pseudoElement);
-        return this.computer.compute(StyleComputer.input(cascaded, this.viewport, candidates, parent, root, element, pseudoElement));
+        const holds: (queries: ReadonlyArray<ContainerQuery>) => boolean = (queries: ReadonlyArray<ContainerQuery>) =>
+            this.computer.containersHold(queries, candidates, this.viewport);
+        const cascaded: Map<string, DeclaredValue> = this.cascade.element(element, holds, pseudoElement);
+        const style: ComputedStyle = this.computer.compute(StyleComputer.input(cascaded, this.viewport, candidates, parent, root, element, pseudoElement));
+        // CSS Anchor Positioning 1 §6.1: each entry of position-try-fallbacks of an absolutely positioned box is a position option, the styles that a
+        // @position-try rule puts in the Position Fallback Origin, a try tactic that layout runs on them in the writing mode of the containing block, or a position-area.
+        const fallbacks: CssValue | undefined = style.values["position-try-fallbacks"];
+        const position: CssValue | undefined = style.values["position"];
+        if (fallbacks === undefined || (fallbacks.kind === "ident" && fallbacks.lower === "none") || position === undefined || position.kind !== "ident"
+            || (position.lower !== "absolute" && position.lower !== "fixed")) {
+            return style;
+        }
+        const options: Array<PositionOption> = [];
+        for (const entry of fallbacks.kind === "list" && fallbacks.separator === "comma" ? fallbacks.items : [fallbacks]) {
+            const words: ReadonlyArray<CssValue> = entry.kind === "list" ? entry.items : [entry];
+            const named: IdentValue | undefined = words.find((word: CssValue): word is IdentValue => word.kind === "ident" && word.name.startsWith("--"));
+            const dashed: string | undefined = named?.name;
+            const tactics: Array<string> = words.filter((word: CssValue): word is IdentValue => word.kind === "ident" && TRY_TACTICS.has(word.lower))
+                .map((word: IdentValue) => word.lower);
+            if (dashed === undefined && tactics.length === 0) {
+                options.push({ style, tactics, area: entry });
+            } else if (dashed === undefined) {
+                options.push({ style, tactics });
+            } else {
+                // "If there is a @position-try rule with the given name", its option; "Otherwise, this value has no effect."
+                const tried: Map<string, DeclaredValue> | undefined = this.cascade.positionOption(element, holds, dashed, pseudoElement);
+                if (tried !== undefined) {
+                    options.push({ style: this.computer.compute(StyleComputer.input(tried, this.viewport, candidates, parent, root, element, pseudoElement)), tactics });
+                }
+            }
+        }
+        return options.length === 0 ? style : { ...style, positionOptions: options };
     }
 
     private *containers(start: Context | undefined): Generator<QueryContainer> {
@@ -252,6 +282,16 @@ export class BoxBuilder {
             }
             yield container;
         }
+    }
+
+    private *unboxedContainers(element: SourceElement, style: ComputedStyle, parent: Context | undefined): Generator<QueryContainer> {
+        // CSS Conditional 5 §5: an element without a box is still a style container of its descendants, with no size for size queries (§6.1).
+        const container: QueryContainer = { element, style, root: parent?.root ?? style };
+        if (parent !== undefined) {
+            container.parent = parent.style;
+        }
+        yield container;
+        yield* this.containers(parent);
     }
 
     private element(element: SourceElement, style: ComputedStyle, parent?: Context, sibling?: CounterSet): Built {
@@ -274,6 +314,9 @@ export class BoxBuilder {
             if (entries !== undefined && strings !== undefined) {
                 this.setStrings(strings, entries, element, style, this.contentState(counters, node, element, (): ReadonlyArray<QuotePair> => []));
                 this.pendingStrings.push(...strings);
+            }
+            if (element.getChildren().length > 0) {
+                this.images.keepUnboxed(element, { style, containers: (): Iterable<QueryContainer> => this.unboxedContainers(element, style, parent) });
             }
             return { nodes: [], counters };
         }
@@ -318,6 +361,9 @@ export class BoxBuilder {
         const scope: number | undefined = (containment & DisplayTypes.STYLE_CONTAINMENT) !== 0 ? node : parent?.scope;
         if (scope !== undefined) {
             context.scope = scope;
+        }
+        if (replaced && element.getChildren().length > 0) {
+            this.images.keepUnboxed(element, { style, containers: (): Iterable<QueryContainer> => this.containers(context) });
         }
         if (image !== undefined && this.images.generates(element)) {
             this.images.keepGenerated(image, this.formulaContent(context));

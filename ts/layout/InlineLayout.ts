@@ -2400,6 +2400,11 @@ export class InlineLayout {
         if (sizes.padding !== undefined && (sizes.padding[BoxSizes.BLOCK_START] !== 0 || sizes.padding[BoxSizes.BLOCK_END] !== 0)) {
             fragment.padding = [sizes.padding[BoxSizes.BLOCK_START], 0, sizes.padding[BoxSizes.BLOCK_END], 0];
         }
+        const above: number = this.sizes.margin(sizes, BoxSizes.BLOCK_START) ?? 0;
+        const below: number = this.sizes.margin(sizes, BoxSizes.BLOCK_END) ?? 0;
+        if (above !== 0 || below !== 0) {
+            fragment.margin = [above, 0, below, 0];
+        }
         const mark: Mark = { kind: "open", fragment, margin: 0, edge: 0 };
         if (record.marks === undefined) {
             record.marks = [mark];
@@ -2452,7 +2457,13 @@ export class InlineLayout {
             padding[side] = sizes.padding[side];
             fragment.padding = padding;
         }
-        mark.margin = this.sizes.margin(sizes, side) ?? 0;
+        const used: number = this.sizes.margin(sizes, side) ?? 0;
+        if (used !== 0) {
+            const margin: [number, number, number, number] = fragment.margin === undefined ? [0, 0, 0, 0] : [fragment.margin[0], fragment.margin[1], fragment.margin[2], fragment.margin[3]];
+            margin[side] = used;
+            fragment.margin = margin;
+        }
+        mark.margin = used;
         mark.edge = this.sizes.edges(sizes, side);
     }
 

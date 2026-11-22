@@ -28,7 +28,7 @@ export type Transform = readonly [number, number, number, number, number, number
 
 type SizeField = "inlineSize" | "blockSize" | "minInlineSize" | "maxInlineSize" | "minBlockSize" | "maxBlockSize";
 
-type AnchorSizes = (anchor: CalcAnchor, block: boolean) => number | undefined;
+type AnchorSizes = (anchor: CalcAnchor, block: boolean, side?: number) => number | undefined;
 
 export type NaturalSizes = readonly [number | undefined, number | undefined, number | undefined];
 
@@ -85,10 +85,12 @@ export class BoxSizes {
     static readonly IDENTITY: Transform = [1, 0, 0, 1, 0, 0];
 
     private readonly lengths: LengthResolver = new LengthResolver();
+    private readonly anchors: AnchorSizes;
     private readonly inlineAnchors: (anchor: CalcAnchor) => number | undefined;
     private readonly blockAnchors: (anchor: CalcAnchor) => number | undefined;
 
     constructor(anchors: AnchorSizes) {
+        this.anchors = anchors;
         this.inlineAnchors = (anchor: CalcAnchor): number | undefined => anchors(anchor, false);
         this.blockAnchors = (anchor: CalcAnchor): number | undefined => anchors(anchor, true);
     }
@@ -388,21 +390,23 @@ export class BoxSizes {
         // CSS Writing Modes 4 §7.4: the positioning offsets take the flow-relative sides of the containing block's writing
         // mode, given as a frame; the left, top, right and bottom properties themselves are physical.
         const name: string = PHYSICAL_SIDES[this.physicalSide(frame, side)];
-        const value: CssValue | undefined = this.unanchored(style.values[name], (side % 2 === 0) !== this.isOrthogonal(this.frame(style), frame));
+        // CSS Anchor Positioning 1 §3.2: an anchor() in an inset resolves against the side of the containing block that the inset is on.
+        const value: CssValue | undefined = this.unanchored(style.values[name], (side % 2 === 0) !== this.isOrthogonal(this.frame(style), frame), side);
         if (value === undefined || value.kind === "ident" || value.kind === "function" || (basis === undefined && value.kind !== "length")) {
             return undefined;
         }
         return this.pixels(value, basis ?? 0);
     }
 
-    private unanchored(value: CssValue | undefined, block: boolean): CssValue | undefined {
+    private unanchored(value: CssValue | undefined, block: boolean, side?: number): CssValue | undefined {
         // CSS Anchor Positioning 1 §5.1: the anchor functions of the value become lengths, the box's or those of the ancestor
         // it inherited the value from; undefined is a declaration invalid at computed-value time, which acts as unset.
         if (value === undefined) {
             return undefined;
         }
         if (value.kind === "calc") {
-            const root: CalcNode | undefined = this.lengths.anchored(value.root, block ? this.blockAnchors : this.inlineAnchors);
+            const root: CalcNode | undefined = this.lengths.anchored(value.root, side !== undefined ? (anchor: CalcAnchor): number | undefined => this.anchors(anchor, block, side)
+                : (block ? this.blockAnchors : this.inlineAnchors));
             if (root === undefined) {
                 return undefined;
             }
@@ -414,7 +418,7 @@ export class BoxSizes {
         let args: Array<CssValue> | undefined;
         for (let index: number = 0; index < value.args.length; index++) {
             const argument: CssValue = value.args[index];
-            const replaced: CssValue | undefined = this.unanchored(argument, block);
+            const replaced: CssValue | undefined = this.unanchored(argument, block, side);
             if (replaced === undefined) {
                 return undefined;
             }

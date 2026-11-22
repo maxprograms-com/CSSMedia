@@ -25,7 +25,7 @@ import { SelectorCompiler } from "../css/SelectorCompiler.js";
 import type { ContainerQuery, Declaration, DeclaredValue, FontFaceRule, FontFeatureValuesRule, StyleRule, Stylesheet } from "../css/Stylesheet.js";
 import { StylesheetReader } from "../css/StylesheetReader.js";
 import type { CssValue } from "../css/values/CssValue.js";
-import type { ElementSource, ImageAlpha, ImageDrawing, ImageFormat, ImageFormats, ImageReader, ImageRequest, ImageSamples, ImageSize } from "../images/ImageFormats.js";
+import type { ElementSource, ImageAlpha, ImageDrawing, ImageFormat, ImageFormats, ImageReader, ImageRequest, ImageSamples, ImageSize, UnboxedPlace } from "../images/ImageFormats.js";
 import type { ColorOutput } from "../paint/ColorOutput.js";
 import type { SourceElement } from "../parse/SourceElement.js";
 import type { XmlRootHandler } from "../parse/XmlRootHandler.js";
@@ -43,7 +43,7 @@ import type { ColorSpaceResource } from "../writer/PdfColorSpaces.js";
 import type { PdfDocument } from "../writer/PdfDocument.js";
 import type { ImageResource, PageRectangle, PdfPage } from "../writer/PdfPage.js";
 import { SVG_PROPERTIES, SVG_TYPES } from "./generated/SvgDefinitions.js";
-import type { Box } from "./SvgGeometry.js";
+import type { Box, SvgPath } from "./SvgGeometry.js";
 import { SvgGeometry } from "./SvgGeometry.js";
 import { SvgPainter } from "./SvgPainter.js";
 import { SvgParser } from "./SvgParser.js";
@@ -73,6 +73,9 @@ export class SvgImage implements ImageFormat {
     private readonly painter: SvgPainter;
     private readonly documents: Map<string, SvgStyles | null> = new Map<string, SvgStyles | null>();
     private readonly drawing: Set<string> = new Set<string>();
+    private readonly boxStyles: WeakMap<SourceElement, ComputedStyle> = new WeakMap<SourceElement, ComputedStyle>();
+    private readonly clipSources: Map<SourceElement, SvgStyles> = new Map<SourceElement, SvgStyles>();
+    private documentIds?: Map<string, SourceElement>;
 
     constructor(document: PdfDocument, images: ImageFormats, colors: ColorOutput, input: Input, setup: () => PageSetup) {
         this.document = document;
@@ -96,12 +99,128 @@ export class SvgImage implements ImageFormat {
         const computer: StyleComputer = this.input.computer;
         const cascaded: Map<string, DeclaredValue> = this.boxCascade().element(element, (queries: ReadonlyArray<ContainerQuery>) =>
             computer.containersHold(queries, containers, viewport));
-        const style: ComputedStyle = computer.compute(StyleComputer.input(cascaded, viewport, containers, parent, root, element));
-        if (this.displays.parse(style.values["display"]).box !== "contents") {
-            return style;
-        }
+        const computed: ComputedStyle = computer.compute(StyleComputer.input(cascaded, viewport, containers, parent, root, element));
         // CSS Display 3 Appendix B: on an svg element with CSS box layout, "display: contents computes to display: none".
-        return { ...style, values: Object.assign(Object.create(style.values) as Record<string, CssValue>, { display: DISPLAY_NONE }) };
+        const style: ComputedStyle = this.displays.parse(computed.values["display"]).box !== "contents" ? computed
+            : { ...computed, values: Object.assign(Object.create(computed.values) as Record<string, CssValue>, { display: DISPLAY_NONE }) };
+        if (element.getLocalName() === SVG_ROOT) {
+            this.boxStyles.set(element, style);
+        }
+        return style;
+    }
+
+    clip(href: string, pdf: PdfPage, place: Box, area: Box, boxes: (kind: string) => Box | undefined, rtl: boolean, scale: number): ImageResource | null | undefined {
+        const found: readonly [XMLElement, SvgStyles] | undefined = this.clipTarget(href);
+        return found === undefined ? undefined : this.painter.clipFor(found[1], found[0], pdf, place, area, boxes, rtl, scale);
+    }
+
+    clipOutlines(href: string, place: Box, boxes: (kind: string) => Box | undefined, rtl: boolean): Array<Array<readonly [SvgPath, boolean]>> | null | undefined {
+        const found: readonly [XMLElement, SvgStyles] | undefined = this.clipTarget(href);
+        return found === undefined ? undefined : this.painter.clipOutlines(found[1], found[0], place, boxes, rtl);
+    }
+
+    private clipTarget(href: string): readonly [XMLElement, SvgStyles] | undefined {
+        // CSS Masking 1 §5.1: a reference to anything but a clipPath element applies no clipping; CSS Values 4 §4.5.1: a fragment-only URL
+        // names an element of the document.
+        const hash: number = href.indexOf("#");
+        if (hash < 0) {
+            return undefined;
+        }
+        const id: string = BaseUrls.percentDecoded(href.substring(hash + 1)).toString("utf8");
+        const address: string = href.substring(0, hash);
+        let found: readonly [XMLElement, SvgStyles] | undefined;
+        if (address.length === 0 || address === this.input.documentUri) {
+            found = this.documentClip(id);
+        } else {
+            const styles: SvgStyles | undefined = this.styles(address);
+            const element: XMLElement | undefined = styles?.element(id);
+            found = styles === undefined || element === undefined ? undefined : [element, styles];
+        }
+        return found === undefined || !found[1].isSvg(found[0], "clipPath") ? undefined : found;
+    }
+
+    private documentClip(id: string): readonly [XMLElement, SvgStyles] | undefined {
+        // CSS Masking 1 §6.1: a clipPath can be referenced "even when the display property on the clipPath element or any of its ancestors is
+        // set to none"; its styles are those of the outermost svg element that holds it.
+        const element: SourceElement | undefined = this.documentElement(id);
+        let root: SourceElement | undefined;
+        for (let current: SourceElement | undefined = element; current !== undefined && this.images.elementFormat(current) === this; current = current.getParent()) {
+            if (current.getLocalName() === SVG_ROOT) {
+                root = current;
+            }
+        }
+        if (element === undefined || root === undefined) {
+            return undefined;
+        }
+        let styles: SvgStyles | undefined = this.clipSources.get(root);
+        if (styles === undefined) {
+            const known: ComputedStyle | undefined = this.boxStyles.get(root);
+            const place: readonly [ComputedStyle, () => Iterable<QueryContainer>] | undefined = known === undefined ? this.documentPlace(root) : undefined;
+            styles = place === undefined ? this.embedded({ element: root, style: known as ComputedStyle })
+                : this.embedded({ element: root, style: place[0] }, [place[1], this.setup().viewport]);
+            styles.loadSheets();
+            this.images.diagnostics.push(...styles.diagnostics);
+            this.clipSources.set(root, styles);
+        }
+        return [element, styles];
+    }
+
+    private documentElement(id: string): SourceElement | undefined {
+        // The first element of the document with the id, as SvgStyles finds those of another svg element.
+        if (this.documentIds === undefined) {
+            const ids: Map<string, SourceElement> = new Map<string, SourceElement>();
+            const pending: Array<SourceElement> = [this.input.root];
+            while (pending.length > 0) {
+                const current: SourceElement = pending.pop() as SourceElement;
+                const own: string | undefined = current.getAttribute("id")?.getValue() ?? current.getAttribute("xml:id")?.getValue();
+                if (own !== undefined && !ids.has(own)) {
+                    ids.set(own, current);
+                }
+                const children: Array<XMLElement> = current.getChildren();
+                for (let child: number = children.length - 1; child >= 0; child--) {
+                    pending.push(children[child] as SourceElement);
+                }
+            }
+            this.documentIds = ids;
+        }
+        return this.documentIds.get(id);
+    }
+
+    private documentPlace(element: SourceElement): readonly [ComputedStyle, () => Iterable<QueryContainer>] {
+        // An svg element that makes no box has the style that the cascade gives it below the element whose descendants make no boxes, whose style
+        // and containers the box builder keeps; CSS Conditional 5 §5 and §6.1: each ancestor is a style container, one without a box has no size.
+        const setup: PageSetup = this.setup();
+        const computer: StyleComputer = this.input.computer;
+        const chain: Array<SourceElement> = [];
+        let top: UnboxedPlace | undefined;
+        for (let current: SourceElement | undefined = element.getParent(); current !== undefined && top === undefined; current = current.getParent()) {
+            top = this.images.unboxedPlace(current);
+            if (top === undefined) {
+                chain.unshift(current);
+            }
+        }
+        chain.push(element);
+        let parent: ComputedStyle | undefined = top?.style;
+        let containers: () => Iterable<QueryContainer> = top?.containers ?? StyleComputer.NO_CONTAINERS;
+        for (const current of chain) {
+            const own: () => Iterable<QueryContainer> = containers;
+            if (current === element) {
+                const holds: (queries: ReadonlyArray<ContainerQuery>) => boolean = (queries: ReadonlyArray<ContainerQuery>): boolean =>
+                    computer.containersHold(queries, own, setup.viewport);
+                return [computer.compute(StyleComputer.input(this.boxCascade().element(current, holds), setup.viewport, own, parent, setup.root, current)), own];
+            }
+            const holds: (queries: ReadonlyArray<ContainerQuery>) => boolean = (queries: ReadonlyArray<ContainerQuery>): boolean =>
+                computer.containersHold(queries, own, setup.viewport);
+            const style: ComputedStyle = current === this.input.root ? setup.root
+                : computer.compute(StyleComputer.input(this.input.cascade.element(current, holds), setup.viewport, own, parent, setup.root, current));
+            const container: QueryContainer = { element: current, style, root: setup.root };
+            if (parent !== undefined) {
+                container.parent = parent;
+            }
+            containers = (): Iterable<QueryContainer> => [container, ...own()];
+            parent = style;
+        }
+        return [parent ?? setup.root, containers];
     }
 
     private boxCascade(): Cascade {
@@ -144,12 +263,13 @@ export class SvgImage implements ImageFormat {
         return rules.length === 0 && features.length === 0 ? input.fonts : input.fontsFor([...input.fontFaces, ...rules], [...input.fontFeatureValues, ...features]);
     }
 
-    private embedded(source: ElementSource): SvgStyles {
+    private embedded(source: ElementSource, place?: readonly [() => Iterable<QueryContainer>, Size]): SvgStyles {
         // The style sheet is read again with the SVG properties, only when a document has an svg element to apply it to.
         const input: Input = this.input;
         const styles: SvgStyles = this.elementStyles(source.element);
         const setup: PageSetup = this.setup();
-        const [containers, viewport]: readonly [() => Iterable<QueryContainer>, Size] = this.images.elementPlace(source.element) ?? [StyleComputer.NO_CONTAINERS, setup.viewport];
+        const [containers, viewport]: readonly [() => Iterable<QueryContainer>, Size] = place ?? this.images.elementPlace(source.element)
+            ?? [StyleComputer.NO_CONTAINERS, setup.viewport];
         this.hostSheet = this.hostSheet ?? new StylesheetReader(this.table).read(input.cssPath);
         styles.embed(this.hostSheet, source.style, setup.root, setup.palettes, input.root, containers, viewport);
         return styles;
