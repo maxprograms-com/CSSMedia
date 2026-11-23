@@ -169,7 +169,7 @@ export class JpegDecoder {
         try {
             this.markers();
             return this.assemble();
-        } catch (error) {
+        } catch (error: unknown) {
             this.report(error instanceof Error ? error.message : String(error));
             return undefined;
         }
@@ -400,8 +400,10 @@ export class JpegDecoder {
             }
             this.horizontalMax = Math.max(this.horizontalMax, horizontal);
             this.verticalMax = Math.max(this.verticalMax, vertical);
-            defined.push({ id, horizontal, vertical, quantization: table, width: 0, height: 0, blocksAcross: 0, blocksDown: 0,
-                trueAcross: 0, trueDown: 0, allocatedRows: 0, planeWidth: 0, dcLow: -1, bands: [], pointTransform: 0 });
+            defined.push({
+                id, horizontal, vertical, quantization: table, width: 0, height: 0, blocksAcross: 0, blocksDown: 0,
+                trueAcross: 0, trueDown: 0, allocatedRows: 0, planeWidth: 0, dcLow: -1, bands: [], pointTransform: 0
+            });
         }
         for (const component of defined) {
             if (!this.lossless && precision <= 8 && this.wideQuantization.has(component.quantization)) {
@@ -661,7 +663,7 @@ export class JpegDecoder {
         if (!this.hierarchical) {
             throw new Error("expands its references outside the hierarchical mode");
         }
-if (this.expansionHorizontal || this.expansionVertical) {
+        if (this.expansionHorizontal || this.expansionVertical) {
             // ITU-T T.81 §J.1.1: "No more than one EXP marker segment shall precede a given frame."
             throw new Error("has two EXP segments before a frame");
         }
@@ -830,10 +832,12 @@ if (this.expansionHorizontal || this.expansionVertical) {
             if (this.lossless) {
                 component.pointTransform = low;
             }
-            scanComponents.push({ component, dcTable, acTable, pred: 0, dcBase: dcId * DC_BINS, acBase: 4 * DC_BINS + acId * AC_BINS,
+            scanComponents.push({
+                component, dcTable, acTable, pred: 0, dcBase: dcId * DC_BINS, acBase: 4 * DC_BINS + acId * AC_BINS,
                 dcU: this.dcConditioning[dcId][0], dcL: this.dcConditioning[dcId][1], acKx: this.acConditioning[acId], lastDifference: 0,
                 leftDifference: 0, aboveDifferences: new Int32Array(component.blocksAcross), intervalStartY: 0,
-                llBase: 4 * DC_BINS + 4 * AC_BINS + dcId * LOSSLESS_BINS });
+                llBase: 4 * DC_BINS + 4 * AC_BINS + dcId * LOSSLESS_BINS
+            });
             blocks += component.horizontal * component.vertical;
         }
         if (interleaved && blocks > 10) {
@@ -917,7 +921,7 @@ if (this.expansionHorizontal || this.expansionVertical) {
         let marker: number = 0;
         let intervalCount: number = 0;
         let row: number = 0;
-        for (;;) {
+        for (; ;) {
             for (const scanComponent of scanComponents) {
                 // ITU-T T.81 §A.2.4: the encoder pads the image to whole MCUs; the rows grow as the scan decodes them.
                 const step: number = interleaved ? scanComponent.component.vertical : 1;
@@ -936,7 +940,7 @@ if (this.expansionHorizontal || this.expansionVertical) {
                 }
                 try {
                     this.mcu(scanComponents, interleaved, column, row);
-                } catch (error) {
+                } catch (error: unknown) {
                     if (!this.stalled && !this.huffmanStalled) {
                         throw error;
                     }
@@ -1117,7 +1121,7 @@ if (this.expansionHorizontal || this.expansionVertical) {
                 scanComponent.pred = this.differential ? difference : scanComponent.pred + difference;
                 store[offset] = scanComponent.pred;
                 let k: number = 1;
-                for (;;) {
+                for (; ;) {
                     const symbol: number = this.huffman(acTable);
                     const size: number = symbol & 0x0F;
                     if (size === 0) {
@@ -1511,7 +1515,7 @@ if (this.expansionHorizontal || this.expansionVertical) {
         // ITU-T T.81 Figures F.23 and F.24: the category grows the bound until a 0-decision, then the low order bits follow MSB first.
         let bound: number = 1;
         let context: number = start;
-        for (;;) {
+        for (; ;) {
             if (this.arithmeticDecode(context) === 0) {
                 break;
             }
@@ -1588,7 +1592,7 @@ if (this.expansionHorizontal || this.expansionVertical) {
             if (this.arithmeticDecode(scanComponent.acBase + 3 * (k - 1)) === 1) {
                 return;
             }
-            for (;;) {
+            for (; ;) {
                 if (this.arithmeticDecode(scanComponent.acBase + 3 * (k - 1) + 1) === 1) {
                     // ITU-T T.81 Table F.5: the sign uses the fixed estimate; X2 is 189 when K is at most Kx and 217 past it.
                     const negative: boolean = this.fixedDecision() === 1;
@@ -1796,8 +1800,10 @@ if (this.expansionHorizontal || this.expansionVertical) {
                 if (reference === undefined) {
                     throw new Error("has no reference component " + component.id);
                 }
-                outputs.push({ id: component.id, plane: reference.plane, width: reference.width,
-                    horizontal: component.horizontal, vertical: component.vertical });
+                outputs.push({
+                    id: component.id, plane: reference.plane, width: reference.width,
+                    horizontal: component.horizontal, vertical: component.vertical
+                });
             }
         } else {
             if (!this.frameParsed) {
@@ -1812,8 +1818,10 @@ if (this.expansionHorizontal || this.expansionVertical) {
                     throw new Error("has the component " + component.id + " in no scan");
                 }
                 const plane: ImagePlane = this.lossless ? this.losslessPlane(component) : this.transformPlane(component);
-                outputs.push({ id: component.id, plane: plane.plane, width: plane.width,
-                    horizontal: component.horizontal, vertical: component.vertical });
+                outputs.push({
+                    id: component.id, plane: plane.plane, width: plane.width,
+                    horizontal: component.horizontal, vertical: component.vertical
+                });
             }
         }
         const count: number = outputs.length;
