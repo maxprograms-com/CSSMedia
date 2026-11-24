@@ -363,6 +363,7 @@ ditac|toc {
 ditac|toc > *[class~="topic/title"] {
     display: block;
     bookmark-level: 1;
+    bookmark-state: closed;
     font-family: "Noto Sans", sans-serif;
     font-weight: bold;
     font-size: 1.9em;
@@ -440,6 +441,7 @@ ditac|indexList {
 ditac|indexList > *[class~="topic/title"] {
     display: block;
     bookmark-level: 1;
+    bookmark-state: closed;
     font-family: "Noto Sans", sans-serif;
     font-weight: bold;
     font-size: 1.9em;
@@ -470,6 +472,7 @@ ditac|figureList > *[class~="topic/title"],
 ditac|tableList > *[class~="topic/title"] {
     display: block;
     bookmark-level: 1;
+    bookmark-state: closed;
     font-family: "Noto Sans", sans-serif;
     font-weight: bold;
     font-size: 1.9em;
@@ -557,6 +560,7 @@ ditac|indexAnchor::before {
 *[class~="bookmap/chapter"] > *[class~="topic/topic"] > *[class~="topic/title"] {
     string-set: chapter-title content();
     bookmark-level: 1;
+    bookmark-state: closed;
     font-size: 1.9em;
     border-bottom: 2pt solid #004885;
     padding-bottom: 0.2em;
@@ -567,6 +571,7 @@ ditac|indexAnchor::before {
 /* H2: section1-level topic title (one topicref deep inside a chapter) */
 *[class~="bookmap/chapter"] > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 2;
+    bookmark-state: closed;
     font-size: 1.35em;
     border-bottom: 1pt solid #004885;
     padding-bottom: 0.15em;
@@ -577,6 +582,7 @@ ditac|indexAnchor::before {
 /* H3: section2-level topic title (two topicrefs deep inside a chapter) */
 *[class~="bookmap/chapter"] > topicref > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 3;
+    bookmark-state: closed;
     font-size: 1.1em;
     margin-top: 1.1em;
     margin-bottom: 0.4em;
@@ -591,6 +597,7 @@ ditac|indexAnchor::before {
 *[class~="bookmap/part"] > *[class~="topic/topic"] > *[class~="topic/title"] {
     display: block;
     bookmark-level: 1;
+    bookmark-state: closed;
     text-align: center;
     font-size: 2.2em;
     margin-top: 3cm;
@@ -599,14 +606,17 @@ ditac|indexAnchor::before {
 
 *[class~="bookmap/part"] *[class~="bookmap/chapter"] > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 2;
+    bookmark-state: closed;
 }
 
 *[class~="bookmap/part"] *[class~="bookmap/chapter"] > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 3;
+    bookmark-state: closed;
 }
 
 *[class~="bookmap/part"] *[class~="bookmap/chapter"] > topicref > topicref > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 4;
+    bookmark-state: closed;
 }
 
 *[class~="map/shortdesc"] {
@@ -630,6 +640,7 @@ ditac|indexAnchor::before {
 *[class~="bookmap/appendix"] > *[class~="topic/topic"] > *[class~="topic/title"] {
     string-set: chapter-title content();
     bookmark-level: 1;
+    bookmark-state: closed;
     font-size: 1.9em;
     border-bottom: 2pt solid #004885;
     padding-bottom: 0.2em;
@@ -647,6 +658,7 @@ ditac|indexAnchor::before {
     font-family: "Noto Sans", sans-serif;
     font-weight: bold;
     bookmark-level: 1;
+    bookmark-state: closed;
     font-size: 1.9em;
     color: #004885;
     border-bottom: 2pt solid #004885;
@@ -700,6 +712,7 @@ ditac|indexAnchor::before {
 
 *[class~="bookmap/bookabstract"] > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 1;
+    bookmark-state: closed;
     font-size: 1.9em;
     border-bottom: 2pt solid #004885;
     padding-bottom: 0.2em;
