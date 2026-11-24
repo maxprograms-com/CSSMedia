@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-model href="https://www.dita-ot.org/rng/plugin.rnc" type="application/relax-ng-compact-syntax"?>
+
+<plugin id="com.maxprograms.cssmedia" version="0.1.0">
+  <require plugin="org.dita.pdf2"/>
+
+  <transtype name="cssmedia" extends="pdf" desc="PDF via CSSMedia (XML + CSS)">
+    <param name="args.cssmedia.css" type="file" desc="Specifies a CSS stylesheet to apply. Defaults to the stylesheet bundled with the plug-in."/>
+  </transtype>
+
+  <feature extension="dita.transtype.print" value="cssmedia"/>
+  <feature extension="ant.import" file="build.xml"/>
+</plugin>

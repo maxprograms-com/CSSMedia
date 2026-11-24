@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+*******************************************************************************
+ * Copyright (c) 2026 Maxprograms. All rights reserved.
+ *
+ * Licensed under the Business Source License 1.1 (the "License");
+ * you may not use this file except in compliance with the License.
+ *
+ * Change Date: 2030-11-01
+ * Change License: Mozilla Public License, v. 2.0
+ *
+ * Additional Use Grant:
+ * You may make production use of the Licensed Work for personal use,
+ * educational use, and academic research. "Personal use" means use by an
+ * individual for their own purposes, and not on behalf of an employer, client
+ * or other organization. You may also make production use of the Licensed Work
+ * for trial purposes for a period of up to 30 days.
+ *
+ * You may obtain a copy of the License at https://spdx.org/licenses/BUSL-1.1.html
+ * or in the LICENSE file provided in the root of this repository.
+ *******************************************************************************/
+-->
+<project name="dita.cssmedia" basedir=".">
+
+  <target name="dita2cssmedia" depends="dita2cssmedia.init, build-init, preprocess2, cssmedia.merge, cssmedia.build"/>
+
+  <target name="dita2cssmedia.init" description="Initialize CSSMedia build">
+    <!-- flag and chunk files are for HTML and no-chunk PDF output; CSSMedia ignores them -->
+    <property name="build-step.copy-flag" value="false"/>
+    <property name="build-step.chunk" value="false"/>
+    <property name="clean-preprocess.use-result-filename" value="false"/>
+    <!-- images are rendered from their source paths by cssmedia.build; the -->
+    <!-- output directory holds only the PDF -->
+    <property name="build-step.copy-image" value="false"/>
+    <!-- only the PDF is a deliverable; no files copied to the output directory -->
+    <property name="build-step.copy-html" value="false"/>
+  </target>
+
+  <target name="cssmedia.merge" description="Merge topics with the PDF plugin's merge step">
+    <dirname property="dita.temp.dir.fullpath" file="${dita.temp.dir}${file.separator}dummy.file"/>
+    <pipeline message="topicmerge" taskname="topic-merge" inputmap="${dita.temp.dir.fullpath}${file.separator}${user.input.file}">
+      <module class="org.dita.dost.module.TopicMergeModule">
+        <param name="output" location="${dita.temp.dir.fullpath}${file.separator}${dita.map.filename.root}_MERGED.xml"/>
+        <param name="style" location="${dita.plugin.org.dita.pdf2.dir}/xsl/common/topicmerge.xsl"/>
+      </module>
+    </pipeline>
+    <property name="cssmedia.merged.file" value="${dita.map.filename.root}_MERGED.xml"/>
+  </target>
+
+  <target name="cssmedia.build" description="Generate the PDF with CSSMedia">
+    <condition property="outputFile.base" value="${args.output.base}" else="${dita.map.filename.root}">
+      <isset property="args.output.base"/>
+    </condition>
+
+    <condition property="cssmedia.css" value="${args.cssmedia.css}">
+      <isset property="args.cssmedia.css"/>
+    </condition>
+    <condition property="cssmedia.css" value="${dita.plugin.com.maxprograms.cssmedia.dir}/dita-ot.css">
+      <not><isset property="args.cssmedia.css"/></not>
+    </condition>
+
+    <!-- Rewrite the hashed image references of the merged file to the absolute
+         source paths recorded in the job file (the same paths the FO pipeline
+         resolves them to), and render from the result - the merged file itself
+         stays untouched -->
+    <exec executable="node" failonerror="true">
+      <arg value="${dita.plugin.com.maxprograms.cssmedia.dir}/rewrite-images.js"/>
+      <arg value="${dita.temp.dir}/.job.xml"/>
+      <arg value="${dita.temp.dir}/${cssmedia.merged.file}"/>
+      <arg value="${dita.temp.dir}/${cssmedia.merged.file}.cssmedia.xml"/>
+    </exec>
+
+    <exec executable="cssmedia" failonerror="true">
+      <arg value="-x"/>
+      <arg value="${dita.temp.dir}/${cssmedia.merged.file}.cssmedia.xml"/>
+      <arg value="-c"/>
+      <arg value="${cssmedia.css}"/>
+      <arg value="-p"/>
+      <arg value="${dita.output.dir}/${outputFile.base}.pdf"/>
+    </exec>
+  </target>
+
+</project>
