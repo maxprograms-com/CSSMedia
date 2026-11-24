@@ -2,7 +2,7 @@
   "name": "cssmedia",
   "productName": "CSSMedia",
   "version": "0.1.0",
-  "description": "Apply a CSS stylesheet (including CSS Paged Media) to a standalone XML file and compute per-element styles and text segments",
+  "description": "Generate PDF from XML + CSS in TypeScript",
   "keywords": [
     "CSS",
     "TypeScript",
