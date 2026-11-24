@@ -171,6 +171,10 @@ dita --input=CSSMedia.ditamap --format=pdf --output=out --temp=temp --clean.temp
 
 The merged file is `temp/CSSMedia_MERGED.xml`: the name of the map without its extension, followed by `_MERGED.xml`. The `--temp` option is optional and makes the location predictable.
 
+### DITA-OT plugin (for testing purposes)
+
+A DITA Open Toolkit plugin is available in the [dita-ot/](dita-ot/) folder, for testing purposes. It registers a `cssmedia` transformation type with the DITA toolkit: the pipeline does the merge, and CSSMedia renders the merged file with a bundled stylesheet and fonts. See [dita-ot/README.md](dita-ot/README.md) for build and usage instructions; `pack.sh` in that folder produces the installable plugin archive.
+
 ## Usage
 
 Run `cssmedia` and the program prints this help text:
