@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE bookmap PUBLIC "-//OASIS//DTD DITA BookMap//EN" "bookmap.dtd">
-<bookmap>
+<bookmap xml:lang="en">
     <booktitle>
         <mainbooktitle>
             <ph>CSSMedia User Guide</ph>

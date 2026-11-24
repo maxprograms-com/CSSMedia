@@ -1,8 +1,9 @@
 /* CSS Paged Media stylesheet for the DITA-OT-merged file, used by the
    com.maxprograms.cssmedia plugin <https://www.dita-ot.org/plugins/>.
    Same design as the samples stylesheet (samples/ditac.css), applied to
-   the unified file produced by DITA-OT: the map comes first (cover title,
-   contents entries) and the topics follow it. */
+   the unified file produced by DITA-OT: the map comes first (cover title
+   and table of contents) and the topics follow it. The table of contents
+   is generated from the headings with -cssmedia-toc(). */
 
 @namespace opentopic url(http://www.idiominc.com/opentopic);
 @namespace ot-placeholder url(http://suite-sol.com/namespaces/ot-placeholder);
@@ -195,11 +196,10 @@ bookmap {
 /* ------------------------------------------------------------------ */
 /* Map part: cover title and table of contents                         */
 /*                                                                     */
-/* Every map element outside the cover title and the navigation titles */
-/* is hidden. Topic references carry the id of the topic they point to,*/
-/* and the first element with an id is the target of a page number,    */
-/* so the entries show their own page until the contents are built     */
-/* from the headings.                                                   */
+/* The cover title is shown; the table of contents is generated from   */
+/* the headings with -cssmedia-toc() (entries linked to the headings), */
+/* not from the map's navigation titles. The chapters of the map are   */
+/* hidden and never render.                                            */
 /* ------------------------------------------------------------------ */
 
 opentopic|map {
@@ -207,34 +207,18 @@ opentopic|map {
     page: roman;
 }
 
-*[class~="map/topicref"]:not([href])[id] {
-    --dest: "#" attr(id);
-    -cssmedia-link: var(--dest);
+/* The wrapper boxes (frontmatter and booklists) collapse so they never
+   force a blank page: the frontmatter itself always renders (it can
+   contain content beyond the toc), and only the toc element renders the
+   table of contents - and only when the map requests a table of contents.
+   The chapters of the map stay hidden and never render. */
+
+opentopic|map > *[class~="bookmap/frontmatter"],
+*[class~="bookmap/booklists"] {
+    display: contents;
 }
 
-*[class~="map/topicref"][href] {
-    --dest: attr(href);
-    -cssmedia-link: attr(href);
-}
-
-*[class~="map/topicref"],
-*[class~="map/topicmeta"] {
-    display: block;
-}
-
-*[class~="map/topicmeta"] > * {
-    display: none;
-}
-
-*[class~="map/topicmeta"] > *[class~="topic/navtitle"] {
-    display: block;
-    font-family: "Noto Sans", sans-serif;
-    font-weight: inherit;
-    color: black;
-}
-
-*[class~="bookmap/booklists"],
-*[class~="bookmap/toc"] {
+opentopic|map > *[class~="bookmap/chapter"] {
     display: none;
 }
 
@@ -271,17 +255,28 @@ opentopic|map > *[class~="bookmap/booktitle"] *[class~="bookmap/booktitlealt"] {
     margin-top: 1.5em;
 }
 
-/* Table of contents */
+/* Table of contents: triggered by the <toc> element in the map
+   (the toc element only renders when the map requests a table of
+   contents). The chapters of the map stay hidden and the entries link
+   to the headings in the body. The wrapper boxes (frontmatter and
+   booklists) collapse above, so the cover's page break alone starts the
+   toc page, and the toc element itself resets the roman page counter. */
 
-opentopic|map > *[class~="bookmap/frontmatter"] {
+*[class~="bookmap/toc"] {
     display: block;
-    break-before: page;
     counter-reset: page 1;
 }
 
-opentopic|map > *[class~="bookmap/frontmatter"]::before {
-    content: "Table of Contents";
+*[class~="bookmap/toc"]::before {
+    content: -cssmedia-toc();
+    -cssmedia-toc-title: "Table of Contents";
+    -cssmedia-toc-depth: 2;
     display: block;
+}
+
+@-cssmedia-toc-title {
+    bookmark-level: 1;
+    bookmark-state: closed;
     font-family: "Noto Sans", sans-serif;
     font-weight: bold;
     font-size: 1.9em;
@@ -289,27 +284,19 @@ opentopic|map > *[class~="bookmap/frontmatter"]::before {
     margin-bottom: 0.8em;
 }
 
-opentopic|map > *[class~="bookmap/chapter"],
-*[class~="bookmap/glossarylist"] {
+@-cssmedia-toc-entry {
+    font-family: "Noto Sans", sans-serif;
+}
+
+@-cssmedia-toc-entry 1 {
     font-weight: bold;
-    margin-top: 0.6em;
-    break-inside: avoid;
 }
 
-*[class~="map/topicref"] *[class~="map/topicref"] {
-    font-weight: normal;
-    margin-top: 0;
+@-cssmedia-toc-entry 2 {
     margin-left: 1.5em;
-    break-inside: avoid;
 }
 
-*[class~="map/topicref"] *[class~="map/topicref"] *[class~="map/topicref"] {
-    font-size: 0.95em;
-}
-
-*[class~="map/topicmeta"] > *[class~="topic/navtitle"]::after {
-    content: leader(dotted) target-counter(var(--dest), page);
-}
+/* Glossary heading */
 
 *[class~="bookmap/glossarylist"] {
     display: block;
@@ -359,6 +346,7 @@ bookmap > *[class~="topic/topic"] {
 bookmap > *[class~="topic/topic"] > *[class~="topic/title"] {
     string-set: chapter-title content();
     bookmark-level: 1;
+    bookmark-state: closed;    
     font-size: 1.9em;
     border-bottom: 2pt solid #004885;
     padding-bottom: 0.2em;
@@ -369,6 +357,7 @@ bookmap > *[class~="topic/topic"] > *[class~="topic/title"] {
 /* H2: topic nested once inside a chapter */
 bookmap > *[class~="topic/topic"] > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 2;
+    bookmark-state: closed;
     font-size: 1.35em;
     border-bottom: 1pt solid #004885;
     padding-bottom: 0.15em;
@@ -379,6 +368,7 @@ bookmap > *[class~="topic/topic"] > *[class~="topic/topic"] > *[class~="topic/ti
 /* H3: topic nested twice inside a chapter */
 bookmap > *[class~="topic/topic"] > *[class~="topic/topic"] > *[class~="topic/topic"] > *[class~="topic/title"] {
     bookmark-level: 3;
+    bookmark-state: closed;
     font-size: 1.1em;
     margin-top: 1.1em;
     margin-bottom: 0.4em;
@@ -389,6 +379,9 @@ ot-placeholder|glossarylist {
     display: block;
     break-before: page;
     string-set: chapter-title "Glossary";
+    bookmark-level: 1;
+    bookmark-state: closed;
+    bookmark-label: "Glossary";
 }
 
 ot-placeholder|glossarylist::before {
