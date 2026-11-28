@@ -41,7 +41,7 @@ The inventory follows the code. When a selector, property, at-rule, or descripto
 - [x] @left-top
 - [x] @media
 - [x] @page
-- [ ] @position-try
+- [x] @position-try
 - [x] @property
 - [x] @right-bottom
 - [x] @right-middle
@@ -335,25 +335,25 @@ Each selector, combinator, pseudo-class, and pseudo-element that [SelectorCompil
 ### CSS Align 3 (css-align-3)
 
 - [x] align-content
-- [ ] align-items
-- [ ] align-self
+- [x] align-items
+- [x] align-self
 - [x] justify-content
-- [ ] justify-items
-- [ ] justify-self
+- [x] justify-items
+- [x] justify-self
 - [x] place-content
-- [ ] place-items
-- [ ] place-self
+- [x] place-items
+- [x] place-self
 
 ### CSS Anchor Positioning 1 (css-anchor-position-1)
 
-- [ ] anchor-name
-- [ ] anchor-scope
-- [ ] position-anchor
-- [ ] position-area
-- [ ] position-try
-- [ ] position-try-fallbacks
-- [ ] position-try-order
-- [ ] position-visibility
+- [x] anchor-name
+- [x] anchor-scope
+- [x] position-anchor
+- [x] position-area
+- [x] position-try
+- [x] position-try-fallbacks
+- [x] position-try-order
+- [x] position-visibility
 
 ### CSS Animations 1 (css-animations-1)
 

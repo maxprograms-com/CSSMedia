@@ -119,6 +119,38 @@
                     <p>A box that breaks across pages is aligned as it would be in one piece. The space before the content goes on from page to page, and the content stands where it would stand in the unbroken box. When that space reaches the end of a page, the content starts on a later page, and content that cannot be split and does not fit after the space goes to the top of the next page.</p>
                 </info>
             </step>
+            <step id="place-a-block">
+                <cmd>Place a block across its containing block</cmd>
+                <info>
+                    <p>A block normally fills the width of its <xref href="../glossaries/ContainingBlock.dita">containing block</xref>. The <codeph>justify-self</codeph> property places it along the line instead: <codeph>start</codeph>, <codeph>center</codeph>, <codeph>end</codeph>, <codeph>self-start</codeph> and <codeph>self-end</codeph>, and <codeph>left</codeph> and <codeph>right</codeph>, which always name those sides. A block without a width then becomes as wide as its content, and a block with a width keeps it. <codeph>normal</codeph> and <codeph>stretch</codeph> keep the block as it is.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">signature {
+    display: block;
+    width: 160pt;
+    justify-self: end;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The start and the end follow the direction of the text: in a right-to-left block, <codeph>end</codeph> is on the left. A block wider than its containing block is aligned as you ask, so <codeph>center</codeph> makes it stick out on both sides; write <codeph>safe center</codeph> to keep it at the start instead.</p>
+                    <fig id="justify-self-figure">
+                        <title>The values of justify-self on blocks</title>
+                        <image href="../images/justify-self.svg" placement="break" scale="100">
+                            <alt>Four blocks in a containing block. The block with normal fills the line; the blocks with start, center and end are narrower and stand at the left, in the middle and at the right.</alt>
+                        </image>
+                    </fig>
+                    <p>Auto margins come first: <codeph>margin-inline: auto</codeph> centers the block, whatever its <codeph>justify-self</codeph>. With fixed margins and a fixed width, the block is aligned between its margins.</p>
+                    <p>The initial value, <codeph>auto</codeph>, takes the <codeph>justify-items</codeph> of the parent, so you can set the alignment of all the children of an element at once. <codeph>justify-items: legacy center</codeph> also passes the alignment on to the grandchildren and further, as long as their own <codeph>justify-items</codeph> is <codeph>legacy</codeph>. Floats, and the anonymous blocks that hold loose text, are not aligned.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">dedication {
+    display: block;
+    justify-items: center;
+}
+</pre>
+                </stepxmp>
+            </step>
             <step id="size-pairs">
                 <cmd>Set both sizes at once</cmd>
                 <info>

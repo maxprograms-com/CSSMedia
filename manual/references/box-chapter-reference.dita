@@ -11,6 +11,7 @@
         <section conkeyref="ref-dimensions/aspect-ratio-and-intrinsic-sizes"/>
         <section conkeyref="ref-dimensions/scaling"/>
         <section id="box-chapter-content-alignment" conkeyref="ref-dimensions/content-alignment"/>
+        <section id="box-chapter-self-alignment" conkeyref="ref-display/self-alignment-properties"/>
         <section conkeyref="ref-box-model/box-borders"/>
         <section conkeyref="ref-box-model/box-radii"/>
         <section conkeyref="ref-backgrounds/background-layers"/>

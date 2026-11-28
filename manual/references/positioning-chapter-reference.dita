@@ -2,8 +2,10 @@
 <!DOCTYPE reference PUBLIC "-//OASIS//DTD DITA Reference//EN" "reference.dtd">
 <reference id="positioning-chapter-reference">
     <title>Positioning reference</title>
-    <shortdesc>This reference lists the properties that position boxes and stack them.</shortdesc>
+    <shortdesc>This reference lists the properties that position boxes, place them by their anchors, align them and stack them.</shortdesc>
     <refbody>
         <section conkeyref="ref-display/positioning-properties"/>
+        <section conkeyref="ref-display/anchor-properties"/>
+        <section conkeyref="ref-display/self-alignment-properties"/>
     </refbody>
 </reference>

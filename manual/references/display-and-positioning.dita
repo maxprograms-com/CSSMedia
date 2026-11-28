@@ -191,12 +191,140 @@
             </table>
             <ul>
                 <li>A length is a size with a unit, such as <codeph>12pt</codeph> or <codeph>1em</codeph>. A percentage is relative to the containing block, as defined for the relevant inset.</li>
-                <li><codeph>anchor-size()</codeph> uses the size of an anchor, an element named with <codeph>anchor-name</codeph>. See <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor-size" scope="external" format="html">CSS Anchor Positioning 1 §5.1</xref>.<!-- TODO: anchor() in the insets is parsed and not laid out --></li>
-                <li>A box with <codeph>position: fixed</codeph> is placed against the page area, and every page shows it, blank pages included. Its insets are measured from the edges of the page area. When you give no inset on an axis, the box keeps on every page the place its element has on the page where it falls in the text. A link to the element goes to the first page, and a footnote in the box is placed once, at the foot of the first page. When an ancestor has a transform, <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, or names one of those properties in <codeph>will-change</codeph>, the box is placed against that ancestor instead, and it is drawn once, with the ancestor. A fixed box is a stacking context even when its <codeph>z-index</codeph> is <codeph>auto</codeph>, and so is a box with layout or paint containment. The overflow clipping of the boxes around a fixed box does not cut it. See <xref href="https://www.w3.org/TR/css-position-3/#fixed-cb" scope="external" format="html">CSS Position 3 §3.1</xref>.</li>
-                <li>A box with <codeph>position: absolute</codeph> and no positioned ancestor is placed against the page area of the page where it falls in the text, whatever part of that page the text fills. See <xref href="https://www.w3.org/TR/css-position-3/#abspos-breaking" scope="external" format="html">CSS Position 3 §3.5.3</xref>.</li>
+                <li><codeph>anchor()</codeph> gives the place of an edge of an anchor, an element named with <codeph>anchor-name</codeph>: <codeph>anchor(</codeph>an optional anchor name, an edge, and an optional fallback after a comma<codeph>)</codeph>. The edge is <codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph> or <codeph>left</codeph> in an inset of the same axis, <codeph>start</codeph>, <codeph>end</codeph>, <codeph>self-start</codeph>, <codeph>self-end</codeph>, <codeph>inside</codeph>, <codeph>outside</codeph>, <codeph>center</codeph> or a percentage. Without a name it uses the default anchor that <codeph>position-anchor</codeph> gives. When the anchor is missing, the inset takes the fallback, or <codeph>auto</codeph> without one. It resolves only on a box with <codeph>position: absolute</codeph> or <codeph>position: fixed</codeph>; on other boxes it takes its fallback, and a declaration without one has no effect. See <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor" scope="external" format="html">CSS Anchor Positioning 1 §3.2</xref>.</li>
+                <li><codeph>anchor-size()</codeph> gives the size of an anchor in a size, an inset or a margin: <codeph>anchor-size(</codeph>an optional anchor name, an optional <codeph>width</codeph>, <codeph>height</codeph>, <codeph>block</codeph>, <codeph>inline</codeph>, <codeph>self-block</codeph> or <codeph>self-inline</codeph>, and an optional fallback after a comma<codeph>)</codeph>. Without a keyword it gives the size along the axis of the property. Like <codeph>anchor()</codeph>, it resolves only on an absolutely positioned or fixed box. See <xref href="https://www.w3.org/TR/css-anchor-position-1/#funcdef-anchor-size" scope="external" format="html">CSS Anchor Positioning 1 §5.1</xref>.</li>
+                <li>A box with <codeph>position: fixed</codeph> is placed against the page area, and every page shows it, blank pages included. Its insets are measured from the edges of the page area. When you give no inset on an axis, the box keeps on every page the place its element has on the page where it falls in the text, or, inside a running element, the place where the running element was. A link to the element goes to the first page, and a footnote in the box is placed once, at the foot of the first page. When an ancestor has a transform, <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, or names one of those properties in <codeph>will-change</codeph>, the box is placed against that ancestor instead, and it is drawn once, with the ancestor. A fixed box is a stacking context even when its <codeph>z-index</codeph> is <codeph>auto</codeph>, and so is a box with layout or paint containment. The overflow clipping of the boxes around a fixed box does not cut it. See <xref href="https://www.w3.org/TR/css-position-3/#fixed-cb" scope="external" format="html">CSS Position 3 §3.1</xref>.</li>
+                <li>A box with <codeph>position: absolute</codeph> and no positioned ancestor is placed against the page area of the page where it falls in the text, whatever part of that page the text fills, or against the footnote area inside a footnote. A positioned inline element is the containing block of the positioned boxes inside it, with a rectangle that covers all its lines. See <xref href="https://www.w3.org/TR/css-position-3/#abspos-breaking" scope="external" format="html">CSS Position 3 §3.5.3</xref>.</li>
+                <li>A containing block that breaks across pages places its positioned boxes against the whole block, its parts joined, and each box is drawn on the page where its place falls. A positioned box that reaches past the end of a page goes on at the top of the next page. See <xref href="https://www.w3.org/TR/css-break-4/#transforms" scope="external" format="html">CSS Fragmentation 4 §5.5</xref>.</li>
+                <li>A box with <codeph>position: sticky</codeph> stays where the text puts it, since a page does not scroll. It is a containing block and a stacking context, as a relative box is.</li>
                 <li><codeph>running()</codeph> names an element to move into a page margin box. See <xref href="https://www.w3.org/TR/css-gcpm-3/#funcdef-running" scope="external" format="html">CSS GCPM 3</xref>.</li>
                 <li>An integer is a whole number without a fractional part. Negative values, zero, and positive values are allowed for <codeph>z-index</codeph>.</li>
             </ul>
+        </section>
+        <section id="anchor-properties">
+            <title>Anchor positioning</title>
+            <table id="anchor-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
+                    <tbody>
+                        <row id="row-anchor-name">
+                            <entry><codeph>anchor-name</codeph></entry>
+                            <entry>Makes the element an anchor that positioned boxes can find by name. An element or a <codeph>::before</codeph> or <codeph>::after</codeph> pseudo-element can be an anchor. When several elements have a name, a box uses the nearest of its ancestors that has it, or else the last one in the document.</entry>
+                            <entry><codeph>none</codeph>, or one or more names that start with two hyphens, such as <codeph>--figure</codeph>, separated by commas</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-anchor-name" scope="external" format="html">CSS Anchor Positioning 1 §2.1</xref></entry>
+                        </row>
+                        <row id="row-anchor-scope">
+                            <entry><codeph>anchor-scope</codeph></entry>
+                            <entry>Keeps the anchor names it lists inside the element: a positioned box inside the element finds only the anchors inside it with those names, and a box outside finds none of them.</entry>
+                            <entry><codeph>none</codeph>, <codeph>all</codeph>, or one or more anchor names separated by commas</entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-anchor-scope" scope="external" format="html">CSS Anchor Positioning 1 §2.2</xref></entry>
+                        </row>
+                        <row id="row-position-anchor">
+                            <entry><codeph>position-anchor</codeph></entry>
+                            <entry>Gives a positioned box its default anchor, which <codeph>position-area</codeph>, <codeph>anchor-center</codeph> and the anchor functions without a name use. <codeph>auto</codeph> uses the element of a <codeph>::before</codeph> or <codeph>::after</codeph> pseudo-element, and an element has none. <codeph>normal</codeph> is <codeph>auto</codeph> when <codeph>position-area</codeph> is set and <codeph>none</codeph> otherwise. <codeph>match-parent</codeph> uses the default anchor of the parent.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>none</codeph>, <codeph>auto</codeph>, an anchor name, or <codeph>match-parent</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-position-anchor" scope="external" format="html">CSS Anchor Positioning 1 §2.4</xref></entry>
+                        </row>
+                        <row id="row-position-area">
+                            <entry><codeph>position-area</codeph></entry>
+                            <entry>Places a positioned box in cells of the three by three grid that its default anchor makes in its containing block. The area becomes the containing block, and the auto insets and auto margins are zero. With <codeph>normal</codeph> alignment the box stands against the anchor. Without a default anchor it has no effect. A single keyword acts as if the other were <codeph>span-all</codeph>, or as if it were repeated when it fits both axes.</entry>
+                            <entry><codeph>none</codeph>, or one or two keywords for a row and a column: a cell, such as <codeph>top</codeph>, <codeph>center</codeph>, <codeph>right</codeph>, <codeph>block-start</codeph>, <codeph>inline-end</codeph>, <codeph>self-block-end</codeph>, <codeph>x-start</codeph> or <codeph>y-end</codeph>, or a cell and the middle one, such as <codeph>span-left</codeph> or <codeph>span-block-end</codeph>, or <codeph>span-all</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-position-area" scope="external" format="html">CSS Anchor Positioning 1 §3.1</xref></entry>
+                        </row>
+                        <row id="row-position-try-fallbacks">
+                            <entry><codeph>position-try-fallbacks</codeph></entry>
+                            <entry>Lists other places to try when the box sticks out of its containing block. The first place in which the box fits is used, and the box keeps its own place when none fits. A tactic flips the insets, margins, alignment and area of the box to the other side of its anchor, and <codeph>flip-start</codeph> swaps its axes and sizes.</entry>
+                            <entry><codeph>none</codeph>, or entries separated by commas: a <codeph>position-area</codeph> value, or the name of an <codeph>@position-try</codeph> rule, tactics, or both; a name that no rule has is skipped. The tactics are <codeph>flip-block</codeph>, <codeph>flip-inline</codeph>, <codeph>flip-start</codeph>, <codeph>flip-x</codeph> and <codeph>flip-y</codeph></entry>
+                            <entry><codeph>none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-position-try-fallbacks" scope="external" format="html">CSS Anchor Positioning 1 §6.1</xref></entry>
+                        </row>
+                        <row id="row-position-try-order">
+                            <entry><codeph>position-try-order</codeph></entry>
+                            <entry>Tries first the places that leave the box the most room along an axis. <codeph>normal</codeph> keeps the order of the list.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>most-width</codeph>, <codeph>most-height</codeph>, <codeph>most-block-size</codeph> or <codeph>most-inline-size</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-position-try-order" scope="external" format="html">CSS Anchor Positioning 1 §6.2</xref></entry>
+                        </row>
+                        <row id="row-position-try">
+                            <entry><codeph>position-try</codeph></entry>
+                            <entry>Sets <codeph>position-try-order</codeph> and <codeph>position-try-fallbacks</codeph>.</entry>
+                            <entry>An optional value of <codeph>position-try-order</codeph>, then a value of <codeph>position-try-fallbacks</codeph></entry>
+                            <entry><codeph>normal none</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-position-try" scope="external" format="html">CSS Anchor Positioning 1 §6.3</xref></entry>
+                        </row>
+                        <row id="row-position-try-rule">
+                            <entry><codeph>@position-try</codeph></entry>
+                            <entry>Names a place for <codeph>position-try-fallbacks</codeph>. Its declarations replace those of the box while the place is tried. It accepts the insets, the margins, the sizes, <codeph>justify-self</codeph>, <codeph>align-self</codeph>, <codeph>position-anchor</codeph> and <codeph>position-area</codeph>; other declarations, and declarations with <codeph>!important</codeph>, are ignored.</entry>
+                            <entry><codeph>@position-try --name { </codeph>declarations<codeph> }</codeph></entry>
+                            <entry>None</entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#at-ruledef-position-try" scope="external" format="html">CSS Anchor Positioning 1 §6.4</xref></entry>
+                        </row>
+                        <row id="row-position-visibility">
+                            <entry><codeph>position-visibility</codeph></entry>
+                            <entry>Hides a positioned box. <codeph>anchors-visible</codeph> hides it when its default anchor is invisible or clipped away entirely by an <codeph>overflow</codeph>, a <codeph>clip-path</codeph> or <codeph>contain: paint</codeph> between the anchor and the containing block. <codeph>anchors-valid</codeph> hides it when an anchor it needs is missing. <codeph>no-overflow</codeph> hides it when it sticks out of its containing block. <codeph>always</codeph> never hides it.</entry>
+                            <entry><codeph>always</codeph>, or one or more of <codeph>anchors-valid</codeph>, <codeph>anchors-visible</codeph> and <codeph>no-overflow</codeph></entry>
+                            <entry><codeph>anchors-visible</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-anchor-position-1/#propdef-position-visibility" scope="external" format="html">CSS Anchor Positioning 1 §6.6</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+        <section id="self-alignment-properties">
+            <title>Self alignment</title>
+            <table id="self-alignment-properties__table">
+                <tgroup cols="5">
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
+                    <tbody>
+                        <row id="row-justify-self">
+                            <entry><codeph>justify-self</codeph></entry>
+                            <entry>Places a block box, or an absolutely positioned box, along the inline axis of its containing block. A block box with a value other than <codeph>normal</codeph> or <codeph>stretch</codeph> and no width is as wide as its content. Auto margins come first. Floats and anonymous blocks ignore it. <codeph>auto</codeph> takes the <codeph>justify-items</codeph> of the parent, except for an absolutely positioned box placed by its insets, where it is <codeph>normal</codeph>. <codeph>anchor-center</codeph> centers a positioned box on its default anchor, and is <codeph>center</codeph> elsewhere.</entry>
+                            <entry><codeph>auto</codeph>, <codeph>normal</codeph>, <codeph>stretch</codeph>, <codeph>baseline</codeph>, <codeph>first baseline</codeph>, <codeph>last baseline</codeph>, <codeph>anchor-center</codeph>, or <codeph>center</codeph>, <codeph>start</codeph>, <codeph>end</codeph>, <codeph>self-start</codeph>, <codeph>self-end</codeph>, <codeph>flex-start</codeph>, <codeph>flex-end</codeph>, <codeph>left</codeph> or <codeph>right</codeph>, with <codeph>safe</codeph> or <codeph>unsafe</codeph> before it</entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-justify-self" scope="external" format="html">CSS Box Alignment 3 §6.1</xref>; <xref href="https://www.w3.org/TR/css-anchor-position-1/#anchor-center" scope="external" format="html">CSS Anchor Positioning 1 §4.2</xref></entry>
+                        </row>
+                        <row id="row-align-self">
+                            <entry><codeph>align-self</codeph></entry>
+                            <entry>Places an absolutely positioned box along the block axis of its containing block. <codeph>auto</codeph> takes the <codeph>align-items</codeph> of the parent where the box stands at its place in the text, and is <codeph>normal</codeph> otherwise. It has no effect on block boxes.</entry>
+                            <entry>The values of <codeph>justify-self</codeph> except <codeph>left</codeph> and <codeph>right</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-align-self" scope="external" format="html">CSS Box Alignment 3 §6.2</xref></entry>
+                        </row>
+                        <row id="row-place-self">
+                            <entry><codeph>place-self</codeph></entry>
+                            <entry>Sets <codeph>align-self</codeph> and <codeph>justify-self</codeph>. With one value both take it.</entry>
+                            <entry>A value of <codeph>align-self</codeph>, then an optional value of <codeph>justify-self</codeph></entry>
+                            <entry><codeph>auto</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-place-self" scope="external" format="html">CSS Box Alignment 3 §6.3</xref></entry>
+                        </row>
+                        <row id="row-justify-items">
+                            <entry><codeph>justify-items</codeph></entry>
+                            <entry>The value that <codeph>justify-self: auto</codeph> takes in the children of the element. <codeph>legacy</codeph> with <codeph>left</codeph>, <codeph>right</codeph> or <codeph>center</codeph> passes that keyword on to the descendants whose own value is <codeph>legacy</codeph>.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>stretch</codeph>, a baseline value, a position of <codeph>justify-self</codeph> with an optional <codeph>safe</codeph> or <codeph>unsafe</codeph>, <codeph>legacy</codeph>, or <codeph>legacy</codeph> with <codeph>left</codeph>, <codeph>right</codeph> or <codeph>center</codeph></entry>
+                            <entry><codeph>legacy</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-justify-items" scope="external" format="html">CSS Box Alignment 3 §7.1</xref></entry>
+                        </row>
+                        <row id="row-align-items">
+                            <entry><codeph>align-items</codeph></entry>
+                            <entry>The value that <codeph>align-self: auto</codeph> takes in the children of the element.</entry>
+                            <entry><codeph>normal</codeph>, <codeph>stretch</codeph>, a baseline value, or a position of <codeph>align-self</codeph> with an optional <codeph>safe</codeph> or <codeph>unsafe</codeph></entry>
+                            <entry><codeph>normal</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-align-items" scope="external" format="html">CSS Box Alignment 3 §7.2</xref></entry>
+                        </row>
+                        <row id="row-place-items">
+                            <entry><codeph>place-items</codeph></entry>
+                            <entry>Sets <codeph>align-items</codeph> and <codeph>justify-items</codeph>. With one value both take it.</entry>
+                            <entry>A value of <codeph>align-items</codeph>, then an optional value of <codeph>justify-items</codeph></entry>
+                            <entry><codeph>normal legacy</codeph></entry>
+                            <entry><xref href="https://www.w3.org/TR/css-align-3/#propdef-place-items" scope="external" format="html">CSS Box Alignment 3 §7.3</xref></entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
         </section>
     </refbody>
 </reference>

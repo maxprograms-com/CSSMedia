@@ -2,7 +2,7 @@
 <!DOCTYPE task PUBLIC "-//OASIS//DTD DITA Task//EN" "task.dtd">
 <task id="positioning">
     <title>Position boxes</title>
-    <shortdesc>A positioned box is moved from its place in the text, or taken out of the text and placed against another box or against the page area. A fixed box is repeated on every page. The <xref href="../references/positioning-chapter-reference.dita#positioning-chapter-reference">positioning reference</xref> lists the properties used here.</shortdesc>
+    <shortdesc>A positioned box is moved from its place in the text, or taken out of the text and placed against another box, against an anchor or against the page area. A fixed box is repeated on every page. The <xref href="../references/positioning-chapter-reference.dita#positioning-chapter-reference">positioning reference</xref> lists the properties used here.</shortdesc>
     <taskbody>
         <context>
             <p>The element names in the examples, such as <codeph>banner</codeph>, are placeholders. Use the names that occur in your <xref href="../glossaries/XML.dita">XML</xref>.</p>
@@ -20,6 +20,9 @@
 }
 </pre>
                 </stepxmp>
+                <info>
+                    <p>A box with <codeph>position: sticky</codeph> stays where the text puts it, since a page does not scroll. Like a relative box, it is the containing block of the positioned boxes inside it, and it starts a stacking context.</p>
+                </info>
             </step>
             <step id="place-against-a-box">
                 <cmd>Place a box against another box</cmd>
@@ -40,7 +43,38 @@ note > tag {
                 </stepxmp>
                 <info>
                     <p>Without such an ancestor, the box is placed against the page area of the page where it falls in the text. An inset that you leave <codeph>auto</codeph> on both sides of an axis keeps the box where its element is in the text on that axis. With <codeph>left</codeph> and <codeph>right</codeph> both given and no <codeph>width</codeph>, the box fills the space between them.</p>
-                    <p>Inside a MathML formula, the formula is the containing block of a positioned element that no element of the formula contains.</p>
+                    <p>A positioned inline element, such as a phrase with <codeph>position: relative</codeph>, is the containing block of the positioned boxes inside it. Its rectangle starts where the phrase starts on its first line, and ends at the farthest end of its lines and at the bottom of its last line, so it covers every line of the phrase, also when the phrase goes on to the next page.</p>
+                    <p>Inside a footnote, a positioned box without a positioned ancestor in the note is placed against the footnote area at the foot of the page. Inside a MathML formula, the formula is the containing block of a positioned element that no element of the formula contains.</p>
+                </info>
+            </step>
+            <step id="cross-page-breaks">
+                <cmd>Let positioned boxes cross page breaks</cmd>
+                <info>
+                    <p>A containing block that breaks across pages is used as one block, its parts joined as if the pages were glued together. The positioned boxes inside it are placed against the whole block, and each one is drawn on the page where its place falls. A box with <codeph>bottom: 0</codeph> stands at the end of the block, on its last page, and a box with <codeph>top: 0</codeph> and <codeph>height: 100%</codeph> runs down the whole block, across the pages.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">article {
+    display: block;
+    position: relative;
+}
+article > stripe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4pt;
+    height: 100%;
+    background: navy;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A positioned box that reaches past the end of a page goes on at the top of the next page, as far below the top of the page area as it still has to go. Its lines are not lost or repeated. So does a box whose place is past the end of the page, and a box placed inside another positioned box that ended on an earlier page.</p>
+                    <fig id="positioning-page-breaks-figure">
+                        <title>Positioned boxes in a containing block broken across pages</title>
+                        <image href="../images/positioning-page-breaks.svg" placement="break" scale="100">
+                            <alt>Two pages. A green block starts in the middle of the first page and ends near the top of the second. An orange stripe runs down its left side on both pages, and an orange stamp sits in the bottom right corner of the block, on the second page.</alt>
+                        </image>
+                    </fig>
                 </info>
             </step>
             <step id="repeat-on-every-page">
@@ -67,7 +101,7 @@ guide {
                 </stepxmp>
                 <info>
                     <p>The box covers the text under it, so leave room for it: here the root element <codeph>guide</codeph> has a padding at the top of every page, which <codeph>box-decoration-break: clone</codeph> repeats.</p>
-                    <p>On an axis where you give no inset, a fixed box takes the place that its element has on the page where it falls in the text, and keeps that place on every page, the pages before that one included. A link to the element goes to the first page, and a footnote in the box is placed once, at the foot of the first page. The <codeph>overflow</codeph> of the boxes around a fixed box does not clip it.</p>
+                    <p>On an axis where you give no inset, a fixed box takes the place that its element has on the page where it falls in the text, and keeps that place on every page, the pages before that one included. A fixed box inside a running element that goes to a page-margin box takes the place where the running element was in the text. A link to the element goes to the first page, and a footnote in the box is placed once, at the foot of the first page. The <codeph>overflow</codeph> of the boxes around a fixed box does not clip it.</p>
                     <p>When an ancestor has a transform, <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, or names one of those properties in <codeph>will-change</codeph>, the fixed box is placed against that ancestor instead, and it is drawn once, with the ancestor.</p>
                     <fig id="positioning-fixed-figure">
                         <title>A fixed banner</title>
@@ -75,6 +109,139 @@ guide {
                             <alt>Three pages side by side. Each has a banner across the top of its page area. The first and the third pages have lines of text under the banner; the second page is blank and still has the banner.</alt>
                         </image>
                     </fig>
+                </info>
+            </step>
+            <step id="align-a-positioned-box">
+                <cmd>Align a positioned box in the space its insets leave</cmd>
+                <info>
+                    <p>When you give both insets of an axis and the box is smaller than the space between them, <codeph>justify-self</codeph> places it along the inline axis and <codeph>align-self</codeph> along the block axis: <codeph>start</codeph>, <codeph>center</codeph>, <codeph>end</codeph>, <codeph>self-start</codeph> and <codeph>self-end</codeph>, and <codeph>left</codeph> and <codeph>right</codeph> for <codeph>justify-self</codeph>. <codeph>normal</codeph> puts the box at the start. A box without a size fills the space with <codeph>stretch</codeph>, and with <codeph>normal</codeph> too unless it is a replaced element, such as an image, which keeps its own size. Auto margins come first: <codeph>margin-inline: auto</codeph> centers the box and leaves nothing for <codeph>justify-self</codeph> to do.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">stamp {
+    position: absolute;
+    inset: 0;
+    width: 60pt;
+    height: 20pt;
+    justify-self: end;
+    align-self: center;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A box that the alignment would push out of the space is moved back into it. A box larger than the space covers it and is kept inside the containing block as far as it can be, and a box larger than the containing block starts at its start. <codeph>unsafe</codeph> before the value, as in <codeph>unsafe center</codeph>, aligns it as you ask anyway, and <codeph>safe</codeph> puts it at the start of the space whenever it does not fit.</p>
+                    <p>When you leave both insets of an axis <codeph>auto</codeph>, the box stands where its element is in the text, and the alignment applies to that place: <codeph>end</codeph> puts the end of the box where its place in the text ends. <codeph>auto</codeph>, the initial value, takes the <codeph>justify-items</codeph> or the <codeph>align-items</codeph> of the parent.</p>
+                </info>
+            </step>
+            <step id="name-an-anchor">
+                <cmd>Place a box against an anchor</cmd>
+                <info>
+                    <p>An anchor is an element that you name with <codeph>anchor-name</codeph>. The name starts with two hyphens, such as <codeph>--figure</codeph>, and an element can have several names. In the insets of a box with <codeph>position: absolute</codeph> or <codeph>position: fixed</codeph>, the <codeph>anchor()</codeph> function gives the place of an edge of the anchor: <codeph>top: anchor(--figure bottom)</codeph> puts the top of the box at the bottom of the anchor. The edge is <codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph> or <codeph>left</codeph> in an inset of the same axis, <codeph>start</codeph>, <codeph>end</codeph>, <codeph>self-start</codeph> or <codeph>self-end</codeph>, <codeph>inside</codeph> or <codeph>outside</codeph>, which are the edge on the same side as the inset and the opposite one, <codeph>center</codeph>, or a percentage across the anchor from its start.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">figure {
+    display: block;
+    anchor-name: --figure;
+}
+callout {
+    position: absolute;
+    top: anchor(--figure bottom);
+    left: anchor(--figure 25%, 12pt);
+    width: anchor-size(--figure width);
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A length after a comma is the fallback: the value that the inset takes when there is no such anchor. Without a fallback, the inset is <codeph>auto</codeph> then. <codeph>anchor-size()</codeph> gives the width or the height of the anchor in a size, an inset or a margin: <codeph>width</codeph> or <codeph>height</codeph>, <codeph>inline</codeph> or <codeph>block</codeph> in the writing mode of the containing block, or <codeph>self-inline</codeph> or <codeph>self-block</codeph> in that of the box. Without a keyword, it gives the size along the axis of the property. On a box that is not absolutely positioned or fixed, both functions take their fallback, and a declaration that has none has no effect.</p>
+                    <fig id="positioning-anchor-figure">
+                        <title>A box placed by the edges and the size of its anchor</title>
+                        <image href="../images/positioning-anchor.svg" placement="break" scale="100">
+                            <alt>A blue anchor named --figure in a containing block. An orange callout starts at the bottom of the anchor and a quarter of the way across it, and is as wide as the anchor.</alt>
+                        </image>
+                    </fig>
+                    <p><codeph>position-anchor</codeph> gives the box a default anchor, which <codeph>anchor()</codeph> and <codeph>anchor-size()</codeph> use when you leave out the name: <codeph>top: anchor(bottom)</codeph>. <codeph>auto</codeph> makes the element of a <codeph>::before</codeph> or <codeph>::after</codeph> pseudo-element its default anchor, and <codeph>match-parent</codeph> takes the default anchor of the parent.</p>
+                    <p>The anchor must be inside the containing block of the box, or anywhere on the page when the containing block is the page area. Another positioned box can be the anchor when it is placed before this one. An element or a <codeph>::before</codeph> or <codeph>::after</codeph> pseudo-element can be an anchor. When several elements have the name, the nearest ancestor of the box that has it is the anchor, or else the last one in the document. <codeph>anchor-scope</codeph> on an element keeps the names you give, or <codeph>all</codeph> of them, inside that element: a box inside it finds only the anchors inside it, and a box outside it finds none of them. Use it when a repeated element, such as an item of a list, names its own anchor.</p>
+                    <p>A transform on the anchor moves the place of its edges: the anchor is the rectangle that holds its transformed box. In a containing block that breaks across pages, the anchor can be on another page than the box.</p>
+                </info>
+            </step>
+            <step id="place-around-an-anchor">
+                <cmd>Place a box in an area around its anchor</cmd>
+                <info>
+                    <p><codeph>position-area</codeph> divides the containing block into a grid of three columns and three rows, whose middle cell is the default anchor, and places the box in the cells you name. Name a row and a column, such as <codeph>top center</codeph> or <codeph>bottom right</codeph>. <codeph>span-left</codeph>, <codeph>span-bottom</codeph> and the others take the middle cell and the one on that side, and <codeph>span-all</codeph> takes all three. Besides the physical names, you can use <codeph>block-start</codeph>, <codeph>inline-end</codeph> and the other flow-relative names, in the writing mode of the containing block, or with <codeph>self-</codeph> in that of the box, and <codeph>x-start</codeph>, <codeph>y-end</codeph> and the like. A single name behaves as if the other were <codeph>span-all</codeph>, or as if it were repeated when it fits both axes, such as <codeph>center</codeph> or <codeph>start</codeph>.</p>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">tooltip {
+    position: absolute;
+    position-anchor: --term;
+    position-area: top center;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>The area is the containing block of the box, and its auto insets and auto margins are zero. With <codeph>normal</codeph> alignment the box moves toward the side that the area leaves out, so it stands against the anchor: a box above the anchor is at the bottom of its area, and a box below it at the top. A box in the middle cell alone is centered in it, and a box across all three cells is centered on the anchor. <codeph>justify-self</codeph> and <codeph>align-self</codeph> place it otherwise. <codeph>anchor-center</codeph> centers the box on the anchor, also without an area, and keeps it inside the containing block. Without a default anchor, <codeph>position-area</codeph> has no effect and <codeph>anchor-center</codeph> behaves as <codeph>center</codeph>.</p>
+                    <fig id="positioning-area-figure">
+                        <title>The grid of position-area</title>
+                        <image href="../images/positioning-area.svg" placement="break" scale="100">
+                            <alt>A containing block divided into three by three cells around a blue anchor. An orange box marked top center stands on the anchor, a box marked left center stands against its left side, and a box marked bottom span-right starts under the anchor and reaches into the right column.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="try-other-places">
+                <cmd>Try other places when the box does not fit</cmd>
+                <info>
+                    <p>A box placed by its anchor can stick out of its containing block. <codeph>position-try-fallbacks</codeph> lists other places to try. When the box does not fit where its own declarations put it, CSSMedia tries the entries in their order and takes the first in which the box fits; when none fits, the box stays where it was. An entry is one of these:</p>
+                    <ul>
+                        <li>A <codeph>position-area</codeph> value, such as <codeph>top center</codeph>.</li>
+                        <li>A tactic that flips the box to the other side of its anchor: <codeph>flip-block</codeph> and <codeph>flip-inline</codeph> along the axes of the containing block, <codeph>flip-x</codeph> and <codeph>flip-y</codeph> along the physical ones, and <codeph>flip-start</codeph>, which swaps the two axes. A tactic swaps the insets, the margins, the alignment and the area of the box, and changes the edges in its <codeph>anchor()</codeph> functions to match. Two tactics can follow each other.</li>
+                        <li>The name of an <codeph>@position-try</codeph> rule, alone or with tactics. A name that no rule has is skipped.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">@position-try --left-side {
+    position-area: left center;
+    margin-right: 4pt;
+}
+note {
+    position: absolute;
+    position-anchor: --mark;
+    position-area: right center;
+    position-try-fallbacks: flip-inline, --left-side;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>An <codeph>@position-try</codeph> rule holds the declarations of one place: insets, margins, sizes, <codeph>justify-self</codeph>, <codeph>align-self</codeph>, <codeph>position-anchor</codeph> and <codeph>position-area</codeph>. Other properties, and declarations with <codeph>!important</codeph>, are ignored. Its declarations replace those of the box while CSSMedia tries the place.</p>
+                    <p><codeph>position-try-order</codeph> changes the order of the tries: <codeph>most-width</codeph>, <codeph>most-height</codeph>, <codeph>most-inline-size</codeph> and <codeph>most-block-size</codeph> try first the place that leaves the box the most room along that axis. The shorthand <codeph>position-try</codeph> sets both, as in <codeph>position-try: most-height flip-block, --above</codeph>.</p>
+                    <fig id="positioning-fallbacks-figure">
+                        <title>A fallback that flips a box</title>
+                        <image href="../images/positioning-fallbacks.svg" placement="break" scale="100">
+                            <alt>A blue anchor near the bottom of its containing block. A dashed red outline below the anchor reaches past the bottom of the containing block. The orange menu stands above the anchor instead, marked flip-block.</alt>
+                        </image>
+                    </fig>
+                </info>
+            </step>
+            <step id="hide-with-the-anchor">
+                <cmd>Hide a box when its anchor is not shown</cmd>
+                <info>
+                    <p><codeph>position-visibility</codeph> hides a positioned box, as <codeph>visibility: force-hidden</codeph> would:</p>
+                    <ul>
+                        <li><codeph>anchors-visible</codeph>, the initial value, hides the box when its default anchor is not seen: when the anchor is invisible, or when a box between the anchor and the containing block clips it away entirely with its <codeph>overflow</codeph>, its <codeph>clip-path</codeph> or <codeph>contain: paint</codeph>. What counts is what the anchor draws, its box and what it paints outside it, such as a text shadow or a child moved into view. A box anchored to a box that is hidden is hidden too.</li>
+                        <li><codeph>anchors-valid</codeph> hides the box when an anchor that it needs is missing: the default anchor, when <codeph>position-area</codeph>, <codeph>anchor-center</codeph> or an <codeph>anchor()</codeph> without a name uses it, or the anchor of an <codeph>anchor()</codeph> without a fallback.</li>
+                        <li><codeph>no-overflow</codeph> hides the box when it sticks out of its containing block.</li>
+                        <li><codeph>always</codeph> never hides it.</li>
+                    </ul>
+                </info>
+                <stepxmp>
+                    <pre outputclass="language-css21">arrow {
+    position: fixed;
+    position-anchor: --sign;
+    position-area: bottom center;
+    position-visibility: anchors-valid;
+}
+</pre>
+                </stepxmp>
+                <info>
+                    <p>A fixed box finds its anchor on each page. This arrow appears under the sign on the page that has the sign, and is hidden on the other pages. A fixed box that uses <codeph>anchor()</codeph> with a fallback takes the fallback on the pages without the anchor.</p>
                 </info>
             </step>
             <step id="stack-boxes">
@@ -90,13 +257,13 @@ guide {
 </pre>
                 </stepxmp>
                 <info>
-                    <p>A positioned box with a number in <codeph>z-index</codeph> starts a stacking context: the boxes inside it are drawn with it, whatever their own <codeph>z-index</codeph>. So do a fixed box, a box with <codeph>opacity</codeph> below 1, a blend mode, a transform, <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, and a box that names one of those properties in <codeph>will-change</codeph>. A fixed box keeps the stacking context of its ancestors on every page.</p>
+                    <p>A positioned box with a number in <codeph>z-index</codeph> starts a stacking context: the boxes inside it are drawn with it, whatever their own <codeph>z-index</codeph>. So do a fixed or sticky box, a box with <codeph>opacity</codeph> below 1, a blend mode, a transform, <codeph>contain: layout</codeph> or <codeph>contain: paint</codeph>, and a box that names one of those properties in <codeph>will-change</codeph>. A fixed box keeps the stacking context of its ancestors on every page.</p>
                 </info>
             </step>
             <step id="position-in-vertical-text">
                 <cmd>Position boxes in vertical text</cmd>
                 <info>
-                    <p><codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph> and <codeph>left</codeph> always name the physical sides. The flow-relative insets name the sides of the writing mode of the containing block: in <codeph>vertical-rl</codeph>, <codeph>inset-block-start</codeph> is the right side and <codeph>inset-inline-start</codeph> the top. <xref href="write-vertically.dita"/> explains writing modes.</p>
+                    <p><codeph>top</codeph>, <codeph>right</codeph>, <codeph>bottom</codeph> and <codeph>left</codeph> always name the physical sides. The flow-relative insets name the sides of the writing mode of the containing block: in <codeph>vertical-rl</codeph>, <codeph>inset-block-start</codeph> is the right side and <codeph>inset-inline-start</codeph> the top. The flow-relative names of <codeph>anchor()</codeph>, <codeph>position-area</codeph> and the flip tactics follow the same rule. <xref href="write-vertically.dita"/> explains writing modes.</p>
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">guide { writing-mode: vertical-rl; }
@@ -110,7 +277,7 @@ seal {
             </step>
         </steps>
         <result>
-            <p>Your boxes stand where you place them, against the boxes that contain them or against the page area of every page.</p>
+            <p>Your boxes stand where you place them: against the boxes that contain them, against their anchors, or against the page area of every page.</p>
         </result>
     </taskbody>
 </task>
