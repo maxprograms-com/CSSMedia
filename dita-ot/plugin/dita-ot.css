@@ -290,10 +290,15 @@ opentopic|map > *[class~="bookmap/booktitle"] *[class~="bookmap/booktitlealt"] {
 
 @-cssmedia-toc-entry 1 {
     font-weight: bold;
+    margin-top: 0.5em;
 }
 
 @-cssmedia-toc-entry 2 {
     margin-left: 1.5em;
+}
+
+@-cssmedia-toc-entry 3 {
+    margin-left: 2.5em;
 }
 
 /* Glossary heading */

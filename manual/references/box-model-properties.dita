@@ -8,7 +8,7 @@
             <title>Margins</title>
             <table id="box-margins__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row id="row-margin">
                             <entry><codeph>margin</codeph></entry>
@@ -109,7 +109,7 @@
             <title>Padding</title>
             <table id="box-padding__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>padding</codeph></entry>
@@ -196,7 +196,7 @@
             <title>Borders</title>
             <table id="box-borders__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>border</codeph></entry>
@@ -514,7 +514,7 @@
             <title>Rounded corners</title>
             <table id="box-radii__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>border-radius</codeph></entry>

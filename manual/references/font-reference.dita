@@ -8,7 +8,7 @@
             <title>Font selection and sizing</title>
             <table id="font-selection__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>font</codeph></entry>
@@ -116,7 +116,7 @@
             <title>Text color, alignment and lines</title>
             <table id="text-layout__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>color</codeph></entry>
@@ -168,7 +168,7 @@
             <title>Font variants and features</title>
             <table id="font-features__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>font-variant</codeph></entry>
@@ -255,7 +255,7 @@
             <title>Variable and color fonts</title>
             <table id="font-variable__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>font-optical-sizing</codeph></entry>
@@ -286,7 +286,7 @@
             <title>The @font-face rule</title>
             <table id="font-face-rule__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>@font-face</codeph></entry>
@@ -443,7 +443,7 @@
             <title>The @font-feature-values rule</title>
             <table id="font-feature-values-rule__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>@font-feature-values</codeph></entry>
@@ -509,7 +509,7 @@
             <title>The @font-palette-values rule</title>
             <table id="font-palette-values-rule__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>@font-palette-values</codeph></entry>
@@ -547,7 +547,7 @@
             <title>Initial letters</title>
             <table id="initial-letters__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row id="row-initial-letter">
                             <entry><codeph>initial-letter</codeph></entry>

@@ -8,19 +8,19 @@
             <title>Properties and functions</title>
             <table id="toc-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-content/row-bookmark-level"/>
-                        <row conkeyref="ref-content/row-bookmark-label"/>
-                        <row conkeyref="ref-content/row-bookmark-state"/>
-                        <row conkeyref="ref-content/row-toc-function"/>
-                        <row conkeyref="ref-content/row-toc-title"/>
-                        <row conkeyref="ref-content/row-toc-depth"/>
-                        <row conkeyref="ref-content/row-toc-label"/>
-                        <row conkeyref="ref-content/row-toc-divider"/>
-                        <row conkeyref="ref-content/row-toc-leader"/>
-                        <row conkeyref="ref-content/row-leader"/>
-                        <row conkeyref="ref-content/row-target-counter"/>
+                        <row conkeyref="ref-content/row-bookmark-level"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-bookmark-label"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-bookmark-state"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-function"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-title"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-depth"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-label"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-divider"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-leader"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-leader"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-target-counter"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>
@@ -29,11 +29,11 @@
             <title>At-rules</title>
             <table id="toc-at-rules__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-content/row-toc-title-rule"/>
-                        <row conkeyref="ref-content/row-toc-entry-rule"/>
-                        <row conkeyref="ref-content/row-toc-divider-rule"/>
+                        <row conkeyref="ref-content/row-toc-title-rule"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-entry-rule"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-toc-divider-rule"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>

@@ -5,6 +5,6 @@
     <shortdesc>Look up every selector, property, value and at-rule by subject.</shortdesc>
     <conbody>
         <p>This book is a complete reference for CSSMedia. Each table links to the <xref href="../glossaries/CSS.dita">CSS</xref> specification that defines its entries. The references are grouped by subject:</p>
-        <ul conref="intro-reference.dita#introReference/reference-list"/>
+        <ul conref="intro-reference.dita#introReference/reference-list"><li/></ul>
     </conbody>
 </concept>

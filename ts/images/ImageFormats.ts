@@ -81,7 +81,7 @@ export interface ImageAlpha {
 }
 
 export interface ImageSamples extends ImageAlpha {
-    channels: 1 | 3;
+    channels: 1 | 3 | 4;
     pixels: Buffer;
 }
 

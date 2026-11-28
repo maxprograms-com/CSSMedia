@@ -8,9 +8,9 @@
             <title>Making an element an image</title>
             <table id="image-content__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-content/row-content"/>
+                        <row conkeyref="ref-content/row-content"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>

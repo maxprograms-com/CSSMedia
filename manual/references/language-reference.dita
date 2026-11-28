@@ -8,7 +8,7 @@
             <title>Properties</title>
             <table id="language-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>-cssmedia-lang</codeph></entry>
@@ -59,7 +59,7 @@
                             <entry><codeph>0</codeph></entry>
                             <entry><xref href="https://www.w3.org/TR/css-text-4/#propdef-hyphenate-limit-zone" scope="external" format="html">CSS Text 4 §6.3.3</xref></entry>
                         </row>
-                        <row conkeyref="ref-content/row-quotes"/>
+                        <row conkeyref="ref-content/row-quotes"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>
@@ -68,9 +68,9 @@
             <title>Selector</title>
             <table id="language-selectors__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <thead conkeyref="ref-headers/head-selectors"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-selectors/row-lang"/>
+                        <row conkeyref="ref-selectors/row-lang"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>

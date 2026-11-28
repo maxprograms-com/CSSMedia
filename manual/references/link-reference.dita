@@ -8,10 +8,10 @@
             <title>Property and function</title>
             <table id="link-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-content/row-cssmedia-link"/>
-                        <row conkeyref="ref-content/row-link-counter"/>
+                        <row conkeyref="ref-content/row-cssmedia-link"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-link-counter"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>
@@ -20,11 +20,11 @@
             <title>Pseudo-classes</title>
             <table id="link-pseudo-classes__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <thead conkeyref="ref-headers/head-selectors"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-selectors/row-link"/>
-                        <row conkeyref="ref-selectors/row-local-link"/>
-                        <row conkeyref="ref-selectors/row-visited"/>
+                        <row conkeyref="ref-selectors/row-link"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-selectors/row-local-link"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-selectors/row-visited"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>

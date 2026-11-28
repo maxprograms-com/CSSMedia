@@ -36,7 +36,7 @@
                 </tbody>
             </tgroup>
         </table>
-        <!-- TODO: GIF, BMP, TIFF, JPEG 2000 and HEIF files are not decoded yet; animated WebP files and JPEG files of 12 bits, with two components, arithmetic coding or lossless coding too; a PNG with a cICP chunk -->
+        <!-- TODO: GIF, BMP, TIFF, JPEG 2000 and HEIF files are not decoded yet; animated WebP files too; a PNG with a cICP chunk -->
         <p>The same files work as the images of a <codeph>background-image</codeph>, which <xref href="../tasks/backgrounds.dita#backgrounds">Backgrounds</xref> explains. An image is a picture in the PDF: it does not move, and its pixels are not text.</p>
         <p>The element names in the examples of this chapter, such as <codeph>figure</codeph> and <codeph>src</codeph>, are placeholders. Use the names that occur in your XML.</p>
         <p>The topics of this chapter follow the steps of the work:</p>

@@ -7,11 +7,11 @@
         <section id="named-strings-properties">
             <table id="named-strings-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-content/row-string-set"/>
-                        <row conkeyref="ref-content/row-content-function"/>
-                        <row conkeyref="ref-content/row-string-function"/>
+                        <row conkeyref="ref-content/row-string-set"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-content-function"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-string-function"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>

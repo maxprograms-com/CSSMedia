@@ -8,11 +8,11 @@
             <title>Page rule, size and page type</title>
             <table id="page-setup-pages__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-page/row-at-page"/>
-                        <row conkeyref="ref-page/row-size"/>
-                        <row conkeyref="ref-page/row-page"/>
+                        <row conkeyref="ref-page/row-at-page"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-size"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-page"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>
@@ -21,13 +21,13 @@
             <title>Page margins</title>
             <table id="page-setup-margins__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-box-model/row-margin"/>
-                        <row conkeyref="ref-box-model/row-margin-top"/>
-                        <row conkeyref="ref-box-model/row-margin-right"/>
-                        <row conkeyref="ref-box-model/row-margin-bottom"/>
-                        <row conkeyref="ref-box-model/row-margin-left"/>
+                        <row conkeyref="ref-box-model/row-margin"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-box-model/row-margin-top"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-box-model/row-margin-right"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-box-model/row-margin-bottom"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-box-model/row-margin-left"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>
@@ -36,24 +36,24 @@
             <title>Page-margin rules</title>
             <table id="page-setup-margin-rules__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-page/row-top-left-corner"/>
-                        <row conkeyref="ref-page/row-top-left"/>
-                        <row conkeyref="ref-page/row-top-center"/>
-                        <row conkeyref="ref-page/row-top-right"/>
-                        <row conkeyref="ref-page/row-top-right-corner"/>
-                        <row conkeyref="ref-page/row-right-top"/>
-                        <row conkeyref="ref-page/row-right-middle"/>
-                        <row conkeyref="ref-page/row-right-bottom"/>
-                        <row conkeyref="ref-page/row-bottom-right-corner"/>
-                        <row conkeyref="ref-page/row-bottom-right"/>
-                        <row conkeyref="ref-page/row-bottom-center"/>
-                        <row conkeyref="ref-page/row-bottom-left"/>
-                        <row conkeyref="ref-page/row-bottom-left-corner"/>
-                        <row conkeyref="ref-page/row-left-bottom"/>
-                        <row conkeyref="ref-page/row-left-middle"/>
-                        <row conkeyref="ref-page/row-left-top"/>
+                        <row conkeyref="ref-page/row-top-left-corner"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-top-left"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-top-center"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-top-right"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-top-right-corner"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-right-top"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-right-middle"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-right-bottom"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-bottom-right-corner"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-bottom-right"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-bottom-center"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-bottom-left"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-bottom-left-corner"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-left-bottom"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-left-middle"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-left-top"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>

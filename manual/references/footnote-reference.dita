@@ -8,13 +8,13 @@
             <title>Properties, rule and counter</title>
             <table id="footnote-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-floats/row-float"/>
-                        <row conkeyref="ref-content/row-footnote-display"/>
-                        <row conkeyref="ref-content/row-footnote-policy"/>
-                        <row conkeyref="ref-content/row-footnote-counter"/>
-                        <row conkeyref="ref-page/row-footnote"/>
+                        <row conkeyref="ref-floats/row-float"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-footnote-display"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-footnote-policy"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-content/row-footnote-counter"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-page/row-footnote"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>
@@ -23,10 +23,10 @@
             <title>Pseudo-elements</title>
             <table id="footnote-pseudo-elements__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-selectors"/>
+                    <thead conkeyref="ref-headers/head-selectors"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
-                        <row conkeyref="ref-selectors/row-footnote-call"/>
-                        <row conkeyref="ref-selectors/row-footnote-marker"/>
+                        <row conkeyref="ref-selectors/row-footnote-call"><entry/><entry/><entry/><entry/><entry/></row>
+                        <row conkeyref="ref-selectors/row-footnote-marker"><entry/><entry/><entry/><entry/><entry/></row>
                     </tbody>
                 </tgroup>
             </table>

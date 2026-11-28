@@ -920,7 +920,7 @@
             <p>A size query in <codeph>@container</codeph> tests the size of the nearest ancestor that has <codeph>container-type</codeph>. An ancestor with <codeph>size</codeph> answers all these features, and an ancestor with <codeph>inline-size</codeph> answers only the features of the inline axis.</p>
             <table id="container-features__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>width</codeph></entry>

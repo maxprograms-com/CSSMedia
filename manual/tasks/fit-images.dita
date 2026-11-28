@@ -74,7 +74,6 @@
                         <li><codeph>crisp-edges</codeph> asks the viewer not to blend the colors of the pixels.</li>
                         <li><codeph>pixelated</codeph> enlarges the image by whole multiples of its pixels, so that each pixel becomes a sharp square. Use it for small images such as bar codes.</li>
                     </ul>
-                    <!-- TODO: image-rendering: pixelated is not drawn for JPEG files, which CSSMedia cannot decode yet -->
                 </info>
                 <stepxmp>
                     <pre outputclass="language-css21">barcode {

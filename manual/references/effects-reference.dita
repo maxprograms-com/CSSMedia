@@ -8,7 +8,7 @@
             <title>Opacity, clipping, masking and transform properties</title>
             <table id="effects-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>opacity</codeph></entry>
@@ -137,7 +137,7 @@
             <title>Three-dimensional transforms</title>
             <table id="effects-3d__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>perspective</codeph></entry>
@@ -175,7 +175,7 @@
             <title>Blending</title>
             <table id="effects-blending__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>mix-blend-mode</codeph></entry>

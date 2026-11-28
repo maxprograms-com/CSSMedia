@@ -8,7 +8,7 @@
             <title>Writing mode properties</title>
             <table id="vertical-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row id="row-writing-mode">
                             <entry><codeph>writing-mode</codeph></entry>
@@ -123,7 +123,7 @@
             </table>
             <table id="ruby-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row id="row-ruby-position">
                             <entry><codeph>ruby-position</codeph></entry>
@@ -161,7 +161,7 @@
             <title>Emphasis and shadow properties</title>
             <table id="emphasis-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row id="row-text-emphasis-style">
                             <entry><codeph>text-emphasis-style</codeph></entry>

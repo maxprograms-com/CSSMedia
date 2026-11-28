@@ -157,7 +157,7 @@
             <title>Geometry properties</title>
             <table id="svg-geometry__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>x</codeph>, <codeph>y</codeph></entry>
@@ -209,7 +209,7 @@
             <title>Paint properties</title>
             <table id="svg-paint__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>fill</codeph></entry>
@@ -345,7 +345,7 @@
             <title>Attributes of the effects</title>
             <table id="svg-effect-attributes__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>opacity</codeph>, <codeph>clip-path</codeph>, <codeph>clip-rule</codeph>, <codeph>mask</codeph>, <codeph>mask-type</codeph></entry>
@@ -376,7 +376,7 @@
             <title>Text properties of a drawing</title>
             <table id="svg-text-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>text-anchor</codeph></entry>

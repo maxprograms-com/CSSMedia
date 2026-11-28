@@ -8,7 +8,7 @@
             <title>Preferred sizes</title>
             <table id="preferred-sizes__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>box-sizing</codeph></entry>
@@ -60,7 +60,7 @@
             <title>Minimum and maximum sizes</title>
             <table id="minimum-and-maximum-sizes__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>min-width</codeph></entry>
@@ -140,7 +140,7 @@
             <title>Scaling</title>
             <table id="scaling__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>zoom</codeph></entry>
@@ -157,7 +157,7 @@
             <title>Aspect ratio and intrinsic sizes</title>
             <table id="aspect-ratio-and-intrinsic-sizes__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>aspect-ratio</codeph></entry>
@@ -225,7 +225,7 @@
             <!-- TODO: align-content and justify-content on flex and grid containers, when flex and grid layout are written -->
             <table id="content-alignment__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row id="row-align-content">
                             <entry><codeph>align-content</codeph></entry>

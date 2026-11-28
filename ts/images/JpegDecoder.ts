@@ -25,12 +25,6 @@ interface HuffmanTable {
     valuePtr: Int32Array;
 }
 
-interface ProgressiveBand {
-    from: number;
-    to: number;
-    low: number;
-}
-
 interface FrameComponent {
     id: number;
     horizontal: number;
@@ -46,7 +40,7 @@ interface FrameComponent {
     coefficients?: Int32Array;
     planeWidth: number;
     dcLow: number;
-    bands: Array<ProgressiveBand>;
+    acLow: Int8Array;
     pointTransform: number;
 }
 
@@ -402,7 +396,7 @@ export class JpegDecoder {
             this.verticalMax = Math.max(this.verticalMax, vertical);
             defined.push({
                 id, horizontal, vertical, quantization: table, width: 0, height: 0, blocksAcross: 0, blocksDown: 0,
-                trueAcross: 0, trueDown: 0, allocatedRows: 0, planeWidth: 0, dcLow: -1, bands: [], pointTransform: 0
+                trueAcross: 0, trueDown: 0, allocatedRows: 0, planeWidth: 0, dcLow: -1, acLow: new Int8Array(64).fill(-1), pointTransform: 0
             });
         }
         for (const component of defined) {
@@ -1026,21 +1020,15 @@ export class JpegDecoder {
             if (component.dcLow === -1) {
                 throw new Error("has an AC scan of the component " + component.id + " before its first DC scan");
             }
-            const band: ProgressiveBand | undefined = component.bands.find((item: ProgressiveBand): boolean => item.from === from && item.to === to);
-            if (high === 0) {
-                if (band !== undefined) {
-                    throw new Error("has two first scans of the band " + from + " to " + to + " of the component " + component.id);
+            // ITU-T T.81 §G.1.1.1.2: Ah is the point transform of the preceding scans of the band, zero if there are none, and
+            // each later scan improves the precision by one bit; the bands of the scans need not be the same, so each coefficient keeps its Al.
+            for (let k: number = from; k <= to; k++) {
+                if (high === 0 ? component.acLow[k] !== -1 : (component.acLow[k] !== high || low !== high - 1)) {
+                    throw new Error(high === 0 ? "has two first scans of the coefficient " + k + " of the component " + component.id
+                        : "does not improve the coefficient " + k + " of the component " + component.id + " by one bit");
                 }
-                component.bands.push({ from, to, low });
-                return;
             }
-            if (band === undefined) {
-                throw new Error("refines the band " + from + " to " + to + " of the component " + component.id + ", which no scan has coded first");
-            }
-            if (high !== band.low) {
-                throw new Error("does not improve the band " + from + " to " + to + " of the component " + component.id + " by one bit");
-            }
-            band.low = low;
+            component.acLow.fill(low, from, to + 1);
             return;
         }
         if (high === 0) {
@@ -1053,7 +1041,7 @@ export class JpegDecoder {
         if (component.dcLow === -1) {
             throw new Error("has a DC scan of the component " + component.id + " that no first DC scan precedes");
         }
-        if (high !== component.dcLow) {
+        if (high !== component.dcLow || low !== high - 1) {
             throw new Error("does not improve the DC of the component " + component.id + " by one bit");
         }
         component.dcLow = low;
@@ -1623,26 +1611,32 @@ export class JpegDecoder {
                 break;
             }
         }
-        let k: number = this.scanFrom;
-        while (k <= this.scanTo) {
+        const place: number = 1 << this.scanLow;
+        for (let k: number = this.scanFrom; k <= this.scanTo; k++) {
             if (k >= eobx && this.arithmeticDecode(scanComponent.acBase + 3 * (k - 1)) === 1) {
                 return;
             }
-            const position: number = offset + ZIGZAG[k];
-            const value: number = store[position];
-            if (value === 0) {
-                // ITU-T T.81 Figure G.11: a zero history coefficient becomes non-zero when S0 says so; its sign uses the fixed estimate.
-                if (this.arithmeticDecode(scanComponent.acBase + 3 * (k - 1) + 1) === 1) {
-                    store[position] = this.fixedDecision() === 1 ? -(1 << this.scanLow) : 1 << this.scanLow;
+            // ITU-T T.81 Figure G.10: a zero history coefficient that stays zero codes S0 = 0 and the next one follows with no EOB
+            // decision, until a coefficient with history or one that becomes non-zero is coded as Figure G.11 says.
+            for (; ;) {
+                const position: number = offset + ZIGZAG[k];
+                const value: number = store[position];
+                if (value !== 0) {
+                    if (this.arithmeticDecode(scanComponent.acBase + 3 * (k - 1) + 2) === 1) {
+                        store[position] = value + (value < 0 ? -place : place);
+                    }
+                    break;
                 }
-            } else if (this.arithmeticDecode(scanComponent.acBase + 3 * (k - 1) + 2) === 1) {
-                // ITU-T T.81 Figure G.11: the correction decision SC adds one to the scaled magnitude.
-                store[position] = value + (value < 0 ? -(1 << this.scanLow) : 1 << this.scanLow);
+                if (this.arithmeticDecode(scanComponent.acBase + 3 * (k - 1) + 1) === 1) {
+                    // ITU-T T.81 Figure G.11: the sign uses the fixed estimate, and a 1-decision is negative.
+                    store[position] = this.fixedDecision() === 1 ? -place : place;
+                    break;
+                }
+                k++;
+                if (k > this.scanTo) {
+                    throw new Error("has a zero run beyond the band of its scan");
+                }
             }
-            if (k === this.scanTo) {
-                return;
-            }
-            k++;
         }
     }
 
@@ -1852,7 +1846,6 @@ export class JpegDecoder {
         width: number, height: number, verticalMax: number): number {
         const direct: boolean = this.adobeTransform === 0 || (this.adobeTransform === undefined
             && outputs[0].id === RED && outputs[1].id === GREEN && outputs[2].id === BLUE);
-        const scale: number = 1 << (this.outputBits() - 8);
         const mid: number = 1 << (this.outputBits() - 1);
         for (let line: number = 0; line < height; line++) {
             const rows: Array<number> = outputs.map((output: OutputPlane): number => Math.floor(line * output.vertical / verticalMax) * output.width);
@@ -1865,13 +1858,13 @@ export class JpegDecoder {
                     pixels[target++] = second;
                     pixels[target++] = third;
                 } else {
-                    // JFIF, "YCbCr to RGB Conversion": R = Y + 1.402 (Cr - 128), G = Y - 0.34414 (Cb - 128)
-                    // - 0.71414 (Cr - 128), B = Y + 1.772 (Cb - 128); the midpoint and the scale follow the precision.
+                    // JFIF, "YCbCr to RGB Conversion": R = Y + 1.402 (Cr - 128), G = Y - 0.34414 (Cb - 128) - 0.71414 (Cr - 128),
+                    // B = Y + 1.772 (Cb - 128); at another precision the midpoint moves, and the differences are already in its units.
                     const cb: number = second - mid;
                     const cr: number = third - mid;
-                    pixels[target++] = this.channel(first + 1.402 * scale * cr);
-                    pixels[target++] = this.channel(first - 0.34414 * scale * cb - 0.71414 * scale * cr);
-                    pixels[target++] = this.channel(first + 1.772 * scale * cb);
+                    pixels[target++] = this.channel(first + 1.402 * cr);
+                    pixels[target++] = this.channel(first - 0.34414 * cb - 0.71414 * cr);
+                    pixels[target++] = this.channel(first + 1.772 * cb);
                 }
             }
         }
@@ -1885,7 +1878,6 @@ export class JpegDecoder {
         const inverted: boolean = this.adobeTransform !== undefined;
         const transformed: boolean = this.adobeTransform === 2;
         const full: number = (1 << this.outputBits()) - 1;
-        const scale: number = 1 << (this.outputBits() - 8);
         const mid: number = 1 << (this.outputBits() - 1);
         for (let line: number = 0; line < height; line++) {
             const rows: Array<number> = outputs.map((output: OutputPlane): number => Math.floor(line * output.vertical / verticalMax) * output.width);
@@ -1898,9 +1890,9 @@ export class JpegDecoder {
                     const luma: number = first;
                     const cb: number = second - mid;
                     const cr: number = third - mid;
-                    first = this.channel(luma + 1.402 * scale * cr);
-                    second = this.channel(luma - 0.34414 * scale * cb - 0.71414 * scale * cr);
-                    third = this.channel(luma + 1.772 * scale * cb);
+                    first = this.channel(luma + 1.402 * cr);
+                    second = this.channel(luma - 0.34414 * cb - 0.71414 * cr);
+                    third = this.channel(luma + 1.772 * cb);
                 }
                 if (inverted) {
                     pixels[target++] = full - first;

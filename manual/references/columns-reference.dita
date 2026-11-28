@@ -8,7 +8,7 @@
             <title>Column properties</title>
             <table id="columns-properties__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row id="row-column-count">
                             <entry><codeph>column-count</codeph></entry>

@@ -73,12 +73,14 @@
             </fig>
             <p>In horizontal text that reads from left to right, the inline start is the left and the block start is the top. The writing mode and the direction of the text change that. Use the logical properties when a document has text in more than one writing mode or direction, so that the boxes follow the text.</p>
         </section>
-        <p>The topics of this chapter follow the areas of a box:</p>
-        <ul>
-            <li><xref href="../tasks/box-spacing.dita"/></li>
-            <li><xref href="../tasks/box-sizes.dita"/></li>
-            <li><xref href="../tasks/borders.dita"/></li>
-            <li><xref href="../tasks/backgrounds.dita"/></li>
-        </ul>
+        <section id="chapter-topics">
+            <p>The topics of this chapter follow the areas of a box:</p>
+            <ul>
+                <li><xref href="../tasks/box-spacing.dita"/></li>
+                <li><xref href="../tasks/box-sizes.dita"/></li>
+                <li><xref href="../tasks/borders.dita"/></li>
+                <li><xref href="../tasks/backgrounds.dita"/></li>
+            </ul>
+        </section>
     </conbody>
 </concept>

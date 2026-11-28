@@ -8,7 +8,7 @@
             <title>Color, images and shorthands</title>
             <table id="background-layers__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>background</codeph></entry>
@@ -47,7 +47,7 @@
             <title>Position, size and repetition</title>
             <table id="background-placement__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>background-position</codeph></entry>
@@ -155,7 +155,7 @@
             <title>Blending</title>
             <table id="background-blending__table">
                 <tgroup cols="5">
-                    <thead conkeyref="ref-headers/head-properties"/>
+                    <thead conkeyref="ref-headers/head-properties"><row><entry/><entry/><entry/><entry/><entry/></row></thead>
                     <tbody>
                         <row>
                             <entry><codeph>background-blend-mode</codeph></entry>
